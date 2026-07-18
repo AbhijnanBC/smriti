@@ -1,0 +1,26 @@
+# config/dev.yaml
+# Only override what changes for local development.
+# Deep-merged: keys not listed here are inherited from default.yaml.
+
+env: dev
+debug: true
+
+logging:
+  level: "DEBUG"
+
+embedding:
+  batch_size: 8   # Smaller batches — faster iteration on dev hardware
+
+# config/dev.yaml — Phase 1 overrides for development
+
+discovery:
+  supported_extensions:
+    - ".md"
+    - ".pdf"
+    - ".txt"
+    - ".rst"  
+
+parsing:
+  # Smaller limits for faster local iteration
+  max_pdf_pages: 50
+  max_text_length_chars: 500000    

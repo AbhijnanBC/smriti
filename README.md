@@ -1,0 +1,1 @@
+# smriti\n\nKnowledge drift analyzer for personal note vaults.\n

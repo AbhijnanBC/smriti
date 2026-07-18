@@ -1,0 +1,215 @@
+# config/default.yaml
+# Single source of truth for all tunable parameters.
+# constants.py holds only structural/schema values.
+env: dev
+debug: false
+
+pipeline:
+  max_notes: 10000
+  max_claims_per_note: 100
+
+extraction:
+  spacy_model: "en_core_web_sm"
+  min_svo_confidence: 0.6
+  fallback_to_sentences: true
+
+# Model names are configuration, not constants.
+# Change model here — nothing else needs to change.
+embedding:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 32
+  cache_embeddings: true
+
+nli:
+  model: "cross-encoder/nli-deberta-v3-small"
+  sim_threshold: 0.75
+  nli_threshold: 0.80
+  temporal_base: 30
+
+metrics:
+  kcs_min_pairs: 5
+  ds_min_claims: 2
+
+logging:
+  level: "INFO"
+
+# config/default.yaml — append discovery section
+
+discovery:
+  # Extension whitelist. Only these will enter the pipeline.
+  supported_extensions:
+    - ".md"
+    - ".pdf"
+    - ".txt"
+
+  # Directories always skipped during recursive traversal.
+  # These are IN ADDITION to the hardcoded system dirs in scanner.py.
+  ignored_dirs:
+    - ".git"
+    - ".obsidian"
+    - ".vscode"
+    - "__pycache__"
+    - "node_modules"
+    - ".idea"
+    - "dist"
+    - "build"
+
+  # Maximum file size in bytes. Files larger than this are skipped.
+  # Default: 50 MB
+  max_file_size_bytes: 52428800
+
+  # Skip files starting with these prefixes (case-insensitive)
+  ignored_prefixes:
+    - "~$"          # Word/Excel temp files
+    - ".~lock."     # LibreOffice temp files
+
+  # Output
+  output_dataset_filename: "dataset.json"  
+
+# ── Phase 2: Text Extraction ──────────────────────────────────────────────────
+parsing:
+  # Unicode normalization form. NFC makes equivalent sequences identical.
+  # Do NOT change after first run — would invalidate cached normalized text.
+  unicode_normalization: "NFC"
+
+  # Maximum consecutive blank lines allowed after normalization.
+  # 100 blank lines → collapse_blank_lines blank lines.
+  collapse_blank_lines: 2
+
+  # Whether to preserve Markdown syntax characters in extracted text.
+  # true  → "# Heading" stays "# Heading"  (downstream sees full context)
+  # false → "# Heading" becomes "Heading"   (NOT recommended)
+  preserve_markdown_syntax: true
+
+  # Whether to preserve indentation (code blocks, nested lists).
+  preserve_indentation: true
+
+  # Remove trailing whitespace on every line.
+  remove_trailing_whitespace: true
+
+  # Encoding detection order. First succeeds → used.
+  # Every fallback beyond utf-8 generates an EncodingFallbackWarning.
+  encoding_fallbacks:
+    - "utf-8"
+    - "utf-8-sig"   # UTF-8 with BOM
+    - "utf-16"
+    - "latin-1"     # Last resort — never fails, but may misrepresent bytes
+
+  # PDF extraction limits
+  max_pdf_pages: 500           # Pages beyond this are skipped with a warning
+  max_text_length_chars: 5000000  # ~5 MB of text — documents larger are truncated with warning
+
+  # Minimum non-whitespace characters required for a document to be
+  # considered "successfully extracted" (not empty). Documents below
+  # this threshold produce a NoExtractableTextWarning.
+  min_extractable_chars: 10
+
+  # Output artifact filename
+  output_dataset_filename: "dataset.json"  
+
+  # ── Phase 3: Semantic Sentence Construction ──────────────────────────────────
+segmentation:
+  # Minimum characters for a sentence to be kept.
+  # Shorter candidates are discarded with SEG001.
+  min_sentence_chars: 3
+
+  # Maximum characters before emitting SEG002 warning.
+  max_sentence_chars: 2000
+
+  # Abbreviations that should never trigger sentence boundaries.
+  abbreviations:
+    - "dr"
+    - "mr"
+    - "mrs"
+    - "ms"
+    - "prof"
+    - "sr"
+    - "jr"
+    - "e.g"
+    - "i.e"
+    - "vs"
+    - "etc"
+    - "fig"
+    - "no"
+    - "vol"
+    - "pt"
+    - "pp"
+    - "u.s"
+    - "u.k"
+    - "a.m"
+    - "p.m"
+
+  # Context path separator
+  context_separator: " > "
+
+  # Maximum heading depth to track in context stack.
+  # Headings deeper than this generate CTX001 warning.
+  max_context_depth: 6
+
+  # Table serialisation: how to format key-value pairs from table cells.
+  table_kv_template: "{key}: {value}."
+
+
+  # ── Phase 4: Claim Construction ───────────────────────────────────────────────
+claim_extraction:
+
+  # Maximum claims extracted from one SemanticSentence.
+  # Prevents pathological outputs from complex sentences.
+  max_claims_per_sentence: 10
+
+  # Minimum characters for a claim to be kept.
+  min_claim_chars: 3
+
+  # Whether to attempt splitting coordinated predicates/clauses.
+  # "Python supports X and Y" → two claims when true.
+  split_conjunctions: true
+
+  # Whether to split conditional clauses.
+  # "If X, then Y" → usually kept together (false = safer).
+  split_conditionals: false
+
+  # Whether to split relative clauses into independent claims.
+  # "Python, which runs on CPU, is popular" → conservative: keep together.
+  split_relative_clauses: false
+
+  # Whether to annotate negation, modality, attribution.
+  enable_annotation: true
+
+  # Whether to preserve the author's exact wording.
+  # MUST always be true. Here for documentation only.
+  preserve_original_text: true
+
+  # ── Phase 5: Semantic Embedding Layer ────────────────────────────────────────
+embedding_phase5:
+  # Embedding model (sentence-transformers format)
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+
+  # Inference device: "cpu", "cuda", or "mps"
+  # Default is CPU — SMRITI is designed to run without GPU
+  device: "cpu"
+
+  # Number of claims to encode in one inference call
+  # Larger batches = faster throughput; smaller batches = lower memory
+  # NOTE: batch_size does NOT affect embedding values — excluded from config_hash
+  batch_size: 32
+
+  # Apply L2 normalization after inference
+  # Recommended: true — enables cosine similarity via dot product in Phase 6
+  normalize: true
+
+  # Cache embeddings to disk
+  # Huge speed improvement for re-runs on unchanged vaults
+  cache_embeddings: true
+
+  # Optional instruction prefix (for instruction-tuned models like BGE, Instructor, E5)
+  # Leave empty for standard models like MiniLM
+  # INCLUDED in config_hash — changing this invalidates all cached embeddings
+  instruction_prefix: ""
+
+  # Maximum sequence length override (model-specific)
+  # Leave null to use the model's default
+  # INCLUDED in config_hash — changing this may change truncation behavior
+  max_seq_length: null
+
+  # Pipeline version — increment when pipeline logic changes
+  pipeline_version: "1.0"

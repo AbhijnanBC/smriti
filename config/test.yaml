@@ -1,0 +1,52 @@
+# config/test.yaml
+env: test
+debug: false
+
+pipeline:
+  max_notes: 100
+
+logging:
+  level: "WARNING"
+
+embedding:
+  cache_embeddings: false
+
+nli:
+  cache_nli_results: false
+
+
+# config/test.yaml — Phase 1 overrides for tests
+
+discovery:
+  supported_extensions:
+    - ".md"
+    - ".pdf"
+    - ".txt"
+  max_file_size_bytes: 1048576  # 1 MB limit in tests  
+
+parsing:
+  max_pdf_pages: 10
+  max_text_length_chars: 100000
+  min_extractable_chars: 1  
+
+# config/test.yaml — Phase 3 test overrides
+segmentation:
+  min_sentence_chars: 1    # Accept very short sentences in tests
+  max_sentence_chars: 5000  
+
+
+# config/test.yaml — Phase 4 test overrides
+claim_extraction:
+  max_claims_per_sentence: 5
+  split_conjunctions: true
+  split_conditionals: false
+  enable_annotation: true  
+
+# config/test.yaml — Phase 5 test overrides
+embedding_phase5:
+  batch_size: 4            # Small batches for test speed
+  cache_embeddings: false  # No caching during tests
+  normalize: true
+  device: "cpu"
+  instruction_prefix: ""
+  max_seq_length: null  

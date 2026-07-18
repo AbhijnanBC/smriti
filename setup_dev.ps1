@@ -1,0 +1,1 @@
+Write-Host 'Run this to set up dev environment'\n
