@@ -215,3 +215,165 @@ class CacheKeyError(Phase5Error):
 class CacheSchemaMismatchError(Phase5Error):
     """Cache entry schema version does not match current Phase 5 schema."""
     pass
+
+# ── Phase 6: Semantic Relationship Discovery ───────────────────────────────────
+from enum import Enum
+class Phase6ErrorCategory(str, Enum):
+    """
+    Failure taxonomy for Phase 6.
+
+    RECOVERABLE:     The pipeline can continue; this pair is skipped.
+    NON_RECOVERABLE: The pipeline must abort.
+    RETRYABLE:       The operation failed transiently; retry may succeed.
+    CONFIGURATION:   The config is invalid; cannot proceed without fix.
+    DATA:            Input data is malformed; this batch/pair is skipped.
+    INFRASTRUCTURE:  External service (GPU, disk, network) failed.
+    """
+    RECOVERABLE     = "recoverable"
+    NON_RECOVERABLE = "non_recoverable"
+    RETRYABLE       = "retryable"
+    CONFIGURATION   = "configuration"
+    DATA            = "data"
+    INFRASTRUCTURE  = "infrastructure"
+
+
+class Phase6Error(SMRITIError):
+    """Base for all Phase 6 errors."""
+    category: Phase6ErrorCategory = Phase6ErrorCategory.NON_RECOVERABLE
+
+    def __init__(self, message: str, category: Phase6ErrorCategory = None):
+        super().__init__(message)
+        if category is not None:
+            self.category = category
+
+
+class IndexBuildError(Phase6Error):
+    """Failed to build the vector index. Non-recoverable."""
+    category = Phase6ErrorCategory.NON_RECOVERABLE
+
+
+class FAISSNotAvailableError(Phase6Error):
+    """faiss-cpu is not installed. Configuration error."""
+    category = Phase6ErrorCategory.CONFIGURATION
+
+
+class NLIModelError(Phase6Error):
+    """NLI cross-encoder failed to load or run inference."""
+    category = Phase6ErrorCategory.INFRASTRUCTURE
+
+
+class NLIInferenceBatchError(Phase6Error):
+    """One NLI batch failed — pairs in batch are skipped. Recoverable."""
+    category = Phase6ErrorCategory.RECOVERABLE
+
+
+class RelationshipValidationError(Phase6Error):
+    """A Relationship failed structural validation (fatal invariant violated)."""
+    category = Phase6ErrorCategory.DATA
+
+
+class CandidateGenerationError(Phase6Error):
+    """ANN candidate generation failed."""
+    category = Phase6ErrorCategory.NON_RECOVERABLE
+
+
+class CalibrationError(Phase6Error):
+    """ConfidenceCalibrator encountered an unexpected score distribution."""
+    category = Phase6ErrorCategory.RECOVERABLE
+
+
+class ResolverPolicyError(Phase6Error):
+    """ResolverPolicy configuration is invalid or internally inconsistent."""
+    category = Phase6ErrorCategory.CONFIGURATION
+
+
+class ConflictResolutionError(Phase6Error):
+    """ConflictResolver could not determine which relationship wins."""
+    category = Phase6ErrorCategory.RECOVERABLE
+
+
+class ResourceLimitExceeded(Phase6Error):
+    """A resource limit (max_pairs, memory, timeout) was exceeded."""
+    category = Phase6ErrorCategory.NON_RECOVERABLE
+
+
+class ReplayError(Phase6Error):
+    """Replay failed — run_id not found or replay manifest corrupted."""
+    category = Phase6ErrorCategory.CONFIGURATION
+
+# ── Phase 7: Knowledge Graph Construction ────────────────────────────────────
+
+class Phase7Error(SMRITIError):
+    """Base for all Phase 7 errors."""
+    pass
+
+
+class GraphConstructionError(Phase7Error):
+    """Fatal error during graph construction. No partial graph is emitted."""
+    pass
+
+
+class GraphValidationError(Phase7Error):
+    """Structural invariant violated during validation. Fatal."""
+    pass
+
+
+class SemanticValidationError(Phase7Error):
+    """Semantic invariant violated (e.g. impossible relationship chain). Fatal."""
+    pass
+
+
+class PartitioningError(Phase7Error):
+    """Constraint-based partitioning failed."""
+    pass
+
+
+class BackendError(Phase7Error):
+    """Graph backend (NetworkX) encountered an unexpected error."""
+    pass
+
+
+class SerializationError(Phase7Error):
+    """KnowledgeGraph could not be serialized to JSON."""
+    pass
+
+
+class AnnotationPolicyError(Phase7Error):
+    """AnnotationPolicy configuration is invalid or internally inconsistent."""
+    pass    
+
+# ── Phase 8: Reliability Evaluation ─────────────────────────────────────────
+
+class Phase8Error(SMRITIError):
+    """Base for all Phase 8 errors."""
+    pass
+
+
+class SignalExtractionError(Phase8Error):
+    """A signal extractor failed to produce a valid measurement."""
+    pass
+
+
+class NormalizationError(Phase8Error):
+    """Signal normalization produced an invalid value (after validation)."""
+    pass
+
+
+class FusionError(Phase8Error):
+    """Reliability fusion encountered an impossible configuration."""
+    pass
+
+
+class PolicyError(Phase8Error):
+    """Policy configuration is invalid or internally inconsistent."""
+    pass
+
+
+class RegistryError(Phase8Error):
+    """SignalRegistry encountered a duplicate registration or ordering conflict."""
+    pass
+
+
+class ScoringValidationError(Phase8Error):
+    """A ReliabilityMetadata failed structural validation."""
+    pass

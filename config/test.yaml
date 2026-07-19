@@ -50,3 +50,67 @@ embedding_phase5:
   device: "cpu"
   instruction_prefix: ""
   max_seq_length: null  
+
+
+relationship_discovery:
+  top_k: 5
+  sim_threshold: 0.50
+  min_confidence: 0.40
+  batch_size: 4
+  cache_nli_results: false
+  skip_unknown_relationships: false
+  skip_neutral_relationships: false
+  conflict_resolution_policy: "highest_confidence"
+  deduplication_policy: "keep_highest_confidence"
+
+resolver_policy:
+  contradiction_margin: 0.0
+  entailment_margin: 0.0
+  confidence_policy: "calibrated"
+  version: "1.0"
+
+nli_phase6:
+  nli_threshold: 0.70
+  cache_nli_results: false
+
+calibration: {}
+
+resource_governance:
+  max_pairs: 1000
+  timeout_seconds: 60.0
+  cancel_on_limit: false
+
+cache_invalidation:
+  invalidate_on_embedding_change: true
+  invalidate_on_model_change: true
+  invalidate_on_policy_change: true  
+
+knowledge_graph:
+  include_neutral: false
+  min_reliable_delta_days: 0.0
+  hub_degree_multiplier: 1.5
+  annotation:
+    foundational_centrality_threshold: 0.30
+    foundational_min_in_degree: 1
+    evidence_hub_min_in_degree: 2
+    refinement_root_min_out: 1
+    peripheral_max_degree: 1  
+
+scoring_policy:
+  version: "test_1.0"
+  profile: "balanced"
+  evidence:
+    echo_chamber_penalty: 0.20
+    max_support_count: 5
+    lineage_depth_limit: 1
+    publisher_domain_weight: 0.30
+  fusion:
+    signal_weights:
+      evidence_strength:     0.25
+      evidence_independence: 0.15
+      source_diversity:      0.15
+      topology_strength:     0.10
+      hub_score:             0.05
+      bridge_score:          0.05
+      conflict_pressure:     0.20
+      temporal_stability:    0.05    

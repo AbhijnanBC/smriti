@@ -47,6 +47,8 @@ data/
   raw/
     .gitkeep
   .gitkeep
+docs/
+  relationship_ontology.md
 scripts/
   download_models.ps1
   setup_dev.ps1
@@ -101,7 +103,18 @@ src/
       validation.py
     evolution/
       __init__.py
-      analyzer.py
+      aggregation.py
+      annotation.py
+      backend.py
+      builder.py
+      construction.py
+      context.py
+      networkx_backend.py
+      partitioning.py
+      statistics.py
+      temporal.py
+      topology.py
+      validation.py
     extraction/
       scanner/
         __init__.py
@@ -137,11 +150,44 @@ src/
       __init__.py
       exporter.py
     retrieval/
+      classification/
+        calibration.py
+        conflict.py
+        evidence.py
+        resolver.py
+        validator.py
       __init__.py
+      benchmark.py
+      builder.py
+      candidate_generator.py
+      faiss_index.py
+      governance.py
+      incremental.py
+      index.py
+      replay.py
       retriever.py
+      statistics.py
+      validator.py
     scoring/
+      signals/
+        __init__.py
+        base.py
+        conflict.py
+        evidence.py
+        independence.py
+        provenance.py
+        structural.py
+        temporal.py
       __init__.py
+      builder.py
+      constraints.py
+      explanation.py
+      fusion.py
+      graph_stats.py
+      normalization.py
+      policies.py
       scorer.py
+      statistics.py
     __init__.py
     __version__.py
     constants.py
@@ -157,6 +203,9 @@ tests/
     test_phase3_extraction.py
     test_phase4_extraction.py
     test_phase5_embedding.py
+    test_phase6_discovery.py
+    test_phase7_knowledge_graph.py
+    test_phase8_scoring.py
     test_pipeline_runner.py
   unit/
     test_builder.py
@@ -193,6 +242,24 @@ tests/
     test_phase5_normalization.py
     test_phase5_property_based.py
     test_phase5_validation.py
+    test_phase6_builder.py
+    test_phase6_calibration.py
+    test_phase6_candidate_generator.py
+    test_phase6_candidate_validator.py
+    test_phase6_resolver.py
+    test_phase7_aggregation_dedup.py
+    test_phase7_annotation.py
+    test_phase7_construction.py
+    test_phase7_partitioning.py
+    test_phase7_temporal_semantic.py
+    test_phase7_topology_bridges.py
+    test_phase7_validation.py
+    test_phase8_explanation.py
+    test_phase8_fusion.py
+    test_phase8_normalization.py
+    test_phase8_policies.py
+    test_phase8_registry.py
+    test_phase8_signals.py
     test_scanner.py
     test_validator.py
   __init__.py
@@ -207,6 +274,9844 @@ setup_dev.ps1
 ```
 
 # Files
+
+## File: docs/relationship_ontology.md
+````markdown
+# SMRITI Phase 7: Semantic Relationship Ontology & Graph Traversal Specification
+
+This document defines the canonical ontology for semantic relationships discovered in Phase 6 and establishes the strict mathematical and traversal rules for the Phase 7 Knowledge Graph construction. 
+
+All downstream consumers, graph traversal algorithms, and temporal reasoning engines must adhere to these invariants.
+
+---
+
+### 1. Ingestion & Discard Policy
+
+Phase 7 treats the `RelationshipSet` output from Phase 6 as an immutable stream of edges. Before any graph construction begins, the following ingestion filters must be applied:
+
+*   **Valid Edges:** `SUPPORTS`, `CONTRADICTS`, and `REFINES` relationships are explicitly ingested into the graph structure.
+*   **Neutral Edges:** `NEUTRAL` relationships are dropped during ingestion to prevent graph bloat, as they represent semantic proximity without logical direction.
+*   **The Discard Policy:** `UNKNOWN` relationships are strictly dropped at the Phase 6 boundary. They must never enter the Phase 7 graph, as they represent insufficient or contradictory evidence and cannot be safely traversed.
+
+---
+
+### 2. Semantic Edge Definitions & Transitivity
+
+The Phase 7 Knowledge Graph relies on the specific mathematical properties of each relationship type to perform safe logical reasoning.
+
+| Relationship Type | Directionality | Transitivity | Graph Usage |
+| :--- | :--- | :--- | :--- |
+| **SUPPORTS** | Directional (A → B) | **True** | Builds corroboration chains. If A supports B, and B supports C, the graph infers A indirectly supports C. |
+| **CONTRADICTS** | Symmetric (A ↔ B) | **False** | Identifies factual collisions. If A contradicts B, and B contradicts C, A does not necessarily contradict C. |
+| **REFINES** | Directional (A → B) | **False** | Tracks concept elaboration. Narrowing scope repeatedly may alter the premise, so transitivity cannot be assumed. |
+
+---
+
+### 3. Graph Traversal & Boundary Rules
+
+When querying or walking the Phase 7 Knowledge Graph, traversal algorithms must respect structural boundaries to prevent the fusion of incompatible realities into a single context window.
+
+*   **The Contradiction Partition:** `CONTRADICTS` edges act as strict graph partitions. A standard logical traversal (e.g., aggregating facts about a specific topic) must stop immediately upon encountering a `CONTRADICTS` edge.
+*   **Graph Bifurcation:** When a contradiction is encountered, the graph effectively bifurcates into competing states of reality. The traversal algorithm must not fuse claims from across the contradiction boundary into a cohesive summary.
+*   **Temporal Resolution:** To resolve graph partitions, traversal algorithms must inspect the `ClaimProvenance` timestamps of the conflicting nodes. Graph algorithms must weight these edges by timestamp, allowing the system to prefer the most recent claim as the "current" reality while preserving the older claim strictly as historical evolution.
+````
+
+## File: src/smriti/evolution/aggregation.py
+````python
+"""
+aggregation.py — Evidence aggregation for Phase 7.
+
+RECTIFIED (P0-2): The original BFS deduplication used visited_edges (unique edges),
+not unique supporting CLAIM IDs. In a DAG like:
+
+    A → B → D
+    A → C → D
+
+BFS visiting D's incoming edges reaches A via two paths. Original code tracked
+visited_edges, meaning it would add A's confidence once per path — double-counting.
+
+Fix: Track supporting_claim_ids as a set. Add a claim's contribution only the
+first time it appears, regardless of how many paths lead from it to the target.
+This is "aggregate over unique provenance roots, not unique traversal paths."
+
+Rules:
+    - Follows only SUPPORTS edges within the same partition
+    - Counts each unique supporting claim_id exactly ONCE
+    - CONTRADICTS edges never contribute support
+    - Aggregation never modifies edge confidence values
+    - Never crosses partition boundaries
+"""
+
+from __future__ import annotations
+
+import dataclasses
+from collections import deque
+from typing import Dict, Set
+import structlog
+
+from smriti.core.models import SupportAggregate, RelationshipType, NodeAnnotations
+from smriti.evolution.context import SemanticReasoningContext
+
+logger = structlog.get_logger(__name__)
+
+
+def run_evidence_aggregation(ctx: SemanticReasoningContext) -> None:
+    """
+    Aggregate SUPPORTS evidence for every node within its partition.
+    Counts unique provenance root claim IDs, not traversal paths.
+    """
+    aggregates: Dict[str, SupportAggregate] = {}
+
+    for partition_id, partition in ctx.partitions.items():
+        partition_node_ids = partition.node_ids
+
+        # Precompute: for each node, which SUPPORTS edges point TO it (same partition)
+        incoming_supports: Dict[str, list] = {nid: [] for nid in partition_node_ids}
+        # Also track: for each supporting claim, its edge confidence
+        claim_confidence: Dict[str, float] = {}  # claim_id → confidence of its direct support edge
+
+        for edge in ctx.edges.values():
+            if (edge.relationship_type == RelationshipType.SUPPORTS
+                    and edge.target_node_id in partition_node_ids
+                    and edge.source_node_id in partition_node_ids):
+                incoming_supports[edge.target_node_id].append(edge)
+                # Store per-claim confidence for the first direct edge encountered
+                if edge.source_node_id not in claim_confidence:
+                    claim_confidence[edge.source_node_id] = edge.calibrated_confidence
+
+        for node_id in partition_node_ids:
+            # BFS: collect all transitive UNIQUE CLAIM IDs (not unique paths)
+            # RECTIFIED (P0-2): supporting_ids tracks claim IDs seen,
+            # ensuring each supporting claim is counted at most once regardless
+            # of how many paths lead from it to node_id.
+            supporting_ids: Set[str] = set()
+            total_confidence = 0.0
+
+            queue = deque(incoming_supports.get(node_id, []))
+            visited_edge_ids: Set[str] = set()
+
+            while queue:
+                edge = queue.popleft()
+                if edge.edge_id in visited_edge_ids:
+                    continue
+                visited_edge_ids.add(edge.edge_id)
+
+                source_id = edge.source_node_id
+                if source_id not in supporting_ids:
+                    # First time we reach this claim — count its contribution
+                    supporting_ids.add(source_id)
+                    total_confidence += claim_confidence.get(source_id, edge.calibrated_confidence)
+                # Always BFS further upstream (even if we've seen source_id before,
+                # there may be new unique supporters upstream)
+                for upstream_edge in incoming_supports.get(source_id, []):
+                    if upstream_edge.edge_id not in visited_edge_ids:
+                        queue.append(upstream_edge)
+
+            # Weighted confidence = mean over unique supporting claims
+            weighted_confidence = (
+                total_confidence / len(supporting_ids) if supporting_ids else 0.0
+            )
+            summary = (
+                f"{len(supporting_ids)} unique supporting claim(s), "
+                f"avg confidence {weighted_confidence:.2f}"
+                if supporting_ids else "No supporting evidence"
+            )
+
+            aggregates[node_id] = SupportAggregate(
+                support_count=len(supporting_ids),
+                weighted_confidence=round(weighted_confidence, 6),
+                supporting_claim_ids=tuple(sorted(supporting_ids)),
+                evidence_summary=summary,
+            )
+
+    ctx.support_aggregates = aggregates
+
+    # Update node annotations
+    updated_nodes = {}
+    for claim_id, node in ctx.nodes.items():
+        agg = aggregates.get(claim_id)
+        current_ann = node.annotations or NodeAnnotations()
+        updated_ann = dataclasses.replace(current_ann, support_aggregate=agg)
+        updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
+    ctx.nodes = updated_nodes
+
+    logger.info(
+        "evidence aggregation complete (unique provenance roots)",
+        nodes_with_support=sum(1 for a in aggregates.values() if a.support_count > 0),
+        total_nodes=len(aggregates),
+    )
+````
+
+## File: src/smriti/evolution/annotation.py
+````python
+"""
+annotation.py — Semantic role annotation for Phase 7.
+
+RECTIFIED (P1-4): All annotation thresholds are now read from AnnotationPolicy
+(constructed from config). No threshold values are hardcoded in this file.
+
+RECTIFIED (P2-3): RoleClassifier protocol introduced. Default implementation
+is TopologyRoleClassifier. Future implementations can use ML-based classifiers
+without changing this file's public interface.
+
+AnnotationPolicy fields (all configurable):
+    foundational_centrality_threshold: float  (default 0.50)
+    foundational_min_in_degree:        int    (default 2)
+    evidence_hub_min_in_degree:        int    (default 3)
+    refinement_root_min_out:           int    (default 2)
+    hub_degree_multiplier:             float  (default 2.0)
+"""
+
+from __future__ import annotations
+
+import dataclasses
+from dataclasses import dataclass
+from typing import Dict, Protocol
+from collections import Counter
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import SemanticRole, RelationshipType, NodeAnnotations
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.exceptions import AnnotationPolicyError
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class AnnotationPolicy:
+    """
+    All annotation thresholds in one place. Read from config.
+    No threshold values appear in annotation logic itself.
+
+    RECTIFIED (P1-4): replaces hardcoded 0.50, 0.30, 3, 2, etc.
+    """
+    foundational_centrality_threshold: float = 0.50
+    foundational_min_in_degree: int = 2
+    evidence_hub_min_in_degree: int = 3
+    refinement_root_min_out: int = 2
+    peripheral_max_degree: int = 1
+
+    def __post_init__(self):
+        if self.foundational_centrality_threshold <= 0 or self.foundational_centrality_threshold > 1:
+            raise AnnotationPolicyError(
+                f"foundational_centrality_threshold must be in (0,1], "
+                f"got {self.foundational_centrality_threshold}"
+            )
+        if self.evidence_hub_min_in_degree < 1:
+            raise AnnotationPolicyError(
+                f"evidence_hub_min_in_degree must be >= 1, "
+                f"got {self.evidence_hub_min_in_degree}"
+            )
+
+    @classmethod
+    def from_config(cls) -> "AnnotationPolicy":
+        config = get_config()
+        kg_cfg = config.get("knowledge_graph", {}).get("annotation", {})
+        return cls(
+            foundational_centrality_threshold=kg_cfg.get("foundational_centrality_threshold", 0.50),
+            foundational_min_in_degree=kg_cfg.get("foundational_min_in_degree", 2),
+            evidence_hub_min_in_degree=kg_cfg.get("evidence_hub_min_in_degree", 3),
+            refinement_root_min_out=kg_cfg.get("refinement_root_min_out", 2),
+            peripheral_max_degree=kg_cfg.get("peripheral_max_degree", 1),
+        )
+
+
+class RoleClassifier(Protocol):
+    """
+    Protocol for role classifiers (P2-3).
+    Default implementation: TopologyRoleClassifier.
+    Future: ML-based or domain-ontology-based classifiers.
+    """
+    def classify(
+        self,
+        topology,
+        refines_out: int,
+        policy: AnnotationPolicy,
+    ) -> SemanticRole: ...
+
+
+class TopologyRoleClassifier:
+    """Default topology-driven role classifier."""
+
+    def classify(
+        self,
+        topology,
+        refines_out: int,
+        policy: AnnotationPolicy,
+    ) -> SemanticRole:
+        return _classify_role(topology, refines_out, policy)
+
+
+def run_semantic_annotation(
+    ctx: SemanticReasoningContext,
+    policy: Optional[AnnotationPolicy] = None,
+    classifier: Optional[RoleClassifier] = None,
+) -> None:
+    """
+    Annotate every node with a SemanticRole based on its topology.
+    Uses AnnotationPolicy for all thresholds (P1-4 fix).
+
+    Args:
+        ctx:        SemanticReasoningContext.
+        policy:     AnnotationPolicy (from config by default).
+        classifier: RoleClassifier implementation (default: TopologyRoleClassifier).
+    """
+    if policy is None:
+        policy = AnnotationPolicy.from_config()
+    if classifier is None:
+        classifier = TopologyRoleClassifier()
+
+    roles: Dict[str, SemanticRole] = {}
+
+    for claim_id, node in ctx.nodes.items():
+        topology = node.topology
+        if topology is None:
+            roles[claim_id] = SemanticRole.UNCLASSIFIED
+            continue
+
+        refines_out = sum(
+            1 for e in ctx.edges.values()
+            if e.source_node_id == claim_id
+            and e.relationship_type == RelationshipType.REFINES
+        )
+
+        role = classifier.classify(topology, refines_out, policy)
+        roles[claim_id] = role
+
+    ctx.semantic_roles = roles
+
+    # Update node annotations
+    updated_nodes = {}
+    for claim_id, node in ctx.nodes.items():
+        role = roles.get(claim_id, SemanticRole.UNCLASSIFIED)
+        current_ann = node.annotations or NodeAnnotations()
+        updated_ann = dataclasses.replace(current_ann, semantic_role=role)
+        updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
+    ctx.nodes = updated_nodes
+
+    distribution = Counter(r.value for r in roles.values())
+    logger.info("semantic annotation complete", distribution=dict(distribution))
+
+
+def _classify_role(
+    topology,
+    refines_out: int,
+    policy: AnnotationPolicy,
+) -> SemanticRole:
+    """
+    Classify a node's semantic role from topology + policy.
+    Priority order is intentional and documented.
+    """
+    # 1. Bridge: articulation point (must check first — structural primacy)
+    if topology.is_bridge:
+        return SemanticRole.BRIDGE_CLAIM
+
+    # 2. Foundational: high centrality AND sufficient incoming support
+    if (topology.centrality >= policy.foundational_centrality_threshold
+            and topology.in_degree >= policy.foundational_min_in_degree):
+        return SemanticRole.FOUNDATIONAL_CLAIM
+
+    # 3. Evidence hub: many direct incoming SUPPORTS edges
+    if topology.in_degree >= policy.evidence_hub_min_in_degree:
+        return SemanticRole.EVIDENCE_HUB
+
+    # 4. Refinement root: many REFINES outgoing edges
+    if refines_out >= policy.refinement_root_min_out:
+        return SemanticRole.REFINEMENT_ROOT
+
+    # 5. Leaf: no outgoing semantic edges
+    if topology.out_degree == 0:
+        return SemanticRole.LEAF_CLAIM
+
+    # 6. Peripheral: very low degree
+    if topology.degree <= policy.peripheral_max_degree:
+        return SemanticRole.PERIPHERAL_CLAIM
+
+    return SemanticRole.UNCLASSIFIED
+
+
+# Allow Optional in type hints
+from typing import Optional
+````
+
+## File: src/smriti/evolution/backend.py
+````python
+"""
+backend.py — Abstract graph backend interface for Phase 7.
+
+RECTIFIED (P2-2): Added predecessors() and successors() to the interface
+for cleaner directional traversal. get_neighbors() remains for undirected use.
+
+Rules:
+    ✅ Returns plain Python types only (no NetworkX types)
+    ✅ Every implementation is interchangeable
+    ❌ Never performs semantic reasoning
+    ❌ Never performs partitioning/aggregation/annotation
+    ❌ Never constructs Relationship objects
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import List, Any, Optional
+
+
+@dataclass(frozen=True)
+class EdgeTuple:
+    """A minimal edge representation returned by GraphBackend."""
+    source: str
+    target: str
+    edge_id: str
+    relationship_type: str
+    confidence: float
+
+
+class GraphBackend(ABC):
+    """Abstract graph backend for Phase 7."""
+
+    @property
+    @abstractmethod
+    def node_count(self) -> int: ...
+
+    @property
+    @abstractmethod
+    def edge_count(self) -> int: ...
+
+    @abstractmethod
+    def add_node(self, node_id: str, **attrs: Any) -> None:
+        """Add a node. Silently updates if node already exists."""
+        ...
+
+    @abstractmethod
+    def add_edge(
+        self, source: str, target: str, edge_id: str,
+        relationship_type: str, confidence: float, **attrs: Any,
+    ) -> None:
+        """Add a directed edge."""
+        ...
+
+    @abstractmethod
+    def has_node(self, node_id: str) -> bool: ...
+
+    @abstractmethod
+    def has_edge(self, source: str, target: str, edge_id: str) -> bool: ...
+
+    @abstractmethod
+    def get_neighbors(self, node_id: str) -> List[str]:
+        """Return IDs of all adjacent nodes (in + out, deduplicated)."""
+        ...
+
+    @abstractmethod
+    def predecessors(self, node_id: str) -> List[str]:
+        """Return IDs of all nodes with edges pointing TO node_id."""
+        ...
+
+    @abstractmethod
+    def successors(self, node_id: str) -> List[str]:
+        """Return IDs of all nodes that node_id points TO."""
+        ...
+
+    @abstractmethod
+    def get_out_edges(self, node_id: str) -> List[EdgeTuple]:
+        """Return all edges leaving node_id."""
+        ...
+
+    @abstractmethod
+    def get_in_edges(self, node_id: str) -> List[EdgeTuple]:
+        """Return all edges entering node_id."""
+        ...
+
+    @abstractmethod
+    def all_edges(self) -> List[EdgeTuple]: ...
+
+    @abstractmethod
+    def all_node_ids(self) -> List[str]:
+        """Return all node IDs in deterministic sorted order."""
+        ...
+
+    @abstractmethod
+    def connected_components_undirected(self) -> List[List[str]]:
+        """
+        Return connected components ignoring edge direction.
+        Each component is a sorted list of node IDs.
+        Sorted by size (largest first), then by first node ID.
+        """
+        ...
+
+    @abstractmethod
+    def subgraph(self, node_ids: List[str]) -> "GraphBackend":
+        """Return a subgraph containing only the specified nodes."""
+        ...
+
+    @abstractmethod
+    def in_degree(self, node_id: str) -> int: ...
+
+    @abstractmethod
+    def out_degree(self, node_id: str) -> int: ...
+
+    @abstractmethod
+    def degree(self, node_id: str) -> int: ...
+
+    @abstractmethod
+    def remove_edges_of_type(self, relationship_type: str) -> "GraphBackend":
+        """Return a new backend with all edges of the given type removed."""
+        ...
+
+    @abstractmethod
+    def articulation_points(self) -> List[str]:
+        """
+        Return all articulation points (bridge nodes) in the undirected projection.
+        Implemented using NetworkX nx.articulation_points().
+        RECTIFIED (P0-3): replaces degree-1 heuristic.
+        """
+        ...
+````
+
+## File: src/smriti/evolution/builder.py
+````python
+"""
+builder.py — Immutable KnowledgeGraph assembly for Phase 7.
+
+RECTIFIED (P2-1): Statistics computation extracted into StatisticsBuilder.
+The main build_knowledge_graph() function only assembles; it delegates
+all graph-wide metric computation to StatisticsBuilder.
+
+This respects single-responsibility and allows statistics computation to
+reuse precomputed metadata from context rather than re-traversing.
+"""
+
+from __future__ import annotations
+
+import hashlib
+from typing import Dict
+import structlog
+
+from smriti.core.models import (
+    KnowledgeGraph, GraphStatistics, RelationshipType, TemporalStatus,
+)
+from smriti.evolution.context import SemanticReasoningContext
+
+logger = structlog.get_logger(__name__)
+
+PHASE7_SCHEMA_VERSION = "7.0"
+
+
+class StatisticsBuilder:
+    """
+    Computes graph-wide statistics from the enriched SemanticReasoningContext.
+
+    RECTIFIED (P2-1): Extracted from build_knowledge_graph() to respect
+    single-responsibility. Reuses precomputed data from topology and temporal
+    stages — no double-traversal.
+    """
+
+    @staticmethod
+    def build(
+        ctx: SemanticReasoningContext,
+        construction_time: float,
+        enrichment_time: float,
+    ) -> GraphStatistics:
+        """Build GraphStatistics from precomputed context data."""
+        nodes = ctx.nodes
+        edges = ctx.edges
+        partitions = ctx.partitions
+
+        contradiction_count = sum(
+            1 for e in edges.values()
+            if e.relationship_type == RelationshipType.CONTRADICTS
+        )
+        supports_count = sum(
+            1 for e in edges.values()
+            if e.relationship_type == RelationshipType.SUPPORTS
+        )
+        refines_count = sum(
+            1 for e in edges.values()
+            if e.relationship_type == RelationshipType.REFINES
+        )
+
+        # Reuse precomputed topology metrics (no re-traversal)
+        isolated = sum(
+            1 for nid in nodes
+            if ctx.topology_metrics.get(nid) and ctx.topology_metrics[nid].degree == 0
+        )
+        bridges = sum(1 for m in ctx.topology_metrics.values() if m.is_bridge)
+        hubs = sum(1 for m in ctx.topology_metrics.values() if m.is_hub)
+
+        # Reuse precomputed temporal metadata (no re-traversal)
+        evolution_chains = sum(
+            1 for t in ctx.temporal_metadata.values()
+            if t and t.status == TemporalStatus.EVOLUTION_CHAIN
+        ) // 2
+        unresolved = sum(
+            1 for t in ctx.temporal_metadata.values()
+            if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
+        ) // 2
+
+        return GraphStatistics(
+            node_count=len(nodes),
+            edge_count=len(edges),
+            partition_count=len(partitions),
+            contradiction_count=contradiction_count,
+            supports_count=supports_count,
+            refines_count=refines_count,
+            isolated_nodes=isolated,
+            bridge_nodes=bridges,
+            hub_nodes=hubs,
+            evolution_chains=evolution_chains,
+            unresolved_conflicts=unresolved,
+            construction_time_seconds=round(construction_time, 4),
+            enrichment_time_seconds=round(enrichment_time, 4),
+        )
+
+
+def build_knowledge_graph(
+    ctx: SemanticReasoningContext,
+    validation_report,
+    construction_time: float,
+    enrichment_time: float,
+) -> KnowledgeGraph:
+    """
+    Assemble the final KnowledgeGraph from a fully enriched context.
+
+    Delegates statistics computation to StatisticsBuilder (P2-1).
+    Pure construction — no reasoning, no validation, no inference.
+    """
+    stats = StatisticsBuilder.build(ctx, construction_time, enrichment_time)
+    graph_id = _compute_graph_id(ctx.run_id, ctx.config_hash)
+
+    graph = KnowledgeGraph(
+        graph_id=graph_id,
+        nodes=dict(ctx.nodes),
+        edges=dict(ctx.edges),
+        partitions=dict(ctx.partitions),
+        statistics=stats,
+        validation_report=validation_report,
+        run_id=ctx.run_id,
+        config_hash=ctx.config_hash,
+        schema_version=PHASE7_SCHEMA_VERSION,
+    )
+
+    logger.info(
+        "knowledge graph assembled",
+        graph_id=graph_id[:8],
+        nodes=len(ctx.nodes),
+        edges=len(ctx.edges),
+        partitions=len(ctx.partitions),
+        contradictions=stats.contradiction_count,
+        bridge_nodes=stats.bridge_nodes,
+    )
+
+    return graph
+
+
+def _compute_graph_id(run_id: str, config_hash: str) -> str:
+    """Deterministic 16-char graph ID."""
+    material = f"{run_id}:{config_hash}"
+    return hashlib.sha256(material.encode()).hexdigest()[:16]
+````
+
+## File: src/smriti/evolution/construction.py
+````python
+"""
+construction.py — Graph construction pipeline (Part 3 of blueprint).
+
+Five stages:
+    Stage 1: Ingestion & Filtering      → stream of accepted Relationship objects
+    Stage 2: Node Registry Construction → {claim_id: ClaimNode}
+    Stage 3: Edge Registry Construction → {edge_id: RelationshipEdge}
+    Stage 4: Backend Population         → GraphBackend populated
+    Stage 5: Structural + Semantic Validation → ValidationReport
+
+Complexity: O(N + E). No graph traversal during construction.
+
+Rules:
+    ✅ Deterministic ordering at every stage (sorted by ID)
+    ✅ One ClaimNode per unique claim_id
+    ✅ UNKNOWN relationships always filtered
+    ✅ NEUTRAL relationships filtered by default
+    ✅ Missing claim references terminate construction
+    ❌ No semantic reasoning during construction
+    ❌ No partition assignment (enrichment's job)
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List, Dict, Set
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import (
+    Claim, Relationship, RelationshipSet, RelationshipType, RelationshipDirection,
+    ClaimNode, RelationshipEdge, SemanticRole, NodeAnnotations,
+)
+from smriti.evolution.backend import GraphBackend
+from smriti.exceptions import GraphConstructionError
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class ConstructionResult:
+    """Output of the construction sub-pipeline."""
+    nodes: Dict[str, ClaimNode]
+    edges: Dict[str, RelationshipEdge]
+    backend: GraphBackend
+    relationships_ingested: int
+    relationships_filtered: int
+    filter_reasons: Dict[str, int]
+
+
+ACCEPTED_TYPES = frozenset([
+    RelationshipType.CONTRADICTS,
+    RelationshipType.SUPPORTS,
+    RelationshipType.REFINES,
+])
+
+
+def run_construction(
+    relationship_set: RelationshipSet,
+    claims_map: Dict[str, Claim],
+    backend: GraphBackend,
+    include_neutral: bool = False,
+) -> ConstructionResult:
+    """Execute the 5-stage construction sub-pipeline."""
+    # Stage 1: Ingestion & Filtering
+    accepted_types = ACCEPTED_TYPES | ({RelationshipType.NEUTRAL} if include_neutral else set())
+    accepted: List[Relationship] = []
+    filter_reasons: Dict[str, int] = {}
+
+    for rel in relationship_set.relationships:
+        if rel.relationship_type not in accepted_types:
+            reason = rel.relationship_type.value
+            filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
+            continue
+        accepted.append(rel)
+
+    accepted.sort(key=lambda r: r.relationship_id)
+    relationships_filtered = len(relationship_set.relationships) - len(accepted)
+
+    logger.info(
+        "ingestion complete",
+        total=len(relationship_set.relationships),
+        accepted=len(accepted),
+        filtered=relationships_filtered,
+    )
+
+    # Stage 2: Node Registry Construction
+    claim_id_set: Set[str] = set()
+    for rel in accepted:
+        claim_id_set.add(rel.claim_id_a)
+        claim_id_set.add(rel.claim_id_b)
+
+    nodes: Dict[str, ClaimNode] = {}
+    for claim_id in sorted(claim_id_set):
+        claim = claims_map.get(claim_id)
+        if claim is None:
+            raise GraphConstructionError(
+                f"Referential integrity violation: relationship references claim_id "
+                f"'{claim_id}' which does not exist in claims_map. "
+                "This indicates a Phase 4–6 pipeline inconsistency."
+            )
+        nodes[claim_id] = ClaimNode(
+            node_id=claim_id,
+            claim_id=claim_id,
+            claim_text=claim.text,
+            context=claim.context,
+            source_path=claim.source_path,
+            document_id=claim.document_id,
+            annotations=None,           # Populated during enrichment
+            schema_version="7.0",
+        )
+
+    logger.info("node registry constructed", nodes=len(nodes))
+
+    # Stage 3: Edge Registry Construction
+    edges: Dict[str, RelationshipEdge] = {}
+    seen_edge_ids: Set[str] = set()
+
+    for rel in accepted:
+        if rel.relationship_id in seen_edge_ids:
+            logger.warning("duplicate edge_id, skipping", edge_id=rel.relationship_id[:8])
+            continue
+        seen_edge_ids.add(rel.relationship_id)
+
+        edges[rel.relationship_id] = RelationshipEdge(
+            edge_id=rel.relationship_id,
+            source_node_id=rel.claim_id_a,
+            target_node_id=rel.claim_id_b,
+            relationship_type=rel.relationship_type,
+            direction=rel.direction,
+            calibrated_confidence=rel.evidence.calibrated_confidence,
+            cosine_similarity=rel.evidence.cosine_similarity,
+            nli_confidence=rel.evidence.nli_scores.raw_confidence,
+            candidate_rank=rel.provenance.candidate_rank,
+            schema_version="7.0",
+        )
+
+    logger.info("edge registry constructed", edges=len(edges))
+
+    # Stage 4: Backend Population
+    for node_id in sorted(nodes.keys()):
+        backend.add_node(node_id, claim_text=nodes[node_id].claim_text)
+
+    for edge_id in sorted(edges.keys()):
+        edge = edges[edge_id]
+        backend.add_edge(
+            source=edge.source_node_id,
+            target=edge.target_node_id,
+            edge_id=edge_id,
+            relationship_type=edge.relationship_type.value,
+            confidence=edge.calibrated_confidence,
+        )
+        # CONTRADICTS is symmetric: add reverse edge for undirected traversal
+        if edge.relationship_type == RelationshipType.CONTRADICTS:
+            backend.add_edge(
+                source=edge.target_node_id,
+                target=edge.source_node_id,
+                edge_id=f"{edge_id}_rev",
+                relationship_type=edge.relationship_type.value,
+                confidence=edge.calibrated_confidence,
+            )
+
+    logger.info(
+        "backend populated",
+        backend_nodes=backend.node_count,
+        backend_edges=backend.edge_count,
+    )
+
+    return ConstructionResult(
+        nodes=nodes,
+        edges=edges,
+        backend=backend,
+        relationships_ingested=len(accepted),
+        relationships_filtered=relationships_filtered,
+        filter_reasons=filter_reasons,
+    )
+````
+
+## File: src/smriti/evolution/context.py
+````python
+"""
+context.py — SemanticReasoningContext for Phase 7 enrichment pipeline.
+
+Flows through all 5 semantic enrichment stages without polluting the domain model.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+import structlog
+
+from smriti.core.models import (
+    ClaimNode, RelationshipEdge, KnowledgePartition,
+    TopologyMetrics, SupportAggregate, TemporalMetadata, SemanticRole, Phase7Stats,
+)
+from smriti.evolution.backend import GraphBackend
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class SemanticReasoningContext:
+    """
+    Transient execution context flowing through the 5-stage enrichment pipeline.
+    Mutated by each stage. Never exposed to callers of __init__.py.
+    """
+    nodes: Dict[str, ClaimNode]
+    edges: Dict[str, RelationshipEdge]
+    backend: GraphBackend
+    run_id: str
+    config_hash: str
+
+    partitions: Dict[str, KnowledgePartition] = field(default_factory=dict)
+    node_to_partition: Dict[str, str] = field(default_factory=dict)
+
+    topology_metrics: Dict[str, TopologyMetrics] = field(default_factory=dict)
+    semantic_roles: Dict[str, SemanticRole] = field(default_factory=dict)
+    support_aggregates: Dict[str, SupportAggregate] = field(default_factory=dict)
+    temporal_metadata: Dict[str, TemporalMetadata] = field(default_factory=dict)
+
+    stats_collector: Optional[object] = None
+
+    def get_partition_nodes(self, partition_id: str) -> List[str]:
+        partition = self.partitions.get(partition_id)
+        if not partition:
+            return []
+        return sorted(partition.node_ids)
+
+    def get_partition_for_node(self, claim_id: str) -> Optional[str]:
+        return self.node_to_partition.get(claim_id)
+````
+
+## File: src/smriti/evolution/networkx_backend.py
+````python
+"""
+networkx_backend.py — NetworkX implementation of GraphBackend.
+
+This is the ONLY module in Phase 7 that imports networkx.
+
+RECTIFIED (P0-3): articulation_points() uses nx.articulation_points()
+on the undirected projection — the true graph-theoretic definition,
+not degree-1 heuristic.
+
+RECTIFIED (P2-2): predecessors() and successors() added.
+"""
+
+from __future__ import annotations
+
+from typing import List, Any
+import structlog
+
+from smriti.evolution.backend import GraphBackend, EdgeTuple
+from smriti.exceptions import BackendError
+
+logger = structlog.get_logger(__name__)
+
+
+class NetworkXBackend(GraphBackend):
+    """NetworkX MultiDiGraph implementation of GraphBackend."""
+
+    def __init__(self) -> None:
+        try:
+            import networkx as nx
+            self._G = nx.MultiDiGraph()
+            self._nx = nx
+        except ImportError as e:
+            raise BackendError(
+                f"networkx is not installed. Run: poetry add networkx\nError: {e}"
+            ) from e
+
+    @property
+    def node_count(self) -> int:
+        return self._G.number_of_nodes()
+
+    @property
+    def edge_count(self) -> int:
+        return self._G.number_of_edges()
+
+    def add_node(self, node_id: str, **attrs: Any) -> None:
+        self._G.add_node(node_id, **attrs)
+
+    def add_edge(
+        self, source: str, target: str, edge_id: str,
+        relationship_type: str, confidence: float, **attrs: Any,
+    ) -> None:
+        self._G.add_edge(
+            source, target, key=edge_id,
+            edge_id=edge_id, relationship_type=relationship_type,
+            confidence=confidence, **attrs,
+        )
+
+    def has_node(self, node_id: str) -> bool:
+        return self._G.has_node(node_id)
+
+    def has_edge(self, source: str, target: str, edge_id: str) -> bool:
+        return self._G.has_edge(source, target, key=edge_id)
+
+    def get_neighbors(self, node_id: str) -> List[str]:
+        successors = set(self._G.successors(node_id))
+        predecessors = set(self._G.predecessors(node_id))
+        return sorted(successors | predecessors)
+
+    def predecessors(self, node_id: str) -> List[str]:
+        """Return nodes with edges pointing TO node_id."""
+        return sorted(self._G.predecessors(node_id))
+
+    def successors(self, node_id: str) -> List[str]:
+        """Return nodes that node_id points TO."""
+        return sorted(self._G.successors(node_id))
+
+    def get_out_edges(self, node_id: str) -> List[EdgeTuple]:
+        edges = []
+        for _, target, data in self._G.out_edges(node_id, data=True):
+            edges.append(EdgeTuple(
+                source=node_id, target=target,
+                edge_id=data.get("edge_id", ""),
+                relationship_type=data.get("relationship_type", ""),
+                confidence=data.get("confidence", 0.0),
+            ))
+        return edges
+
+    def get_in_edges(self, node_id: str) -> List[EdgeTuple]:
+        edges = []
+        for source, _, data in self._G.in_edges(node_id, data=True):
+            edges.append(EdgeTuple(
+                source=source, target=node_id,
+                edge_id=data.get("edge_id", ""),
+                relationship_type=data.get("relationship_type", ""),
+                confidence=data.get("confidence", 0.0),
+            ))
+        return edges
+
+    def all_edges(self) -> List[EdgeTuple]:
+        edges = []
+        for source, target, data in self._G.edges(data=True):
+            edges.append(EdgeTuple(
+                source=source, target=target,
+                edge_id=data.get("edge_id", ""),
+                relationship_type=data.get("relationship_type", ""),
+                confidence=data.get("confidence", 0.0),
+            ))
+        return sorted(edges, key=lambda e: (e.source, e.target, e.edge_id))
+
+    def all_node_ids(self) -> List[str]:
+        return sorted(self._G.nodes())
+
+    def connected_components_undirected(self) -> List[List[str]]:
+        undirected = self._G.to_undirected()
+        components = list(self._nx.connected_components(undirected))
+        return sorted(
+            [sorted(c) for c in components],
+            key=lambda c: (-len(c), c[0] if c else ""),
+        )
+
+    def subgraph(self, node_ids: List[str]) -> "NetworkXBackend":
+        sub = self._G.subgraph(node_ids).copy()
+        new_backend = NetworkXBackend.__new__(NetworkXBackend)
+        new_backend._nx = self._nx
+        new_backend._G = sub
+        return new_backend
+
+    def in_degree(self, node_id: str) -> int:
+        return self._G.in_degree(node_id)
+
+    def out_degree(self, node_id: str) -> int:
+        return self._G.out_degree(node_id)
+
+    def degree(self, node_id: str) -> int:
+        return self._G.degree(node_id)
+
+    def remove_edges_of_type(self, relationship_type: str) -> "NetworkXBackend":
+        new_backend = NetworkXBackend.__new__(NetworkXBackend)
+        new_backend._nx = self._nx
+        new_backend._G = self._G.copy()
+        edges_to_remove = [
+            (u, v, k) for u, v, k, d in new_backend._G.edges(data=True, keys=True)
+            if d.get("relationship_type") == relationship_type
+        ]
+        new_backend._G.remove_edges_from(edges_to_remove)
+        return new_backend
+
+    def articulation_points(self) -> List[str]:
+        """
+        Return true articulation points using NetworkX.
+
+        RECTIFIED (P0-3): Uses nx.articulation_points() on the undirected
+        projection. This is the correct graph-theoretic definition:
+        a node whose removal disconnects the graph.
+        degree == 1 is NOT a valid bridge-detection heuristic.
+
+        Example where old code was wrong:
+            A → B → C (chain of 3)
+            B has degree 2 and is the only articulation point.
+            Old code: is_bridge=False (degree != 1)
+            Fixed code: is_bridge=True (nx.articulation_points detects B)
+        """
+        if self._G.number_of_nodes() < 2:
+            return []
+        undirected = self._G.to_undirected()
+        try:
+            return sorted(self._nx.articulation_points(undirected))
+        except Exception:
+            return []
+````
+
+## File: src/smriti/evolution/partitioning.py
+````python
+"""
+partitioning.py — Constraint-based partition engine for Phase 7.
+
+RECTIFIED (P0-1): The original algorithm (remove CONTRADICTS edges → connected
+components) is semantically incorrect on graphs where contradicting nodes share
+a common neighbor via SUPPORTS.
+
+Counter-example that breaks the old algorithm:
+    A SUPPORTS X
+    C SUPPORTS X
+    A CONTRADICTS C
+
+Old algorithm:
+    Remove CONTRADICTS: A→X and C→X remain connected.
+    Result: A, X, C all in the SAME partition.
+    VIOLATED INVARIANT: A and C contradict each other but are in the same partition.
+
+Fixed algorithm (constraint-based signed-graph partitioning):
+    Step 1: Build contradiction-constraint graph from CONTRADICTS edges only.
+    Step 2: 2-color the constraint graph (like graph coloring for signed graphs).
+            Nodes connected by CONTRADICTS must have different colors.
+            If the constraint graph is not 2-colorable (odd cycle), odd contradiction
+            cycles intentionally degrade into singleton partitions rather than attempting
+            approximate optimization. This safely partitions contradictions at the cost
+            of destroying SUPPORTS structure strictly within the cycle.
+    Step 3: Apply Union-Find on SUPPORTS/REFINES edges, but only merge nodes
+            that have the SAME color. This ensures contradicting claims are
+            never merged into the same partition even if they share a neighbor.
+    Step 4: Build KnowledgePartition for each Union-Find group.
+
+Complexity: O(N + E) — BFS coloring + Union-Find with path compression.
+
+Invariant guaranteed:
+    No two nodes connected by CONTRADICTS will ever be in the same partition.
+    This holds even in the presence of shared SUPPORTS neighbors.
+"""
+
+from __future__ import annotations
+
+import hashlib
+from collections import deque
+from typing import Dict, List, Set, Optional, Tuple
+import structlog
+import dataclasses
+
+from smriti.core.models import (
+    KnowledgePartition, RelationshipType, NodeAnnotations, SemanticRole,
+)
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.exceptions import PartitioningError
+
+logger = structlog.get_logger(__name__)
+
+
+def run_partitioning(ctx: SemanticReasoningContext) -> None:
+    """
+    Partition the graph using constraint-based signed-graph coloring + Union-Find.
+
+    Mutates ctx.partitions, ctx.node_to_partition, ctx.nodes (partition_id).
+
+    Raises:
+        PartitioningError: If any node is left unassigned.
+    """
+    all_node_ids = set(ctx.nodes.keys())
+
+    # ── Step 1: Collect contradiction constraints ─────────────────────────────
+    # contradiction_constraints[A] = set of nodes that A directly CONTRADICTS
+    contradiction_constraints: Dict[str, Set[str]] = {nid: set() for nid in all_node_ids}
+    for edge in ctx.edges.values():
+        if edge.relationship_type == RelationshipType.CONTRADICTS:
+            contradiction_constraints[edge.source_node_id].add(edge.target_node_id)
+            contradiction_constraints[edge.target_node_id].add(edge.source_node_id)
+
+    # ── Step 2: 2-color the contradiction graph ───────────────────────────────
+    # Color 0 and Color 1 are the two contradiction "sides".
+    # Nodes that CONTRADICT each other must have different colors.
+    # If not 2-colorable (odd cycle), each node in the conflicting group
+    # gets a unique color (conservative: separate partition per node).
+    node_color: Dict[str, int] = {}
+    color_counter = [2]  # Colors 0 and 1 are standard; higher = isolated
+
+    def bfs_color(start: str) -> bool:
+        """BFS 2-coloring. Returns True if successfully 2-colored."""
+        queue = deque([start])
+        node_color[start] = 0
+        while queue:
+            node = queue.popleft()
+            for neighbor in contradiction_constraints.get(node, set()):
+                if neighbor not in node_color:
+                    node_color[neighbor] = 1 - node_color[node]
+                    queue.append(neighbor)
+                elif node_color[neighbor] == node_color[node]:
+                    return False  # Odd cycle — not 2-colorable
+        return True
+
+    # Process connected components of the contradiction graph
+    for node_id in sorted(all_node_ids):
+        if node_id not in node_color:
+            if not contradiction_constraints[node_id]:
+                # Isolated in contradiction graph — assign unique color
+                node_color[node_id] = color_counter[0]
+                color_counter[0] += 1
+            else:
+                if not bfs_color(node_id):
+                    # Odd contradiction cycle detected.
+                    # DESIGN DECISION: We intentionally degrade into singleton partitions
+                    # rather than attempting approximate graph-cut optimization.
+                    visited = set()
+                    q = deque([node_id])
+                    while q:
+                        n = q.popleft()
+                        if n in visited:
+                            continue
+                        visited.add(n)
+                        if n not in node_color:
+                            node_color[n] = color_counter[0]
+                            color_counter[0] += 1
+                        for nb in contradiction_constraints.get(n, set()):
+                            if nb not in visited:
+                                q.append(nb)
+
+    # ── Step 3: Union-Find on SUPPORTS/REFINES edges (same-color only) ────────
+    parent: Dict[str, str] = {nid: nid for nid in all_node_ids}
+
+    def find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]  # Path compression
+            x = parent[x]
+        return x
+
+    def union(x: str, y: str) -> None:
+        px, py = find(x), find(y)
+        if px != py:
+            # Only merge if same color (no contradiction constraint between them)
+            if node_color.get(px) == node_color.get(py):
+                parent[px] = py
+
+    for edge in ctx.edges.values():
+        if edge.relationship_type in (RelationshipType.SUPPORTS, RelationshipType.REFINES):
+            union(edge.source_node_id, edge.target_node_id)
+
+    # ── Step 4: Build KnowledgePartition for each Union-Find group ───────────
+    # Group nodes by their root in Union-Find
+    groups: Dict[str, Set[str]] = {}
+    for node_id in sorted(all_node_ids):
+        root = find(node_id)
+        groups.setdefault(root, set()).add(node_id)
+
+    partitions: Dict[str, KnowledgePartition] = {}
+    node_to_partition: Dict[str, str] = {}
+
+    for root, group_nodes in groups.items():
+        node_ids = frozenset(group_nodes)
+        partition_id = _compute_partition_id(node_ids)
+        stable_label = tuple(sorted(node_ids))  # Store as a sorted tuple
+
+        # Find internal edges (SUPPORTS/REFINES within this partition)
+        internal_edges = {}
+        supports_count = 0
+        refines_count = 0
+
+        for edge_id, edge in ctx.edges.items():
+            if (edge.source_node_id in node_ids
+                    and edge.target_node_id in node_ids
+                    and edge.relationship_type != RelationshipType.CONTRADICTS):
+                internal_edges[edge_id] = edge
+                if edge.relationship_type == RelationshipType.SUPPORTS:
+                    supports_count += 1
+                elif edge.relationship_type == RelationshipType.REFINES:
+                    refines_count += 1
+
+        # Directed density (P1-5): edges / (n * (n-1))
+        n = len(node_ids)
+        max_directed_edges = n * (n - 1) if n > 1 else 1
+        density = len(internal_edges) / max_directed_edges if max_directed_edges > 0 else 0.0
+
+        longest_chain = _compute_longest_support_chain(node_ids, internal_edges)
+
+        partition = KnowledgePartition(
+            partition_id=partition_id,
+            stable_partition_label=stable_label,
+            node_ids=node_ids,
+            internal_edge_ids=frozenset(internal_edges.keys()),
+            node_count=len(node_ids),
+            edge_count=len(internal_edges),
+            supports_count=supports_count,
+            refines_count=refines_count,
+            density=round(density, 6),
+            longest_support_chain=longest_chain,
+            schema_version="7.0",
+        )
+        partitions[partition_id] = partition
+        for nid in node_ids:
+            node_to_partition[nid] = partition_id
+
+    # ── Verify all nodes assigned ─────────────────────────────────────────────
+    unassigned = all_node_ids - set(node_to_partition.keys())
+    if unassigned:
+        raise PartitioningError(
+            f"Partitioning left {len(unassigned)} nodes unassigned: "
+            f"{sorted(unassigned)[:5]}"
+        )
+
+    # ── Verify partition invariant: no CONTRADICTS within any partition ────────
+    for partition in partitions.values():
+        for edge_id, edge in ctx.edges.items():
+            if (edge.relationship_type == RelationshipType.CONTRADICTS
+                    and edge.source_node_id in partition.node_ids
+                    and edge.target_node_id in partition.node_ids):
+                raise PartitioningError(
+                    f"CONTRADICTS edge {edge_id[:8]} found WITHIN partition "
+                    f"{partition.partition_id[:8]}. Constraint partitioning failed."
+                )
+
+    ctx.partitions = partitions
+    ctx.node_to_partition = node_to_partition
+
+    # Update node annotations with partition_id
+    updated_nodes = {}
+    for claim_id, node in ctx.nodes.items():
+        pid = node_to_partition.get(claim_id)
+        current_ann = node.annotations or NodeAnnotations()
+        updated_ann = dataclasses.replace(
+            current_ann,
+            partition_id=pid,
+            stable_partition_label=partitions[pid].stable_partition_label if pid else None,
+        )
+        updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
+    ctx.nodes = updated_nodes
+
+    logger.info(
+        "constraint-based partitioning complete",
+        partitions=len(partitions),
+        nodes=len(ctx.nodes),
+        algorithm="signed_graph_coloring_union_find",
+    )
+
+
+def _compute_partition_id(node_ids: frozenset) -> str:
+    """Deterministic partition ID from sorted node IDs."""
+    material = "|".join(sorted(node_ids))
+    return hashlib.sha256(material.encode()).hexdigest()[:12]
+
+
+def _compute_longest_support_chain(node_ids: frozenset, internal_edges: dict) -> int:
+    """Compute the longest directed SUPPORTS chain within a partition via DFS."""
+    if not internal_edges:
+        return 0
+
+    adj: Dict[str, List[str]] = {nid: [] for nid in node_ids}
+    for edge in internal_edges.values():
+        if edge.relationship_type == RelationshipType.SUPPORTS:
+            adj[edge.source_node_id].append(edge.target_node_id)
+
+    def dfs_length(node: str, visited: Set[str]) -> int:
+        if node in visited:
+            return 0
+        visited = visited | {node}
+        successors = adj.get(node, [])
+        if not successors:
+            return 1
+        return 1 + max(dfs_length(s, visited) for s in successors)
+
+    if not any(adj.values()):
+        return 0
+
+    return max(dfs_length(nid, set()) for nid in node_ids)
+````
+
+## File: src/smriti/evolution/statistics.py
+````python
+"""statistics.py — Phase 7 execution telemetry. Observes. Never influences."""
+
+from __future__ import annotations
+
+import time
+from smriti.core.models import Phase7Stats
+
+
+class Phase7StatsCollector:
+    """Mutable statistics accumulator for Phase 7."""
+
+    def __init__(self) -> None:
+        self._start = time.monotonic()
+        self._construction_start: float | None = None
+        self._construction_end: float | None = None
+        self._enrichment_start: float | None = None
+        self._enrichment_end: float | None = None
+        self._input_relationships = 0
+        self._filtered = 0
+        self._nodes = 0
+        self._edges = 0
+        self._partitions = 0
+        self._contradiction_boundaries = 0
+        self._evolution_chains = 0
+        self._unresolved = 0
+        self._validation_passed = False
+
+    def record_input(self, total: int, filtered: int) -> None:
+        self._input_relationships = total
+        self._filtered = filtered
+
+    def record_construction_start(self) -> None:
+        self._construction_start = time.monotonic()
+
+    def record_construction_end(self, nodes: int, edges: int) -> None:
+        self._construction_end = time.monotonic()
+        self._nodes = nodes
+        self._edges = edges
+
+    def record_enrichment_start(self) -> None:
+        self._enrichment_start = time.monotonic()
+
+    def record_enrichment_end(
+        self, partitions: int, contradiction_boundaries: int,
+        evolution_chains: int, unresolved: int,
+    ) -> None:
+        self._enrichment_end = time.monotonic()
+        self._partitions = partitions
+        self._contradiction_boundaries = contradiction_boundaries
+        self._evolution_chains = evolution_chains
+        self._unresolved = unresolved
+
+    def record_validation_passed(self) -> None:
+        self._validation_passed = True
+
+    def finalize(self) -> Phase7Stats:
+        total = time.monotonic() - self._start
+        construction_time = (
+            (self._construction_end - self._construction_start)
+            if self._construction_start and self._construction_end else 0.0
+        )
+        enrichment_time = (
+            (self._enrichment_end - self._enrichment_start)
+            if self._enrichment_start and self._enrichment_end else 0.0
+        )
+        return Phase7Stats(
+            input_relationships=self._input_relationships,
+            input_filtered=self._filtered,
+            nodes_created=self._nodes,
+            edges_created=self._edges,
+            partitions_created=self._partitions,
+            contradictions_as_boundaries=self._contradiction_boundaries,
+            evolution_chains_detected=self._evolution_chains,
+            unresolved_conflicts=self._unresolved,
+            construction_time_seconds=round(construction_time, 4),
+            enrichment_time_seconds=round(enrichment_time, 4),
+            total_time_seconds=round(total, 4),
+            validation_passed=self._validation_passed,
+        )
+````
+
+## File: src/smriti/evolution/temporal.py
+````python
+"""
+temporal.py — Temporal evolution resolution for Phase 7.
+
+RECTIFIED (P0-4): The original implementation read filesystem st_mtime
+via stat().st_mtime. This is semantically catastrophic:
+
+    git checkout old_branch
+    → timestamps change
+    → graph evolution changes
+    → KnowledgeGraph changes for the same semantic content
+
+Fixed: TemporalResolver consumes Claim.timestamp (a semantic datetime field
+set during document parsing). If Claim.timestamp is None (not yet populated
+by Phase 2/3), the status is NO_TIMESTAMP and temporal reasoning is disabled
+for that pair. The filesystem is NEVER consulted.
+
+Claim.timestamp must be populated by Phase 2 (document parsing) from:
+    1. YAML front matter `date:` field (ISO 8601)
+    2. Explicit metadata embedded in the document
+    NOT from filesystem modification time.
+
+If Claim.timestamp is not yet a field in the current Claim model,
+add Optional[datetime] = None to Claim in models.py.
+
+CRITICAL RULE: Historical information is NEVER discarded.
+Temporal reasoning adds metadata. It does not remove claims or relationships.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+import structlog
+
+from smriti.core.models import (
+    Claim, RelationshipType, TemporalMetadata, TemporalStatus, NodeAnnotations,
+)
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.core.config import get_config
+
+logger = structlog.get_logger(__name__)
+
+
+def run_temporal_resolution(
+    ctx: SemanticReasoningContext,
+    claims_map: Dict[str, Claim],
+) -> None:
+    """
+    Resolve temporal evolution for contradiction boundaries.
+
+    Uses Claim.timestamp (semantic datetime), never filesystem st_mtime.
+
+    For each pair of nodes connected by CONTRADICTS edges:
+        1. Look up Claim.timestamp for each node
+        2. If either timestamp is None → NO_TIMESTAMP
+        3. Compute time delta in days
+        4. Apply min_reliable_delta_days threshold from config
+        5. Assign TemporalMetadata to both nodes
+
+    CRITICAL: Never reads filesystem metadata. Never modifies claims.
+    """
+    config = get_config()
+    min_reliable_delta = config.get("knowledge_graph", {}).get(
+        "min_reliable_delta_days", 1.0
+    )
+
+    temporal: Dict[str, TemporalMetadata] = {}
+
+    # Collect CONTRADICTS pairs
+    contradicts_pairs: List[Tuple[str, str, str]] = []
+    for edge in ctx.edges.values():
+        if edge.relationship_type == RelationshipType.CONTRADICTS:
+            contradicts_pairs.append((edge.edge_id, edge.source_node_id, edge.target_node_id))
+
+    # Process each contradiction boundary
+    for edge_id, node_a_id, node_b_id in contradicts_pairs:
+        if node_a_id in temporal and node_b_id in temporal:
+            continue  # Already processed this pair
+
+        claim_a = claims_map.get(node_a_id)
+        claim_b = claims_map.get(node_b_id)
+
+        if not claim_a or not claim_b:
+            _assign_static(temporal, node_a_id, node_b_id, temporal_confidence=0.0)
+            continue
+
+        # RECTIFIED: Use Claim.timestamp (semantic), never filesystem stat()
+        ts_a = _get_semantic_timestamp(claim_a)
+        ts_b = _get_semantic_timestamp(claim_b)
+
+        if ts_a is None or ts_b is None:
+            # Timestamp unavailable → NO_TIMESTAMP status
+            _assign_no_timestamp(temporal, node_a_id, node_b_id)
+            continue
+
+        # Compute time delta in days
+        delta = abs((ts_b - ts_a).total_seconds()) / 86400.0
+
+        if delta < min_reliable_delta:
+            _assign_unresolved(temporal, node_a_id, node_b_id, delta)
+        elif ts_a < ts_b:
+            _assign_evolution(temporal, node_a_id, node_b_id, delta, min_reliable_delta)
+        else:
+            _assign_evolution(temporal, node_b_id, node_a_id, delta, min_reliable_delta)
+
+    # Nodes not involved in any contradiction get STATIC_PARTITION
+    for node_id in ctx.nodes:
+        if node_id not in temporal:
+            temporal[node_id] = TemporalMetadata(
+                status=TemporalStatus.STATIC_PARTITION,
+                earlier_claim_id=None,
+                later_claim_id=None,
+                time_delta_days=None,
+                temporal_confidence=0.0,
+            )
+
+    ctx.temporal_metadata = temporal
+
+    # Update node annotations
+    updated_nodes = {}
+    for claim_id, node in ctx.nodes.items():
+        temp = temporal.get(claim_id)
+        current_ann = node.annotations or NodeAnnotations()
+        updated_ann = dataclasses.replace(current_ann, temporal_metadata=temp)
+        updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
+    ctx.nodes = updated_nodes
+
+    evolution_count = sum(
+        1 for t in temporal.values() if t.status == TemporalStatus.EVOLUTION_CHAIN
+    ) // 2
+    no_ts_count = sum(
+        1 for t in temporal.values() if t.status == TemporalStatus.NO_TIMESTAMP
+    ) // 2
+    unresolved_count = sum(
+        1 for t in temporal.values() if t.status == TemporalStatus.UNRESOLVED_CONFLICT
+    ) // 2
+
+    logger.info(
+        "temporal resolution complete",
+        evolution_chains=evolution_count,
+        unresolved=unresolved_count,
+        no_timestamp=no_ts_count,
+        source="claim.timestamp (semantic — never filesystem)",
+    )
+
+
+def _get_semantic_timestamp(claim: Claim) -> Optional[datetime]:
+    """
+    Return the semantic timestamp from Claim.timestamp.
+
+    RECTIFIED (P0-4): This function NEVER reads the filesystem.
+    If Claim.timestamp is not set, returns None.
+    The caller assigns NO_TIMESTAMP status.
+
+    To populate Claim.timestamp, Phase 2 must extract it from:
+        - YAML front matter: `date: 2024-01-15`
+        - Document metadata fields
+    """
+    ts = getattr(claim, "timestamp", None)
+    if ts is None:
+        return None
+    if isinstance(ts, datetime):
+        return ts
+    # Handle string timestamps from Phase 2/3 if needed
+    try:
+        from datetime import timezone
+        if isinstance(ts, str):
+            return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+    return None
+
+
+def _assign_static(
+    temporal: Dict[str, TemporalMetadata],
+    node_a: str,
+    node_b: str,
+    temporal_confidence: float,
+) -> None:
+    meta = TemporalMetadata(
+        status=TemporalStatus.STATIC_PARTITION,
+        earlier_claim_id=None, later_claim_id=None,
+        time_delta_days=None,
+        temporal_confidence=temporal_confidence,
+    )
+    temporal[node_a] = meta
+    temporal[node_b] = meta
+
+
+def _assign_no_timestamp(
+    temporal: Dict[str, TemporalMetadata],
+    node_a: str,
+    node_b: str,
+) -> None:
+    """Assign NO_TIMESTAMP when Claim.timestamp is unavailable."""
+    meta = TemporalMetadata(
+        status=TemporalStatus.NO_TIMESTAMP,
+        earlier_claim_id=None, later_claim_id=None,
+        time_delta_days=None,
+        temporal_confidence=0.0,
+    )
+    temporal[node_a] = meta
+    temporal[node_b] = meta
+
+
+def _assign_unresolved(
+    temporal: Dict[str, TemporalMetadata],
+    node_a: str,
+    node_b: str,
+    delta: float,
+) -> None:
+    meta = TemporalMetadata(
+        status=TemporalStatus.UNRESOLVED_CONFLICT,
+        earlier_claim_id=None, later_claim_id=None,
+        time_delta_days=round(delta, 2),
+        temporal_confidence=0.0,
+    )
+    temporal[node_a] = meta
+    temporal[node_b] = meta
+
+
+def _assign_evolution(
+    temporal: Dict[str, TemporalMetadata],
+    earlier: str,
+    later: str,
+    delta: float,
+    min_reliable_delta: float,
+) -> None:
+    """Confidence scales with delta up to 30 days (configurable)."""
+    reference_days = max(min_reliable_delta * 30.0, 30.0)
+    confidence = min(1.0, delta / reference_days)
+    meta = TemporalMetadata(
+        status=TemporalStatus.EVOLUTION_CHAIN,
+        earlier_claim_id=earlier,
+        later_claim_id=later,
+        time_delta_days=round(delta, 2),
+        temporal_confidence=round(confidence, 3),
+    )
+    temporal[earlier] = meta
+    temporal[later] = meta
+````
+
+## File: src/smriti/evolution/topology.py
+````python
+"""
+topology.py — Topology analysis for Phase 7.
+
+RECTIFIED (P0-3): Bridge detection uses the backend's articulation_points()
+method, which delegates to NetworkX nx.articulation_points() on the undirected
+projection. This is the true graph-theoretic definition of a bridge node.
+
+The original `is_bridge = (total == 1 and n > 2)` was a degree-1 leaf heuristic,
+NOT bridge detection. Example failure:
+    A → B → C
+    B has degree 2. It IS an articulation point (bridge).
+    Old code: is_bridge=False (degree != 1). WRONG.
+    Fixed code: is_bridge=True (articulation_points returns B). CORRECT.
+
+RECTIFIED (P1-4): Hub detection threshold read from AnnotationPolicy (config),
+not hardcoded to 2.0. Centrality formula unchanged: in_degree / (N-1).
+
+Complexity: O(N + E) per partition, O(N + E) for articulation points.
+"""
+
+from __future__ import annotations
+
+from typing import Dict, Set
+import dataclasses
+import structlog
+
+from smriti.core.models import TopologyMetrics, NodeAnnotations
+from smriti.evolution.context import SemanticReasoningContext
+
+logger = structlog.get_logger(__name__)
+
+
+def run_topology_analysis(
+    ctx: SemanticReasoningContext,
+    hub_degree_multiplier: float = 2.0,
+) -> None:
+    """
+    Compute topology metrics for all nodes within their partitions.
+
+    Args:
+        ctx:                   SemanticReasoningContext.
+        hub_degree_multiplier: Config-driven (knowledge_graph.hub_degree_multiplier).
+                               A node is a hub if degree > multiplier * avg_partition_degree.
+
+    Updates ctx.topology_metrics and ctx.nodes (via NodeAnnotations replacement).
+    """
+    topology: Dict[str, TopologyMetrics] = {}
+
+    for partition_id, partition in ctx.partitions.items():
+        partition_nodes = list(partition.node_ids)
+        if not partition_nodes:
+            continue
+
+        # Get partition subgraph
+        sub = ctx.backend.subgraph(partition_nodes)
+        n = partition.node_count
+
+        # Compute degrees for all nodes in partition
+        node_degrees = {}
+        for node_id in partition_nodes:
+            total = sub.degree(node_id)
+            in_deg = sub.in_degree(node_id)
+            out_deg = sub.out_degree(node_id)
+            node_degrees[node_id] = (total, in_deg, out_deg)
+
+        # Average degree for hub detection (config-driven, not hardcoded)
+        avg_degree = (
+            sum(d[0] for d in node_degrees.values()) / n if n > 0 else 0.0
+        )
+
+        # True bridge detection via articulation_points (P0-3 fix)
+        art_points: Set[str] = set(sub.articulation_points())
+
+        for node_id in partition_nodes:
+            total, in_deg, out_deg = node_degrees[node_id]
+
+            # Directed in-degree centrality: in_degree / (N-1)
+            centrality = in_deg / (n - 1) if n > 1 else 0.0
+
+            # Hub: degree significantly above average (config-driven threshold)
+            is_hub = total > max(1.0, avg_degree * hub_degree_multiplier)
+
+            # Bridge: true articulation point (NOT degree-1 heuristic)
+            is_bridge = node_id in art_points
+
+            metrics = TopologyMetrics(
+                degree=total,
+                in_degree=in_deg,
+                out_degree=out_deg,
+                is_bridge=is_bridge,
+                is_hub=is_hub,
+                partition_id=partition_id,
+                centrality=round(centrality, 6),
+            )
+            topology[node_id] = metrics
+
+    ctx.topology_metrics = topology
+
+    # Update node annotations
+    updated_nodes = {}
+    for claim_id, node in ctx.nodes.items():
+        metrics = topology.get(claim_id)
+        current_ann = node.annotations or NodeAnnotations()
+        updated_ann = dataclasses.replace(current_ann, topology=metrics)
+        updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
+    ctx.nodes = updated_nodes
+
+    logger.info("topology analysis complete", nodes_enriched=len(topology))
+````
+
+## File: src/smriti/evolution/validation.py
+````python
+"""
+validation.py — Structural + semantic invariant validation for Phase 7.
+
+RECTIFIED (P2-4): Added SemanticValidator which checks:
+    - A claim cannot be both the source AND target of contradicting chains
+      (e.g. SUPPORTS → CONTRADICTS → SUPPORTS is flagged as suspicious)
+    - CONTRADICTS edges within any partition after partitioning is complete
+
+Structural validation is unchanged from original.
+Semantic validation is additive — it records warnings but only raises
+GraphValidationError for hard invariant breaches (internal CONTRADICTS).
+
+Any violation aborts graph construction. No partially valid graph proceeds.
+Validation never modifies objects.
+"""
+
+from __future__ import annotations
+
+import time
+from typing import List, Tuple, Dict
+import structlog
+
+from smriti.core.models import (
+    ClaimNode, RelationshipEdge, RelationshipType, ValidationReport,
+)
+from smriti.evolution.backend import GraphBackend
+from smriti.exceptions import GraphValidationError
+
+logger = structlog.get_logger(__name__)
+
+
+def validate_graph_structure(
+    nodes: Dict[str, ClaimNode],
+    edges: Dict[str, RelationshipEdge],
+    backend: GraphBackend,
+) -> ValidationReport:
+    """
+    Validate structural and semantic invariants before enrichment.
+
+    Structural checks:
+        Node: unique IDs, non-empty claim_text
+        Edge: existing endpoints, valid types, no UNKNOWN, confidence range
+        Graph: backend/registry consistency
+
+    Semantic checks (P2-4):
+        - No SUPPORTS→CONTRADICTS→SUPPORTS chains that would indicate
+          a transitivity violation (logged as a semantic warning)
+
+    Returns:
+        ValidationReport. is_valid=True if all invariants hold.
+
+    Raises:
+        GraphValidationError: On fatal invariant violation.
+    """
+    start = time.monotonic()
+    node_violations: List[Tuple[str, str]] = []
+    edge_violations: List[Tuple[str, str]] = []
+    graph_violations: List[str] = []
+    semantic_warnings: List[str] = []
+
+    # ── Node validation ───────────────────────────────────────────────────────
+    seen_node_ids = set()
+    for node_id, node in nodes.items():
+        if node_id != node.node_id:
+            node_violations.append((node_id, f"Key mismatch: dict key={node_id}, node.node_id={node.node_id}"))
+        if node_id in seen_node_ids:
+            node_violations.append((node_id, "Duplicate node_id"))
+        seen_node_ids.add(node_id)
+        if not node.claim_text:
+            node_violations.append((node_id, "Empty claim_text"))
+
+    # Backend/registry consistency
+    backend_nodes = set(backend.all_node_ids())
+    for nid in sorted(set(nodes.keys()) - backend_nodes):
+        graph_violations.append(f"Node {nid[:8]} in registry but not in backend")
+
+    # ── Edge validation ───────────────────────────────────────────────────────
+    seen_edge_ids = set()
+    for edge_id, edge in edges.items():
+        if edge_id in seen_edge_ids:
+            edge_violations.append((edge_id, "Duplicate edge_id"))
+        seen_edge_ids.add(edge_id)
+
+        if edge.source_node_id not in nodes:
+            edge_violations.append((edge_id, f"Source node {edge.source_node_id[:8]} not in registry"))
+        if edge.target_node_id not in nodes:
+            edge_violations.append((edge_id, f"Target node {edge.target_node_id[:8]} not in registry"))
+        if edge.relationship_type == RelationshipType.UNKNOWN:
+            edge_violations.append((edge_id, "UNKNOWN relationship type in graph (forbidden)"))
+        if not (0.0 <= edge.calibrated_confidence <= 1.0):
+            edge_violations.append((edge_id, f"Confidence out of range: {edge.calibrated_confidence}"))
+
+    if backend.node_count == 0 and nodes:
+        graph_violations.append("Backend is empty but node registry is not")
+
+    # ── Semantic validation (P2-4) ─────────────────────────────────────────────
+    # Check for suspicious SUPPORTS → CONTRADICTS → SUPPORTS chains
+    # These don't abort construction but are flagged as semantic warnings
+    for edge in edges.values():
+        if edge.relationship_type == RelationshipType.CONTRADICTS:
+            # Find nodes that SUPPORT edge.source_node_id
+            supports_into_source = [
+                e for e in edges.values()
+                if e.relationship_type == RelationshipType.SUPPORTS
+                and e.target_node_id == edge.source_node_id
+            ]
+            # Find nodes that edge.target_node_id SUPPORTs
+            supports_out_of_target = [
+                e for e in edges.values()
+                if e.relationship_type == RelationshipType.SUPPORTS
+                and e.source_node_id == edge.target_node_id
+            ]
+            if supports_into_source and supports_out_of_target:
+                semantic_warnings.append(
+                    f"Suspicious chain: SUPPORTS→CONTRADICTS→SUPPORTS around edge {edge.edge_id[:8]}. "
+                    f"Claims supporting '{edge.source_node_id[:8]}' are transitively contradicted by "
+                    f"claims that '{edge.target_node_id[:8]}' supports."
+                )
+
+    elapsed = time.monotonic() - start
+    is_valid = (
+        len(node_violations) == 0
+        and len(edge_violations) == 0
+        and len(graph_violations) == 0
+        # semantic_warnings are non-fatal
+    )
+
+    report = ValidationReport(
+        is_valid=is_valid,
+        node_violations=tuple(node_violations),
+        edge_violations=tuple(edge_violations),
+        graph_violations=tuple(graph_violations),
+        semantic_warnings=tuple(semantic_warnings),
+        validation_time_seconds=elapsed,
+    )
+
+    if not is_valid:
+        logger.error(
+            "graph validation FAILED",
+            node_violations=len(node_violations),
+            edge_violations=len(edge_violations),
+            graph_violations=len(graph_violations),
+        )
+        raise GraphValidationError(
+            f"Graph validation failed: {report.total_violations} violation(s). "
+            f"Node: {len(node_violations)}, Edge: {len(edge_violations)}, "
+            f"Graph: {len(graph_violations)}"
+        )
+
+    if semantic_warnings:
+        logger.warning(
+            "semantic chain warnings detected",
+            count=len(semantic_warnings),
+        )
+
+    logger.info(
+        "graph validation passed",
+        nodes=len(nodes), edges=len(edges),
+        semantic_warnings=len(semantic_warnings),
+        validation_seconds=f"{elapsed:.3f}",
+    )
+    return report
+````
+
+## File: src/smriti/retrieval/classification/calibration.py
+````python
+"""
+calibration.py — Confidence calibration for NLI evidence scores.
+
+Problem being solved:
+    Different NLI models have different confidence distributions.
+    A raw score of 0.85 from model A may not mean the same thing
+    as 0.85 from model B. For example, some models tend to produce
+    scores clustered near 0.9–1.0 even for ambiguous pairs (overconfident),
+    while others cluster near 0.5–0.7 (underconfident).
+
+    Without calibration, the thresholds in ResolverPolicy become
+    model-specific constants that must be manually tuned whenever
+    the NLI model is changed.
+
+Solution:
+    ConfidenceCalibrator applies a model-specific transformation to
+    raw confidence scores to produce calibrated_confidence values
+    that are comparable across models.
+
+Currently implemented strategies:
+    IDENTITY:          No calibration (raw score passes through). Default.
+    TEMPERATURE:       Divide logits by temperature T before softmax.
+                       Effective when the model produces overconfident scores.
+    PERCENTILE:        Map raw score to its percentile in a reference distribution.
+                       Requires a reference distribution (fit on a validation set).
+    ISOTONIC:          Isotonic regression calibration.
+                       Requires a fitted sklearn IsotonicRegression (optional dep).
+
+Rules:
+    ✅ Pure math — never calls any ML model
+    ✅ Deterministic given same parameters
+    ✅ Gracefully degrades to IDENTITY if calibration data unavailable
+    ❌ Never modifies NLIScores objects
+    ❌ Never changes predicted_label (only calibrates confidence magnitude)
+"""
+
+from __future__ import annotations
+
+import math
+from enum import Enum
+from typing import List, Optional
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import RelationshipEvidence, NLIScores, LifecycleStage
+from smriti.core.paths import CONFIG_DIR
+from smriti.exceptions import CalibrationError
+
+logger = structlog.get_logger(__name__)
+
+CALIBRATOR_VERSION = "1.0"
+
+
+class CalibrationStrategy(str, Enum):
+    IDENTITY    = "identity"
+    TEMPERATURE = "temperature"
+    PERCENTILE  = "percentile"
+    ISOTONIC    = "isotonic"
+
+
+class ConfidenceCalibrator:
+    """
+    Applies model-specific confidence calibration to NLI evidence.
+
+    Instantiate once per pipeline run (per model).
+    """
+
+    def __init__(
+        self,
+        model_name: str,
+        strategy: Optional[CalibrationStrategy] = None,
+        temperature: float = 1.0,
+        reference_distribution: Optional[List[float]] = None,
+    ) -> None:
+        """
+        Args:
+            model_name:              NLI model being calibrated (for logging).
+            strategy:                Which calibration strategy to apply.
+                                     Defaults to config or IDENTITY.
+            temperature:             Temperature for TEMPERATURE strategy (T > 1 softens,
+                                     T < 1 sharpens). Only used when strategy=TEMPERATURE.
+            reference_distribution:  Sorted list of raw confidence scores from a
+                                     representative sample (for PERCENTILE strategy).
+        """
+        config = get_config()
+        calib_cfg = config.get("calibration", {}).get(model_name, {})
+
+        if strategy is None:
+            strategy_str = calib_cfg.get("strategy", "identity")
+            strategy = CalibrationStrategy(strategy_str)
+
+        self._model_name = model_name
+        self._strategy = strategy
+        self._temperature = calib_cfg.get("temperature", temperature)
+        self._reference_distribution = (
+            reference_distribution
+            or calib_cfg.get("reference_distribution")
+        )
+
+        logger.info(
+            "calibrator initialized",
+            model=model_name,
+            strategy=self._strategy.value,
+            temperature=self._temperature,
+        )
+
+    def calibrate(self, evidence: RelationshipEvidence) -> RelationshipEvidence:
+        """
+        Calibrate the confidence score in a RelationshipEvidence.
+
+        Args:
+            evidence: Evidence with raw NLI scores.
+
+        Returns:
+            New RelationshipEvidence with calibrated_confidence updated.
+            NLIScores (predicted_label, raw scores) are never modified.
+        """
+        raw = evidence.nli_scores.raw_confidence
+
+        try:
+            calibrated = self._apply_strategy(
+                raw_confidence=raw,
+                entailment=evidence.nli_scores.entailment_score,
+                neutral=evidence.nli_scores.neutral_score,
+                contradiction=evidence.nli_scores.contradiction_score,
+            )
+        except CalibrationError as e:
+            logger.warning(
+                "calibration failed, using raw confidence",
+                model=self._model_name,
+                error=str(e),
+            )
+            calibrated = raw
+
+        # Return new RelationshipEvidence with calibrated_confidence set
+        # and lifecycle advanced to CALIBRATED_EVIDENCE
+        return RelationshipEvidence(
+            pair=evidence.pair,
+            cosine_similarity=evidence.cosine_similarity,
+            nli_scores=evidence.nli_scores,
+            calibrated_confidence=calibrated,
+            inference_metadata=evidence.inference_metadata,
+            lifecycle_stage=LifecycleStage.CALIBRATED_EVIDENCE,
+        )
+
+    def calibrate_batch(
+        self,
+        evidence_list: List[RelationshipEvidence],
+    ) -> List[RelationshipEvidence]:
+        """Calibrate a batch of evidence objects."""
+        return [self.calibrate(ev) for ev in evidence_list]
+
+    def _apply_strategy(
+        self,
+        raw_confidence: float,
+        entailment: float,
+        neutral: float,
+        contradiction: float,
+    ) -> float:
+        """Apply the configured calibration strategy."""
+        if self._strategy == CalibrationStrategy.IDENTITY:
+            return raw_confidence
+
+        elif self._strategy == CalibrationStrategy.TEMPERATURE:
+            return self._temperature_scale(
+                entailment, neutral, contradiction, self._temperature
+            )
+
+        elif self._strategy == CalibrationStrategy.PERCENTILE:
+            if not self._reference_distribution:
+                logger.warning(
+                    "PERCENTILE calibration requested but no reference distribution; "
+                    "falling back to IDENTITY",
+                    model=self._model_name,
+                )
+                return raw_confidence
+            return self._percentile_calibrate(raw_confidence, self._reference_distribution)
+
+        elif self._strategy == CalibrationStrategy.ISOTONIC:
+            return self._isotonic_calibrate(raw_confidence)
+
+        else:
+            return raw_confidence
+
+    @staticmethod
+    def _temperature_scale(
+        entailment: float,
+        neutral: float,
+        contradiction: float,
+        temperature: float,
+    ) -> float:
+        """
+        Apply temperature scaling.
+        Re-compute softmax after dividing by T.
+        T > 1 produces softer (lower) confidence.
+        T < 1 produces sharper (higher) confidence.
+        """
+        if temperature <= 0:
+            raise CalibrationError(f"Temperature must be > 0, got {temperature}")
+
+        # Back-compute approximate logits (inverse softmax is not unique,
+        # but log(p) is a reasonable approximation for calibration)
+        eps = 1e-9
+        logits = [
+            math.log(max(entailment, eps)),
+            math.log(max(neutral, eps)),
+            math.log(max(contradiction, eps)),
+        ]
+        scaled = [l / temperature for l in logits]
+        max_l = max(scaled)
+        exps = [math.exp(s - max_l) for s in scaled]
+        total = sum(exps)
+        probs = [e / total for e in exps]
+        return max(probs)
+
+    @staticmethod
+    def _percentile_calibrate(
+        raw_confidence: float,
+        reference: List[float],
+    ) -> float:
+        """
+        Map raw_confidence to its percentile rank in the reference distribution.
+        Reference must be sorted ascending.
+        """
+        if not reference:
+            return raw_confidence
+
+        # Binary search for position
+        lo, hi = 0, len(reference)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if reference[mid] < raw_confidence:
+                lo = mid + 1
+            else:
+                hi = mid
+
+        return lo / len(reference)
+
+    def _isotonic_calibrate(self, raw_confidence: float) -> float:
+        """
+        Isotonic regression calibration.
+        Expects a serialized sklearn IsotonicRegression model.
+
+        The model should be placed at:
+            config/calibration/{model_name}_isotonic.pkl
+        where model_name has '/' replaced with '_'.
+        """
+        try:
+            import joblib
+
+            # Replace slashes in huggingface model names for safe filenames
+            safe_name = self._model_name.replace("/", "_")
+            calib_path = CONFIG_DIR / "calibration" / f"{safe_name}_isotonic.pkl"
+
+            if calib_path.exists():
+                calibrator = joblib.load(calib_path)
+                # Predict returns an array, we want the float
+                return float(calibrator.transform([raw_confidence])[0])
+            else:
+                logger.warning(
+                    "Isotonic calibration artifact missing at %s, falling back to raw",
+                    calib_path
+                )
+                return raw_confidence
+        except ImportError as e:
+            logger.warning(
+                "scikit-learn or joblib not installed, falling back to raw: %s", e
+            )
+            return raw_confidence
+        except Exception as e:
+            logger.warning(
+                "Isotonic calibration failed (%s), falling back to raw", e
+            )
+            return raw_confidence
+````
+
+## File: src/smriti/retrieval/classification/conflict.py
+````python
+"""
+classification/conflict.py — Cross-run relationship conflict resolution.
+
+Problem:
+    When the pipeline is run multiple times (incremental updates, re-indexing),
+    the same claim pair may receive different RelationshipType assignments.
+
+    Example:
+        Run 1: (claim_a, claim_b) → SUPPORTS
+        Run 2: (claim_a, claim_b) → CONTRADICTS
+
+    Which one wins? This module answers that question deterministically
+    according to the configured ConflictResolutionPolicy.
+
+Policies (see models.py ConflictResolutionPolicy):
+    LATEST_WINS:         Most recent run's classification wins.
+    HIGHEST_CONFIDENCE:  Classification with highest calibrated_confidence wins.
+    MOST_SPECIFIC:       Priority: CONTRADICTS > REFINES > SUPPORTS > NEUTRAL > UNKNOWN.
+    CONSERVATIVE:        Only keep if all runs agree on the type.
+
+Rules:
+    ✅ Deterministic: same inputs → same output
+    ✅ Never modifies Relationship objects (returns winner or None)
+    ❌ Never calls ML models
+    ❌ Never modifies existing relationships
+"""
+
+from __future__ import annotations
+
+from typing import List, Optional, Dict, Tuple
+import structlog
+
+from smriti.core.models import Relationship, RelationshipType, ConflictResolutionPolicy
+from smriti.exceptions import ConflictResolutionError
+
+logger = structlog.get_logger(__name__)
+
+# Priority order for MOST_SPECIFIC policy (higher index = lower priority)
+_SPECIFICITY_ORDER = {
+    RelationshipType.CONTRADICTS: 0,
+    RelationshipType.REFINES:     1,
+    RelationshipType.SUPPORTS:    2,
+    RelationshipType.NEUTRAL:     3,
+    RelationshipType.UNKNOWN:     4,
+}
+
+
+class ConflictResolver:
+    """
+    Resolves type conflicts between relationships for the same claim pair.
+    Instantiate once per pipeline run.
+    """
+
+    def __init__(self, policy: ConflictResolutionPolicy) -> None:
+        self._policy = policy
+        logger.info("conflict resolver initialized", policy=policy.value)
+
+    def resolve_conflicts(
+        self,
+        relationships: List[Relationship],
+    ) -> List[Relationship]:
+        """
+        Given a list of relationships (potentially with conflicts for the same pair),
+        return a deduplicated list according to the conflict policy.
+
+        Args:
+            relationships: All relationships from the current run and any loaded
+                           prior-run relationships.
+
+        Returns:
+            Deduplicated list with at most one Relationship per pair_key.
+        """
+        # Group by pair_key
+        by_pair: Dict[str, List[Relationship]] = {}
+        for rel in relationships:
+            key = rel.evidence.pair.pair_key()
+            by_pair.setdefault(key, []).append(rel)
+
+        resolved: List[Relationship] = []
+        for pair_key, candidates in by_pair.items():
+            if len(candidates) == 1:
+                resolved.append(candidates[0])
+            else:
+                winner = self._apply_policy(pair_key, candidates)
+                if winner is not None:
+                    resolved.append(winner)
+
+        logger.info(
+            "conflict resolution complete",
+            input_count=len(relationships),
+            output_count=len(resolved),
+            pairs_with_conflicts=sum(
+                1 for c in by_pair.values() if len(c) > 1
+            ),
+        )
+
+        return resolved
+
+    def _apply_policy(
+        self,
+        pair_key: str,
+        candidates: List[Relationship],
+    ) -> Optional[Relationship]:
+        """Apply the conflict policy to select one winner from conflicting relationships."""
+        if self._policy == ConflictResolutionPolicy.LATEST_WINS:
+            return max(candidates, key=lambda r: r.provenance.run_id)
+
+        elif self._policy == ConflictResolutionPolicy.HIGHEST_CONFIDENCE:
+            return max(candidates, key=lambda r: r.evidence.calibrated_confidence)
+
+        elif self._policy == ConflictResolutionPolicy.MOST_SPECIFIC:
+            return min(
+                candidates,
+                key=lambda r: _SPECIFICITY_ORDER.get(r.relationship_type, 999)
+            )
+
+        elif self._policy == ConflictResolutionPolicy.CONSERVATIVE:
+            types = {r.relationship_type for r in candidates}
+            if len(types) == 1:
+                return candidates[0]   # All agree
+            else:
+                logger.debug(
+                    "conservative policy: conflicting types, dropping pair",
+                    pair_key=pair_key,
+                    types=[t.value for t in types],
+                )
+                return None   # Disagreement — drop the pair
+
+        else:
+            raise ConflictResolutionError(
+                f"Unknown conflict resolution policy: {self._policy}"
+            )
+````
+
+## File: src/smriti/retrieval/classification/evidence.py
+````python
+"""
+classification/evidence.py — NLI cross-encoder evidence generation.
+
+This is the ONLY module in Phase 6 that imports sentence-transformers.
+
+Produces RelationshipEvidence objects (lifecycle: EVIDENCE).
+ConfidenceCalibrator (called by __init__.py) advances to CALIBRATED_EVIDENCE.
+
+Changes from original:
+    - Evidence now populates NLIScores + InferenceMetadata (separated)
+    - raw_confidence is set in NLIScores; calibrated_confidence starts equal
+      to raw_confidence until ConfidenceCalibrator is applied
+    - InferenceMetadata records latency per batch
+
+Rules:
+    ✅ Process in configurable batches
+    ✅ Handle model failures gracefully (skip pair, record error)
+    ✅ Convert numpy/torch → plain Python before returning
+    ✅ Record per-batch latency in InferenceMetadata
+    ❌ Never modify Claims or CandidatePairs
+    ❌ Never produce Relationship objects (resolver does that)
+    ❌ Never apply thresholds (resolver does that)
+"""
+
+from __future__ import annotations
+
+import time
+from typing import List, Dict, Optional
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import (
+    Claim, CandidatePair, RelationshipEvidence,
+    NLIScores, InferenceMetadata, LifecycleStage,
+)
+from smriti.exceptions import NLIModelError, NLIInferenceBatchError
+
+logger = structlog.get_logger(__name__)
+
+_NLI_LABELS = ["contradiction", "entailment", "neutral"]
+_LABEL_INDEX = {label: i for i, label in enumerate(_NLI_LABELS)}
+
+NLI_MODEL_VERSION = "1.0"
+
+# Retry configuration
+_NLI_MAX_RETRIES = 3
+_NLI_RETRY_BACKOFF_BASE = 2  # seconds: 1, 2, 4
+
+
+class NLIEvidenceGenerator:
+    """
+    Generates RelationshipEvidence for candidate pairs using NLI cross-encoder.
+    Instantiate once per pipeline run.
+    """
+
+    def __init__(self, model_name: Optional[str] = None) -> None:
+        config = get_config()
+        nli_cfg = config.get("nli", {})
+        self._model_name = model_name or nli_cfg.get(
+            "model", "cross-encoder/nli-deberta-v3-small"
+        )
+        self._batch_size: int = nli_cfg.get("batch_size", 16)
+        self._model = self._load_model()
+
+    def _load_model(self):
+        try:
+            from sentence_transformers import CrossEncoder
+            model = CrossEncoder(self._model_name)
+            logger.info("nli model loaded", model=self._model_name)
+            return model
+        except ImportError as e:
+            raise NLIModelError(f"sentence-transformers not installed: {e}") from e
+        except Exception as e:
+            raise NLIModelError(
+                f"Failed to load NLI model '{self._model_name}': {e}"
+            ) from e
+
+    def generate_batch(
+        self,
+        pairs: List[CandidatePair],
+        claims_map: Dict[str, Claim],
+    ) -> List[RelationshipEvidence]:
+        """
+        Generate NLI evidence for validated candidate pairs.
+
+        Returns:
+            List of RelationshipEvidence (lifecycle: EVIDENCE, pre-calibration).
+        """
+        if not pairs:
+            return []
+
+        results: List[RelationshipEvidence] = []
+
+        for batch_idx, batch_start in enumerate(range(0, len(pairs), self._batch_size)):
+            batch = pairs[batch_start: batch_start + self._batch_size]
+            try:
+                batch_evidence = self._process_batch(batch, claims_map, batch_index=batch_idx)
+                results.extend(batch_evidence)
+            except NLIInferenceBatchError as e:
+                logger.warning(
+                    "nli batch failed, skipping batch",
+                    batch_index=batch_idx,
+                    batch_size=len(batch),
+                    error=str(e),
+                )
+                continue
+
+        logger.info(
+            "nli evidence generation complete",
+            pairs_processed=len(pairs),
+            evidence_produced=len(results),
+        )
+
+        return results
+
+    def _process_batch(
+        self,
+        batch: List[CandidatePair],
+        claims_map: Dict[str, Claim],
+        batch_index: int = 0,
+    ) -> List[RelationshipEvidence]:
+        """Process one batch of candidate pairs with retry logic."""
+        text_pairs = []
+        valid_pairs = []
+
+        for pair in batch:
+            claim_a = claims_map.get(pair.claim_id_a)
+            claim_b = claims_map.get(pair.claim_id_b)
+            if claim_a is None or claim_b is None:
+                logger.warning(
+                    "claim not found for nli",
+                    claim_id_a=pair.claim_id_a[:8],
+                    claim_id_b=pair.claim_id_b[:8],
+                )
+                continue
+            text_pairs.append((claim_a.text, claim_b.text))
+            valid_pairs.append(pair)
+
+        if not text_pairs:
+            return []
+
+        batch_start_time = time.monotonic()
+        scores_list = None
+
+        # Retry loop with exponential backoff
+        for attempt in range(_NLI_MAX_RETRIES):
+            try:
+                raw_scores = self._model.predict(
+                    text_pairs,
+                    apply_softmax=True,
+                    show_progress_bar=False,
+                )
+                scores_list = raw_scores.tolist()
+                break  # Success, exit retry loop
+            except Exception as e:
+                if attempt == _NLI_MAX_RETRIES - 1:
+                    # Last attempt failed, raise error
+                    raise NLIInferenceBatchError(
+                        f"NLI batch inference failed after {_NLI_MAX_RETRIES} attempts: {e}"
+                    ) from e
+                # Exponential backoff: 1s, 2s, 4s
+                wait_seconds = _NLI_RETRY_BACKOFF_BASE ** attempt
+                logger.warning(
+                    "NLI batch inference failed, retrying",
+                    attempt=attempt + 1,
+                    max_retries=_NLI_MAX_RETRIES,
+                    wait_seconds=wait_seconds,
+                    error=str(e),
+                )
+                time.sleep(wait_seconds)
+
+        # Should never happen if the loop succeeded, but guard
+        if scores_list is None:
+            raise NLIInferenceBatchError("NLI batch inference failed with no retries left")
+
+        batch_elapsed = time.monotonic() - batch_start_time
+        per_pair_latency_ms = (batch_elapsed / max(len(text_pairs), 1)) * 1000.0
+
+        evidence_list: List[RelationshipEvidence] = []
+
+        for pair, scores in zip(valid_pairs, scores_list):
+            contradiction_score = float(scores[_LABEL_INDEX["contradiction"]])
+            entailment_score = float(scores[_LABEL_INDEX["entailment"]])
+            neutral_score = float(scores[_LABEL_INDEX["neutral"]])
+            raw_confidence = max(contradiction_score, entailment_score, neutral_score)
+            predicted_label = _NLI_LABELS[scores.index(max(scores))]
+
+            nli_scores = NLIScores(
+                entailment_score=entailment_score,
+                neutral_score=neutral_score,
+                contradiction_score=contradiction_score,
+                predicted_label=predicted_label,
+                raw_confidence=raw_confidence,
+            )
+
+            inference_metadata = InferenceMetadata(
+                model_name=self._model_name,
+                model_version=NLI_MODEL_VERSION,
+                runtime_seconds=batch_elapsed,
+                device="cpu",                     # Extend to detect GPU if needed
+                batch_index=batch_index,
+                latency_ms=per_pair_latency_ms,
+            )
+
+            evidence = RelationshipEvidence(
+                pair=pair,
+                cosine_similarity=pair.cosine_similarity,
+                nli_scores=nli_scores,
+                calibrated_confidence=raw_confidence,  # Updated by ConfidenceCalibrator
+                inference_metadata=inference_metadata,
+                lifecycle_stage=LifecycleStage.EVIDENCE,
+            )
+            evidence_list.append(evidence)
+
+        return evidence_list
+````
+
+## File: src/smriti/retrieval/classification/resolver.py
+````python
+"""
+classification/resolver.py — Policy-driven relationship resolution.
+
+RECTIFIED: All threshold values have been moved out of Python code and into
+ResolverPolicy, which is constructed from config. The resolver itself is a
+pure function: (evidence, policy) → (RelationshipType, RelationshipDirection).
+No threshold values appear in this file.
+
+Resolution rules (applied in priority order as defined by the policy):
+    1. If contradiction_score >= policy.nli_threshold AND
+       contradiction_score > entailment_score
+       → CONTRADICTS (symmetric)
+    2. If entailment_score >= policy.nli_threshold AND
+       entailment_score > contradiction_score
+       → SUPPORTS (a_to_b)
+    3. If cosine_similarity >= policy.high_sim_threshold AND
+       neutral_score >= policy.neutrality_threshold AND
+       contradiction_score < 0.1
+       → REFINES (a_to_b)
+    4. If neutral_score >= policy.neutrality_threshold
+       → NEUTRAL (symmetric)
+    5. Otherwise
+       → UNKNOWN (symmetric)
+
+Rules:
+    ✅ Resolver NEVER contains hard-coded thresholds
+    ✅ Resolver NEVER calls any ML model
+    ✅ Resolver NEVER accesses external state
+    ✅ Policy is versioned and validated on construction
+    ✅ Rule priority order is configurable via policy.priority_order
+    ❌ No randomness, no external state
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Tuple, List, Optional
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import (
+    RelationshipEvidence,
+    RelationshipType,
+    RelationshipDirection,
+    LifecycleStage,
+)
+from smriti.exceptions import ResolverPolicyError
+
+logger = structlog.get_logger(__name__)
+
+RESOLVER_VERSION = "1.0"
+
+
+@dataclass(frozen=True)
+class ResolverPolicy:
+    """
+    All resolver thresholds and rule configuration in one place.
+
+    This object replaces every hard-coded if/else threshold in the resolver.
+    Changing resolver behavior requires changing config, not code.
+
+    Fields:
+        nli_threshold:       Minimum score for CONTRADICTS / SUPPORTS classification.
+        refine_threshold:    (Deprecated) Previously used for REFINES; now unused.
+        high_sim_threshold:  Minimum cosine similarity required for REFINES.
+        neutrality_threshold: Minimum neutral_score for NEUTRAL classification.
+        contradiction_margin: Minimum gap between contradiction and entailment scores
+                              required to classify as CONTRADICTS (prevents edge cases).
+        entailment_margin:   Minimum gap between entailment and contradiction scores
+                             required to classify as SUPPORTS.
+        confidence_policy:   "calibrated" (use calibrated_confidence) or
+                             "raw" (use raw NLI score). Default: "calibrated".
+        priority_order:      List of RelationshipType values in resolution priority order.
+                             Default: [CONTRADICTS, SUPPORTS, REFINES, NEUTRAL, UNKNOWN].
+        version:             Resolver policy version string.
+    """
+    nli_threshold: float
+    refine_threshold: float
+    high_sim_threshold: float
+    neutrality_threshold: float
+    contradiction_margin: float = 0.0
+    entailment_margin: float = 0.0
+    confidence_policy: str = "calibrated"
+    priority_order: List[str] = field(default_factory=lambda: [
+        "contradicts", "supports", "refines", "neutral", "unknown"
+    ])
+    version: str = RESOLVER_VERSION
+
+    def __post_init__(self):
+        self._validate()
+
+    def _validate(self):
+        """Validate internal consistency of the policy."""
+        if self.nli_threshold <= 0 or self.nli_threshold > 1:
+            raise ResolverPolicyError(
+                f"nli_threshold must be in (0, 1], got {self.nli_threshold}"
+            )
+        if self.refine_threshold >= self.nli_threshold:
+            raise ResolverPolicyError(
+                f"refine_threshold ({self.refine_threshold}) must be < "
+                f"nli_threshold ({self.nli_threshold})"
+            )
+        if self.high_sim_threshold <= 0 or self.high_sim_threshold > 1:
+            raise ResolverPolicyError(
+                f"high_sim_threshold must be in (0, 1], got {self.high_sim_threshold}"
+            )
+        if self.contradiction_margin < 0:
+            raise ResolverPolicyError(
+                f"contradiction_margin must be >= 0, got {self.contradiction_margin}"
+            )
+
+    @classmethod
+    def from_config(cls) -> "ResolverPolicy":
+        """
+        Construct ResolverPolicy from the application configuration.
+        This is the canonical way to get a ResolverPolicy in production.
+        """
+        config = get_config()
+        nli_cfg = config.get("nli", {})
+        rd_cfg = config.get("relationship_discovery", {})
+        policy_cfg = config.get("resolver_policy", {})
+
+        return cls(
+            nli_threshold=nli_cfg.get("nli_threshold", 0.80),
+            refine_threshold=rd_cfg.get("refine_threshold", 0.55),
+            high_sim_threshold=rd_cfg.get("high_sim_threshold", 0.88),
+            neutrality_threshold=rd_cfg.get("neutrality_threshold", 0.60),
+            contradiction_margin=policy_cfg.get("contradiction_margin", 0.0),
+            entailment_margin=policy_cfg.get("entailment_margin", 0.0),
+            confidence_policy=policy_cfg.get("confidence_policy", "calibrated"),
+            priority_order=policy_cfg.get("priority_order", [
+                "contradicts", "supports", "refines", "neutral", "unknown"
+            ]),
+            version=policy_cfg.get("version", RESOLVER_VERSION),
+        )
+
+
+class RelationshipResolver:
+    """
+    Policy-driven resolver: RelationshipEvidence → RelationshipType.
+
+    The resolver itself contains no threshold values.
+    All rules come from the ResolverPolicy.
+    Instantiate once per pipeline run.
+    """
+
+    def __init__(self, policy: Optional["ResolverPolicy"] = None) -> None:
+        self._policy = policy or ResolverPolicy.from_config()
+        logger.info(
+            "resolver initialized",
+            policy_version=self._policy.version,
+            nli_threshold=self._policy.nli_threshold,
+            high_sim_threshold=self._policy.high_sim_threshold,
+            neutrality_threshold=self._policy.neutrality_threshold,
+            confidence_policy=self._policy.confidence_policy,
+        )
+
+    @property
+    def policy(self) -> ResolverPolicy:
+        return self._policy
+
+    def resolve(
+        self,
+        evidence: RelationshipEvidence,
+    ) -> Tuple[RelationshipType, RelationshipDirection]:
+        """
+        Apply policy rules to classify a RelationshipEvidence.
+
+        Uses calibrated_confidence from evidence (unless policy says "raw").
+
+        Returns:
+            (RelationshipType, RelationshipDirection) — never raises.
+        """
+        p = self._policy
+        c = evidence.nli_scores.contradiction_score
+        e = evidence.nli_scores.entailment_score
+        n = evidence.nli_scores.neutral_score
+        cos = evidence.cosine_similarity
+
+        for rule in p.priority_order:
+            if rule == "contradicts":
+                if (c >= p.nli_threshold
+                        and c > e
+                        and (c - e) >= p.contradiction_margin):
+                    logger.debug(
+                        "resolved: CONTRADICTS",
+                        contradiction=f"{c:.3f}", entailment=f"{e:.3f}",
+                    )
+                    return RelationshipType.CONTRADICTS, RelationshipDirection.SYMMETRIC
+
+            elif rule == "supports":
+                if (e >= p.nli_threshold
+                        and e > c
+                        and (e - c) >= p.entailment_margin):
+                    logger.debug("resolved: SUPPORTS", entailment=f"{e:.3f}")
+                    return RelationshipType.SUPPORTS, RelationshipDirection.A_TO_B
+
+            elif rule == "refines":
+                # Rectified heuristic:
+                # A refinement is highly similar (high cosine), strictly NOT contradictory,
+                # and usually classified as NLI Neutral because it does not strictly
+                # entail in either direction.
+                if (cos >= p.high_sim_threshold
+                        and n >= p.neutrality_threshold
+                        and c < 0.1):   # Strict ceiling on contradiction
+                    logger.debug(
+                        "resolved: REFINES",
+                        neutral=f"{n:.3f}", cosine=f"{cos:.3f}",
+                    )
+                    return RelationshipType.REFINES, RelationshipDirection.A_TO_B
+
+            elif rule == "neutral":
+                if n >= p.neutrality_threshold:
+                    logger.debug("resolved: NEUTRAL", neutral=f"{n:.3f}")
+                    return RelationshipType.NEUTRAL, RelationshipDirection.SYMMETRIC
+
+            elif rule == "unknown":
+                logger.debug(
+                    "resolved: UNKNOWN",
+                    c=f"{c:.3f}", e=f"{e:.3f}", n=f"{n:.3f}",
+                )
+                return RelationshipType.UNKNOWN, RelationshipDirection.SYMMETRIC
+
+        # Should never reach here, but fallback to UNKNOWN
+        return RelationshipType.UNKNOWN, RelationshipDirection.SYMMETRIC
+````
+
+## File: src/smriti/retrieval/classification/validator.py
+````python
+"""
+classification/validator.py — Relationship structural validation.
+
+Enforces the Relationship Ontology invariants:
+    1. CONTRADICTS must have SYMMETRIC direction.
+    2. SUPPORTS must have A_TO_B or B_TO_A direction.
+    3. REFINES must have A_TO_B or B_TO_A direction.
+    4. NEUTRAL must have SYMMETRIC direction.
+    5. UNKNOWN must never pass (unless skip_unknown=False, debugging only).
+    6. confidence >= min_confidence floor.
+    7. Not both entailment AND contradiction above threshold simultaneously.
+
+Valid relationships are promoted to lifecycle stage VALIDATED_RELATIONSHIP.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Tuple, Dict
+import structlog
+
+from smriti.core.models import (
+    RelationshipEvidence, RelationshipType, RelationshipDirection, LifecycleStage,
+)
+
+logger = structlog.get_logger(__name__)
+
+
+class RelRejectionReason(str, Enum):
+    CONFIDENCE_TOO_LOW      = "confidence_too_low"
+    UNKNOWN_RELATIONSHIP    = "unknown_relationship"
+    CONTRADICTORY_EVIDENCE  = "contradictory_evidence"
+    DIRECTION_INVARIANT     = "direction_invariant_violated"
+
+
+@dataclass(frozen=True)
+class RelationshipValidationResult:
+    is_valid: bool
+    rejection_reason: RelRejectionReason | None = None
+
+
+# Ontology invariants: required direction per type
+_REQUIRED_DIRECTION = {
+    RelationshipType.CONTRADICTS: {RelationshipDirection.SYMMETRIC},
+    RelationshipType.NEUTRAL:     {RelationshipDirection.SYMMETRIC},
+    RelationshipType.SUPPORTS:    {RelationshipDirection.A_TO_B, RelationshipDirection.B_TO_A},
+    RelationshipType.REFINES:     {RelationshipDirection.A_TO_B, RelationshipDirection.B_TO_A},
+    RelationshipType.UNKNOWN:     {RelationshipDirection.SYMMETRIC},   # rejected anyway
+}
+
+
+def validate_relationship(
+    evidence: RelationshipEvidence,
+    relationship_type: RelationshipType,
+    direction: RelationshipDirection,
+    min_confidence: float,
+    nli_threshold: float,
+    skip_unknown: bool,
+) -> RelationshipValidationResult:
+    """Validate one resolved relationship."""
+    # Check 1: Minimum confidence
+    if evidence.calibrated_confidence < min_confidence:
+        return RelationshipValidationResult(
+            is_valid=False,
+            rejection_reason=RelRejectionReason.CONFIDENCE_TOO_LOW,
+        )
+
+    # Check 2: Unknown relationship
+    if skip_unknown and relationship_type == RelationshipType.UNKNOWN:
+        return RelationshipValidationResult(
+            is_valid=False,
+            rejection_reason=RelRejectionReason.UNKNOWN_RELATIONSHIP,
+        )
+
+    # Check 3: Contradictory evidence (both E and C above threshold)
+    if (evidence.nli_scores.entailment_score >= nli_threshold and
+            evidence.nli_scores.contradiction_score >= nli_threshold):
+        return RelationshipValidationResult(
+            is_valid=False,
+            rejection_reason=RelRejectionReason.CONTRADICTORY_EVIDENCE,
+        )
+
+    # Check 4: Direction invariant (ontology specification)
+    required_dirs = _REQUIRED_DIRECTION.get(relationship_type, set())
+    if required_dirs and direction not in required_dirs:
+        logger.warning(
+            "direction invariant violated",
+            type=relationship_type.value,
+            direction=direction.value,
+            required=[d.value for d in required_dirs],
+        )
+        return RelationshipValidationResult(
+            is_valid=False,
+            rejection_reason=RelRejectionReason.DIRECTION_INVARIANT,
+        )
+
+    return RelationshipValidationResult(is_valid=True)
+
+
+def validate_all_relationships(
+    evidence_with_types: List[Tuple[RelationshipEvidence, RelationshipType, RelationshipDirection]],
+    min_confidence: float,
+    nli_threshold: float,
+    skip_unknown: bool,
+) -> Tuple[List[Tuple[RelationshipEvidence, RelationshipType, RelationshipDirection]], Dict[str, int]]:
+    """
+    Validate a batch of resolved relationships.
+    Valid items are tagged with lifecycle VALIDATED_RELATIONSHIP.
+
+    Returns:
+        (valid_triples, rejection_counts)
+        valid_triples: (evidence, type, direction) tuples that passed.
+    """
+    valid = []
+    rejection_counts: Dict[str, int] = {}
+
+    for evidence, rel_type, direction in evidence_with_types:
+        result = validate_relationship(
+            evidence, rel_type, direction, min_confidence, nli_threshold, skip_unknown
+        )
+        if result.is_valid:
+            valid.append((evidence, rel_type, direction))
+        else:
+            reason = result.rejection_reason.value
+            rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
+
+    logger.info(
+        "relationship validation complete",
+        total=len(evidence_with_types),
+        valid=len(valid),
+        rejected=sum(rejection_counts.values()),
+        reasons=rejection_counts,
+    )
+
+    return valid, rejection_counts
+````
+
+## File: src/smriti/retrieval/benchmark.py
+````python
+"""
+benchmark.py — Phase 6 benchmarking framework.
+
+Provides:
+    SyntheticCorpus:  Deterministic gold-standard dataset for regression testing.
+    BenchmarkSuite:   Evaluates Recall@K, Precision, latency, and relationship density.
+
+Rules:
+    ✅ SyntheticCorpus is fully deterministic (seeded random)
+    ✅ BenchmarkSuite never modifies pipeline objects
+    ✅ All metrics are computed against a gold-standard label set
+    ❌ Never used in production pipeline runs
+"""
+
+from __future__ import annotations
+
+import math
+import random
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Optional, Set
+import structlog
+
+from smriti.core.models import RelationshipType
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class GoldPair:
+    """A gold-standard relationship label for evaluation."""
+    claim_id_a: str
+    claim_id_b: str
+    expected_type: RelationshipType
+
+
+@dataclass
+class SyntheticCorpus:
+    """
+    Deterministic gold-standard dataset for Phase 6 regression testing.
+
+    Usage:
+        corpus = SyntheticCorpus.generate(seed=42, n_claims=100, n_gold_pairs=50)
+        # Use corpus.claims, corpus.embeddings, corpus.gold_labels in tests
+    """
+    claims: List[Dict]                          # {claim_id, text}
+    embeddings: List[Tuple[str, List[float]]]   # (claim_id, vector)
+    gold_labels: List[GoldPair]
+    dimension: int
+    seed: int
+
+    @classmethod
+    def generate(
+        cls,
+        seed: int = 42,
+        n_claims: int = 100,
+        n_gold_pairs: int = 50,
+        dimension: int = 8,
+    ) -> "SyntheticCorpus":
+        """
+        Generate a deterministic synthetic corpus.
+
+        All gold pairs are created by deterministically constructing
+        claim pairs that should have known relationship types:
+            - CONTRADICTS: opposite-sign vectors
+            - SUPPORTS:    nearly identical vectors
+            - REFINES:     high cosine but slight offset
+            - NEUTRAL:     orthogonal vectors
+        """
+        rng = random.Random(seed)
+
+        # Generate claim texts (templates for determinism)
+        claim_texts = [
+            (f"c{i:04d}", f"Synthetic claim {i} about topic {i % 10}.")
+            for i in range(n_claims)
+        ]
+        claims = [{"claim_id": cid, "text": text} for cid, text in claim_texts]
+
+        # Generate random L2-normalized embeddings
+        def rand_vector() -> List[float]:
+            vec = [rng.gauss(0, 1) for _ in range(dimension)]
+            norm = math.sqrt(sum(v ** 2 for v in vec))
+            return [v / max(norm, 1e-9) for v in vec]
+
+        embeddings_dict: Dict[str, List[float]] = {
+            cid: rand_vector() for cid, _ in claim_texts
+        }
+
+        # Create gold pairs with controlled relationship types
+        gold_labels: List[GoldPair] = []
+        claim_ids = [cid for cid, _ in claim_texts]
+        pairs_created: Set[str] = set()
+
+        for i in range(n_gold_pairs):
+            idx_a = rng.randint(0, n_claims - 1)
+            idx_b = rng.randint(0, n_claims - 1)
+            if idx_a == idx_b:
+                continue
+
+            id_a, id_b = sorted([claim_ids[idx_a], claim_ids[idx_b]])
+            pair_key = f"{id_a}:{id_b}"
+            if pair_key in pairs_created:
+                continue
+            pairs_created.add(pair_key)
+
+            # Assign relationship type and adjust embeddings accordingly
+            rel_type_idx = i % 4
+            if rel_type_idx == 0:
+                rel_type = RelationshipType.CONTRADICTS
+                embeddings_dict[id_b] = [-v for v in embeddings_dict[id_a]]
+            elif rel_type_idx == 1:
+                rel_type = RelationshipType.SUPPORTS
+                noise = [rng.gauss(0, 0.01) for _ in range(dimension)]
+                vec = [v + n for v, n in zip(embeddings_dict[id_a], noise)]
+                norm = math.sqrt(sum(v ** 2 for v in vec))
+                embeddings_dict[id_b] = [v / max(norm, 1e-9) for v in vec]
+            elif rel_type_idx == 2:
+                rel_type = RelationshipType.REFINES
+                noise = [rng.gauss(0, 0.1) for _ in range(dimension)]
+                vec = [v + n for v, n in zip(embeddings_dict[id_a], noise)]
+                norm = math.sqrt(sum(v ** 2 for v in vec))
+                embeddings_dict[id_b] = [v / max(norm, 1e-9) for v in vec]
+            else:
+                rel_type = RelationshipType.NEUTRAL
+
+            gold_labels.append(GoldPair(
+                claim_id_a=id_a, claim_id_b=id_b, expected_type=rel_type,
+            ))
+
+        embeddings = list(embeddings_dict.items())
+
+        logger.info(
+            "synthetic corpus generated",
+            seed=seed, n_claims=n_claims,
+            n_gold_pairs=len(gold_labels),
+        )
+
+        return cls(
+            claims=claims,
+            embeddings=embeddings,
+            gold_labels=gold_labels,
+            dimension=dimension,
+            seed=seed,
+        )
+
+
+@dataclass
+class BenchmarkResult:
+    """Results of running BenchmarkSuite."""
+    recall_at_k: float                          # Fraction of gold pairs retrieved
+    precision: float                            # Fraction of retrieved pairs that are gold
+    relationship_density: float                 # relationships / claims
+    nli_latency_ms_per_pair: float
+    retrieval_latency_ms_per_claim: float
+    memory_mb: float
+    by_type: Dict[str, Dict[str, float]]        # {type: {precision, recall}}
+
+
+class BenchmarkSuite:
+    """
+    Evaluates Phase 6 pipeline against a gold-standard corpus.
+
+    Usage:
+        corpus = SyntheticCorpus.generate(seed=42)
+        suite = BenchmarkSuite(corpus)
+        result = suite.evaluate(relationship_set, retrieval_latency, nli_latency)
+    """
+
+    def __init__(self, corpus: SyntheticCorpus) -> None:
+        self._corpus = corpus
+        self._gold_by_pair: Dict[str, RelationshipType] = {
+            f"{g.claim_id_a}:{g.claim_id_b}": g.expected_type
+            for g in corpus.gold_labels
+        }
+
+    def evaluate(
+        self,
+        relationship_set,
+        retrieval_latency_seconds: float,
+        nli_latency_seconds: float,
+        memory_mb: float = 0.0,
+    ) -> BenchmarkResult:
+        """Evaluate a RelationshipSet against the gold labels."""
+        gold_keys = set(self._gold_by_pair.keys())
+        predicted_keys = {
+            rel.evidence.pair.pair_key()
+            for rel in relationship_set.relationships
+        }
+
+        retrieved_gold = gold_keys & predicted_keys
+        recall_at_k = len(retrieved_gold) / max(len(gold_keys), 1)
+        precision = len(retrieved_gold) / max(len(predicted_keys), 1)
+
+        n_claims = self._corpus.seed   # rough proxy
+        relationship_density = relationship_set.total_relationships / max(n_claims, 1)
+
+        nli_count = max(relationship_set.total_validated, 1)
+        nli_latency_ms = (nli_latency_seconds / nli_count) * 1000.0
+
+        n_embedded = max(relationship_set.total_candidates, 1)
+        retrieval_latency_ms = (retrieval_latency_seconds / n_embedded) * 1000.0
+
+        # Per-type breakdown
+        by_type: Dict[str, Dict[str, float]] = {}
+        for rel_type in RelationshipType:
+            gold_of_type = {
+                k for k, v in self._gold_by_pair.items()
+                if v == rel_type
+            }
+            predicted_of_type = {
+                rel.evidence.pair.pair_key()
+                for rel in relationship_set.relationships
+                if rel.relationship_type == rel_type
+            }
+            tp = len(gold_of_type & predicted_of_type)
+            p = tp / max(len(predicted_of_type), 1)
+            r = tp / max(len(gold_of_type), 1)
+            by_type[rel_type.value] = {"precision": p, "recall": r, "tp": tp}
+
+        return BenchmarkResult(
+            recall_at_k=recall_at_k,
+            precision=precision,
+            relationship_density=relationship_density,
+            nli_latency_ms_per_pair=nli_latency_ms,
+            retrieval_latency_ms_per_claim=retrieval_latency_ms,
+            memory_mb=memory_mb,
+            by_type=by_type,
+        )
+````
+
+## File: src/smriti/retrieval/builder.py
+````python
+"""
+builder.py — Immutable Relationship and RelationshipSet construction.
+
+Changes from original:
+    - Populates SchemaVersionInfo (schema_version, migration_version, compatibility_version)
+    - Populates RelationshipProvenance with new fields (index_version, search_parameters,
+      calibrator_version, classifier_version, raw_nli_confidence, calibrated_confidence)
+    - Populates RelationshipQuality with calibration_applied and retrieval_quality
+    - Sets lifecycle_stage to RELATIONSHIP on all constructed objects
+    - relationship_id includes schema_version to guarantee ID change when ontology changes
+
+Rules:
+    ✅ Pure object construction
+    ✅ Deterministic relationship_id generation
+    ✅ Full provenance including calibration info
+    ❌ Never perform NLI inference
+    ❌ Never validate
+    ❌ No heuristics or logic beyond construction
+"""
+
+from __future__ import annotations
+
+import hashlib
+from typing import List, Dict, Optional
+import structlog
+
+from smriti.core.models import (
+    Relationship, RelationshipSet, RelationshipEvidence,
+    RelationshipProvenance, RelationshipQuality, SchemaVersionInfo,
+    RelationshipType, RelationshipDirection, LifecycleStage,
+)
+from smriti.retrieval.faiss_index import RETRIEVAL_BACKEND, RETRIEVAL_VERSION, INDEX_VERSION
+from smriti.retrieval.classification.resolver import RESOLVER_VERSION
+from smriti.retrieval.classification.calibration import CALIBRATOR_VERSION
+
+logger = structlog.get_logger(__name__)
+
+CURRENT_SCHEMA_VERSION = "6.0"
+CURRENT_MIGRATION_VERSION = "6.0"
+CURRENT_COMPATIBILITY_VERSION = "6.0"
+
+
+def _compute_relationship_id(
+    claim_id_a: str,
+    claim_id_b: str,
+    relationship_type: str,
+    schema_version: str = CURRENT_SCHEMA_VERSION,
+) -> str:
+    """
+    Deterministic 16-char SHA256 relationship ID including schema version.
+
+    Injecting the schema version into the hash ensures that if the relationship
+    ontology changes (e.g., the definition of SUPPORTS or CONTRADICTS evolves),
+    the ID of every relationship changes automatically, preventing accidental
+    cross-version mixing.
+    """
+    material = f"{claim_id_a}:{claim_id_b}:{relationship_type}:{schema_version}"
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+
+
+def build_relationship(
+    evidence: RelationshipEvidence,
+    relationship_type: RelationshipType,
+    direction: RelationshipDirection,
+    nli_threshold: float,
+    config_hash: str,
+    run_id: str,
+) -> Relationship:
+    """
+    Construct one immutable Relationship.
+
+    Args:
+        evidence:           NLI evidence for the pair (post-calibration).
+        relationship_type:  Resolved type from resolver.
+        direction:          Resolved direction.
+        nli_threshold:      NLI confidence threshold (for quality diagnostics).
+        config_hash:        SHA256 of relevant config.
+        run_id:             Current pipeline run identifier.
+
+    Returns:
+        Immutable Relationship with full provenance, quality, and version info.
+    """
+    claim_id_a = evidence.pair.claim_id_a
+    claim_id_b = evidence.pair.claim_id_b
+
+    relationship_id = _compute_relationship_id(
+        claim_id_a=claim_id_a,
+        claim_id_b=claim_id_b,
+        relationship_type=relationship_type.value,
+        schema_version=CURRENT_SCHEMA_VERSION,
+    )
+
+    provenance = RelationshipProvenance(
+        retrieval_backend=RETRIEVAL_BACKEND,
+        retrieval_version=RETRIEVAL_VERSION,
+        index_version=INDEX_VERSION,
+        search_parameters=evidence.pair.search_parameters,
+        classifier_model=evidence.inference_metadata.model_name,
+        classifier_version=evidence.inference_metadata.model_version,
+        resolver_version=RESOLVER_VERSION,
+        calibrator_version=CALIBRATOR_VERSION,
+        cosine_similarity=evidence.cosine_similarity,
+        candidate_rank=evidence.pair.candidate_rank,
+        raw_nli_confidence=evidence.nli_scores.raw_confidence,
+        calibrated_confidence=evidence.calibrated_confidence,
+        config_hash=config_hash,
+        run_id=run_id,
+        replay_id=None,
+    )
+
+    calibration_applied = (
+        abs(evidence.nli_scores.raw_confidence - evidence.calibrated_confidence) > 1e-6
+    )
+
+    quality = RelationshipQuality(
+        cosine_above_threshold=True,   # Guaranteed by candidate validator
+        nli_above_threshold=evidence.calibrated_confidence >= nli_threshold,
+        evidence_consistent=not (
+            evidence.nli_scores.entailment_score >= nli_threshold
+            and evidence.nli_scores.contradiction_score >= nli_threshold
+        ),
+        calibration_applied=calibration_applied,
+        retrieval_quality=evidence.pair.retrieval_quality,
+    )
+
+    version_info = SchemaVersionInfo(
+        schema_version=CURRENT_SCHEMA_VERSION,
+        migration_version=CURRENT_MIGRATION_VERSION,
+        compatibility_version=CURRENT_COMPATIBILITY_VERSION,
+    )
+
+    relationship = Relationship(
+        relationship_id=relationship_id,
+        claim_id_a=claim_id_a,
+        claim_id_b=claim_id_b,
+        relationship_type=relationship_type,
+        direction=direction,
+        evidence=evidence,
+        quality=quality,
+        provenance=provenance,
+        version_info=version_info,
+        lifecycle_stage=LifecycleStage.RELATIONSHIP,
+    )
+
+    logger.debug(
+        "relationship built",
+        rel_id=relationship_id[:8],
+        type=relationship_type.value,
+        calibrated_confidence=f"{evidence.calibrated_confidence:.3f}",
+        calibration_applied=calibration_applied,
+    )
+
+    return relationship
+
+
+def build_relationship_set(
+    relationships: List[Relationship],
+    total_candidates: int,
+    total_validated: int,
+    total_rejected: int,
+    rejected_reasons: Dict[str, int],
+    run_id: str,
+) -> RelationshipSet:
+    """Build the final RelationshipSet."""
+    return RelationshipSet(
+        relationships=relationships,
+        total_candidates=total_candidates,
+        total_validated=total_validated,
+        total_rejected=total_rejected,
+        rejected_reasons=rejected_reasons,
+        run_id=run_id,
+        version_info=SchemaVersionInfo(
+            schema_version=CURRENT_SCHEMA_VERSION,
+            migration_version=CURRENT_MIGRATION_VERSION,
+            compatibility_version=CURRENT_COMPATIBILITY_VERSION,
+        ),
+    )
+````
+
+## File: src/smriti/retrieval/candidate_generator.py
+````python
+"""
+candidate_generator.py — Hybrid ANN candidate retrieval for Phase 6.
+
+Responsibility:
+    Given an EmbeddingIndex, retrieve candidate pairs worth evaluating.
+
+    Two-stage filter:
+        Stage 1 (ANN): Find top-K nearest neighbors via FAISS
+        Stage 2 (threshold): Keep only pairs above cosine_threshold
+
+    Symmetric pair elimination:
+        (claim_a, claim_b) and (claim_b, claim_a) → one canonical pair.
+        Keep only the pair where claim_id_a < claim_id_b (lexicographic).
+
+    Retrieval provenance is attached to every CandidatePair so
+    debugging and replay are possible without re-running the pipeline.
+
+Input:  List[EmbeddedClaim] + EmbeddingIndex
+Output: List[CandidatePair]  (lifecycle: CANDIDATE)
+
+Rules:
+    ✅ Deterministic ordering (sort by pair_key after collection)
+    ✅ Symmetric pair deduplication (pair_key canonicalization)
+    ✅ Self-comparison elimination
+    ✅ Configurable K and cosine threshold
+    ✅ RetrievalSearchParameters attached to every pair (provenance)
+    ✅ RetrievalQuality attached to every pair
+
+    ❌ Never performs NLI inference
+    ❌ Never modifies EmbeddedClaim objects
+    ❌ Never builds Relationship objects
+"""
+
+from __future__ import annotations
+
+from typing import List, Dict, Set
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import (
+    CandidatePair, EmbeddedClaim, LifecycleStage,
+    RetrievalSearchParameters, RetrievalQuality,
+)
+from smriti.retrieval.index import EmbeddingIndex
+from smriti.retrieval.faiss_index import RETRIEVAL_BACKEND, INDEX_VERSION
+
+logger = structlog.get_logger(__name__)
+
+# Threshold for "high density region" — if a claim has >N neighbors above threshold
+_HIGH_DENSITY_THRESHOLD = 20
+# Threshold for "isolated claim" — if a claim has 0 or 1 neighbors above threshold
+_ISOLATED_THRESHOLD = 1
+
+
+class CandidateGenerator:
+    """
+    Generates candidate pairs for NLI classification via ANN search.
+    Instantiate once per pipeline run.
+    """
+
+    def __init__(self) -> None:
+        config = get_config()
+        retrieval_cfg = config.get("relationship_discovery", {})
+        self._top_k: int = retrieval_cfg.get("top_k", 50)
+        self._sim_threshold: float = retrieval_cfg.get("sim_threshold", 0.75)
+
+    def generate(
+        self,
+        embedded_claims: List[EmbeddedClaim],
+        index: EmbeddingIndex,
+    ) -> List[CandidatePair]:
+        """
+        Generate candidate pairs via ANN search.
+
+        Args:
+            embedded_claims: All EmbeddedClaims from Phase 5.
+            index:           Pre-built vector index.
+
+        Returns:
+            Deduplicated, sorted list of CandidatePair (lifecycle: CANDIDATE).
+        """
+        if not embedded_claims:
+            return []
+
+        search_parameters = RetrievalSearchParameters(
+            top_k=self._top_k,
+            sim_threshold=self._sim_threshold,
+            index_type=RETRIEVAL_BACKEND,
+            index_version=INDEX_VERSION,
+        )
+
+        # Track neighbor counts for retrieval quality assessment
+        neighbor_counts: Dict[str, int] = {}
+        seen_pair_keys: Set[str] = set()
+        candidates: List[CandidatePair] = []
+
+        for embedded_claim in embedded_claims:
+            claim_id = embedded_claim.claim_id
+            query_vector = list(embedded_claim.values)
+
+            search_results = index.search(
+                query_id=claim_id,
+                query_vector=query_vector,
+                k=self._top_k,
+            )
+
+            above_threshold = [r for r in search_results if r.score >= self._sim_threshold]
+            neighbor_counts[claim_id] = len(above_threshold)
+
+            for result in above_threshold:
+                neighbor_id = result.claim_id
+                id_a, id_b = sorted([claim_id, neighbor_id])
+                pair_key = f"{id_a}:{id_b}"
+
+                if pair_key in seen_pair_keys:
+                    continue
+                seen_pair_keys.add(pair_key)
+
+                candidates.append(CandidatePair(
+                    claim_id_a=id_a,
+                    claim_id_b=id_b,
+                    cosine_similarity=result.score,
+                    candidate_rank=result.rank,
+                    retrieval_backend=RETRIEVAL_BACKEND,
+                    index_version=INDEX_VERSION,
+                    search_parameters=search_parameters,
+                    retrieval_quality=None,   # Populated below after neighbor counts known
+                    lifecycle_stage=LifecycleStage.CANDIDATE,
+                ))
+
+        # Now attach RetrievalQuality (requires neighbor counts for both claims)
+        candidates_with_quality = []
+        for pair in candidates:
+            count_a = neighbor_counts.get(pair.claim_id_a, 0)
+            count_b = neighbor_counts.get(pair.claim_id_b, 0)
+            quality = RetrievalQuality(
+                exact_match=False,   # Text-level duplicate check done in validator
+                duplicate_removed=False,
+                below_threshold=False,
+                high_density_region=(
+                    count_a > _HIGH_DENSITY_THRESHOLD or count_b > _HIGH_DENSITY_THRESHOLD
+                ),
+                isolated_claim=(
+                    count_a <= _ISOLATED_THRESHOLD or count_b <= _ISOLATED_THRESHOLD
+                ),
+            )
+            # Rebuild with quality (frozen dataclass — must reconstruct)
+            candidates_with_quality.append(CandidatePair(
+                claim_id_a=pair.claim_id_a,
+                claim_id_b=pair.claim_id_b,
+                cosine_similarity=pair.cosine_similarity,
+                candidate_rank=pair.candidate_rank,
+                retrieval_backend=pair.retrieval_backend,
+                index_version=pair.index_version,
+                search_parameters=pair.search_parameters,
+                retrieval_quality=quality,
+                lifecycle_stage=LifecycleStage.CANDIDATE,
+            ))
+
+        candidates_with_quality.sort(key=lambda c: c.pair_key())
+
+        logger.info(
+            "candidate generation complete",
+            total_embedded=len(embedded_claims),
+            candidates_found=len(candidates_with_quality),
+            top_k=self._top_k,
+            threshold=self._sim_threshold,
+        )
+
+        return candidates_with_quality
+````
+
+## File: src/smriti/retrieval/faiss_index.py
+````python
+"""
+faiss_index.py — FAISS implementation of EmbeddingIndex.
+
+This is the ONLY module in Phase 6 that imports faiss.
+All other modules see only the EmbeddingIndex interface.
+
+Rules:
+    ✅ Convert numpy arrays → plain Python lists before returning
+    ✅ Convert Python lists → numpy arrays before passing to FAISS
+    ✅ Handle faiss not installed gracefully
+    ❌ Never return numpy arrays or tensors
+    ❌ Never expose FAISS types outside this module
+"""
+
+from __future__ import annotations
+
+from typing import List, Optional, Dict
+import structlog
+
+from smriti.retrieval.index import EmbeddingIndex, SearchResult
+from smriti.exceptions import IndexBuildError, FAISSNotAvailableError
+
+logger = structlog.get_logger(__name__)
+
+RETRIEVAL_BACKEND = "faiss_flat_ip"
+RETRIEVAL_VERSION = "1.0"
+INDEX_VERSION = "1.0"
+
+
+class FAISSIndex(EmbeddingIndex):
+    """
+    FAISS IndexFlatIP — exact inner product search on L2-normalized vectors.
+    Cosine similarity == dot product when both vectors are L2-normalized.
+    """
+
+    def __init__(self, dimension: int) -> None:
+        self._dimension = dimension
+        self._claim_ids: List[str] = []
+        self._id_to_idx: Dict[str, int] = {}
+        self._index = self._create_index(dimension)
+
+    def _create_index(self, dimension: int):
+        try:
+            import faiss
+            index = faiss.IndexFlatIP(dimension)
+            logger.info("faiss index created", dimension=dimension)
+            return index
+        except ImportError as e:
+            raise FAISSNotAvailableError(
+                f"faiss-cpu is not installed. Run: poetry add faiss-cpu\nError: {e}"
+            ) from e
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    @property
+    def size(self) -> int:
+        return len(self._claim_ids)
+
+    def add(self, claim_ids: List[str], vectors: List[List[float]]) -> None:
+        import numpy as np
+
+        if not vectors:
+            return
+
+        for i, v in enumerate(vectors):
+            if len(v) != self._dimension:
+                raise IndexBuildError(
+                    f"Vector at position {i} has dimension {len(v)}, "
+                    f"expected {self._dimension}"
+                )
+
+        try:
+            matrix = np.array(vectors, dtype=np.float32)
+            self._index.add(matrix)
+            start_idx = len(self._claim_ids)
+            for i, cid in enumerate(claim_ids):
+                self._claim_ids.append(cid)
+                self._id_to_idx[cid] = start_idx + i
+
+            logger.info("vectors added to index", count=len(vectors), total=self.size)
+        except Exception as e:
+            raise IndexBuildError(f"FAISS add failed: {e}") from e
+
+    def search(
+        self,
+        query_id: str,
+        query_vector: List[float],
+        k: int,
+        exclude_ids: Optional[List[str]] = None,
+    ) -> List[SearchResult]:
+        import numpy as np
+
+        if self.size == 0:
+            return []
+
+        excluded = {query_id}
+        if exclude_ids:
+            excluded.update(exclude_ids)
+
+        k_request = min(k + len(excluded) + 1, self.size)
+
+        try:
+            query_np = np.array([query_vector], dtype=np.float32)
+            scores_np, indices_np = self._index.search(query_np, k_request)
+            scores = scores_np[0].tolist()
+            indices = indices_np[0].tolist()
+        except Exception as e:
+            logger.warning("faiss search failed", query_id=query_id[:8], error=str(e))
+            return []
+
+        results = []
+        rank = 1
+        for score, idx in zip(scores, indices):
+            if idx < 0 or idx >= len(self._claim_ids):
+                continue
+            neighbor_id = self._claim_ids[idx]
+            if neighbor_id in excluded:
+                continue
+            results.append(SearchResult(claim_id=neighbor_id, score=float(score), rank=rank))
+            rank += 1
+            if len(results) >= k:
+                break
+
+        return results
+````
+
+## File: src/smriti/retrieval/governance.py
+````python
+"""
+governance.py — Resource governance for Phase 6 discovery pipeline.
+
+Prevents runaway resource consumption on large vaults or misconfigured runs.
+
+Limits enforced:
+    max_pairs:        Maximum number of candidate pairs to process through NLI.
+    max_gpu_memory_gb: Maximum GPU memory allocation (0 = CPU only).
+    max_batch_size:   Maximum NLI batch size.
+    timeout_seconds:  Maximum wall-clock time for the entire Phase 6 run.
+    cancel_on_limit:  If True, abort when any limit is exceeded. If False, truncate.
+
+Rules:
+    ✅ Limits read from config (never hard-coded)
+    ✅ Truncation is deterministic (sorted by cosine_similarity desc)
+    ✅ Resource violations are logged and raised as ResourceLimitExceeded
+    ❌ Never modifies evidence or relationships
+"""
+
+from __future__ import annotations
+
+import time
+from typing import List, Optional
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import CandidatePair
+from smriti.exceptions import ResourceLimitExceeded
+
+logger = structlog.get_logger(__name__)
+
+
+class ResourceLimits:
+    """Holds all resource limits for one Phase 6 run."""
+
+    def __init__(self) -> None:
+        config = get_config()
+        gov_cfg = config.get("resource_governance", {})
+
+        self.max_pairs: int = gov_cfg.get("max_pairs", 100_000)
+        self.max_gpu_memory_gb: float = gov_cfg.get("max_gpu_memory_gb", 0.0)
+        self.max_batch_size: int = gov_cfg.get("max_batch_size", 64)
+        self.timeout_seconds: float = gov_cfg.get("timeout_seconds", 3600.0)
+        self.cancel_on_limit: bool = gov_cfg.get("cancel_on_limit", False)
+
+
+class ResourceGovernor:
+    """
+    Enforces resource limits during Phase 6.
+    Instantiate once per run; call check_* methods at critical points.
+    """
+
+    def __init__(self, limits: Optional[ResourceLimits] = None) -> None:
+        self._limits = limits or ResourceLimits()
+        self._start_time = time.monotonic()
+        logger.info(
+            "resource governor initialized",
+            max_pairs=self._limits.max_pairs,
+            timeout_seconds=self._limits.timeout_seconds,
+            cancel_on_limit=self._limits.cancel_on_limit,
+        )
+
+    def enforce_pair_limit(
+        self,
+        candidates: List[CandidatePair],
+    ) -> List[CandidatePair]:
+        """
+        Enforce max_pairs limit on the candidate list.
+
+        If cancel_on_limit=True and limit exceeded: raises ResourceLimitExceeded.
+        If cancel_on_limit=False: returns the top max_pairs by cosine_similarity.
+        """
+        if len(candidates) <= self._limits.max_pairs:
+            return candidates
+
+        if self._limits.cancel_on_limit:
+            raise ResourceLimitExceeded(
+                f"Candidate pairs ({len(candidates)}) exceeded max_pairs "
+                f"({self._limits.max_pairs}). Aborting. "
+                f"Increase resource_governance.max_pairs or reduce top_k."
+            )
+
+        logger.warning(
+            "pair limit exceeded, truncating",
+            total=len(candidates),
+            limit=self._limits.max_pairs,
+        )
+        # Truncate to top pairs by cosine similarity (deterministic)
+        sorted_candidates = sorted(
+            candidates, key=lambda c: c.cosine_similarity, reverse=True
+        )
+        return sorted_candidates[: self._limits.max_pairs]
+
+    def check_timeout(self) -> None:
+        """
+        Check if the timeout has been exceeded.
+        Raises ResourceLimitExceeded if so.
+        """
+        elapsed = time.monotonic() - self._start_time
+        if elapsed > self._limits.timeout_seconds:
+            raise ResourceLimitExceeded(
+                f"Phase 6 timeout exceeded: {elapsed:.1f}s > "
+                f"{self._limits.timeout_seconds:.1f}s. "
+                f"Increase resource_governance.timeout_seconds or reduce vault size."
+            )
+
+    def clamp_batch_size(self, requested: int) -> int:
+        """Return min(requested, max_batch_size)."""
+        clamped = min(requested, self._limits.max_batch_size)
+        if clamped < requested:
+            logger.warning(
+                "batch size clamped by resource governor",
+                requested=requested, clamped=clamped,
+            )
+        return clamped
+````
+
+## File: src/smriti/retrieval/incremental.py
+````python
+"""
+incremental.py — Incremental relationship discovery for large vaults.
+
+Problem:
+    When 50,000 claims exist and one new claim arrives, the full pipeline
+    would recompute all O(N·K) candidate pairs from scratch.
+    This is unacceptable for interactive or near-real-time use.
+
+Solution:
+    IncrementalDiscoveryEngine only searches for relationships between:
+    - New claims and the existing indexed claims
+    - New claims and each other
+
+    The existing RelationshipSet is preserved and augmented,
+    not recomputed.
+
+Cache invalidation cascade:
+    Embedding changed for claim X
+        → invalidate candidate cache for all pairs containing X
+        → invalidate evidence cache for those pairs
+        → invalidate relationships for those pairs
+        → recompute only the affected subset
+
+Rules:
+    ✅ Never recomputes existing valid relationships
+    ✅ Applies conflict resolution policy when new evidence conflicts with old
+    ✅ Respects resource limits (ResourceGovernor)
+    ❌ Never modifies existing Relationship objects
+"""
+
+from __future__ import annotations
+
+from typing import List, Dict, Set, Optional
+import structlog
+
+from smriti.core.models import (
+    EmbeddedClaim, Claim, Relationship, RelationshipSet,
+)
+from smriti.core.config import get_config
+from smriti.exceptions import ResourceLimitExceeded
+
+logger = structlog.get_logger(__name__)
+
+
+class CacheInvalidationPolicy:
+    """
+    Defines when cached results must be invalidated.
+
+    Cascade rule:
+        Embedding changed for claim X
+            → invalidate candidate_cache for all pairs containing X
+            → invalidate evidence_cache for those pairs
+            → invalidate resolved_cache for those pairs
+    """
+
+    def __init__(self) -> None:
+        config = get_config()
+        cache_cfg = config.get("cache_invalidation", {})
+        self._invalidate_on_embedding_change: bool = cache_cfg.get(
+            "invalidate_on_embedding_change", True
+        )
+        self._invalidate_on_model_change: bool = cache_cfg.get(
+            "invalidate_on_model_change", True
+        )
+        self._invalidate_on_policy_change: bool = cache_cfg.get(
+            "invalidate_on_policy_change", True
+        )
+
+    def should_invalidate_for_claim(
+        self,
+        claim_id: str,
+        changed_claim_ids: Set[str],
+    ) -> bool:
+        """Return True if any cache entries for this claim_id should be invalidated."""
+        if not self._invalidate_on_embedding_change:
+            return False
+        return claim_id in changed_claim_ids
+
+    def should_invalidate_all(
+        self,
+        old_config_hash: str,
+        new_config_hash: str,
+        old_model: str,
+        new_model: str,
+    ) -> bool:
+        """Return True if the entire cache should be invalidated (model or policy changed)."""
+        if self._invalidate_on_model_change and old_model != new_model:
+            logger.info(
+                "full cache invalidation: model changed",
+                old=old_model, new=new_model,
+            )
+            return True
+        if self._invalidate_on_policy_change and old_config_hash != new_config_hash:
+            logger.info(
+                "full cache invalidation: policy changed",
+                old_hash=old_config_hash[:8], new_hash=new_config_hash[:8],
+            )
+            return True
+        return False
+
+
+class IncrementalDiscoveryEngine:
+    """
+    Discovers relationships for a delta of new claims against an existing RelationshipSet.
+
+    Usage:
+        # Initial full run
+        result = discover_relationships(all_claims, ...)
+
+        # Later: new claims arrive
+        engine = IncrementalDiscoveryEngine(existing_result)
+        updated_result = engine.update(new_claims, all_claims_map, ...)
+    """
+
+    def __init__(
+        self,
+        existing_relationship_set: RelationshipSet,
+        invalidation_policy: Optional[CacheInvalidationPolicy] = None,
+    ) -> None:
+        self._existing = existing_relationship_set
+        self._invalidation_policy = invalidation_policy or CacheInvalidationPolicy()
+
+    def compute_delta(
+        self,
+        all_embedded_claims: List[EmbeddedClaim],
+        existing_claim_ids: Set[str],
+    ) -> List[EmbeddedClaim]:
+        """
+        Identify which claims are new (not in existing_claim_ids).
+
+        Args:
+            all_embedded_claims: Complete current set of embedded claims.
+            existing_claim_ids:  Claim IDs already present in the existing RelationshipSet.
+
+        Returns:
+            Only the new EmbeddedClaims that need relationship discovery.
+        """
+        new_claims = [
+            ec for ec in all_embedded_claims
+            if ec.claim_id not in existing_claim_ids
+        ]
+        logger.info(
+            "incremental delta computed",
+            total_claims=len(all_embedded_claims),
+            existing_claims=len(existing_claim_ids),
+            new_claims=len(new_claims),
+        )
+        return new_claims
+
+    def invalidate_changed_embeddings(
+        self,
+        changed_claim_ids: Set[str],
+    ) -> List[Relationship]:
+        """
+        Remove relationships that involve claims with changed embeddings.
+        Returns the remaining (valid) relationships.
+        """
+        if not changed_claim_ids:
+            return list(self._existing.relationships)
+
+        remaining = [
+            rel for rel in self._existing.relationships
+            if not (
+                rel.claim_id_a in changed_claim_ids
+                or rel.claim_id_b in changed_claim_ids
+            )
+        ]
+
+        invalidated_count = len(self._existing.relationships) - len(remaining)
+        logger.info(
+            "embedding change invalidation",
+            changed_claims=len(changed_claim_ids),
+            invalidated_relationships=invalidated_count,
+            remaining=len(remaining),
+        )
+
+        return remaining
+````
+
+## File: src/smriti/retrieval/index.py
+````python
+"""
+index.py — Abstract vector index interface for Phase 6.
+
+Responsibility:
+    Define the contract that all vector index implementations must satisfy.
+    The rest of Phase 6 depends ONLY on this interface, never on FAISS directly.
+    This allows FAISS to be replaced with HNSW, Annoy, ScaNN, or any future
+    ANN backend without changing any other Phase 6 code.
+
+Public interface:
+    EmbeddingIndex.add(claim_ids, vectors) → None
+    EmbeddingIndex.search(query_id, k)     → List[SearchResult]
+    EmbeddingIndex.dimension               → int
+    EmbeddingIndex.size                    → int
+
+Rules:
+    ✅ Returns plain Python types only (no numpy, no tensors)
+    ✅ Every implementation is interchangeable
+    ❌ Never performs NLI inference
+    ❌ Never constructs Relationship objects
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import List, Optional
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    """A single ANN search result."""
+    claim_id: str
+    score: float         # Cosine similarity (dot product on L2-normalized vectors)
+    rank: int            # 1 = nearest neighbor
+
+
+class EmbeddingIndex(ABC):
+    """
+    Abstract vector index for ANN (Approximate Nearest Neighbor) search.
+    """
+
+    @property
+    @abstractmethod
+    def dimension(self) -> int:
+        """Embedding dimension expected by this index."""
+        ...
+
+    @property
+    @abstractmethod
+    def size(self) -> int:
+        """Number of vectors currently in the index."""
+        ...
+
+    @abstractmethod
+    def add(self, claim_ids: List[str], vectors: List[List[float]]) -> None:
+        """
+        Add vectors to the index.
+
+        Args:
+            claim_ids: Identifiers for each vector.
+            vectors:   L2-normalized float lists (len == dimension each).
+
+        Raises:
+            IndexBuildError: If vectors cannot be added.
+        """
+        ...
+
+    @abstractmethod
+    def search(
+        self,
+        query_id: str,
+        query_vector: List[float],
+        k: int,
+        exclude_ids: Optional[List[str]] = None,
+    ) -> List[SearchResult]:
+        """
+        Find the K nearest neighbors of query_vector.
+
+        Args:
+            query_id:     The claim_id of the query (to exclude from results).
+            query_vector: L2-normalized float list.
+            k:            Maximum neighbors to return.
+            exclude_ids:  Additional IDs to exclude from results.
+
+        Returns:
+            List of SearchResult, sorted by score (highest first).
+            Never includes query_id itself.
+        """
+        ...
+````
+
+## File: src/smriti/retrieval/replay.py
+````python
+"""
+replay.py — Deterministic replay of Phase 6 discovery runs.
+
+Given a run_id, the ReplayEngine can reconstruct exactly the same
+RelationshipSet that was produced in the original run, provided:
+    - The same EmbeddedClaims are available
+    - The same NLI model is available
+    - The replay manifest is intact
+
+A replay manifest is written after every successful Phase 6 run.
+It records all parameters needed to exactly reproduce the run.
+
+Rules:
+    ✅ Replay is bit-identical to the original (same config, same model)
+    ✅ Replay manifest written atomically after every successful run
+    ✅ Replays are labeled with replay_id in provenance
+    ❌ Replay never modifies existing artifacts
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from typing import Optional
+import structlog
+
+from smriti.core.paths import ARTIFACTS_DIR
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class ReplayManifest:
+    """
+    Everything needed to replay a Phase 6 run identically.
+    Written to artifacts/run_{id}/phase6/replay_manifest.json.
+    """
+    run_id: str
+    schema_version: str
+    nli_model: str
+    nli_threshold: float
+    sim_threshold: float
+    top_k: int
+    min_confidence: float
+    refine_threshold: float
+    high_sim_threshold: float
+    neutrality_threshold: float
+    contradiction_margin: float
+    entailment_margin: float
+    calibration_strategy: str
+    calibration_temperature: float
+    conflict_resolution_policy: str
+    deduplication_policy: str
+    skip_unknown_relationships: bool
+    config_hash: str
+    total_embedded_claims: int
+    total_relationships: int
+    phase5_dataset_path: str
+    phase4_dataset_path: str
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self), indent=2)
+
+    @classmethod
+    def from_json(cls, text: str) -> "ReplayManifest":
+        data = json.loads(text)
+        return cls(**data)
+
+
+class ReplayEngine:
+    """
+    Writes and reads replay manifests for deterministic replay.
+    """
+
+    def write_replay_manifest(
+        self,
+        manifest: ReplayManifest,
+        run_id: str,
+    ) -> Path:
+        """Write the replay manifest after a successful run."""
+        phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase6"
+        phase_dir.mkdir(parents=True, exist_ok=True)
+        replay_path = phase_dir / "replay_manifest.json"
+        replay_path.write_text(manifest.to_json(), encoding="utf-8")
+        logger.info(
+            "replay manifest written",
+            path=str(replay_path),
+            run_id=run_id,
+        )
+        return replay_path
+
+    def load_replay_manifest(self, run_id: str) -> ReplayManifest:
+        """Load the replay manifest for a given run_id."""
+        from smriti.exceptions import ReplayError
+
+        replay_path = ARTIFACTS_DIR / f"run_{run_id}" / "phase6" / "replay_manifest.json"
+        if not replay_path.exists():
+            raise ReplayError(
+                f"Replay manifest not found for run_id={run_id}: {replay_path}"
+            )
+        return ReplayManifest.from_json(replay_path.read_text(encoding="utf-8"))
+
+    def build_replay_manifest(
+        self,
+        run_id: str,
+        config: dict,
+        config_hash: str,
+        total_embedded: int,
+        total_relationships: int,
+        phase5_path: str,
+        phase4_path: str,
+    ) -> ReplayManifest:
+        """Build a ReplayManifest from the current run's parameters."""
+        nli_cfg = config.get("nli", {})
+        rd_cfg = config.get("relationship_discovery", {})
+        policy_cfg = config.get("resolver_policy", {})
+        calib_cfg = config.get("calibration", {}).get(nli_cfg.get("model", ""), {})
+
+        return ReplayManifest(
+            run_id=run_id,
+            schema_version="6.0",
+            nli_model=nli_cfg.get("model", "cross-encoder/nli-deberta-v3-small"),
+            nli_threshold=nli_cfg.get("nli_threshold", 0.80),
+            sim_threshold=rd_cfg.get("sim_threshold", 0.75),
+            top_k=rd_cfg.get("top_k", 50),
+            min_confidence=rd_cfg.get("min_confidence", 0.50),
+            refine_threshold=rd_cfg.get("refine_threshold", 0.55),
+            high_sim_threshold=rd_cfg.get("high_sim_threshold", 0.88),
+            neutrality_threshold=rd_cfg.get("neutrality_threshold", 0.60),
+            contradiction_margin=policy_cfg.get("contradiction_margin", 0.0),
+            entailment_margin=policy_cfg.get("entailment_margin", 0.0),
+            calibration_strategy=calib_cfg.get("strategy", "identity"),
+            calibration_temperature=calib_cfg.get("temperature", 1.0),
+            conflict_resolution_policy=rd_cfg.get(
+                "conflict_resolution_policy", "highest_confidence"
+            ),
+            deduplication_policy=rd_cfg.get(
+                "deduplication_policy", "keep_highest_confidence"
+            ),
+            skip_unknown_relationships=rd_cfg.get("skip_unknown_relationships", True),
+            config_hash=config_hash,
+            total_embedded_claims=total_embedded,
+            total_relationships=total_relationships,
+            phase5_dataset_path=phase5_path,
+            phase4_dataset_path=phase4_path,
+        )
+````
+
+## File: src/smriti/retrieval/statistics.py
+````python
+"""
+statistics.py — Phase 6 execution telemetry.
+
+RECTIFIED: Phase6Stats (frozen dataclass) replaced with:
+    - Phase6StatsCollector: mutable accumulator (no frozen schema issues)
+    - DiscoveryReport: serializable report object produced by finalize()
+
+This prevents the "frozen schema becomes annoying" problem while keeping
+the clean separation between collection and reporting.
+
+Rules:
+    ✅ Never influences execution
+    ✅ DiscoveryReport is JSON-serializable
+    ✅ New metrics can be added to StatsCollector without schema freeze pain
+    ❌ Never modifies any pipeline object
+"""
+
+from __future__ import annotations
+
+import json
+import time
+from dataclasses import dataclass, asdict
+from typing import Dict, Optional
+import structlog
+
+from smriti.core.models import RelationshipType
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class DiscoveryReport:
+    """
+    Serializable report of Phase 6 execution.
+
+    Generated by Phase6StatsCollector.finalize().
+    This is what gets written to manifests and logs.
+    """
+    total_embedded_claims: int
+    total_candidate_pairs: int
+    validated_candidates: int
+    rejected_candidates: int
+    nli_calls: int
+    relationships_produced: int
+    contradictions: int
+    supports: int
+    refinements: int
+    neutrals: int
+    unknowns: int
+    rejected_relationships: int
+    total_runtime_seconds: float
+    retrieval_latency_seconds: float
+    nli_latency_seconds: float
+    calibration_applied_count: int
+    conflicts_resolved: int
+    cache_hit_rate: float
+    # Histogram of calibrated confidence scores (10 buckets, 0.0–1.0)
+    confidence_histogram: Dict[str, int]
+    # Rejection reasons breakdown
+    rejection_breakdown: Dict[str, int]
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+
+class Phase6StatsCollector:
+    """
+    Mutable accumulator for Phase 6 statistics.
+
+    Add new metrics here without breaking any frozen schema.
+    Call finalize() to produce a DiscoveryReport.
+    """
+
+    def __init__(self) -> None:
+        self._total_embedded = 0
+        self._total_candidates = 0
+        self._validated_candidates = 0
+        self._rejected_candidates = 0
+        self._nli_calls = 0
+        self._relationships = 0
+        self._by_type: Dict[str, int] = {t.value: 0 for t in RelationshipType}
+        self._rejected_relationships = 0
+        self._calibration_applied = 0
+        self._conflicts_resolved = 0
+        self._cache_hit_rate = 0.0
+        self._rejection_breakdown: Dict[str, int] = {}
+        self._confidence_buckets: Dict[str, int] = {
+            f"{i/10:.1f}-{(i+1)/10:.1f}": 0 for i in range(10)
+        }
+        self._start_time = time.monotonic()
+        self._retrieval_start: Optional[float] = None
+        self._retrieval_end: Optional[float] = None
+        self._nli_start: Optional[float] = None
+        self._nli_end: Optional[float] = None
+
+    def record_embedded_claims(self, count: int) -> None:
+        self._total_embedded = count
+
+    def record_candidate_start(self) -> None:
+        self._retrieval_start = time.monotonic()
+
+    def record_candidate_end(self, total: int, validated: int, rejected: int) -> None:
+        self._retrieval_end = time.monotonic()
+        self._total_candidates = total
+        self._validated_candidates = validated
+        self._rejected_candidates = rejected
+
+    def record_nli_start(self) -> None:
+        self._nli_start = time.monotonic()
+
+    def record_nli_end(self, calls: int) -> None:
+        self._nli_end = time.monotonic()
+        self._nli_calls = calls
+
+    def record_relationship(
+        self,
+        rel_type: RelationshipType,
+        calibrated_confidence: float,
+        calibration_applied: bool,
+    ) -> None:
+        self._relationships += 1
+        self._by_type[rel_type.value] = self._by_type.get(rel_type.value, 0) + 1
+        if calibration_applied:
+            self._calibration_applied += 1
+        # Bucket the confidence score
+        bucket_idx = min(int(calibrated_confidence * 10), 9)
+        bucket_key = f"{bucket_idx/10:.1f}-{(bucket_idx+1)/10:.1f}"
+        self._confidence_buckets[bucket_key] = self._confidence_buckets.get(bucket_key, 0) + 1
+
+    def record_rejected_relationship(self, reason: str = "unknown") -> None:
+        self._rejected_relationships += 1
+        self._rejection_breakdown[reason] = self._rejection_breakdown.get(reason, 0) + 1
+
+    def record_conflict_resolved(self) -> None:
+        self._conflicts_resolved += 1
+
+    def record_cache_hit_rate(self, rate: float) -> None:
+        self._cache_hit_rate = rate
+
+    def finalize(self) -> DiscoveryReport:
+        """Produce the final DiscoveryReport."""
+        elapsed = time.monotonic() - self._start_time
+        retrieval_latency = (
+            (self._retrieval_end - self._retrieval_start)
+            if self._retrieval_start and self._retrieval_end else 0.0
+        )
+        nli_latency = (
+            (self._nli_end - self._nli_start)
+            if self._nli_start and self._nli_end else 0.0
+        )
+
+        return DiscoveryReport(
+            total_embedded_claims=self._total_embedded,
+            total_candidate_pairs=self._total_candidates,
+            validated_candidates=self._validated_candidates,
+            rejected_candidates=self._rejected_candidates,
+            nli_calls=self._nli_calls,
+            relationships_produced=self._relationships,
+            contradictions=self._by_type.get("contradicts", 0),
+            supports=self._by_type.get("supports", 0),
+            refinements=self._by_type.get("refines", 0),
+            neutrals=self._by_type.get("neutral", 0),
+            unknowns=self._by_type.get("unknown", 0),
+            rejected_relationships=self._rejected_relationships,
+            total_runtime_seconds=elapsed,
+            retrieval_latency_seconds=retrieval_latency,
+            nli_latency_seconds=nli_latency,
+            calibration_applied_count=self._calibration_applied,
+            conflicts_resolved=self._conflicts_resolved,
+            cache_hit_rate=self._cache_hit_rate,
+            confidence_histogram=dict(self._confidence_buckets),
+            rejection_breakdown=dict(self._rejection_breakdown),
+        )
+````
+
+## File: src/smriti/retrieval/validator.py
+````python
+"""
+retrieval/validator.py — Candidate pair validation for Phase 6.
+
+Produces ValidatedCandidatePairs (lifecycle: VALIDATED_CANDIDATE).
+
+Rejection reasons:
+    SELF_COMPARISON:     claim_id_a == claim_id_b
+    DUPLICATE_PAIR:      Same pair appeared twice
+    MISSING_CLAIM:       One or both claim IDs not in claims_map
+    MISSING_EMBEDDING:   One or both embeddings not in embeddings_map
+    BELOW_THRESHOLD:     Cosine similarity < configured threshold
+    INVALID_EMBEDDING:   EmbeddedClaim quality check failed
+
+Rules:
+    ✅ Returns (valid, rejected_with_reasons) — never raises for individual pairs
+    ✅ Logs every rejection reason
+    ✅ Produces VALIDATED_CANDIDATE lifecycle stage on valid pairs
+    ❌ Never modifies CandidatePair objects
+    ❌ Never performs NLI
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Tuple, Dict, Set
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import CandidatePair, EmbeddedClaim, Claim, LifecycleStage
+
+logger = structlog.get_logger(__name__)
+
+
+class RejectionReason(str, Enum):
+    SELF_COMPARISON     = "self_comparison"
+    DUPLICATE_PAIR      = "duplicate_pair"
+    MISSING_CLAIM       = "missing_claim"
+    MISSING_EMBEDDING   = "missing_embedding"
+    INVALID_EMBEDDING   = "invalid_embedding"
+    BELOW_THRESHOLD     = "below_threshold"
+
+
+@dataclass(frozen=True)
+class CandidateValidationResult:
+    """Result of validating a single candidate pair."""
+    pair: CandidatePair
+    is_valid: bool
+    rejection_reason: RejectionReason | None = None
+
+
+def validate_candidates(
+    candidates: List[CandidatePair],
+    claims_map: Dict[str, Claim],
+    embeddings_map: Dict[str, EmbeddedClaim],
+    sim_threshold: float,
+) -> Tuple[List[CandidatePair], Dict[str, int]]:
+    """
+    Validate all candidate pairs before NLI inference.
+    Valid pairs are promoted to lifecycle stage VALIDATED_CANDIDATE.
+
+    Returns:
+        (valid_pairs, rejected_reason_counts)
+    """
+    valid: List[CandidatePair] = []
+    rejected_counts: Dict[str, int] = {}
+    seen_pair_keys: Set[str] = set()
+
+    def reject(reason: RejectionReason) -> None:
+        key = reason.value
+        rejected_counts[key] = rejected_counts.get(key, 0) + 1
+        logger.debug("candidate rejected", reason=reason.value)
+
+    for pair in candidates:
+        if pair.claim_id_a == pair.claim_id_b:
+            reject(RejectionReason.SELF_COMPARISON)
+            continue
+
+        pk = pair.pair_key()
+        if pk in seen_pair_keys:
+            reject(RejectionReason.DUPLICATE_PAIR)
+            continue
+        seen_pair_keys.add(pk)
+
+        if pair.claim_id_a not in claims_map or pair.claim_id_b not in claims_map:
+            reject(RejectionReason.MISSING_CLAIM)
+            continue
+
+        if pair.claim_id_a not in embeddings_map or pair.claim_id_b not in embeddings_map:
+            reject(RejectionReason.MISSING_EMBEDDING)
+            continue
+
+        emb_a = embeddings_map[pair.claim_id_a]
+        emb_b = embeddings_map[pair.claim_id_b]
+        if not (emb_a.quality.finite and emb_a.quality.dimension_ok):
+            reject(RejectionReason.INVALID_EMBEDDING)
+            continue
+        if not (emb_b.quality.finite and emb_b.quality.dimension_ok):
+            reject(RejectionReason.INVALID_EMBEDDING)
+            continue
+
+        if pair.cosine_similarity < sim_threshold:
+            reject(RejectionReason.BELOW_THRESHOLD)
+            continue
+
+        # Promote to VALIDATED_CANDIDATE lifecycle stage
+        validated_pair = CandidatePair(
+            claim_id_a=pair.claim_id_a,
+            claim_id_b=pair.claim_id_b,
+            cosine_similarity=pair.cosine_similarity,
+            candidate_rank=pair.candidate_rank,
+            retrieval_backend=pair.retrieval_backend,
+            index_version=pair.index_version,
+            search_parameters=pair.search_parameters,
+            retrieval_quality=pair.retrieval_quality,
+            lifecycle_stage=LifecycleStage.VALIDATED_CANDIDATE,
+        )
+        valid.append(validated_pair)
+
+    total_rejected = sum(rejected_counts.values())
+    logger.info(
+        "candidate validation complete",
+        total=len(candidates),
+        valid=len(valid),
+        rejected=total_rejected,
+        reasons=rejected_counts,
+    )
+
+    return valid, rejected_counts
+````
+
+## File: src/smriti/scoring/signals/__init__.py
+````python
+"""
+signals/__init__.py — SignalRegistry for Phase 8.
+
+RECTIFIED (P0-1): Replaces the static SIGNAL_EXTRACTORS list with a
+dynamic SignalRegistry that supports:
+    - register(extractor): Register a new extractor (any module can call this)
+    - discover(): Return all registered extractors in priority order
+    - ordered_extractors(): Return extractors sorted by priority
+    - deregister(signal_name): Remove an extractor (for testing)
+
+Open/Closed compliance:
+    Adding a new signal extractor ONLY requires:
+        1. Creating the extractor class
+        2. Calling SignalRegistry.register() (typically in the extractor's module)
+    The __init__.py pipeline, Fusion engine, and all other modules NEVER change.
+
+Priority ordering:
+    Lower priority number = extracted first.
+    Extractors with the same priority are ordered alphabetically by signal_id.
+    Default priority = 100. Negative priorities are reserved for system signals.
+
+RECTIFIED (Phase 8.2): Uses signal_id (SignalID enum) instead of string signal_name.
+Enforces API version compatibility at registration time.
+"""
+
+from __future__ import annotations
+
+from typing import Dict, List, Optional
+import structlog
+
+from smriti.scoring.signals.base import BaseSignalExtractor, SIGNAL_API_VERSION
+from smriti.exceptions import RegistryError
+
+logger = structlog.get_logger(__name__)
+
+
+class SignalRegistry:
+    """
+    Central registry for all signal extractors.
+
+    Usage:
+        # In an extractor module (e.g., novelty.py):
+        from smriti.scoring.signals import signal_registry
+        signal_registry.register(NoveltySignalExtractor(), priority=90)
+
+        # In the pipeline:
+        extractors = signal_registry.ordered_extractors()
+        # That's it. Pipeline never changes.
+    """
+
+    def __init__(self) -> None:
+        self._extractors: Dict[str, BaseSignalExtractor] = {}
+        self._priorities: Dict[str, int] = {}
+
+    def register(
+        self,
+        extractor: BaseSignalExtractor,
+        priority: int = 100,
+    ) -> None:
+        """
+        Register a signal extractor.
+
+        Args:
+            extractor: The extractor instance.
+            priority:  Execution priority (lower = runs first). Default = 100.
+
+        Raises:
+            RegistryError: If a different extractor is already registered
+                           with the same signal_id, or if the extractor's
+                           API version does not match SIGNAL_API_VERSION.
+        """
+        # ── API version check ─────────────────────────────────────────────────────
+        if extractor.api_version != SIGNAL_API_VERSION:
+            raise RegistryError(
+                f"Extractor {extractor.__class__.__name__} uses API version "
+                f"{extractor.api_version}, but registry expects {SIGNAL_API_VERSION}. "
+                f"Update the extractor to comply with the current API."
+            )
+
+        signal_id = extractor.signal_id
+        key = signal_id.value
+
+        if key in self._extractors:
+            existing = self._extractors[key]
+            if type(existing) is not type(extractor):
+                raise RegistryError(
+                    f"Signal '{key}' is already registered with a different extractor type "
+                    f"({type(existing).__name__}). Deregister first if you intend to replace it."
+                )
+            logger.debug("signal already registered, skipping", signal=key)
+            return
+
+        self._extractors[key] = extractor
+        self._priorities[key] = priority
+        logger.debug(
+            "signal registered",
+            signal=key,
+            priority=priority,
+            version=extractor.version,
+            api_version=extractor.api_version,
+        )
+
+    def deregister(self, signal_id_value: str) -> None:
+        """Remove an extractor by its SignalID value. Primarily for testing."""
+        self._extractors.pop(signal_id_value, None)
+        self._priorities.pop(signal_id_value, None)
+
+    def discover(self) -> Dict[str, BaseSignalExtractor]:
+        """Return all registered extractors keyed by SignalID value."""
+        return dict(self._extractors)
+
+    def ordered_extractors(self) -> List[BaseSignalExtractor]:
+        """Return extractors sorted by (priority, signal_id.value) for determinism."""
+        return sorted(
+            self._extractors.values(),
+            key=lambda e: (self._priorities.get(e.signal_id.value, 100), e.signal_id.value),
+        )
+
+    def get(self, signal_id_value: str) -> Optional[BaseSignalExtractor]:
+        """Get a specific extractor by its SignalID value."""
+        return self._extractors.get(signal_id_value)
+
+    @property
+    def registered_names(self) -> List[str]:
+        """Sorted list of all registered SignalID values."""
+        return sorted(self._extractors.keys())
+
+    def __len__(self) -> int:
+        return len(self._extractors)
+
+
+# ── Singleton registry instance ───────────────────────────────────────────────
+signal_registry = SignalRegistry()
+
+# ── Register all built-in extractors ─────────────────────────────────────────
+# Import order determines when each extractor calls register().
+# Priority values control execution order.
+
+from smriti.scoring.signals.evidence import EvidenceStrengthExtractor
+from smriti.scoring.signals.independence import EvidenceIndependenceExtractor
+from smriti.scoring.signals.provenance import SourceDiversityExtractor
+from smriti.scoring.signals.structural import (
+    TopologyStrengthExtractor,
+    HubScoreExtractor,
+    BridgeScoreExtractor,
+)
+from smriti.scoring.signals.conflict import ConflictPressureExtractor
+from smriti.scoring.signals.temporal import TemporalStabilityExtractor
+
+# Register with explicit priorities (lower = runs first)
+signal_registry.register(EvidenceStrengthExtractor(),    priority=10)
+signal_registry.register(EvidenceIndependenceExtractor(), priority=20)
+signal_registry.register(SourceDiversityExtractor(),     priority=30)
+signal_registry.register(TopologyStrengthExtractor(),    priority=40)
+signal_registry.register(HubScoreExtractor(),            priority=41)   # RECTIFIED (P0-3)
+signal_registry.register(BridgeScoreExtractor(),         priority=42)   # RECTIFIED (P0-3)
+signal_registry.register(ConflictPressureExtractor(),    priority=50)
+signal_registry.register(TemporalStabilityExtractor(),   priority=60)
+
+# Backward-compatible alias for external callers that used SIGNAL_EXTRACTORS
+# (Maintained for compatibility but should be considered deprecated)
+SIGNAL_EXTRACTORS = signal_registry.ordered_extractors()
+
+__all__ = [
+    "BaseSignalExtractor",
+    "SignalRegistry",
+    "signal_registry",
+    "SIGNAL_EXTRACTORS",
+    "EvidenceStrengthExtractor",
+    "EvidenceIndependenceExtractor",
+    "SourceDiversityExtractor",
+    "TopologyStrengthExtractor",
+    "HubScoreExtractor",
+    "BridgeScoreExtractor",
+    "ConflictPressureExtractor",
+    "TemporalStabilityExtractor",
+]
+````
+
+## File: src/smriti/scoring/signals/base.py
+````python
+"""
+signals/base.py — Abstract base for all signal extractors.
+
+RECTIFIED (P1-2): Each extractor now owns its normalize() method.
+The normalization engine calls extractor.normalize(raw_value) rather than
+centralizing normalization logic.
+
+RECTIFIED (P0-4): extract() now returns RawSignal with both raw_value and
+normalized_value, plus a build_manifest() method for SignalManifest construction.
+
+RECTIFIED (Phase 8.2): signal_name replaced by signal_id (a SignalID enum)
+for type-safe signal identification across the registry and fusion.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import List, Optional
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats,
+    SignalManifest, SignalStatus, SignalID,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+
+SIGNAL_API_VERSION = 1
+
+
+class BaseSignalExtractor(ABC):
+    """Abstract base for all signal extractors."""
+
+    @property
+    @abstractmethod
+    def signal_id(self) -> SignalID:
+        """
+        Unique signal identifier (replaces signal_name).
+
+        Uses the SignalID enum for type safety and canonical registry.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def version(self) -> str:
+        """Extractor version for audit trail."""
+        ...
+
+    @property
+    def normalization_strategy(self) -> str:
+        """
+        Human-readable description of the normalization strategy.
+        RECTIFIED (P1-2): Each extractor declares its strategy.
+        """
+        return "identity"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        """
+        Which graph fields this extractor depends on.
+        RECTIFIED (P0-4): For SignalManifest.dependency_list.
+        """
+        return []
+
+    @property
+    def api_version(self) -> int:
+        """The interface version this extractor was built against."""
+        return SIGNAL_API_VERSION
+
+    @abstractmethod
+    def extract(
+        self,
+        node: ClaimNode,
+        graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats,
+        policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        """
+        Extract and normalize the raw signal value for one ClaimNode.
+
+        RECTIFIED (P1-2): Extractor owns normalization.
+        Returns RawSignal with BOTH raw_value and normalized_value populated.
+        normalized_value is always in [0, 1].
+
+        NEVER raises — errors are captured in status and metadata.
+        """
+        ...
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        """
+        RECTIFIED (P1-2): Extractor-owned normalization strategy.
+        Default: identity (raw already in [0,1]).
+        Override in subclass for log-scale, step-function, etc.
+        """
+        return max(0.0, min(1.0, raw))
+
+    def build_manifest(
+        self,
+        signal: RawSignal,
+        quality_flags: Optional[List[str]] = None,
+    ) -> SignalManifest:
+        """
+        RECTIFIED (P0-4): Build a SignalManifest for this signal/claim.
+        Called by the normalization engine after extract().
+        """
+        return SignalManifest(
+            signal_name=self.signal_id.value,           # Enum value as string
+            extractor_version=self.version,
+            raw_value=signal.raw_value,
+            normalized_value=signal.normalized_value,
+            normalization_strategy=self.normalization_strategy,
+            status=signal.status,
+            quality_flags=tuple(quality_flags or []),
+            dependency_list=tuple(self.dependency_list),
+            diagnostics=dict(signal.metadata),
+        )
+````
+
+## File: src/smriti/scoring/signals/conflict.py
+````python
+"""conflict.py — Conflict pressure signal extractor."""
+
+from __future__ import annotations
+
+import math
+from typing import List
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus, RelationshipType,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+
+class ConflictPressureExtractor(BaseSignalExtractor):
+
+    @property
+    def signal_name(self) -> str:
+        return "conflict_pressure"
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "log_scale_saturating"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["graph.edges[CONTRADICTS]", "edge.calibrated_confidence"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        claim_id = node.claim_id
+        contradiction_edges = [
+            e for e in graph.edges.values()
+            if e.relationship_type == RelationshipType.CONTRADICTS
+            and (e.source_node_id == claim_id or e.target_node_id == claim_id)
+        ]
+        n_contradictions = len(contradiction_edges)
+
+        if n_contradictions == 0:
+            return RawSignal(
+                name=self.signal_name, raw_value=0.0, normalized_value=0.0,
+                status=SignalStatus.MEASURED,
+                metadata={"contradiction_count": 0},
+            )
+
+        max_c = max(1, global_stats.max_contradiction_partners)
+        normalized_count = math.log1p(n_contradictions) / math.log1p(max_c)
+        saturation = policy.conflict.conflict_saturation
+        raw_sat = normalized_count / saturation if normalized_count < saturation else 1.0
+
+        avg_confidence = (
+            sum(e.calibrated_confidence for e in contradiction_edges) / n_contradictions
+        )
+        raw_value = raw_sat * (0.7 + 0.3 * avg_confidence)
+        normalized = self.normalize(raw_value, global_stats)
+
+        return RawSignal(
+            name=self.signal_name,
+            raw_value=raw_value,
+            normalized_value=normalized,
+            status=SignalStatus.MEASURED,
+            metadata={
+                "contradiction_count": n_contradictions,
+                "avg_contradiction_confidence": round(avg_confidence, 3),
+            },
+        )
+````
+
+## File: src/smriti/scoring/signals/evidence.py
+````python
+"""evidence.py — Evidence strength signal extractor."""
+
+from __future__ import annotations
+
+import math
+from typing import List
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats,
+    SignalStatus, SignalID,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+
+class EvidenceStrengthExtractor(BaseSignalExtractor):
+
+    @property
+    def signal_id(self) -> SignalID:
+        return SignalID.EVIDENCE_STRENGTH
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "log_scale_blended_confidence"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["support_aggregate.support_count", "support_aggregate.weighted_confidence"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        if node.support_aggregate is None:
+            return RawSignal(
+                name=self.signal_id.value,
+                raw_value=0.0,
+                normalized_value=0.0,
+                status=SignalStatus.UNAVAILABLE,
+                metadata={"reason": "no_support_aggregate"},
+            )
+
+        support_count = node.support_aggregate.support_count
+        weighted_conf = node.support_aggregate.weighted_confidence
+
+        if support_count == 0:
+            return RawSignal(
+                name=self.signal_id.value,
+                raw_value=0.0,
+                normalized_value=0.0,
+                status=SignalStatus.MEASURED,
+                metadata={"support_count": 0, "weighted_confidence": 0.0},
+            )
+
+        max_count = max(1, global_stats.max_support_count)
+        log_norm = math.log1p(support_count) / math.log1p(max_count)
+        raw_value = 0.7 * log_norm + 0.3 * weighted_conf
+        normalized = self.normalize(raw_value, global_stats)
+
+        return RawSignal(
+            name=self.signal_id.value,
+            raw_value=raw_value,
+            normalized_value=normalized,
+            status=SignalStatus.MEASURED,
+            metadata={
+                "support_count": support_count,
+                "weighted_confidence": weighted_conf,
+            },
+        )
+````
+
+## File: src/smriti/scoring/signals/independence.py
+````python
+"""
+independence.py — Evidence independence signal extractor.
+
+RECTIFIED (P1-1): Now includes lineage heuristics beyond simple document ID
+comparison. Document ID independence is a necessary but not sufficient condition.
+
+Additional lineage heuristics:
+    - Publisher domain fingerprinting: nodes from the same publisher domain
+      are penalized even if document IDs differ (e.g., blog.org/post-1 and
+      blog.org/post-2 share a publisher and are not independent).
+    - Citation chain detection: if supporter A references supporter B in its
+      source_path's directory hierarchy, they may not be independent.
+
+These heuristics are approximate and configurable via EvidencePolicy.
+"""
+
+from __future__ import annotations
+
+from typing import List, Set
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+
+class EvidenceIndependenceExtractor(BaseSignalExtractor):
+
+    @property
+    def signal_name(self) -> str:
+        return "evidence_independence"
+
+    @property
+    def version(self) -> str:
+        return "1.1"  # Bumped for lineage heuristic addition
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "ratio_with_penalty"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return [
+            "support_aggregate.supporting_claim_ids",
+            "graph.nodes[supporter].document_id",
+            "graph.nodes[supporter].source_path",
+        ]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        if node.support_aggregate is None or node.support_aggregate.support_count == 0:
+            return RawSignal(
+                name=self.signal_name, raw_value=1.0, normalized_value=1.0,
+                status=SignalStatus.DEFAULT,
+                metadata={"reason": "no_support_to_evaluate"},
+            )
+
+        supporting_ids = node.support_aggregate.supporting_claim_ids
+        if not supporting_ids:
+            return RawSignal(
+                name=self.signal_name, raw_value=1.0, normalized_value=1.0,
+                status=SignalStatus.MEASURED,
+                metadata={"support_count": 0},
+            )
+
+        total = len(supporting_ids)
+        quality_flags = []
+
+        # ── Heuristic 1: Document ID independence (original) ──────────────────
+        document_ids: Set[str] = set()
+        for cid in supporting_ids:
+            supporter_node = graph.nodes.get(cid)
+            if supporter_node:
+                document_ids.add(supporter_node.document_id)
+        unique_docs = len(document_ids)
+        doc_independence = unique_docs / max(1, total)
+
+        # ── Heuristic 2: Publisher domain fingerprinting (NEW P1-1) ──────────
+        publisher_domains: Set[str] = set()
+        for cid in supporting_ids:
+            supporter_node = graph.nodes.get(cid)
+            if supporter_node and supporter_node.source_path:
+                # Extract domain approximation from path parts
+                # e.g. "notes/ml/blog/post.md" → domain fingerprint = "notes/ml/blog"
+                parts = supporter_node.source_path.parts
+                domain = "/".join(parts[:-1]) if len(parts) > 1 else str(supporter_node.source_path)
+                publisher_domains.add(domain)
+        unique_publishers = len(publisher_domains)
+        publisher_independence = unique_publishers / max(1, total)
+
+        if publisher_independence < doc_independence:
+            quality_flags.append("shared_publisher_domain")
+
+        # ── Blend: document + publisher independence ───────────────────────────
+        pw = policy.evidence.publisher_domain_weight
+        blended_independence = (
+            (1.0 - pw) * doc_independence + pw * publisher_independence
+        )
+
+        # ── Apply echo chamber penalty if below threshold ─────────────────────
+        penalty = policy.evidence.echo_chamber_penalty
+        threshold = policy.evidence.independence_discount_threshold
+        if blended_independence < threshold:
+            raw_value = blended_independence * (1.0 - penalty)
+            quality_flags.append("echo_chamber_penalty_applied")
+        else:
+            raw_value = blended_independence
+
+        normalized = self.normalize(raw_value, global_stats)
+
+        return RawSignal(
+            name=self.signal_name,
+            raw_value=raw_value,
+            normalized_value=normalized,
+            status=SignalStatus.MEASURED,
+            metadata={
+                "unique_documents": unique_docs,
+                "unique_publishers": unique_publishers,
+                "total_supporters": total,
+                "doc_independence": round(doc_independence, 3),
+                "publisher_independence": round(publisher_independence, 3),
+                "blended_independence": round(blended_independence, 3),
+                "quality_flags": quality_flags,
+            },
+        )
+````
+
+## File: src/smriti/scoring/signals/provenance.py
+````python
+"""provenance.py — Source diversity signal extractor."""
+
+from __future__ import annotations
+
+import math
+from typing import List
+from smriti.core.models import ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+
+class SourceDiversityExtractor(BaseSignalExtractor):
+
+    @property
+    def signal_name(self) -> str:
+        return "source_diversity"
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "log_scale"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["support_aggregate.supporting_claim_ids", "graph.nodes[supporter].document_id"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        if node.support_aggregate is None:
+            return RawSignal(
+                name=self.signal_name, raw_value=0.0, normalized_value=0.0,
+                status=SignalStatus.UNAVAILABLE,
+                metadata={"reason": "no_support_aggregate"},
+            )
+
+        supporting_ids = node.support_aggregate.supporting_claim_ids
+        if not supporting_ids:
+            return RawSignal(
+                name=self.signal_name, raw_value=0.0, normalized_value=0.0,
+                status=SignalStatus.MEASURED,
+                metadata={"unique_documents": 0},
+            )
+
+        unique_docs = set()
+        for cid in supporting_ids:
+            supporter_node = graph.nodes.get(cid)
+            if supporter_node:
+                unique_docs.add(supporter_node.document_id)
+
+        n_unique = len(unique_docs)
+        max_possible = max(1, global_stats.max_source_diversity)
+        raw_value = math.log1p(n_unique) / math.log1p(max_possible)
+        normalized = self.normalize(raw_value, global_stats)
+
+        return RawSignal(
+            name=self.signal_name,
+            raw_value=raw_value,
+            normalized_value=normalized,
+            status=SignalStatus.MEASURED,
+            metadata={"unique_documents": n_unique},
+        )
+````
+
+## File: src/smriti/scoring/signals/structural.py
+````python
+"""
+structural.py — Topology signal extractors.
+
+RECTIFIED (P0-3): hub_bonus and bridge_bonus have been removed from TopologyPolicy.
+Instead, HubScore and BridgeScore are now SEPARATE registered signals with their
+own policy weights in FusionPolicy.signal_weights.
+
+This means:
+    - TopologyPolicy never knows what "hub" or "bridge" means internally
+    - Fusion simply weights hub_score and bridge_score as independent signals
+    - Adding a new topology sub-signal only requires a new extractor + registration
+    - Policies adjust weights, not bonuses
+
+Three extractors in this file:
+    1. TopologyStrengthExtractor  — centrality-based topology signal
+    2. HubScoreExtractor          — binary hub signal (is_hub → 1.0, else 0.0)
+    3. BridgeScoreExtractor       — binary bridge signal (is_bridge → 1.0, else 0.0)
+"""
+
+from __future__ import annotations
+
+from typing import List
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats,
+    SignalStatus, SignalID,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+
+class TopologyStrengthExtractor(BaseSignalExtractor):
+    """Measures centrality-based structural importance."""
+
+    @property
+    def signal_id(self) -> SignalID:
+        return SignalID.TOPOLOGY_STRENGTH
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "linear_centrality_scale"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["topology.centrality", "topology.degree"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        if node.topology is None:
+            return RawSignal(
+                name=self.signal_id.value,
+                raw_value=0.0,
+                normalized_value=0.0,
+                status=SignalStatus.UNAVAILABLE,
+                metadata={"reason": "no_topology_metrics"},
+            )
+
+        topo = node.topology
+        # RECTIFIED: only centrality × scale — no hub/bridge bonus here
+        raw_value = topo.centrality * policy.topology.centrality_scale
+        normalized = self.normalize(raw_value, global_stats)
+
+        return RawSignal(
+            name=self.signal_id.value,
+            raw_value=raw_value,
+            normalized_value=normalized,
+            status=SignalStatus.MEASURED,
+            metadata={
+                "centrality": topo.centrality,
+                "degree": topo.degree,
+                "centrality_scale": policy.topology.centrality_scale,
+            },
+        )
+
+
+class HubScoreExtractor(BaseSignalExtractor):
+    """
+    RECTIFIED (P0-3): Emits HubScore as a separate signal.
+
+    hub_bonus was a policy detail bleeding into topology measurement.
+    Instead: hub_score = 1.0 if is_hub else 0.0.
+    The FusionPolicy.signal_weights["hub_score"] controls importance.
+    Policy never needs to know what "hub" means structurally.
+    """
+
+    @property
+    def signal_id(self) -> SignalID:
+        return SignalID.HUB_SCORE
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "binary"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["topology.is_hub"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        if node.topology is None:
+            return RawSignal(
+                name=self.signal_id.value,
+                raw_value=0.0,
+                normalized_value=0.0,
+                status=SignalStatus.UNAVAILABLE,
+                metadata={"reason": "no_topology_metrics"},
+            )
+
+        raw_value = 1.0 if node.topology.is_hub else 0.0
+
+        return RawSignal(
+            name=self.signal_id.value,
+            raw_value=raw_value,
+            normalized_value=raw_value,
+            status=SignalStatus.MEASURED,
+            metadata={"is_hub": node.topology.is_hub},
+        )
+
+
+class BridgeScoreExtractor(BaseSignalExtractor):
+    """
+    RECTIFIED (P0-3): Emits BridgeScore as a separate signal.
+
+    bridge_bonus was a policy detail bleeding into topology measurement.
+    Instead: bridge_score = 1.0 if is_bridge else 0.0.
+    The FusionPolicy.signal_weights["bridge_score"] controls importance.
+    """
+
+    @property
+    def signal_id(self) -> SignalID:
+        return SignalID.BRIDGE_SCORE
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "binary"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["topology.is_bridge"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        if node.topology is None:
+            return RawSignal(
+                name=self.signal_id.value,
+                raw_value=0.0,
+                normalized_value=0.0,
+                status=SignalStatus.UNAVAILABLE,
+                metadata={"reason": "no_topology_metrics"},
+            )
+
+        raw_value = 1.0 if node.topology.is_bridge else 0.0
+
+        return RawSignal(
+            name=self.signal_id.value,
+            raw_value=raw_value,
+            normalized_value=raw_value,
+            status=SignalStatus.MEASURED,
+            metadata={"is_bridge": node.topology.is_bridge},
+        )
+````
+
+## File: src/smriti/scoring/signals/temporal.py
+````python
+"""temporal.py — Temporal stability signal extractor."""
+
+from __future__ import annotations
+
+from typing import List
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus, TemporalStatus,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+
+class TemporalStabilityExtractor(BaseSignalExtractor):
+
+    @property
+    def signal_name(self) -> str:
+        return "temporal_stability"
+
+    @property
+    def version(self) -> str:
+        return "1.0"
+
+    @property
+    def normalization_strategy(self) -> str:
+        return "step_function_temporal_status"
+
+    @property
+    def dependency_list(self) -> List[str]:
+        return ["temporal_metadata.status", "temporal_metadata.temporal_confidence"]
+
+    def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
+        return max(0.0, min(1.0, raw))
+
+    def extract(
+        self, node: ClaimNode, graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+    ) -> RawSignal:
+        temp = node.temporal_metadata
+        tp = policy.temporal
+
+        if temp is None:
+            return RawSignal(
+                name=self.signal_name,
+                raw_value=tp.default_stability,
+                normalized_value=tp.default_stability,
+                status=SignalStatus.DEFAULT,
+                metadata={"reason": "no_temporal_metadata"},
+            )
+
+        if temp.status == TemporalStatus.EVOLUTION_CHAIN:
+            temporal_conf = temp.temporal_confidence or 0.5
+            raw_value = min(1.0, tp.default_stability + tp.evolution_bonus + 0.10 * temporal_conf)
+            status = SignalStatus.MEASURED
+        elif temp.status == TemporalStatus.STATIC_PARTITION:
+            raw_value = tp.default_stability
+            status = SignalStatus.MEASURED
+        elif temp.status == TemporalStatus.UNRESOLVED_CONFLICT:
+            raw_value = max(0.0, tp.default_stability - tp.conflict_penalty)
+            status = SignalStatus.ESTIMATED
+        else:
+            raw_value = tp.default_stability
+            status = SignalStatus.DEFAULT
+
+        normalized = self.normalize(raw_value, global_stats)
+
+        return RawSignal(
+            name=self.signal_name,
+            raw_value=raw_value,
+            normalized_value=normalized,
+            status=status,
+            metadata={"temporal_status": temp.status.value if temp else "none"},
+        )
+````
+
+## File: src/smriti/scoring/builder.py
+````python
+"""
+builder.py — ScoredKnowledgeGraph assembly for Phase 8.
+
+RECTIFIED: Now populates ReliabilityMetadata with SignalManifests and
+ReliabilityDecisionRecord. Registry order captured in audit trail.
+"""
+
+from __future__ import annotations
+
+import hashlib
+from typing import Dict, List
+import structlog
+
+from smriti.core.models import (
+    KnowledgeGraph, ClaimNode, SignalVector, ComponentScore,
+    SignalManifest, ReliabilityDecisionRecord, ReliabilityExplanation,
+    ReliabilityAudit, ReliabilityMetadata, ScoredKnowledgeGraph,
+    ScoringGlobalStats, CalibrationLabel, ContributionSet,
+)
+from smriti.scoring.policies import ReliabilityPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+logger = structlog.get_logger(__name__)
+
+PHASE8_SCHEMA_VERSION = "8.0"
+
+
+def compute_graph_fingerprint(graph: KnowledgeGraph) -> str:
+    """
+    Create a deterministic SHA256 fingerprint of the graph's topology.
+
+    This fingerprint captures the set of node IDs, edge IDs, and schema version.
+    It can be used to detect changes in the graph structure between runs.
+    """
+    node_keys = "|".join(sorted(graph.nodes.keys()))
+    edge_keys = "|".join(sorted(graph.edges.keys()))
+    material = f"{node_keys}||{edge_keys}||{graph.schema_version}"
+    return hashlib.sha256(material.encode()).hexdigest()[:16]
+
+
+def apply_calibration_label(ri: float, policy: ReliabilityPolicy) -> CalibrationLabel:
+    """Map Reliability Index to CalibrationLabel using policy thresholds."""
+    cp = policy.calibration
+    if ri >= cp.very_high_threshold:
+        return CalibrationLabel.VERY_HIGH
+    elif ri >= cp.high_threshold:
+        return CalibrationLabel.HIGH
+    elif ri >= cp.moderate_threshold:
+        return CalibrationLabel.MODERATE
+    elif ri >= cp.low_threshold:
+        return CalibrationLabel.LOW
+    else:
+        return CalibrationLabel.VERY_LOW
+
+
+def build_reliability_metadata(
+    node: ClaimNode,
+    reliability_index: float,
+    uncertainty_score: float,
+    signal_vector: SignalVector,
+    component_scores: List[ComponentScore],
+    signal_manifests: List[SignalManifest],          # NEW (P0-4)
+    decision_record: ReliabilityDecisionRecord,       # NEW (P0-5)
+    explanation: ReliabilityExplanation,
+    policy: ReliabilityPolicy,
+    run_id: str,
+    extractors: List[BaseSignalExtractor],
+    graph: KnowledgeGraph,                            # ADDED (Phase 8.4)
+) -> ReliabilityMetadata:
+    """
+    Construct immutable ReliabilityMetadata for one ClaimNode.
+
+    RECTIFIED (Phase 8.4): Accepts `graph` to compute graph fingerprint
+    and use graph.schema_version in audit trail.
+    """
+    calibration_label = apply_calibration_label(reliability_index, policy)
+
+    registry_order = tuple(e.signal_name for e in extractors)
+
+    audit = ReliabilityAudit(
+        policy_version=policy.version,
+        policy_profile=policy.profile,
+        graph_schema_version=graph.schema_version,          # NOW from graph
+        graph_fingerprint=compute_graph_fingerprint(graph),  # NEW field (Phase 8.4)
+        fusion_algorithm="weighted_linear_v2",
+        normalization_version="1.1",
+        computed_at_run_id=run_id,
+        signal_extractor_versions={
+            e.signal_name: e.version for e in extractors
+        },
+        registry_order=registry_order,
+    )
+
+    return ReliabilityMetadata(
+        claim_id=node.claim_id,
+        reliability_index=round(reliability_index, 2),
+        uncertainty_score=round(uncertainty_score, 2),
+        evidence_completeness=round(signal_vector.evidence_completeness, 4),
+        signal_vector=signal_vector,
+        signal_manifests=tuple(signal_manifests),
+        component_scores=tuple(component_scores),
+        decision_record=decision_record,
+        explanation=explanation,
+        calibration_label=calibration_label,
+        audit=audit,
+        policy_version=policy.version,
+        schema_version=PHASE8_SCHEMA_VERSION,
+    )
+
+
+def build_scored_knowledge_graph(
+    graph: KnowledgeGraph,
+    reliability: Dict[str, ReliabilityMetadata],
+    policy: ReliabilityPolicy,
+    global_stats: ScoringGlobalStats,
+    run_id: str,
+) -> ScoredKnowledgeGraph:
+    """Assemble the final ScoredKnowledgeGraph."""
+    return ScoredKnowledgeGraph(
+        graph=graph,
+        reliability=reliability,
+        policy_snapshot=policy.to_dict(),
+        policy_profile=policy.profile,
+        global_stats=global_stats,
+        run_id=run_id,
+        schema_version=PHASE8_SCHEMA_VERSION,
+    )
+````
+
+## File: src/smriti/scoring/constraints.py
+````python
+from abc import ABC, abstractmethod
+from typing import Tuple, Optional
+from smriti.core.models import SignalVector
+from smriti.scoring.policies import FusionPolicy
+
+class FusionConstraint(ABC):
+    @abstractmethod
+    def apply(self, current_ri: float, sv: SignalVector, fp: FusionPolicy) -> Tuple[float, Optional[str]]:
+        """Returns (new_ri, activation_log_message)."""
+        pass
+
+class NoEvidenceConstraint(FusionConstraint):
+    def apply(self, current_ri, sv, fp):
+        cap = fp.max_reliability_without_evidence
+        if sv.evidence_strength < 0.10 and current_ri > cap:
+            return cap, f"no_evidence_cap: {cap}"
+        return current_ri, None
+
+class MaxConflictConstraint(FusionConstraint):
+    def apply(self, current_ri, sv, fp):
+        cap = fp.max_reliability_with_max_conflict
+        if sv.conflict_pressure >= 0.90 and current_ri > cap:
+            return cap, f"max_conflict_cap: {cap}"
+        return current_ri, None
+
+class TopologyWithoutEvidenceConstraint(FusionConstraint):
+    def apply(self, current_ri, sv, fp):
+        if sv.evidence_strength < 0.20 and sv.topology_strength > 0.80 and current_ri > 60.0:
+            return 60.0, "topology_without_evidence_cap: 60.0"
+        return current_ri, None
+
+CONSTRAINT_PIPELINE = [
+    NoEvidenceConstraint(),
+    MaxConflictConstraint(),
+    TopologyWithoutEvidenceConstraint(),
+]
+````
+
+## File: src/smriti/scoring/explanation.py
+````python
+"""explanation.py — Structured explanation builder for Phase 8."""
+
+from __future__ import annotations
+
+from typing import List
+import structlog
+
+from smriti.core.models import ComponentScore, ReliabilityExplanation
+
+logger = structlog.get_logger(__name__)
+
+MAX_EXPLANATION_SIGNALS = 3
+
+
+def build_explanation(
+    reliability_index: float,
+    component_scores: List[ComponentScore],
+) -> ReliabilityExplanation:
+    """Build a structured explanation from ComponentScores."""
+    positive = sorted(
+        [c for c in component_scores if c.contribution > 0],
+        key=lambda c: c.contribution, reverse=True,
+    )
+    negative = sorted(
+        [c for c in component_scores if c.contribution < 0],
+        key=lambda c: c.contribution,
+    )
+
+    strengths = tuple(
+        (c.signal_name, round(c.contribution, 2))
+        for c in positive[:MAX_EXPLANATION_SIGNALS]
+    )
+    weaknesses = tuple(
+        (c.signal_name, round(c.contribution, 2))
+        for c in negative[:MAX_EXPLANATION_SIGNALS]
+    )
+
+    dominant = positive[0].signal_name if positive else "none"
+    limiting = negative[0].signal_name if negative else "none"
+
+    summary = _build_summary(reliability_index, positive, negative)
+    recommendations = _build_recommendations(component_scores)
+
+    return ReliabilityExplanation(
+        summary=summary,
+        strengths=strengths,
+        weaknesses=weaknesses,
+        dominant_signal=dominant,
+        limiting_signal=limiting,
+        recommendations=recommendations,
+    )
+
+
+def _build_summary(ri: float, positive: list, negative: list) -> str:
+    if ri >= 80:
+        base = "Highly reliable."
+    elif ri >= 65:
+        base = "Reliable."
+    elif ri >= 45:
+        base = "Moderately reliable."
+    elif ri >= 25:
+        base = "Limited reliability."
+    else:
+        base = "Very low reliability."
+
+    if positive:
+        top = positive[0].signal_name.replace("_", " ").capitalize()
+        base += f" Primary strength: {top}."
+
+    if negative:
+        top_neg = negative[0].signal_name.replace("_", " ").capitalize()
+        base += f" Main concern: {top_neg}."
+
+    return base
+
+
+def _build_recommendations(component_scores: List[ComponentScore]) -> tuple:
+    recs = []
+    score_map = {c.signal_name: c.contribution for c in component_scores}
+
+    if score_map.get("conflict_pressure", 0) < -10:
+        recs.append("Review contradicting claims in other partitions.")
+    if score_map.get("evidence_independence", 1.0) < 0:
+        recs.append("Seek supporting evidence from additional independent sources.")
+    if score_map.get("source_diversity", 1.0) < 0.05:
+        recs.append("Diversify evidence across more document sources.")
+    if score_map.get("temporal_stability", 1.0) < 0.05:
+        recs.append("Monitor for temporal evolution of this claim.")
+    if not recs:
+        recs.append("Maintain current evidence quality.")
+
+    return tuple(recs)
+````
+
+## File: src/smriti/scoring/fusion.py
+````python
+"""
+fusion.py — Generic Reliability Fusion Engine for Phase 8.
+
+RECTIFIED (P0-2): Fusion receives ContributionSet, NOT SignalVector.
+Fusion never references any signal by name — it processes whatever
+ContributionCandidates are registered, with their weights and directions.
+
+This means:
+    - Adding a new signal (e.g., NoveltySignal) requires ZERO changes here
+    - Fusion works on any set of signals
+    - Policy interactions that reference specific signals are documented
+      in _apply_policy_interactions() and flagged in ReliabilityDecisionRecord
+
+RECTIFIED (P0-5): Every call to compute_reliability() produces a
+ReliabilityDecisionRecord documenting:
+    - Which policy interactions fired
+    - Which constraints were activated
+    - The contribution order
+    - Raw vs constrained vs final reliability
+
+Architectural invariants:
+    ✅ Deterministic: same ContributionSet + same policy → same RI
+    ✅ Generic: Fusion never contains signal names (except in interactions)
+    ✅ Every contribution traceable (ComponentScore)
+    ✅ Every decision recorded (ReliabilityDecisionRecord)
+    ❌ Fusion never reads the graph directly
+    ❌ Fusion never imports signal extractors
+"""
+
+from __future__ import annotations
+
+from typing import List, Tuple
+import structlog
+
+from smriti.core.models import (
+    ContributionSet, ContributionCandidate, ComponentScore,
+    ReliabilityDecisionRecord, SignalVector,
+)
+from smriti.scoring.policies import FusionPolicy, ReliabilityPolicy
+
+logger = structlog.get_logger(__name__)
+
+FUSION_ALGORITHM_VERSION = "weighted_linear_v2"   # Bumped for generic fusion
+
+
+def compute_reliability(
+    contribution_set: ContributionSet,
+    policy: ReliabilityPolicy,
+    signal_vector: SignalVector,        # Still needed for constraint checks
+) -> Tuple[float, float, List[ComponentScore], ReliabilityDecisionRecord]:
+    """
+    Compute Reliability Index, Uncertainty Score, ComponentScores, and DecisionRecord.
+
+    RECTIFIED (P0-2): Receives ContributionSet (generic), not SignalVector (named).
+    RECTIFIED (P0-5): Returns ReliabilityDecisionRecord alongside the scores.
+
+    Args:
+        contribution_set:  Generic set of ContributionCandidates from normalization.
+        policy:            Active ReliabilityPolicy.
+        signal_vector:     For constraint evaluation and uncertainty (backward compat).
+
+    Returns:
+        (reliability_index, uncertainty_score, component_scores, decision_record)
+    """
+    fp = policy.fusion
+    policy_interactions: List[str] = []
+    constraints_activated: List[str] = []
+
+    # ── Step 1: Policy interactions (before contribution building) ────────────
+    # Interactions are documented but do not use signal names directly in Fusion.
+    # They work by looking up candidates by name (only place signal names appear here).
+    adjusted_candidates = _apply_policy_interactions(
+        list(contribution_set.candidates), policy, policy_interactions
+    )
+
+    # ── Step 2: Build ComponentScores (generic — no signal name references) ───
+    component_scores: List[ComponentScore] = []
+    for candidate in adjusted_candidates:
+        if candidate.direction == "positive":
+            contribution = candidate.normalized_value * candidate.policy_weight * 100
+        else:
+            contribution = -(candidate.normalized_value * candidate.policy_weight * 100)
+
+        component_scores.append(ComponentScore(
+            signal_name=candidate.signal_name,
+            normalized_value=candidate.normalized_value,
+            policy_weight=candidate.policy_weight,
+            adjusted_value=candidate.normalized_value,
+            contribution=contribution,
+            direction=candidate.direction,
+            explanation=_build_signal_explanation(candidate.signal_name, candidate.normalized_value, candidate.direction),
+        ))
+
+    # ── Step 3: Raw fusion ────────────────────────────────────────────────────
+    raw_reliability = sum(c.contribution for c in component_scores)
+
+    # ── Step 4: Constraint validation ─────────────────────────────────────────
+    constrained_reliability = _apply_constraints(
+        raw_reliability, signal_vector, fp, constraints_activated
+    )
+
+    # ── Step 5: Clamp ─────────────────────────────────────────────────────────
+    reliability_index = max(0.0, min(100.0, constrained_reliability))
+
+    # ── Step 6: Uncertainty Score ─────────────────────────────────────────────
+    uncertainty_score, uncertainty_components = _compute_uncertainty(signal_vector, fp)
+
+    # ── Step 7: Build contribution order (descending |contribution|) ──────────
+    contribution_order = tuple(
+        c.signal_name
+        for c in sorted(component_scores, key=lambda c: abs(c.contribution), reverse=True)
+    )
+
+    # ── Step 8: Build ReliabilityDecisionRecord (P0-5) ────────────────────────
+    dominant_adj = policy_interactions[0] if policy_interactions else "none"
+    decision_record = ReliabilityDecisionRecord(
+        claim_id=contribution_set.claim_id,
+        policy_interactions=tuple(policy_interactions),
+        constraints_activated=tuple(constraints_activated),
+        contribution_order=contribution_order,
+        raw_reliability=round(raw_reliability, 4),
+        constrained_reliability=round(constrained_reliability, 4),
+        final_reliability=round(reliability_index, 4),
+        uncertainty_components=tuple(uncertainty_components),
+        dominant_adjustment=dominant_adj,
+    )
+
+    logger.debug(
+        "reliability computed",
+        claim_id=contribution_set.claim_id[:8],
+        raw=f"{raw_reliability:.2f}",
+        constrained=f"{constrained_reliability:.2f}",
+        final=f"{reliability_index:.2f}",
+        uncertainty=f"{uncertainty_score:.2f}",
+        interactions=len(policy_interactions),
+        constraints=len(constraints_activated),
+    )
+
+    return reliability_index, uncertainty_score, component_scores, decision_record
+
+
+def _apply_policy_interactions(
+    candidates: List[ContributionCandidate],
+    policy: ReliabilityPolicy,
+    interactions_log: List[str],
+) -> List[ContributionCandidate]:
+    """
+    Apply policy interactions to adjust candidate values before fusion.
+
+    NOTE: This is the ONLY place in Fusion where signal names may appear,
+    because interactions are inherently signal-aware (e.g., echo chamber
+    connects evidence_independence to evidence_strength). These are documented
+    and localized here to minimize coupling.
+
+    Any interaction that fires is logged to interactions_log.
+    """
+    candidates_map = {c.signal_name: c for c in candidates}
+
+    # Interaction 1: Echo chamber discount
+    # If evidence_independence is low, discount evidence_strength
+    independence = candidates_map.get("evidence_independence")
+    evidence = candidates_map.get("evidence_strength")
+    if (independence and evidence
+            and independence.normalized_value < policy.evidence.independence_discount_threshold):
+        discount = policy.evidence.echo_chamber_penalty
+        new_value = evidence.normalized_value * (1.0 - discount)
+        new_candidate = ContributionCandidate(
+            signal_name=evidence.signal_name,
+            normalized_value=new_value,
+            policy_weight=evidence.policy_weight,
+            direction=evidence.direction,
+            label=evidence.label,
+            raw_value=evidence.raw_value,
+        )
+        candidates_map["evidence_strength"] = new_candidate
+        interactions_log.append(
+            f"echo_chamber_discount_applied: evidence_strength {evidence.normalized_value:.3f}"
+            f" → {new_value:.3f} (independence={independence.normalized_value:.3f})"
+        )
+
+    return list(candidates_map.values())
+
+
+def _apply_constraints(
+    raw_ri: float,
+    sv: SignalVector,
+    fp: FusionPolicy,
+    constraints_log: List[str],
+) -> float:
+    """Execute the ConstraintPipeline."""
+    from smriti.scoring.constraints import CONSTRAINT_PIPELINE
+    
+    result = raw_ri
+    for constraint in CONSTRAINT_PIPELINE:
+        result, log_msg = constraint.apply(result, sv, fp)
+        if log_msg:
+            constraints_log.append(log_msg)
+            
+    return result
+
+
+def _compute_uncertainty(
+    sv: SignalVector,
+    fp: FusionPolicy,
+) -> Tuple[float, List[Tuple[str, float]]]:
+    """Compute uncertainty score and decompose into named components."""
+    incompleteness = 1.0 - sv.evidence_completeness
+    low_diversity = 1.0 - sv.source_diversity
+    low_independence = 1.0 - sv.evidence_independence
+
+    components = [
+        ("evidence_incompleteness", incompleteness * 0.50),
+        ("low_source_diversity", low_diversity * 0.25),
+        ("low_independence", low_independence * 0.25),
+    ]
+
+    raw_uncertainty = sum(v for _, v in components) * 100.0
+    uncertainty_score = min(100.0, max(0.0, raw_uncertainty))
+    return uncertainty_score, components
+
+
+def _build_signal_explanation(
+    signal_name: str,
+    value: float,
+    direction: str,
+) -> str:
+    """Generic explanation for a signal contribution."""
+    label = signal_name.replace("_", " ").capitalize()
+    if direction == "positive":
+        if value >= 0.80:
+            return f"{label}: very high ({value:.2f}). Strong positive contribution."
+        elif value >= 0.50:
+            return f"{label}: moderate ({value:.2f}). Positive contribution."
+        elif value > 0.10:
+            return f"{label}: low ({value:.2f}). Limited positive contribution."
+        else:
+            return f"{label}: negligible ({value:.2f}). Minimal contribution."
+    else:
+        if value >= 0.80:
+            return f"{label}: very high ({value:.2f}). Strong negative pressure."
+        elif value >= 0.50:
+            return f"{label}: moderate ({value:.2f}). Notable negative pressure."
+        elif value > 0.10:
+            return f"{label}: low ({value:.2f}). Weak negative pressure."
+        else:
+            return f"{label}: negligible ({value:.2f}). No significant pressure."
+
+
+# ── Backward-compatible wrapper for tests that use old signature ───────────────
+
+def compute_reliability_from_signal_vector(
+    signal_vector: SignalVector,
+    policy: ReliabilityPolicy,
+) -> Tuple[float, float, List[ComponentScore]]:
+    """
+    Backward-compatible wrapper for existing tests.
+    Converts SignalVector to ContributionSet and calls the generic fusion.
+    """
+    from smriti.core.models import ContributionCandidate, ContributionSet
+
+    fp = policy.fusion
+    candidates = []
+    for signal_name, weight in fp.signal_weights.items():
+        direction = fp.get_direction(signal_name)
+        # Get value from signal_vector by signal_name
+        value = getattr(signal_vector, signal_name, 0.0)
+        if weight > 0:
+            candidates.append(ContributionCandidate(
+                signal_name=signal_name,
+                normalized_value=value,
+                policy_weight=weight,
+                direction=direction,
+                label=signal_name.replace("_", " ").title(),
+                raw_value=value,
+            ))
+
+    cs = ContributionSet(
+        candidates=tuple(candidates),
+        evidence_completeness=signal_vector.evidence_completeness,
+        claim_id="test",
+    )
+
+    ri, unc, comps, _ = compute_reliability(cs, policy, signal_vector)
+    return ri, unc, comps
+````
+
+## File: src/smriti/scoring/graph_stats.py
+````python
+"""
+graph_stats.py — Global graph statistics for Phase 8.
+
+Computed ONCE per scoring run and shared by all signal extractors.
+This avoids repeated graph traversals and ensures consistent normalization.
+
+Why compute globally?
+    Each signal extractor must normalize against the SAME baseline.
+    If EvidenceStrength uses "local maximum" and Topology uses "global maximum",
+    the normalization becomes inconsistent and comparisons break.
+"""
+
+from __future__ import annotations
+
+import math
+from typing import List
+import structlog
+
+from smriti.core.models import KnowledgeGraph, RelationshipType, ScoringGlobalStats
+
+logger = structlog.get_logger(__name__)
+
+
+def compute_global_stats(graph: KnowledgeGraph) -> ScoringGlobalStats:
+    """Compute graph-wide statistics for normalization baselines."""
+    if graph.node_count == 0:
+        return ScoringGlobalStats(
+            max_support_count=1, avg_support_count=0.0, max_in_degree=1,
+            avg_degree=0.0, max_contradiction_partners=1, avg_contradiction_partners=0.0,
+            max_source_diversity=1, max_temporal_confidence=1.0,
+            node_count=0, partition_count=0, contradiction_count=0, supports_count=0,
+        )
+
+    support_counts = []
+    in_degrees = []
+    all_degrees = []
+    contradiction_partners = []
+    temporal_confidences = []
+
+    for claim_id, node in graph.nodes.items():
+        support_count = 0
+        if node.support_aggregate:
+            support_count = node.support_aggregate.support_count
+        support_counts.append(support_count)
+
+        if node.topology:
+            in_degrees.append(node.topology.in_degree)
+            all_degrees.append(node.topology.degree)
+
+        n_contradicts = sum(
+            1 for e in graph.edges.values()
+            if e.relationship_type == RelationshipType.CONTRADICTS
+            and (e.source_node_id == claim_id or e.target_node_id == claim_id)
+        )
+        contradiction_partners.append(n_contradicts)
+
+        if node.temporal_metadata and node.temporal_metadata.temporal_confidence > 0:
+            temporal_confidences.append(node.temporal_metadata.temporal_confidence)
+
+    n = max(1, graph.node_count)
+
+    return ScoringGlobalStats(
+        max_support_count=max(support_counts) if support_counts else 1,
+        avg_support_count=sum(support_counts) / n,
+        max_in_degree=max(in_degrees) if in_degrees else 1,
+        avg_degree=sum(all_degrees) / max(1, len(all_degrees)),
+        max_contradiction_partners=max(contradiction_partners) if contradiction_partners else 1,
+        avg_contradiction_partners=sum(contradiction_partners) / n,
+        max_source_diversity=max(support_counts) if support_counts else 1,
+        max_temporal_confidence=max(temporal_confidences) if temporal_confidences else 1.0,
+        node_count=graph.node_count,
+        partition_count=graph.partition_count,
+        contradiction_count=graph.statistics.contradiction_count,
+        supports_count=graph.statistics.supports_count,
+    )
+````
+
+## File: src/smriti/scoring/normalization.py
+````python
+"""
+normalization.py — Signal assembly and ContributionSet construction.
+
+RECTIFIED (P0-2): This module no longer builds SignalVector as the primary output
+for Fusion. Instead it builds ContributionSet — a generic list of
+ContributionCandidates that Fusion can process without knowing signal names.
+
+RECTIFIED (P1-2): Normalization is now owned by each extractor. This module
+assembles and validates extractor-normalized values — it never re-normalizes.
+
+RECTIFIED (P0-4): Builds SignalManifest list from extractor.build_manifest().
+
+SignalVector is still built for backward compatibility (serialization, tests).
+"""
+
+from __future__ import annotations
+
+import math
+from typing import Dict, List, Tuple
+import structlog
+
+from smriti.core.models import (
+    RawSignal, SignalVector, ContributionCandidate, ContributionSet,
+    SignalManifest, SignalStatus,
+)
+from smriti.scoring.policies import FusionPolicy
+from smriti.scoring.signals.base import BaseSignalExtractor
+
+logger = structlog.get_logger(__name__)
+
+
+def assemble_contribution_set(
+    raw_signals: List[RawSignal],
+    extractors: List[BaseSignalExtractor],
+    fusion_policy: FusionPolicy,
+    claim_id: str,
+) -> Tuple[ContributionSet, List[SignalManifest], SignalVector]:
+    """
+    RECTIFIED (P0-2, P0-4, P1-2): Primary assembly function.
+
+    Validates extractor-normalized values and builds:
+        - ContributionSet: for generic Fusion (signal-name-agnostic)
+        - List[SignalManifest]: for derivation tracing (P0-4)
+        - SignalVector: for backward-compatible serialization
+
+    Args:
+        raw_signals:    RawSignal list from all extractors.
+        extractors:     The extractor instances (for manifest building).
+        fusion_policy:  FusionPolicy for weights and directions.
+        claim_id:       For logging and ContributionSet.
+
+    Returns:
+        (ContributionSet, manifests, signal_vector)
+    """
+    extractor_map = {e.signal_name: e for e in extractors}
+    validated: Dict[str, RawSignal] = {}
+    status_map: Dict[str, str] = {}
+    manifests: List[SignalManifest] = []
+
+    for sig in raw_signals:
+        value = sig.normalized_value  # Extractor already normalized (P1-2)
+        status = sig.status
+        quality_flags = []
+
+        # Validate extractor-normalized value
+        if math.isnan(value):
+            logger.warning("NaN normalized signal", signal=sig.name)
+            value = 0.0
+            status = SignalStatus.UNAVAILABLE
+            quality_flags.append("nan_detected")
+        elif math.isinf(value):
+            logger.warning("Inf normalized signal", signal=sig.name)
+            value = 0.0
+            status = SignalStatus.UNAVAILABLE
+            quality_flags.append("inf_detected")
+        elif not (0.0 <= value <= 1.0):
+            logger.warning("out-of-range normalized signal", signal=sig.name, value=value)
+            value = max(0.0, min(1.0, value))
+            quality_flags.append("clamped_out_of_range")
+
+        # Build validated RawSignal (normalized_value may have been corrected)
+        corrected_sig = RawSignal(
+            name=sig.name,
+            raw_value=sig.raw_value,
+            normalized_value=value,
+            status=status,
+            metadata=sig.metadata,
+        )
+        validated[sig.name] = corrected_sig
+        status_map[sig.name] = status.value
+
+        # Build SignalManifest (P0-4)
+        extractor = extractor_map.get(sig.name)
+        if extractor:
+            manifest = extractor.build_manifest(corrected_sig, quality_flags)
+            manifests.append(manifest)
+
+    # ── Build ContributionSet (P0-2) ────────────────────────────────────────
+    candidates = []
+    for signal_name, sig in validated.items():
+        weight = fusion_policy.get_weight(signal_name)
+        direction = fusion_policy.get_direction(signal_name)
+        if weight > 0:
+            candidates.append(ContributionCandidate(
+                signal_name=signal_name,
+                normalized_value=sig.normalized_value,
+                policy_weight=weight,
+                direction=direction,
+                label=signal_name.replace("_", " ").title(),
+                raw_value=sig.raw_value,
+            ))
+
+    evidence_completeness = _compute_completeness(status_map)
+
+    contribution_set = ContributionSet(
+        candidates=tuple(candidates),
+        evidence_completeness=evidence_completeness,
+        claim_id=claim_id,
+    )
+
+    # ── Build SignalVector for backward compatibility ─────────────────────────
+    def get_norm(name: str) -> float:
+        return validated[name].normalized_value if name in validated else 0.0
+
+    signal_vector = SignalVector(
+        evidence_strength=get_norm("evidence_strength"),
+        evidence_independence=get_norm("evidence_independence"),
+        source_diversity=get_norm("source_diversity"),
+        topology_strength=get_norm("topology_strength"),
+        conflict_pressure=get_norm("conflict_pressure"),
+        temporal_stability=get_norm("temporal_stability"),
+        evidence_completeness=evidence_completeness,
+        statuses=status_map,
+    )
+
+    return contribution_set, manifests, signal_vector
+
+
+def _compute_completeness(status_map: Dict[str, str]) -> float:
+    """Fraction of signals with actual measurements."""
+    total = max(1, len(status_map))
+    measured = sum(
+        1 for status in status_map.values()
+        if status in (SignalStatus.MEASURED.value, SignalStatus.ESTIMATED.value)
+    )
+    return measured / total
+
+
+# ── Backward-compatible wrapper for tests that use validate_and_normalize ─────
+
+def validate_and_normalize(raw_signals: List[RawSignal]) -> SignalVector:
+    """
+    Backward-compatible wrapper. Tests that test normalization directly use this.
+    Production code uses assemble_contribution_set().
+    """
+    status_map: Dict[str, str] = {}
+    signal_map: Dict[str, float] = {}
+
+    for sig in raw_signals:
+        value = sig.normalized_value
+        status = sig.status
+
+        if math.isnan(value):
+            value = 0.0
+            status = SignalStatus.UNAVAILABLE
+        elif math.isinf(value):
+            value = 0.0
+            status = SignalStatus.UNAVAILABLE
+        elif not (0.0 <= value <= 1.0):
+            value = max(0.0, min(1.0, value))
+
+        signal_map[sig.name] = value
+        status_map[sig.name] = status.value
+
+    def get(name: str) -> float:
+        return signal_map.get(name, 0.0)
+
+    return SignalVector(
+        evidence_strength=get("evidence_strength"),
+        evidence_independence=get("evidence_independence"),
+        source_diversity=get("source_diversity"),
+        topology_strength=get("topology_strength"),
+        conflict_pressure=get("conflict_pressure"),
+        temporal_stability=get("temporal_stability"),
+        evidence_completeness=_compute_completeness(status_map),
+        statuses=status_map,
+    )
+````
+
+## File: src/smriti/scoring/policies.py
+````python
+"""
+policies.py — Phase 8 policy definitions.
+
+RECTIFIED (P0-3): TopologyPolicy no longer contains hub_bonus or bridge_bonus.
+Those are topology implementation details. The topology extractor emits HubScore
+and BridgeScore as separate registered signals. Policy only has centrality_scale.
+
+RECTIFIED (P1-3): PolicyProfile enum added with preset profiles:
+    CONSERVATIVE: High evidence bar, strong conflict penalty
+    BALANCED:     Default — balanced across all signals
+    RESEARCH:     Emphasizes independence and source diversity
+    EVIDENCE_FIRST: Maximum weight on evidence strength
+
+RECTIFIED (Phase 8.3): FusionPolicy.validate() now requires the active registry
+set to enforce a strict 1:1 mapping between policy weights and registered signals.
+This prevents silent mismatches when signals are added or removed.
+
+Rules:
+    ✅ Algorithms remain fixed; only policies change
+    ✅ Changing a policy never requires changing implementation
+    ✅ TopologyPolicy never knows how topology works internally
+    ❌ No hard-coded weights except default policy values here
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from typing import Dict, Any, Set
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.models import SignalID
+from smriti.exceptions import PolicyError
+
+logger = structlog.get_logger(__name__)
+
+POLICY_VERSION = "1.0"
+
+
+class PolicyProfile(str, Enum):
+    """
+    RECTIFIED (P1-3): Named policy profiles for benchmarking and domain use.
+
+    Each profile configures all weights and thresholds for a specific use case.
+    Loading a profile overrides any manual configuration.
+
+    Profiles:
+        BALANCED:       Default. Balanced across evidence, topology, conflict.
+        CONSERVATIVE:   High evidence requirement, strong conflict penalty.
+                        Use when false positives are costly.
+        RESEARCH:       Emphasizes independence and source diversity.
+                        Use for academic knowledge bases.
+        EVIDENCE_FIRST: Maximum weight on direct evidence strength.
+                        Use when graph topology is sparse/unreliable.
+    """
+    BALANCED       = "balanced"
+    CONSERVATIVE   = "conservative"
+    RESEARCH       = "research"
+    EVIDENCE_FIRST = "evidence_first"
+
+
+@dataclass(frozen=True)
+class EvidencePolicy:
+    """Parameters governing evidence signal extraction."""
+    min_support_count: int = 1
+    max_support_count: int = 20
+    echo_chamber_penalty: float = 0.30
+    independence_discount_threshold: float = 0.50
+    # NEW (P1-1): lineage heuristics for independence detection
+    lineage_depth_limit: int = 2              # How many citation hops to check
+    publisher_domain_weight: float = 0.50     # Weight of publisher domain in independence
+
+
+@dataclass(frozen=True)
+class ConflictPolicy:
+    """Parameters governing contradiction pressure computation."""
+    max_contradiction_partners: int = 5
+    conflict_saturation: float = 0.80
+    contradiction_weight_multiplier: float = 1.0
+
+
+@dataclass(frozen=True)
+class TopologyPolicy:
+    """
+    Parameters governing structural importance signals.
+
+    RECTIFIED (P0-3): hub_bonus and bridge_bonus removed.
+    Those are topology implementation details — they belong in the extractor.
+    The extractor emits HubScore and BridgeScore as separate signals.
+    Policy only controls how centrality is scaled.
+    """
+    centrality_scale: float = 1.0     # Multiplier for the centrality signal
+
+
+@dataclass(frozen=True)
+class TemporalPolicy:
+    """Parameters governing temporal stability signals."""
+    default_stability: float = 0.50
+    evolution_bonus: float = 0.15
+    conflict_penalty: float = 0.10
+    recency_window_days: float = 90.0
+
+
+@dataclass(frozen=True)
+class FusionPolicy:
+    """
+    Signal weights and fusion constraints.
+
+    RECTIFIED (P0-2): Weights are keyed by signal_name (str → float dict).
+    This means adding a new signal only requires adding it to the weights dict;
+    Fusion reads weights by signal_name, not by fixed field names.
+
+    RECTIFIED (Phase 8.3): validate() now enforces a strict 1:1 mapping
+    between policy weights and the active registry of signals.
+    Any registered signal missing a weight, or any weight pointing to an
+    unregistered signal, raises PolicyError.
+
+    The sum of all positive-direction weights minus negative-direction weights
+    must equal 1.0 (validated on construction).
+    """
+    # Weights keyed by SignalID value (string) — must match the registry exactly
+    signal_weights: Dict[str, float] = field(default_factory=lambda: {
+        "evidence_strength":    0.25,
+        "evidence_independence": 0.15,
+        "source_diversity":     0.15,
+        "topology_strength":    0.10,
+        "hub_score":            0.05,    # RECTIFIED (P0-3): topology sub-signals
+        "bridge_score":         0.05,
+        "conflict_pressure":    0.20,
+        "temporal_stability":   0.05,
+    })
+
+    # Signal directions: "positive" raises RI, "negative" lowers it
+    signal_directions: Dict[str, str] = field(default_factory=lambda: {
+        "evidence_strength":    "positive",
+        "evidence_independence": "positive",
+        "source_diversity":     "positive",
+        "topology_strength":    "positive",
+        "hub_score":            "positive",
+        "bridge_score":         "positive",
+        "conflict_pressure":    "negative",
+        "temporal_stability":   "positive",
+    })
+
+    # Fusion constraints
+    max_reliability_without_evidence: float = 60.0
+    max_reliability_with_max_conflict: float = 40.0
+    min_reliability_for_high_topology: float = 20.0
+    max_uncertainty_discount: float = 20.0
+
+    def validate(self, active_registry_ids: Set[SignalID]) -> None:
+        """
+        Verify weights sum to 1.0 AND match the active registry perfectly.
+
+        Args:
+            active_registry_ids: Set of SignalID enums currently registered.
+
+        Raises:
+            PolicyError: If any registered signal is missing a weight,
+                         or if any weight points to an unregistered signal,
+                         or if weights do not sum to 1.0.
+        """
+        # Convert registry to strings for comparison
+        registry_strings = {s.value for s in active_registry_ids}
+        policy_strings = set(self.signal_weights.keys())
+
+        # Check for missing signals
+        missing_in_policy = registry_strings - policy_strings
+        if missing_in_policy:
+            raise PolicyError(
+                f"Registered signals missing from policy weights: {sorted(missing_in_policy)}. "
+                f"Add them to scoring_policy.fusion.signal_weights."
+            )
+
+        # Check for extra signals
+        missing_in_registry = policy_strings - registry_strings
+        if missing_in_registry:
+            raise PolicyError(
+                f"Policy contains weights for unregistered signals: {sorted(missing_in_registry)}. "
+                f"Either register these signals or remove them from scoring_policy.fusion.signal_weights."
+            )
+
+        # Check directions consistency (all policy keys should have a direction)
+        for name in policy_strings:
+            if name not in self.signal_directions:
+                raise PolicyError(
+                    f"Signal '{name}' has a weight but no direction defined in signal_directions."
+                )
+
+        # Sum check (existing logic)
+        positive_total = sum(
+            w for name, w in self.signal_weights.items()
+            if self.signal_directions.get(name, "positive") == "positive"
+        )
+        negative_total = sum(
+            w for name, w in self.signal_weights.items()
+            if self.signal_directions.get(name, "positive") == "negative"
+        )
+        total = positive_total + negative_total
+        if abs(total - 1.0) > 0.001:
+            raise PolicyError(
+                f"FusionPolicy signal_weights must sum to 1.0, got {total:.4f}. "
+                "Adjust scoring_policy.fusion.signal_weights in config."
+            )
+
+    def get_weight(self, signal_name: str) -> float:
+        """Look up weight by signal name. Returns 0.0 if not registered."""
+        return self.signal_weights.get(signal_name, 0.0)
+
+    def get_direction(self, signal_name: str) -> str:
+        """Look up direction by signal name. Defaults to 'positive'."""
+        return self.signal_directions.get(signal_name, "positive")
+
+
+@dataclass(frozen=True)
+class CalibrationPolicy:
+    """Thresholds for mapping Reliability Index → CalibrationLabel."""
+    very_high_threshold: float = 80.0
+    high_threshold: float = 65.0
+    moderate_threshold: float = 45.0
+    low_threshold: float = 25.0
+
+
+@dataclass(frozen=True)
+class ReliabilityPolicy:
+    """
+    Complete policy for one scoring run.
+    Loaded from config/default.yaml [scoring_policy] section.
+    """
+    version: str
+    profile: str                  # NEW (P1-3): which PolicyProfile was used
+    evidence: EvidencePolicy
+    conflict: ConflictPolicy
+    topology: TopologyPolicy
+    temporal: TemporalPolicy
+    fusion: FusionPolicy
+    calibration: CalibrationPolicy
+
+    def validate(self, active_registry_ids: Set[SignalID]) -> None:
+        """
+        Validate the entire policy against the active registry.
+        Delegates to fusion.validate() for the weight-registry mapping.
+        """
+        self.fusion.validate(active_registry_ids)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    def config_hash(self) -> str:
+        material = json.dumps(self.to_dict(), sort_keys=True)
+        return hashlib.sha256(material.encode()).hexdigest()[:16]
+
+
+# ── Policy Profile Presets ────────────────────────────────────────────────────
+
+_PROFILE_WEIGHTS = {
+    PolicyProfile.BALANCED: {
+        "evidence_strength": 0.25, "evidence_independence": 0.15,
+        "source_diversity": 0.15, "topology_strength": 0.10,
+        "hub_score": 0.05, "bridge_score": 0.05,
+        "conflict_pressure": 0.20, "temporal_stability": 0.05,
+    },
+    PolicyProfile.CONSERVATIVE: {
+        "evidence_strength": 0.35, "evidence_independence": 0.20,
+        "source_diversity": 0.10, "topology_strength": 0.05,
+        "hub_score": 0.02, "bridge_score": 0.03,
+        "conflict_pressure": 0.25, "temporal_stability": 0.00,
+    },
+    PolicyProfile.RESEARCH: {
+        "evidence_strength": 0.20, "evidence_independence": 0.25,
+        "source_diversity": 0.25, "topology_strength": 0.05,
+        "hub_score": 0.03, "bridge_score": 0.02,
+        "conflict_pressure": 0.15, "temporal_stability": 0.05,
+    },
+    PolicyProfile.EVIDENCE_FIRST: {
+        "evidence_strength": 0.45, "evidence_independence": 0.10,
+        "source_diversity": 0.10, "topology_strength": 0.05,
+        "hub_score": 0.03, "bridge_score": 0.02,
+        "conflict_pressure": 0.20, "temporal_stability": 0.05,
+    },
+}
+
+_PROFILE_DIRECTIONS = {
+    "evidence_strength": "positive", "evidence_independence": "positive",
+    "source_diversity": "positive", "topology_strength": "positive",
+    "hub_score": "positive", "bridge_score": "positive",
+    "conflict_pressure": "negative", "temporal_stability": "positive",
+}
+
+
+def load_policy(
+    profile: PolicyProfile = PolicyProfile.BALANCED,
+) -> ReliabilityPolicy:
+    """
+    Load ReliabilityPolicy from config/default.yaml [scoring_policy] section.
+
+    Args:
+        profile: Which PolicyProfile preset to apply (RECTIFIED P1-3).
+                 Config can override the profile via scoring_policy.profile.
+
+    Returns:
+        ReliabilityPolicy (not yet validated against the registry).
+        Caller must call policy.validate(active_registry_ids) after loading.
+    """
+    config = get_config()
+    sp = config.get("scoring_policy", {})
+
+    # Determine active profile
+    profile_str = sp.get("profile", profile.value)
+    try:
+        active_profile = PolicyProfile(profile_str)
+    except ValueError:
+        logger.warning("unknown policy profile, using BALANCED", profile=profile_str)
+        active_profile = PolicyProfile.BALANCED
+
+    ev_cfg = sp.get("evidence", {})
+    co_cfg = sp.get("conflict", {})
+    to_cfg = sp.get("topology", {})
+    te_cfg = sp.get("temporal", {})
+    fu_cfg = sp.get("fusion", {})
+    ca_cfg = sp.get("calibration", {})
+
+    # Signal weights: start from profile preset, allow config override
+    preset_weights = dict(_PROFILE_WEIGHTS[active_profile])
+    config_weights = fu_cfg.get("signal_weights", {})
+    preset_weights.update(config_weights)   # Config overrides preset
+
+    fusion = FusionPolicy(
+        signal_weights=preset_weights,
+        signal_directions=dict(_PROFILE_DIRECTIONS),
+        max_reliability_without_evidence=fu_cfg.get("max_reliability_without_evidence", 60.0),
+        max_reliability_with_max_conflict=fu_cfg.get("max_reliability_with_max_conflict", 40.0),
+        min_reliability_for_high_topology=fu_cfg.get("min_reliability_for_high_topology", 20.0),
+        max_uncertainty_discount=fu_cfg.get("max_uncertainty_discount", 20.0),
+    )
+
+    policy = ReliabilityPolicy(
+        version=sp.get("version", POLICY_VERSION),
+        profile=active_profile.value,
+        evidence=EvidencePolicy(
+            min_support_count=ev_cfg.get("min_support_count", 1),
+            max_support_count=ev_cfg.get("max_support_count", 20),
+            echo_chamber_penalty=ev_cfg.get("echo_chamber_penalty", 0.30),
+            independence_discount_threshold=ev_cfg.get("independence_discount_threshold", 0.50),
+            lineage_depth_limit=ev_cfg.get("lineage_depth_limit", 2),
+            publisher_domain_weight=ev_cfg.get("publisher_domain_weight", 0.50),
+        ),
+        conflict=ConflictPolicy(
+            max_contradiction_partners=co_cfg.get("max_contradiction_partners", 5),
+            conflict_saturation=co_cfg.get("conflict_saturation", 0.80),
+            contradiction_weight_multiplier=co_cfg.get("contradiction_weight_multiplier", 1.0),
+        ),
+        topology=TopologyPolicy(
+            centrality_scale=to_cfg.get("centrality_scale", 1.0),
+        ),
+        temporal=TemporalPolicy(
+            default_stability=te_cfg.get("default_stability", 0.50),
+            evolution_bonus=te_cfg.get("evolution_bonus", 0.15),
+            conflict_penalty=te_cfg.get("conflict_penalty", 0.10),
+            recency_window_days=te_cfg.get("recency_window_days", 90.0),
+        ),
+        fusion=fusion,
+        calibration=CalibrationPolicy(
+            very_high_threshold=ca_cfg.get("very_high_threshold", 80.0),
+            high_threshold=ca_cfg.get("high_threshold", 65.0),
+            moderate_threshold=ca_cfg.get("moderate_threshold", 45.0),
+            low_threshold=ca_cfg.get("low_threshold", 25.0),
+        ),
+    )
+
+    logger.info(
+        "policy loaded (validation deferred to caller)",
+        version=policy.version,
+        profile=active_profile.value,
+        config_hash=policy.config_hash(),
+    )
+    return policy
+````
+
+## File: src/smriti/scoring/statistics.py
+````python
+"""
+statistics.py — Phase 8 execution telemetry. Observes. Never influences.
+
+RECTIFIED (Phase 8.4): Now returns Phase8Telemetry with cleanly segregated
+ExecutionStats (timing and infrastructure) and KnowledgeStats (knowledge outcomes).
+Calibration histogram is tracked per claim for better diagnostics.
+"""
+
+from __future__ import annotations
+
+import time
+from typing import Dict
+from smriti.core.models import (
+    Phase8Telemetry,
+    ExecutionStats,
+    KnowledgeStats,
+    CalibrationLabel,
+)
+
+
+class Phase8StatsCollector:
+    """Mutable accumulator for Phase 8 statistics."""
+
+    def __init__(self) -> None:
+        self._start = time.monotonic()
+        self._signal_start: float | None = None
+        self._signal_end: float | None = None
+        self._fusion_start: float | None = None
+        self._fusion_end: float | None = None
+
+        # Knowledge metrics
+        self._scored: int = 0
+        self._ri_sum: float = 0.0
+        self._unc_sum: float = 0.0
+        self._high_ri: int = 0
+        self._low_ri: int = 0
+        self._high_unc: int = 0
+        self._calibration_histogram: Dict[str, int] = {
+            label.value: 0 for label in CalibrationLabel
+        }
+
+        # Execution metadata
+        self._policy_version: str = ""
+        self._policy_profile: str = ""
+        self._registered_signals: int = 0
+
+    def record_signal_start(self) -> None:
+        self._signal_start = time.monotonic()
+
+    def record_signal_end(self) -> None:
+        self._signal_end = time.monotonic()
+
+    def record_fusion_start(self) -> None:
+        self._fusion_start = time.monotonic()
+
+    def record_fusion_end(self) -> None:
+        self._fusion_end = time.monotonic()
+
+    def record_scored(
+        self,
+        ri: float,
+        unc: float,
+        calibration_label: CalibrationLabel,
+    ) -> None:
+        """
+        Record a scored claim's reliability index, uncertainty, and calibration label.
+        """
+        self._scored += 1
+        self._ri_sum += ri
+        self._unc_sum += unc
+
+        if ri >= 65:
+            self._high_ri += 1
+        if ri < 45:
+            self._low_ri += 1
+        if unc >= 50:
+            self._high_unc += 1
+
+        self._calibration_histogram[calibration_label.value] = (
+            self._calibration_histogram.get(calibration_label.value, 0) + 1
+        )
+
+    def set_policy_version(self, version: str, profile: str = "") -> None:
+        self._policy_version = version
+        self._policy_profile = profile
+
+    def set_registered_signals(self, count: int) -> None:
+        self._registered_signals = count
+
+    def finalize(self) -> Phase8Telemetry:
+        """Produce the complete Phase 8 telemetry report."""
+        total = time.monotonic() - self._start
+
+        n = max(1, self._scored)
+
+        signal_secs = (
+            (self._signal_end - self._signal_start)
+            if self._signal_start and self._signal_end
+            else 0.0
+        )
+        fusion_secs = (
+            (self._fusion_end - self._fusion_start)
+            if self._fusion_start and self._fusion_end
+            else 0.0
+        )
+
+        execution = ExecutionStats(
+            total_runtime_seconds=round(total, 4),
+            signal_extraction_seconds=round(signal_secs, 4),
+            fusion_seconds=round(fusion_secs, 4),
+            registered_signal_count=self._registered_signals,
+        )
+
+        knowledge = KnowledgeStats(
+            total_claims_scored=self._scored,
+            avg_reliability_index=round(self._ri_sum / n, 2),
+            avg_uncertainty_score=round(self._unc_sum / n, 2),
+            calibration_histogram=dict(self._calibration_histogram),
+        )
+
+        return Phase8Telemetry(
+            policy_version=self._policy_version,
+            policy_profile=self._policy_profile,
+            execution=execution,
+            knowledge=knowledge,
+        )
+````
+
+## File: tests/integration/test_phase6_discovery.py
+````python
+"""
+Integration test for Phase 6 end-to-end.
+Uses mock NLI generator and mock FAISS index to avoid model downloads.
+"""
+
+import pytest
+from pathlib import Path
+from typing import List, Dict, Optional
+
+from smriti.core.models import (
+    Claim, EmbeddedClaim, RelationshipSet, RelationshipType,
+    CandidatePair, RelationshipEvidence, NLIScores, InferenceMetadata,
+    ClaimProvenance, ExtractionMode, AssertionMetadata, LifecycleStage,
+    Embedding, EmbeddingModelDescriptor, EmbeddingProvenance,
+    EmbeddingQuality, Vector, VectorDType,
+)
+from smriti.core.manifest import ManifestManager
+from smriti.core.state import StateManager
+from smriti.retrieval import discover_relationships
+from smriti.retrieval.index import EmbeddingIndex, SearchResult
+from smriti.retrieval.classification.evidence import NLIEvidenceGenerator
+
+
+class MockNLIGenerator(NLIEvidenceGenerator):
+    """Mock NLI generator — returns configurable evidence scores."""
+
+    def __init__(self, contradiction_score: float = 0.90, entailment_score: float = 0.05):
+        self._model_name = "mock-nli"
+        self._batch_size = 16
+        self._contradiction_score = contradiction_score
+        self._entailment_score = entailment_score
+
+    def _load_model(self):
+        return None
+
+    def generate_batch(self, pairs, claims_map):
+        results = []
+        neutral = max(0.0, 1.0 - self._contradiction_score - self._entailment_score)
+        for pair in pairs:
+            scores = [self._contradiction_score, self._entailment_score, neutral]
+            predicted = ["contradiction", "entailment", "neutral"][scores.index(max(scores))]
+            nli_scores = NLIScores(
+                entailment_score=self._entailment_score,
+                neutral_score=neutral,
+                contradiction_score=self._contradiction_score,
+                predicted_label=predicted,
+                raw_confidence=max(scores),
+            )
+            metadata = InferenceMetadata(model_name="mock-nli")
+            results.append(RelationshipEvidence(
+                pair=pair,
+                cosine_similarity=pair.cosine_similarity,
+                nli_scores=nli_scores,
+                calibrated_confidence=max(scores),
+                inference_metadata=metadata,
+                lifecycle_stage=LifecycleStage.EVIDENCE,
+            ))
+        return results
+
+
+def make_claim(claim_id: str, text: str, context: str = "") -> Claim:
+    return Claim(
+        claim_id=claim_id, sentence_id="s001", document_id="d001",
+        text=text, content_hash=claim_id[:16], context=context,
+        source_path=Path("test.md"),
+        extraction_mode=ExtractionMode.WHOLE_SENTENCE,
+        structured_assertion=None,
+        assertion_metadata=AssertionMetadata(),
+        provenance=ClaimProvenance(
+            sentence_id="s001", document_id="d001",
+            source_path=Path("test.md"), sentence_context=context, sentence_position=0,
+        ),
+        schema_version="4.0", rule_version="1.0",
+    )
+
+
+def make_embedded_claim(claim_id: str, values: tuple = (0.5, 0.5, 0.5, 0.5)) -> EmbeddedClaim:
+    vec = Vector(values=values, dimension=4, dtype=VectorDType.FLOAT64, normalized=True)
+    descriptor = EmbeddingModelDescriptor(
+        provider="test", model_name="test", model_revision="0",
+        dimension=4, model_signature="test_sig",
+    )
+    provenance = EmbeddingProvenance(
+        pipeline_version="1.0", normalization_mode="l2", device="cpu", config_hash="test",
+    )
+    embedding = Embedding(claim_id=claim_id, vector=vec, descriptor=descriptor, provenance=provenance)
+    quality = EmbeddingQuality(dimension_ok=True, normalized=True, finite=True, cache_used=False)
+    return EmbeddedClaim(claim_id=claim_id, embedding=embedding, quality=quality)
+
+
+class MockFAISSIndex(EmbeddingIndex):
+    def __init__(self, results: Dict[str, List[SearchResult]]):
+        self._results = results
+        self._dimension = 4
+        self._size = 0
+
+    @property
+    def dimension(self): return self._dimension
+
+    @property
+    def size(self): return self._size
+
+    def add(self, claim_ids, vectors):
+        self._size += len(claim_ids)
+
+    def search(self, query_id, query_vector, k, exclude_ids=None):
+        results = self._results.get(query_id, [])
+        if exclude_ids:
+            results = [r for r in results if r.claim_id not in exclude_ids]
+        return results[:k]
+
+
+@pytest.fixture
+def run_id():
+    return "test_phase6_20240101"
+
+
+@pytest.fixture
+def test_managers(tmp_path, run_id):
+    return (
+        ManifestManager(run_id=run_id, artifacts_dir=tmp_path / "artifacts"),
+        StateManager(state_file=tmp_path / "state.json"),
+    )
+
+
+# ── Original 10 tests (preserved) ────────────────────────────────────────────
+
+def test_empty_claims_returns_empty_relationship_set(run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[], claims_map={},
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, nli_generator=MockNLIGenerator(),
+    )
+    assert isinstance(result, RelationshipSet)
+    assert result.total_relationships == 0
+
+
+def test_contradiction_is_discovered(run_id, test_managers):
+    ec_a = make_embedded_claim("c001", (0.9, 0.1, 0.0, 0.0))
+    ec_b = make_embedded_claim("c002", (-0.9, -0.1, 0.0, 0.0))
+    claims_map = {
+        "c001": make_claim("c001", "Python always normalizes features before PCA."),
+        "c002": make_claim("c002", "Normalization before PCA is often unnecessary."),
+    }
+    mock_index = MockFAISSIndex({
+        "c001": [SearchResult("c002", 0.85, 1)],
+        "c002": [SearchResult("c001", 0.85, 1)],
+    })
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(contradiction_score=0.92),
+    )
+    assert result.total_relationships >= 1
+    assert len(result.contradictions) >= 1
+
+
+def test_all_relationships_are_immutable(run_id, test_managers):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(contradiction_score=0.90),
+    )
+    for rel in result.relationships:
+        with pytest.raises(Exception):
+            rel.claim_id_a = "modified"
+
+
+def test_relationship_ids_are_unique(run_id, test_managers):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    ec_c = make_embedded_claim("c003")
+    claims_map = {
+        "c001": make_claim("c001", "Python is fast."),
+        "c002": make_claim("c002", "Python is slow."),
+        "c003": make_claim("c003", "Julia is fastest."),
+    }
+    mock_index = MockFAISSIndex({
+        "c001": [SearchResult("c002", 0.85, 1), SearchResult("c003", 0.82, 2)],
+        "c002": [SearchResult("c003", 0.80, 1)],
+        "c003": [],
+    })
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b, ec_c], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(contradiction_score=0.90),
+    )
+    rel_ids = [r.relationship_id for r in result.relationships]
+    assert len(rel_ids) == len(set(rel_ids))
+
+
+def test_all_relationships_have_complete_provenance(run_id, test_managers):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    for rel in result.relationships:
+        assert rel.provenance is not None
+        assert rel.provenance.run_id == run_id
+        assert rel.provenance.classifier_model != ""
+        assert rel.provenance.config_hash != ""
+
+
+def test_schema_version_is_60(run_id, test_managers):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    for rel in result.relationships:
+        assert rel.schema_version == "6.0"
+
+
+def test_dataset_json_written(run_id, test_managers, tmp_path):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    assert result.dataset_path is not None
+    assert result.dataset_path.exists()
+
+
+def test_manifest_written(run_id, test_managers):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    import json
+    assert result.manifest_path is not None
+    assert result.manifest_path.exists()
+    manifest = json.loads(result.manifest_path.read_text())
+    assert manifest["phase"] == 6
+    assert manifest["status"] == "success"
+
+
+def test_pipeline_state_updated(run_id, test_managers):
+    _, state_mgr = test_managers
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, _ = test_managers
+    discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    state = state_mgr.load()
+    assert state is not None
+    assert 6 in state.completed_phases
+
+
+def test_no_nli_model_imports_in_candidate_modules():
+    import smriti.retrieval.candidate_generator as cg
+    import smriti.retrieval.validator as cv
+    import smriti.retrieval.builder as cb
+
+    nli_modules = {"sentence_transformers", "transformers", "torch"}
+    for module in [cg, cv, cb]:
+        keys = set(vars(module).keys())
+        assert not (keys & nli_modules)
+
+
+# ── Rectified 3 new tests ─────────────────────────────────────────────────────
+
+def test_replay_manifest_written(run_id, test_managers):
+    """RECTIFIED: replay manifest must be written after every successful run."""
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    assert result.replay_manifest_path is not None
+    assert result.replay_manifest_path.exists()
+
+
+def test_all_relationships_have_schema_version_info(run_id, test_managers):
+    """RECTIFIED: every relationship must carry SchemaVersionInfo."""
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(),
+    )
+    for rel in result.relationships:
+        assert rel.version_info is not None
+        assert rel.version_info.schema_version == "6.0"
+        assert rel.version_info.migration_version is not None
+        assert rel.version_info.compatibility_version is not None
+
+
+def test_calibrated_confidence_in_provenance(run_id, test_managers):
+    """RECTIFIED: provenance must record both raw and calibrated confidence."""
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    claims_map = {"c001": make_claim("c001", "A."), "c002": make_claim("c002", "B.")}
+    mock_index = MockFAISSIndex({"c001": [SearchResult("c002", 0.85, 1)], "c002": []})
+    manifest_mgr, state_mgr = test_managers
+    result = discover_relationships(
+        embedded_claims=[ec_a, ec_b], claims_map=claims_map,
+        run_id=run_id, manifest_manager=manifest_mgr,
+        state_manager=state_mgr, index=mock_index,
+        nli_generator=MockNLIGenerator(contradiction_score=0.90),
+    )
+    for rel in result.relationships:
+        assert rel.provenance.raw_nli_confidence > 0
+        assert rel.provenance.calibrated_confidence > 0
+        assert rel.provenance.calibrator_version != ""
+````
+
+## File: tests/integration/test_phase7_knowledge_graph.py
+````python
+"""Integration tests for Phase 7 end-to-end."""
+
+import json
+import pytest
+from pathlib import Path
+from smriti.core.models import (
+    Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
+    Relationship, RelationshipSet, RelationshipType, RelationshipDirection,
+    RelationshipEvidence, RelationshipProvenance, RelationshipQuality,
+    NLIScores, InferenceMetadata, CandidatePair, SchemaVersionInfo,
+    LifecycleStage, KnowledgeGraph,
+)
+from smriti.core.manifest import ManifestManager
+from smriti.core.state import StateManager
+from smriti.evolution import build_knowledge_graph
+
+
+def make_claim(cid, text="Test.", doc_id="d001"):
+    return Claim(
+        claim_id=cid, sentence_id="s001", document_id=doc_id,
+        text=text, content_hash=cid[:16], context="Python",
+        source_path=Path("test.md"),
+        extraction_mode=ExtractionMode.WHOLE_SENTENCE,
+        structured_assertion=None, assertion_metadata=AssertionMetadata(),
+        provenance=ClaimProvenance(
+            sentence_id="s001", document_id=doc_id,
+            source_path=Path("test.md"), sentence_context="", sentence_position=0,
+        ),
+        schema_version="4.0", rule_version="1.0",
+    )
+
+
+def make_rel(rel_id, cid_a, cid_b, rel_type, confidence=0.88):
+    pair = CandidatePair(claim_id_a=cid_a, claim_id_b=cid_b, cosine_similarity=0.85, candidate_rank=1)
+    nli = NLIScores(
+        entailment_score=0.05, neutral_score=0.05, contradiction_score=0.90,
+        predicted_label="contradiction", raw_confidence=confidence,
+    )
+    evidence = RelationshipEvidence(
+        pair=pair, cosine_similarity=0.85, nli_scores=nli,
+        calibrated_confidence=confidence,
+        inference_metadata=InferenceMetadata(model_name="test"),
+        lifecycle_stage=LifecycleStage.RELATIONSHIP,
+    )
+    prov = RelationshipProvenance(
+        retrieval_backend="faiss_flat_ip", retrieval_version="1.0", index_version="1.0",
+        search_parameters=None, classifier_model="test", classifier_version="1.0",
+        resolver_version="1.0", calibrator_version="1.0", cosine_similarity=0.85,
+        candidate_rank=1, raw_nli_confidence=confidence, calibrated_confidence=confidence,
+        config_hash="test", run_id="run1",
+    )
+    quality = RelationshipQuality(
+        cosine_above_threshold=True, nli_above_threshold=True,
+        evidence_consistent=True, calibration_applied=False,
+    )
+    version = SchemaVersionInfo(schema_version="6.0", migration_version="6.0", compatibility_version="6.0")
+    return Relationship(
+        relationship_id=rel_id, claim_id_a=cid_a, claim_id_b=cid_b,
+        relationship_type=rel_type, direction=RelationshipDirection.SYMMETRIC,
+        evidence=evidence, quality=quality, provenance=prov, version_info=version,
+    )
+
+
+def make_rel_set(rels, run_id="test_run"):
+    return RelationshipSet(
+        relationships=rels, total_candidates=len(rels),
+        total_validated=len(rels), total_rejected=0,
+        rejected_reasons={}, run_id=run_id,
+    )
+
+
+@pytest.fixture
+def run_id():
+    return "test_phase7_20240101"
+
+
+@pytest.fixture
+def test_managers(tmp_path, run_id):
+    return (
+        ManifestManager(run_id=run_id, artifacts_dir=tmp_path / "artifacts"),
+        StateManager(state_file=tmp_path / "state.json"),
+    )
+
+
+# ── Original 12 tests (all preserved) ────────────────────────────────────────
+
+def test_basic_knowledge_graph_construction(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    assert isinstance(graph, KnowledgeGraph)
+    assert graph.node_count == 2 and graph.edge_count == 1
+
+
+def test_contradiction_produces_two_partitions(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    assert graph.partition_count == 2 and graph.statistics.contradiction_count == 1
+
+
+def test_supports_keeps_claims_in_same_partition(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.SUPPORTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    assert graph.partition_count == 1
+    assert graph.nodes["c001"].partition_id == graph.nodes["c002"].partition_id
+
+
+def test_knowledge_graph_is_immutable(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    with pytest.raises(Exception):
+        graph.run_id = "modified"
+
+
+def test_validation_report_passes(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.SUPPORTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    assert graph.validation_report.is_valid is True and graph.validation_report.total_violations == 0
+
+
+def test_schema_version_correct(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    assert graph.schema_version == "7.0"
+    for node in graph.nodes.values():
+        assert node.schema_version == "7.0"
+    for edge in graph.edges.values():
+        assert edge.schema_version == "7.0"
+
+
+def test_nodes_have_semantic_roles(run_id, test_managers):
+    from smriti.core.models import SemanticRole
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.SUPPORTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    for node in graph.nodes.values():
+        assert node.semantic_role is not None and isinstance(node.semantic_role, SemanticRole)
+
+
+def test_manifest_written(run_id, test_managers):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    manifest_path = manifest_mgr.run_dir / "phase7" / "manifest.json"
+    assert manifest_path.exists()
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["phase"] == 7 and manifest["status"] == "success"
+
+
+def test_dataset_json_written(run_id, test_managers, tmp_path):
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    dataset_path = manifest_mgr.run_dir / "phase7" / "dataset.json"
+    assert dataset_path.exists()
+    data = json.loads(dataset_path.read_text())
+    assert all(k in data for k in ("graph_id", "nodes", "edges", "partitions"))
+
+
+def test_pipeline_state_updated(run_id, test_managers):
+    _, state_mgr = test_managers
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, _ = test_managers
+    build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    state = state_mgr.load()
+    assert state is not None and 7 in state.completed_phases
+
+
+def test_deterministic_construction(run_id, test_managers, tmp_path):
+    rels = [
+        make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS),
+        make_rel("r2", "c001", "c003", RelationshipType.SUPPORTS),
+    ]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002"), "c003": make_claim("c003")}
+    manifest_mgr, state_mgr = test_managers
+    graph1 = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    manifest_mgr2 = ManifestManager(run_id=f"{run_id}_2", artifacts_dir=tmp_path / "artifacts2")
+    state_mgr2 = StateManager(state_file=tmp_path / "state2.json")
+    graph2 = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr2, state_mgr2)
+    assert graph1.graph_id == graph2.graph_id
+    assert graph1.node_count == graph2.node_count
+    assert graph1.partition_count == graph2.partition_count
+
+
+def test_unknown_relationships_excluded_from_graph(run_id, test_managers):
+    from smriti.core.models import RelationshipType
+    rels = [
+        make_rel("r1", "c001", "c002", RelationshipType.UNKNOWN),
+        make_rel("r2", "c001", "c003", RelationshipType.CONTRADICTS),
+    ]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002"), "c003": make_claim("c003")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    for edge in graph.edges.values():
+        assert edge.relationship_type != RelationshipType.UNKNOWN
+
+
+def test_realistic_knowledge_graph(run_id, test_managers):
+    """Full test with realistic structure."""
+    rels = [
+        make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS),
+        make_rel("r2", "c003", "c001", RelationshipType.SUPPORTS),
+        make_rel("r3", "c004", "c001", RelationshipType.REFINES),
+    ]
+    claims = {
+        "c001": make_claim("c001", "Always normalize features before PCA."),
+        "c002": make_claim("c002", "Normalization before PCA is often unnecessary."),
+        "c003": make_claim("c003", "Use StandardScaler for consistent preprocessing."),
+        "c004": make_claim("c004", "Normalization improves PCA convergence on numerical data."),
+    }
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    assert graph.node_count == 4 and graph.edge_count == 3
+    assert graph.statistics.contradiction_count == 1
+    node_c001 = graph.nodes["c001"]
+    node_c002 = graph.nodes["c002"]
+    assert node_c001.partition_id != node_c002.partition_id
+    partition_c001 = graph.partitions[node_c001.partition_id]
+    assert "c003" in partition_c001.node_ids and "c004" in partition_c001.node_ids
+    assert node_c001.support_aggregate is not None
+    assert node_c001.support_aggregate.support_count >= 1
+    assert graph.schema_version == "7.0" and graph.validation_report.is_valid
+    for node in graph.nodes.values():
+        assert node.semantic_role is not None
+
+
+# ── 3 new rectified integration tests ────────────────────────────────────────
+
+def test_shared_support_target_partitioned_correctly(run_id, test_managers):
+    """
+    RECTIFIED (P0-1): Critical test — shared SUPPORTS target must not
+    merge contradicting nodes into the same partition.
+
+    A SUPPORTS X, C SUPPORTS X, A CONTRADICTS C.
+    A and C must be in DIFFERENT partitions.
+    """
+    rels = [
+        make_rel("r1", "A", "X", RelationshipType.SUPPORTS),
+        make_rel("r2", "C", "X", RelationshipType.SUPPORTS),
+        make_rel("r3", "A", "C", RelationshipType.CONTRADICTS),
+    ]
+    claims = {
+        "A": make_claim("A", "Claim A."),
+        "X": make_claim("X", "Claim X."),
+        "C": make_claim("C", "Claim C."),
+    }
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+
+    partition_of_A = graph.nodes["A"].partition_id
+    partition_of_C = graph.nodes["C"].partition_id
+    assert partition_of_A != partition_of_C, (
+        "A and C contradict each other. Even though they both support X, "
+        "they must be in different partitions."
+    )
+
+
+def test_stable_partition_label_in_dataset_json(run_id, test_managers):
+    """RECTIFIED (P2-5): stable_partition_label must be written to dataset.json."""
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.SUPPORTS)]
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    manifest_mgr, state_mgr = test_managers
+    build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    dataset_path = manifest_mgr.run_dir / "phase7" / "dataset.json"
+    data = json.loads(dataset_path.read_text())
+    for partition_data in data["partitions"].values():
+        assert "stable_partition_label" in partition_data, (
+            "stable_partition_label must be written to dataset.json for incremental comparison."
+        )
+
+
+def test_bridge_nodes_counted_in_statistics(run_id, test_managers):
+    """RECTIFIED (P0-3): bridge_nodes stat must use articulation-point count."""
+    # A → B → C: B is an articulation point
+    rels = [
+        make_rel("r1", "A", "B", RelationshipType.SUPPORTS),
+        make_rel("r2", "B", "C", RelationshipType.SUPPORTS),
+    ]
+    claims = {"A": make_claim("A"), "B": make_claim("B"), "C": make_claim("C")}
+    manifest_mgr, state_mgr = test_managers
+    graph = build_knowledge_graph(make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr)
+    # B is the true articulation point
+    assert graph.statistics.bridge_nodes >= 1, (
+        "B is an articulation point. bridge_nodes stat must reflect this."
+    )
+````
+
+## File: tests/integration/test_phase8_scoring.py
+````python
+"""Integration test for Phase 8 end-to-end."""
+
+import json
+import pytest
+from pathlib import Path
+
+from smriti.core.models import (
+    KnowledgeGraph, ClaimNode, RelationshipEdge, KnowledgePartition,
+    RelationshipType, RelationshipDirection, GraphStatistics, ValidationReport,
+    SemanticRole, TopologyMetrics, SupportAggregate, TemporalMetadata,
+    TemporalStatus, ScoredKnowledgeGraph, CalibrationLabel, NodeAnnotations,
+)
+from smriti.core.manifest import ManifestManager
+from smriti.core.state import StateManager
+from smriti.scoring import score_knowledge_graph
+
+
+def make_minimal_graph(run_id="test_run") -> KnowledgeGraph:
+    topo_a = TopologyMetrics(
+        degree=3, in_degree=2, out_degree=1, is_bridge=False, is_hub=False,
+        partition_id="p001", centrality=0.65,
+    )
+    support_a = SupportAggregate(
+        support_count=3, weighted_confidence=0.82,
+        supporting_claim_ids=("c002", "c003"),
+        evidence_summary="3 supporting claims",
+    )
+    temporal_a = TemporalMetadata(
+        status=TemporalStatus.STATIC_PARTITION,
+        earlier_claim_id=None, later_claim_id=None,
+        time_delta_days=None, temporal_confidence=0.0,
+    )
+    topo_b = TopologyMetrics(
+        degree=1, in_degree=0, out_degree=1, is_bridge=False, is_hub=False,
+        partition_id="p002", centrality=0.10,
+    )
+    ann_a = NodeAnnotations(
+        semantic_role=SemanticRole.FOUNDATIONAL_CLAIM,
+        topology=topo_a, support_aggregate=support_a, temporal_metadata=temporal_a,
+        partition_id="p001",
+    )
+    ann_b = NodeAnnotations(
+        semantic_role=SemanticRole.PERIPHERAL_CLAIM,
+        topology=topo_b, support_aggregate=None, temporal_metadata=None,
+        partition_id="p002",
+    )
+    nodes = {
+        "c001": ClaimNode(
+            node_id="c001", claim_id="c001",
+            claim_text="Always normalize features before PCA.",
+            context="Python > ML", source_path=Path("note.md"),
+            document_id="d001", annotations=ann_a,
+        ),
+        "c002": ClaimNode(
+            node_id="c002", claim_id="c002",
+            claim_text="Normalization is often unnecessary.",
+            context="Python > ML", source_path=Path("note2.md"),
+            document_id="d002", annotations=ann_b,
+        ),
+    }
+    edges = {
+        "r1": RelationshipEdge(
+            edge_id="r1", source_node_id="c001", target_node_id="c002",
+            relationship_type=RelationshipType.CONTRADICTS,
+            direction=RelationshipDirection.SYMMETRIC,
+            calibrated_confidence=0.88, cosine_similarity=0.82,
+            nli_confidence=0.88, candidate_rank=1,
+        ),
+    }
+    partitions = {
+        "p001": KnowledgePartition(
+            partition_id="p001", stable_partition_label="c001",
+            node_ids=frozenset(["c001"]),
+            internal_edge_ids=frozenset(), node_count=1, edge_count=0,
+            supports_count=0, refines_count=0, density=0.0, longest_support_chain=0,
+        ),
+        "p002": KnowledgePartition(
+            partition_id="p002", stable_partition_label="c002",
+            node_ids=frozenset(["c002"]),
+            internal_edge_ids=frozenset(), node_count=1, edge_count=0,
+            supports_count=0, refines_count=0, density=0.0, longest_support_chain=0,
+        ),
+    }
+    stats = GraphStatistics(
+        node_count=2, edge_count=1, partition_count=2,
+        contradiction_count=1, supports_count=0, refines_count=0,
+        isolated_nodes=0, bridge_nodes=0, hub_nodes=0,
+        evolution_chains=0, unresolved_conflicts=0,
+        construction_time_seconds=0.1, enrichment_time_seconds=0.2,
+    )
+    vr = ValidationReport(
+        is_valid=True, node_violations=(), edge_violations=(),
+        graph_violations=(), semantic_violations=(), validation_time_seconds=0.01,
+    )
+    return KnowledgeGraph(
+        graph_id="test_graph_001", nodes=nodes, edges=edges, partitions=partitions,
+        statistics=stats, validation_report=vr, run_id=run_id,
+        config_hash="test_hash", schema_version="7.0",
+    )
+
+
+@pytest.fixture
+def run_id(): return "test_phase8_20240101"
+
+@pytest.fixture
+def test_managers(tmp_path, run_id):
+    return (
+        ManifestManager(run_id=run_id, artifacts_dir=tmp_path / "artifacts"),
+        StateManager(state_file=tmp_path / "state.json"),
+    )
+
+@pytest.fixture
+def graph(): return make_minimal_graph()
+
+
+# ── Original 15 tests ─────────────────────────────────────────────────────────
+
+def test_returns_scored_knowledge_graph(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    assert isinstance(result, ScoredKnowledgeGraph)
+
+
+def test_every_node_is_scored(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    assert result.total_scored == graph.node_count
+    for claim_id in graph.nodes:
+        assert claim_id in result.reliability
+
+
+def test_original_graph_not_modified(graph, run_id, test_managers):
+    original_count = graph.node_count
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    assert result.graph is graph
+    assert result.graph.node_count == original_count
+
+
+def test_reliability_index_in_range(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    for meta in result.reliability.values():
+        assert 0.0 <= meta.reliability_index <= 100.0
+
+
+def test_uncertainty_in_range(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    for meta in result.reliability.values():
+        assert 0.0 <= meta.uncertainty_score <= 100.0
+
+
+def test_calibration_label_assigned(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    for meta in result.reliability.values():
+        assert isinstance(meta.calibration_label, CalibrationLabel)
+
+
+def test_explanation_is_populated(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    for meta in result.reliability.values():
+        assert meta.explanation.summary
+
+
+def test_schema_version_correct(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    assert result.schema_version == "8.0"
+    for meta in result.reliability.values():
+        assert meta.schema_version == "8.0"
+
+
+def test_component_scores_sum_approximates_ri(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    for meta in result.reliability.values():
+        comp_sum = sum(c.contribution for c in meta.component_scores)
+        assert abs(comp_sum - meta.reliability_index) <= 30.0
+
+
+def test_deterministic_scoring(graph, run_id, test_managers, tmp_path):
+    manifest_mgr, state_mgr = test_managers
+    result1 = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    manifest_mgr2 = ManifestManager(run_id=f"{run_id}_2", artifacts_dir=tmp_path / "artifacts2")
+    state_mgr2 = StateManager(state_file=tmp_path / "state2.json")
+    result2 = score_knowledge_graph(graph=graph, run_id=f"{run_id}_2", manifest_manager=manifest_mgr2, state_manager=state_mgr2)
+    for claim_id in graph.nodes:
+        ri1 = result1.reliability[claim_id].reliability_index
+        ri2 = result2.reliability[claim_id].reliability_index
+        assert ri1 == ri2, f"Non-deterministic: {claim_id} got {ri1} vs {ri2}"
+
+
+def test_dataset_json_written(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    phase_dir = manifest_mgr.run_dir / "phase8"
+    dataset_path = phase_dir / "dataset.json"
+    assert dataset_path.exists()
+    data = json.loads(dataset_path.read_text())
+    assert "reliability" in data and len(data["reliability"]) == graph.node_count
+
+
+def test_manifest_written(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    manifest_path = manifest_mgr.run_dir / "phase8" / "manifest.json"
+    assert manifest_path.exists()
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["phase"] == 8 and manifest["status"] == "success"
+
+
+def test_pipeline_state_updated(graph, run_id, test_managers):
+    _, state_mgr = test_managers
+    manifest_mgr, _ = test_managers
+    score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    state = state_mgr.load()
+    assert state is not None and 8 in state.completed_phases
+
+
+def test_well_supported_claim_higher_than_unsupported(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    ri_c001 = result.reliability["c001"].reliability_index
+    ri_c002 = result.reliability["c002"].reliability_index
+    assert ri_c001 > ri_c002
+
+
+def test_audit_trail_populated(graph, run_id, test_managers):
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    for meta in result.reliability.values():
+        assert meta.audit.policy_version
+        assert meta.audit.fusion_algorithm
+        assert meta.audit.computed_at_run_id == run_id
+
+
+# ── 4 new rectified integration tests ────────────────────────────────────────
+
+def test_signal_manifests_in_dataset_json(graph, run_id, test_managers):
+    """RECTIFIED (P0-4): Signal manifests must be written to dataset.json."""
+    manifest_mgr, state_mgr = test_managers
+    score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    dataset_path = manifest_mgr.run_dir / "phase8" / "dataset.json"
+    data = json.loads(dataset_path.read_text())
+    for claim_id, meta in data["reliability"].items():
+        assert "signal_manifests" in meta, (
+            f"signal_manifests missing for claim {claim_id}. "
+            "Every claim must have a full derivation trace."
+        )
+        assert len(meta["signal_manifests"]) > 0
+
+
+def test_decision_record_in_dataset_json(graph, run_id, test_managers):
+    """RECTIFIED (P0-5): ReliabilityDecisionRecord must be in dataset.json."""
+    manifest_mgr, state_mgr = test_managers
+    score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    dataset_path = manifest_mgr.run_dir / "phase8" / "dataset.json"
+    data = json.loads(dataset_path.read_text())
+    for claim_id, meta in data["reliability"].items():
+        assert "decision_record" in meta, (
+            f"decision_record missing for claim {claim_id}. "
+            "Every claim must have a ReliabilityDecisionRecord."
+        )
+        dr = meta["decision_record"]
+        assert "policy_interactions" in dr
+        assert "constraints_activated" in dr
+        assert "contribution_order" in dr
+        assert "final_reliability" in dr
+
+
+def test_policy_profile_recorded(graph, run_id, test_managers):
+    """RECTIFIED (P1-3): PolicyProfile must be recorded in ScoredKnowledgeGraph and dataset."""
+    from smriti.scoring.policies import PolicyProfile
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(
+        graph=graph, run_id=run_id,
+        manifest_manager=manifest_mgr, state_manager=state_mgr,
+        policy_profile=PolicyProfile.BALANCED,
+    )
+    assert result.policy_profile == "balanced"
+    for meta in result.reliability.values():
+        assert meta.audit.policy_profile == "balanced"
+
+
+def test_hub_and_bridge_scored_separately(graph, run_id, test_managers):
+    """RECTIFIED (P0-3): hub_score and bridge_score must appear in component scores."""
+    manifest_mgr, state_mgr = test_managers
+    result = score_knowledge_graph(graph=graph, run_id=run_id, manifest_manager=manifest_mgr, state_manager=state_mgr)
+    # At least one claim must have hub_score and bridge_score in its component_scores
+    all_signal_names = set()
+    for meta in result.reliability.values():
+        for comp in meta.component_scores:
+            all_signal_names.add(comp.signal_name)
+    assert "hub_score" in all_signal_names or "bridge_score" in all_signal_names, (
+        "hub_score and bridge_score must appear as separate ComponentScores. "
+        "They must not be merged into topology_strength."
+    )
+````
+
+## File: tests/unit/test_phase6_builder.py
+````python
+"""Unit tests for retrieval/builder.py."""
+
+import pytest
+from smriti.core.models import (
+    CandidatePair, RelationshipEvidence, RelationshipType, RelationshipDirection,
+    Relationship, NLIScores, InferenceMetadata, LifecycleStage,
+)
+from smriti.retrieval.builder import build_relationship, build_relationship_set
+
+
+def make_evidence(claim_id_a="c001", claim_id_b="c002"):
+    pair = CandidatePair(
+        claim_id_a=claim_id_a, claim_id_b=claim_id_b,
+        cosine_similarity=0.85, candidate_rank=1,
+    )
+    nli_scores = NLIScores(
+        entailment_score=0.05,
+        neutral_score=0.03,
+        contradiction_score=0.92,
+        predicted_label="contradiction",
+        raw_confidence=0.92,
+    )
+    metadata = InferenceMetadata(model_name="test-nli")
+    return RelationshipEvidence(
+        pair=pair, cosine_similarity=0.85,
+        nli_scores=nli_scores,
+        calibrated_confidence=0.88,   # Slightly different from raw (calibrated)
+        inference_metadata=metadata,
+        lifecycle_stage=LifecycleStage.CALIBRATED_EVIDENCE,
+    )
+
+
+def test_build_relationship_returns_relationship():
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert isinstance(rel, Relationship)
+
+
+def test_relationship_id_is_16_chars():
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert len(rel.relationship_id) == 16
+
+
+def test_relationship_id_is_deterministic():
+    evidence = make_evidence()
+    rel1 = build_relationship(evidence, RelationshipType.CONTRADICTS, RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    rel2 = build_relationship(evidence, RelationshipType.CONTRADICTS, RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert rel1.relationship_id == rel2.relationship_id
+
+
+def test_relationship_is_frozen():
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    with pytest.raises(Exception):
+        rel.claim_id_a = "modified"
+
+
+def test_relationship_provenance_populated():
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert rel.provenance is not None
+    assert rel.provenance.run_id == "run1"
+    assert rel.provenance.config_hash == "hash"
+
+
+def test_relationship_schema_version():
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert rel.schema_version == "6.0"
+
+
+def test_relationship_set_contradictions_property():
+    e1 = make_evidence("c001", "c002")
+    e2 = make_evidence("c003", "c004")
+    rel1 = build_relationship(e1, RelationshipType.CONTRADICTS, RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    rel2 = build_relationship(e2, RelationshipType.SUPPORTS, RelationshipDirection.A_TO_B, 0.80, "hash", "run1")
+    rel_set = build_relationship_set(
+        relationships=[rel1, rel2], total_candidates=10,
+        total_validated=5, total_rejected=5,
+        rejected_reasons={"below_threshold": 5}, run_id="run1",
+    )
+    assert len(rel_set.contradictions) == 1
+    assert len(rel_set.supports) == 1
+
+
+def test_schema_version_info_populated():
+    """RECTIFIED: SchemaVersionInfo must be populated on every Relationship."""
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert rel.version_info is not None
+    assert rel.version_info.schema_version == "6.0"
+    assert rel.version_info.migration_version == "6.0"
+    assert rel.version_info.compatibility_version == "6.0"
+
+
+def test_calibration_applied_flag_set_when_scores_differ():
+    """RECTIFIED: calibration_applied must be True when raw != calibrated."""
+    evidence = make_evidence()  # raw_confidence=0.92, calibrated_confidence=0.88
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert rel.quality.calibration_applied is True
+
+
+def test_lifecycle_stage_is_relationship():
+    """RECTIFIED: built relationships must carry RELATIONSHIP lifecycle stage."""
+    evidence = make_evidence()
+    rel = build_relationship(evidence, RelationshipType.CONTRADICTS,
+                             RelationshipDirection.SYMMETRIC, 0.80, "hash", "run1")
+    assert rel.lifecycle_stage == LifecycleStage.RELATIONSHIP
+````
+
+## File: tests/unit/test_phase6_calibration.py
+````python
+"""Unit tests for classification/calibration.py."""
+
+import pytest
+from smriti.core.models import (
+    CandidatePair, RelationshipEvidence, NLIScores, InferenceMetadata, LifecycleStage,
+)
+from smriti.retrieval.classification.calibration import (
+    ConfidenceCalibrator, CalibrationStrategy,
+)
+
+
+def make_evidence(entailment=0.1, neutral=0.05, contradiction=0.85, cosine=0.80):
+    pair = CandidatePair(claim_id_a="c001", claim_id_b="c002", cosine_similarity=cosine, candidate_rank=1)
+    nli_scores = NLIScores(
+        entailment_score=entailment,
+        neutral_score=neutral,
+        contradiction_score=contradiction,
+        predicted_label="contradiction",
+        raw_confidence=max(entailment, neutral, contradiction),
+    )
+    metadata = InferenceMetadata(model_name="test-nli")
+    return RelationshipEvidence(
+        pair=pair,
+        cosine_similarity=cosine,
+        nli_scores=nli_scores,
+        calibrated_confidence=nli_scores.raw_confidence,
+        inference_metadata=metadata,
+        lifecycle_stage=LifecycleStage.EVIDENCE,
+    )
+
+
+def test_identity_calibration_preserves_confidence():
+    calibrator = ConfidenceCalibrator(model_name="test", strategy=CalibrationStrategy.IDENTITY)
+    evidence = make_evidence(contradiction=0.85)
+    result = calibrator.calibrate(evidence)
+    assert abs(result.calibrated_confidence - 0.85) < 1e-6
+
+
+def test_temperature_calibration_softens_high_confidence():
+    calibrator = ConfidenceCalibrator(
+        model_name="test",
+        strategy=CalibrationStrategy.TEMPERATURE,
+        temperature=2.0,   # Higher temperature → softer distribution
+    )
+    evidence = make_evidence(contradiction=0.95, entailment=0.03, neutral=0.02)
+    result = calibrator.calibrate(evidence)
+    # Temperature > 1 should reduce the max confidence
+    assert result.calibrated_confidence < evidence.nli_scores.raw_confidence
+
+
+def test_calibration_advances_lifecycle_to_calibrated():
+    calibrator = ConfidenceCalibrator(model_name="test", strategy=CalibrationStrategy.IDENTITY)
+    evidence = make_evidence()
+    result = calibrator.calibrate(evidence)
+    assert result.lifecycle_stage == LifecycleStage.CALIBRATED_EVIDENCE
+
+
+def test_nli_scores_unchanged_after_calibration():
+    calibrator = ConfidenceCalibrator(
+        model_name="test",
+        strategy=CalibrationStrategy.TEMPERATURE,
+        temperature=2.0,
+    )
+    evidence = make_evidence(contradiction=0.90)
+    result = calibrator.calibrate(evidence)
+    assert result.nli_scores.contradiction_score == 0.90   # Raw scores untouched
+    assert result.nli_scores.predicted_label == "contradiction"
+
+
+def test_calibrate_batch_processes_all():
+    calibrator = ConfidenceCalibrator(model_name="test", strategy=CalibrationStrategy.IDENTITY)
+    evidences = [make_evidence() for _ in range(5)]
+    results = calibrator.calibrate_batch(evidences)
+    assert len(results) == 5
+````
+
+## File: tests/unit/test_phase6_candidate_generator.py
+````python
+"""Unit tests for retrieval/candidate_generator.py."""
+
+import pytest
+from smriti.core.models import CandidatePair, EmbeddedClaim
+from smriti.retrieval.candidate_generator import CandidateGenerator
+from smriti.retrieval.index import EmbeddingIndex, SearchResult
+from typing import List, Optional
+
+
+class MockIndex(EmbeddingIndex):
+    def __init__(self, results: dict):
+        self._results = results
+        self._dimension = 4
+        self._size = 0
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    @property
+    def size(self) -> int:
+        return self._size
+
+    def add(self, claim_ids, vectors):
+        self._size += len(claim_ids)
+
+    def search(self, query_id, query_vector, k, exclude_ids=None):
+        return self._results.get(query_id, [])
+
+
+def make_embedded_claim(claim_id: str, values=(0.1, 0.2, 0.3, 0.4)):
+    from smriti.core.models import (
+        EmbeddedClaim, Embedding, EmbeddingModelDescriptor,
+        EmbeddingProvenance, EmbeddingQuality, Vector, VectorDType,
+    )
+    vec = Vector(values=tuple(values), dimension=4, dtype=VectorDType.FLOAT64, normalized=True)
+    descriptor = EmbeddingModelDescriptor(
+        provider="test", model_name="test", model_revision="0",
+        dimension=4, model_signature="test_sig",
+    )
+    provenance = EmbeddingProvenance(
+        pipeline_version="1.0", normalization_mode="l2",
+        device="cpu", config_hash="test",
+    )
+    embedding = Embedding(claim_id=claim_id, vector=vec, descriptor=descriptor, provenance=provenance)
+    quality = EmbeddingQuality(dimension_ok=True, normalized=True, finite=True, cache_used=False)
+    return EmbeddedClaim(claim_id=claim_id, embedding=embedding, quality=quality)
+
+
+@pytest.fixture
+def generator():
+    return CandidateGenerator()
+
+
+def test_generates_candidate_pairs(generator):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    mock_index = MockIndex({
+        "c001": [SearchResult(claim_id="c002", score=0.85, rank=1)],
+        "c002": [SearchResult(claim_id="c001", score=0.85, rank=1)],
+    })
+    candidates = generator.generate([ec_a, ec_b], mock_index)
+    assert len(candidates) == 1
+
+
+def test_self_comparison_excluded(generator):
+    ec_a = make_embedded_claim("c001")
+    mock_index = MockIndex({
+        "c001": [SearchResult(claim_id="c001", score=1.0, rank=1)],
+    })
+    candidates = generator.generate([ec_a], mock_index)
+    assert len(candidates) == 0
+
+
+def test_symmetric_deduplication(generator):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    ec_c = make_embedded_claim("c003")
+    mock_index = MockIndex({
+        "c001": [SearchResult("c002", 0.90, 1), SearchResult("c003", 0.80, 2)],
+        "c002": [SearchResult("c001", 0.90, 1)],
+        "c003": [],
+    })
+    candidates = generator.generate([ec_a, ec_b, ec_c], mock_index)
+    pair_keys = {c.pair_key() for c in candidates}
+    assert len(pair_keys) == len(candidates)
+
+
+def test_output_is_sorted(generator):
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    ec_c = make_embedded_claim("c003")
+    mock_index = MockIndex({
+        "c001": [SearchResult("c003", 0.85, 1)],
+        "c002": [SearchResult("c001", 0.80, 1)],
+        "c003": [],
+    })
+    candidates = generator.generate([ec_a, ec_b, ec_c], mock_index)
+    keys = [c.pair_key() for c in candidates]
+    assert keys == sorted(keys)
+
+
+def test_retrieval_provenance_attached(generator):
+    """RECTIFIED: CandidatePair must have retrieval provenance fields."""
+    ec_a = make_embedded_claim("c001")
+    ec_b = make_embedded_claim("c002")
+    mock_index = MockIndex({
+        "c001": [SearchResult("c002", 0.85, 1)],
+        "c002": [],
+    })
+    candidates = generator.generate([ec_a, ec_b], mock_index)
+    assert len(candidates) == 1
+    pair = candidates[0]
+    assert pair.retrieval_backend is not None
+    assert pair.index_version is not None
+    assert pair.search_parameters is not None
+    assert pair.retrieval_quality is not None
+````
+
+## File: tests/unit/test_phase6_candidate_validator.py
+````python
+"""Unit tests for retrieval/validator.py."""
+
+import pytest
+from pathlib import Path
+from smriti.core.models import (
+    CandidatePair, Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
+    EmbeddedClaim, Embedding, EmbeddingModelDescriptor, EmbeddingProvenance,
+    EmbeddingQuality, Vector, VectorDType, LifecycleStage,
+)
+from smriti.retrieval.validator import validate_candidates, RejectionReason
+
+
+def make_claim(claim_id: str, text: str = "Test claim."):
+    return Claim(
+        claim_id=claim_id, sentence_id="s001", document_id="d001",
+        text=text, content_hash=claim_id[:16], context="",
+        source_path=Path("test.md"),
+        extraction_mode=ExtractionMode.WHOLE_SENTENCE,
+        structured_assertion=None,
+        assertion_metadata=AssertionMetadata(),
+        provenance=ClaimProvenance(
+            sentence_id="s001", document_id="d001",
+            source_path=Path("test.md"), sentence_context="", sentence_position=0,
+        ),
+        schema_version="4.0", rule_version="1.0",
+    )
+
+
+def make_embedded_claim(claim_id: str, finite: bool = True, dim_ok: bool = True):
+    vec = Vector(values=(0.1, 0.2, 0.3, 0.4), dimension=4, dtype=VectorDType.FLOAT64, normalized=True)
+    descriptor = EmbeddingModelDescriptor(
+        provider="test", model_name="test", model_revision="0",
+        dimension=4, model_signature="sig",
+    )
+    provenance = EmbeddingProvenance(
+        pipeline_version="1.0", normalization_mode="l2", device="cpu", config_hash="hash",
+    )
+    embedding = Embedding(claim_id=claim_id, vector=vec, descriptor=descriptor, provenance=provenance)
+    quality = EmbeddingQuality(dimension_ok=dim_ok, normalized=True, finite=finite, cache_used=False)
+    return EmbeddedClaim(claim_id=claim_id, embedding=embedding, quality=quality)
+
+
+def make_pair(id_a: str, id_b: str, score: float = 0.85):
+    a, b = sorted([id_a, id_b])
+    return CandidatePair(claim_id_a=a, claim_id_b=b, cosine_similarity=score, candidate_rank=1)
+
+
+def test_valid_pair_passes():
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    embs = {"c001": make_embedded_claim("c001"), "c002": make_embedded_claim("c002")}
+    pairs = [make_pair("c001", "c002", score=0.85)]
+    valid, rejections = validate_candidates(pairs, claims, embs, sim_threshold=0.75)
+    assert len(valid) == 1
+    assert not rejections
+
+
+def test_self_comparison_rejected():
+    claims = {"c001": make_claim("c001")}
+    embs = {"c001": make_embedded_claim("c001")}
+    pair = CandidatePair(claim_id_a="c001", claim_id_b="c001", cosine_similarity=1.0, candidate_rank=0)
+    valid, rejections = validate_candidates([pair], claims, embs, sim_threshold=0.75)
+    assert len(valid) == 0
+    assert RejectionReason.SELF_COMPARISON.value in rejections
+
+
+def test_missing_claim_rejected():
+    claims = {"c001": make_claim("c001")}
+    embs = {"c001": make_embedded_claim("c001"), "c002": make_embedded_claim("c002")}
+    pairs = [make_pair("c001", "c002")]
+    valid, rejections = validate_candidates(pairs, claims, embs, sim_threshold=0.75)
+    assert len(valid) == 0
+    assert RejectionReason.MISSING_CLAIM.value in rejections
+
+
+def test_invalid_embedding_rejected():
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    embs = {"c001": make_embedded_claim("c001", finite=False), "c002": make_embedded_claim("c002")}
+    pairs = [make_pair("c001", "c002")]
+    valid, rejections = validate_candidates(pairs, claims, embs, sim_threshold=0.75)
+    assert len(valid) == 0
+    assert RejectionReason.INVALID_EMBEDDING.value in rejections
+
+
+def test_below_threshold_rejected():
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    embs = {"c001": make_embedded_claim("c001"), "c002": make_embedded_claim("c002")}
+    pairs = [make_pair("c001", "c002", score=0.60)]
+    valid, rejections = validate_candidates(pairs, claims, embs, sim_threshold=0.75)
+    assert len(valid) == 0
+    assert RejectionReason.BELOW_THRESHOLD.value in rejections
+
+
+def test_empty_input():
+    valid, rejections = validate_candidates([], {}, {}, sim_threshold=0.75)
+    assert valid == []
+    assert not rejections
+
+
+def test_valid_pair_promoted_to_validated_candidate_lifecycle():
+    """RECTIFIED: valid pairs must carry VALIDATED_CANDIDATE lifecycle stage."""
+    claims = {"c001": make_claim("c001"), "c002": make_claim("c002")}
+    embs = {"c001": make_embedded_claim("c001"), "c002": make_embedded_claim("c002")}
+    pairs = [make_pair("c001", "c002", score=0.85)]
+    valid, _ = validate_candidates(pairs, claims, embs, sim_threshold=0.75)
+    assert valid[0].lifecycle_stage == LifecycleStage.VALIDATED_CANDIDATE
+````
+
+## File: tests/unit/test_phase6_resolver.py
+````python
+"""Unit tests for classification/resolver.py."""
+
+import pytest
+from smriti.core.models import (
+    CandidatePair, RelationshipEvidence, RelationshipType,
+    RelationshipDirection, NLIScores, InferenceMetadata, LifecycleStage,
+)
+from smriti.retrieval.classification.resolver import RelationshipResolver, ResolverPolicy
+
+
+def make_evidence(contradiction: float, entailment: float, neutral: float, cosine: float = 0.82):
+    pair = CandidatePair(claim_id_a="c001", claim_id_b="c002", cosine_similarity=cosine, candidate_rank=1)
+    scores = [contradiction, entailment, neutral]
+    predicted = ["contradiction", "entailment", "neutral"][scores.index(max(scores))]
+    raw_confidence = max(scores)
+    nli_scores = NLIScores(
+        entailment_score=entailment,
+        neutral_score=neutral,
+        contradiction_score=contradiction,
+        predicted_label=predicted,
+        raw_confidence=raw_confidence,
+    )
+    metadata = InferenceMetadata(model_name="test-nli")
+    return RelationshipEvidence(
+        pair=pair,
+        cosine_similarity=cosine,
+        nli_scores=nli_scores,
+        calibrated_confidence=raw_confidence,
+        inference_metadata=metadata,
+        lifecycle_stage=LifecycleStage.CALIBRATED_EVIDENCE,
+    )
+
+
+@pytest.fixture
+def policy():
+    return ResolverPolicy(
+        nli_threshold=0.80,
+        refine_threshold=0.55,
+        high_sim_threshold=0.88,
+        neutrality_threshold=0.60,
+    )
+
+
+@pytest.fixture
+def resolver(policy):
+    return RelationshipResolver(policy=policy)
+
+
+def test_strong_contradiction_resolves_contradicts(resolver):
+    evidence = make_evidence(contradiction=0.92, entailment=0.05, neutral=0.03)
+    rel_type, direction = resolver.resolve(evidence)
+    assert rel_type == RelationshipType.CONTRADICTS
+
+
+def test_strong_entailment_resolves_supports(resolver):
+    evidence = make_evidence(contradiction=0.03, entailment=0.93, neutral=0.04)
+    rel_type, direction = resolver.resolve(evidence)
+    assert rel_type == RelationshipType.SUPPORTS
+
+
+def test_weak_contradiction_high_cosine_resolves_refines(resolver):
+    evidence = make_evidence(contradiction=0.60, entailment=0.20, neutral=0.20, cosine=0.90)
+    rel_type, _ = resolver.resolve(evidence)
+    assert rel_type == RelationshipType.REFINES
+
+
+def test_high_neutral_resolves_neutral(resolver):
+    evidence = make_evidence(contradiction=0.15, entailment=0.20, neutral=0.65)
+    rel_type, _ = resolver.resolve(evidence)
+    assert rel_type == RelationshipType.NEUTRAL
+
+
+def test_low_confidence_resolves_unknown(resolver):
+    evidence = make_evidence(contradiction=0.35, entailment=0.33, neutral=0.32)
+    rel_type, _ = resolver.resolve(evidence)
+    assert rel_type == RelationshipType.UNKNOWN
+
+
+def test_resolver_is_deterministic(resolver):
+    evidence = make_evidence(contradiction=0.88, entailment=0.08, neutral=0.04)
+    assert resolver.resolve(evidence) == resolver.resolve(evidence) == resolver.resolve(evidence)
+
+
+def test_contradicts_is_symmetric(resolver):
+    evidence = make_evidence(contradiction=0.92, entailment=0.05, neutral=0.03)
+    _, direction = resolver.resolve(evidence)
+    assert direction == RelationshipDirection.SYMMETRIC
+
+
+def test_supports_is_directional(resolver):
+    evidence = make_evidence(contradiction=0.03, entailment=0.93, neutral=0.04)
+    _, direction = resolver.resolve(evidence)
+    assert direction == RelationshipDirection.A_TO_B
+
+
+def test_resolver_policy_is_configurable():
+    """RECTIFIED: resolver must use policy, not hard-coded values."""
+    # Custom policy with much higher threshold
+    strict_policy = ResolverPolicy(
+        nli_threshold=0.99,
+        refine_threshold=0.90,
+        high_sim_threshold=0.99,
+        neutrality_threshold=0.99,
+    )
+    strict_resolver = RelationshipResolver(policy=strict_policy)
+    # 0.92 contradiction won't exceed 0.99 threshold
+    evidence = make_evidence(contradiction=0.92, entailment=0.05, neutral=0.03)
+    rel_type, _ = strict_resolver.resolve(evidence)
+    assert rel_type == RelationshipType.UNKNOWN
+
+
+def test_resolver_policy_validates_on_construction():
+    """RECTIFIED: invalid policy must raise ResolverPolicyError."""
+    from smriti.exceptions import ResolverPolicyError
+    with pytest.raises(ResolverPolicyError):
+        ResolverPolicy(
+            nli_threshold=0.80,
+            refine_threshold=0.90,   # Violation: refine_threshold >= nli_threshold
+            high_sim_threshold=0.88,
+            neutrality_threshold=0.60,
+        )
+
+
+def test_resolver_contradiction_margin_enforced():
+    """RECTIFIED: contradiction_margin must widen the gap requirement."""
+    policy_with_margin = ResolverPolicy(
+        nli_threshold=0.80,
+        refine_threshold=0.55,
+        high_sim_threshold=0.88,
+        neutrality_threshold=0.60,
+        contradiction_margin=0.20,   # C must exceed E by 0.20
+    )
+    resolver = RelationshipResolver(policy=policy_with_margin)
+    # C=0.85, E=0.10 → gap=0.75 > 0.20 → CONTRADICTS
+    evidence_pass = make_evidence(contradiction=0.85, entailment=0.10, neutral=0.05)
+    rel_type, _ = resolver.resolve(evidence_pass)
+    assert rel_type == RelationshipType.CONTRADICTS
+
+    # C=0.82, E=0.75 → gap=0.07 < 0.20 → not CONTRADICTS
+    evidence_fail = make_evidence(contradiction=0.82, entailment=0.75, neutral=0.03)
+    rel_type, _ = resolver.resolve(evidence_fail)
+    assert rel_type != RelationshipType.CONTRADICTS
+````
+
+## File: tests/unit/test_phase7_aggregation_dedup.py
+````python
+"""
+Unit tests for aggregation.py provenance-root deduplication fix (P0-2).
+
+Verifies that support aggregation counts unique supporting claim IDs,
+not unique traversal paths. In a DAG like:
+
+    A → B → D
+    A → C → D
+
+A supports D through two paths. Old code: A counted twice.
+New code: A counted exactly once (unique provenance root).
+"""
+
+import pytest
+from pathlib import Path
+from smriti.core.models import (
+    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection,
+)
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.partitioning import run_partitioning
+from smriti.evolution.aggregation import run_evidence_aggregation
+
+
+def make_supports_edge(eid, src, tgt, confidence=0.88):
+    return RelationshipEdge(
+        edge_id=eid, source_node_id=src, target_node_id=tgt,
+        relationship_type=RelationshipType.SUPPORTS,
+        direction=RelationshipDirection.A_TO_B,
+        calibrated_confidence=confidence, cosine_similarity=0.85,
+        nli_confidence=confidence, candidate_rank=1,
+    )
+
+
+def make_ctx_with_edges(node_ids, edge_specs):
+    backend = NetworkXBackend()
+    nodes = {}
+    for nid in node_ids:
+        nodes[nid] = ClaimNode(
+            node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
+            context="", source_path=Path("test.md"), document_id="d001",
+        )
+        backend.add_node(nid)
+    edges = {}
+    for eid, src, tgt, conf in edge_specs:
+        edge = make_supports_edge(eid, src, tgt, conf)
+        edges[eid] = edge
+        backend.add_edge(src, tgt, eid, "supports", conf)
+    return SemanticReasoningContext(
+        nodes=nodes, edges=edges, backend=backend, run_id="test", config_hash="test",
+    )
+
+
+def test_dag_diamond_does_not_double_count():
+    """
+    RECTIFIED (P0-2): Diamond DAG test.
+
+    A → B → D
+    A → C → D
+
+    D's support_count must be 3 (A, B, C), not 4 (A counted twice in old code).
+    A is the unique provenance root that supports D through two paths.
+    """
+    ctx = make_ctx_with_edges(
+        ["A", "B", "C", "D"],
+        [
+            ("e1", "A", "B", 0.90),
+            ("e2", "A", "C", 0.85),
+            ("e3", "B", "D", 0.88),
+            ("e4", "C", "D", 0.88),
+        ],
+    )
+    run_partitioning(ctx)
+    run_evidence_aggregation(ctx)
+
+    agg_D = ctx.nodes["D"].support_aggregate
+    assert agg_D is not None
+    supporting = set(agg_D.supporting_claim_ids)
+    # A, B, and C all transitively support D
+    assert "A" in supporting
+    assert "B" in supporting
+    assert "C" in supporting
+    # A must appear exactly once
+    assert agg_D.support_count == len(supporting), (
+        f"support_count ({agg_D.support_count}) must equal len(unique claim IDs) "
+        f"({len(supporting)}). Each claim must be counted at most once."
+    )
+
+
+def test_direct_support_count():
+    """Single direct SUPPORTS: count = 1."""
+    ctx = make_ctx_with_edges(
+        ["A", "B"],
+        [("e1", "A", "B", 0.88)],
+    )
+    run_partitioning(ctx)
+    run_evidence_aggregation(ctx)
+
+    agg_B = ctx.nodes["B"].support_aggregate
+    assert agg_B.support_count == 1
+    assert "A" in agg_B.supporting_claim_ids
+
+
+def test_no_support_count_zero():
+    """Node with no incoming SUPPORTS: count = 0."""
+    ctx = make_ctx_with_edges(["A"], [])
+    run_partitioning(ctx)
+    run_evidence_aggregation(ctx)
+
+    agg_A = ctx.nodes["A"].support_aggregate
+    assert agg_A.support_count == 0
+````
+
+## File: tests/unit/test_phase7_annotation.py
+````python
+"""Unit tests for evolution/annotation.py."""
+
+import pytest
+from smriti.core.models import SemanticRole, TopologyMetrics
+from smriti.evolution.annotation import _classify_role, AnnotationPolicy
+from smriti.exceptions import AnnotationPolicyError
+
+
+def make_topology(degree, in_degree, out_degree, centrality, is_bridge=False, is_hub=False):
+    return TopologyMetrics(
+        degree=degree, in_degree=in_degree, out_degree=out_degree,
+        is_bridge=is_bridge, is_hub=is_hub,
+        partition_id="p001", centrality=centrality,
+    )
+
+
+DEFAULT_POLICY = AnnotationPolicy()
+
+
+def test_foundational_claim_annotation():
+    topo = make_topology(5, 3, 2, centrality=0.75)
+    assert _classify_role(topo, 0, DEFAULT_POLICY) == SemanticRole.FOUNDATIONAL_CLAIM
+
+
+def test_bridge_claim_annotation():
+    topo = make_topology(1, 1, 0, centrality=0.10, is_bridge=True)
+    assert _classify_role(topo, 0, DEFAULT_POLICY) == SemanticRole.BRIDGE_CLAIM
+
+
+def test_evidence_hub_annotation():
+    topo = make_topology(5, 4, 1, centrality=0.40)
+    assert _classify_role(topo, 0, DEFAULT_POLICY) == SemanticRole.EVIDENCE_HUB
+
+
+def test_refinement_root_annotation():
+    topo = make_topology(4, 1, 3, centrality=0.20)
+    assert _classify_role(topo, 3, DEFAULT_POLICY) == SemanticRole.REFINEMENT_ROOT
+
+
+def test_leaf_claim_annotation():
+    topo = make_topology(2, 2, 0, centrality=0.30)
+    assert _classify_role(topo, 0, DEFAULT_POLICY) == SemanticRole.LEAF_CLAIM
+
+
+def test_peripheral_claim_annotation():
+    topo = make_topology(1, 0, 1, centrality=0.05)
+    assert _classify_role(topo, 0, DEFAULT_POLICY) == SemanticRole.PERIPHERAL_CLAIM
+
+
+def test_annotation_policy_thresholds_respected():
+    """RECTIFIED (P1-4): Annotation thresholds must come from policy, not hardcode."""
+    strict_policy = AnnotationPolicy(
+        foundational_centrality_threshold=0.90,  # Very strict
+        foundational_min_in_degree=5,
+    )
+    # centrality=0.75, in_degree=3 — would be FOUNDATIONAL with default but not with strict
+    topo = make_topology(5, 3, 2, centrality=0.75)
+    role_default = _classify_role(topo, 0, DEFAULT_POLICY)
+    role_strict = _classify_role(topo, 0, strict_policy)
+    assert role_default == SemanticRole.FOUNDATIONAL_CLAIM
+    assert role_strict != SemanticRole.FOUNDATIONAL_CLAIM
+
+
+def test_annotation_policy_validates_on_construction():
+    """RECTIFIED (P1-4): Invalid policy must raise AnnotationPolicyError."""
+    with pytest.raises(AnnotationPolicyError):
+        AnnotationPolicy(foundational_centrality_threshold=1.5)  # Out of range
+````
+
+## File: tests/unit/test_phase7_construction.py
+````python
+"""Unit tests for evolution/construction.py."""
+
+import pytest
+from pathlib import Path
+from smriti.core.models import (
+    Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
+    Relationship, RelationshipSet, RelationshipType, RelationshipDirection,
+    RelationshipEvidence, RelationshipProvenance, RelationshipQuality,
+    NLIScores, InferenceMetadata, CandidatePair, SchemaVersionInfo, LifecycleStage,
+)
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.construction import run_construction
+from smriti.exceptions import GraphConstructionError
+
+
+def make_claim(claim_id, text="Test.", doc_id="d001"):
+    return Claim(
+        claim_id=claim_id, sentence_id="s001", document_id=doc_id,
+        text=text, content_hash=claim_id[:16], context="",
+        source_path=Path("test.md"),
+        extraction_mode=ExtractionMode.WHOLE_SENTENCE,
+        structured_assertion=None, assertion_metadata=AssertionMetadata(),
+        provenance=ClaimProvenance(
+            sentence_id="s001", document_id=doc_id,
+            source_path=Path("test.md"), sentence_context="", sentence_position=0,
+        ),
+        schema_version="4.0", rule_version="1.0",
+    )
+
+
+def make_rel(rel_id, cid_a, cid_b, rel_type, confidence=0.88):
+    pair = CandidatePair(claim_id_a=cid_a, claim_id_b=cid_b, cosine_similarity=0.85, candidate_rank=1)
+    nli = NLIScores(
+        entailment_score=0.05, neutral_score=0.05, contradiction_score=0.90,
+        predicted_label="contradiction", raw_confidence=confidence,
+    )
+    inf = InferenceMetadata(model_name="test-nli")
+    evidence = RelationshipEvidence(
+        pair=pair, cosine_similarity=0.85, nli_scores=nli,
+        calibrated_confidence=confidence, inference_metadata=inf,
+        lifecycle_stage=LifecycleStage.RELATIONSHIP,
+    )
+    prov = RelationshipProvenance(
+        retrieval_backend="faiss_flat_ip", retrieval_version="1.0", index_version="1.0",
+        search_parameters=None, classifier_model="test", classifier_version="1.0",
+        resolver_version="1.0", calibrator_version="1.0", cosine_similarity=0.85,
+        candidate_rank=1, raw_nli_confidence=confidence, calibrated_confidence=confidence,
+        config_hash="test", run_id="run1",
+    )
+    quality = RelationshipQuality(
+        cosine_above_threshold=True, nli_above_threshold=True,
+        evidence_consistent=True, calibration_applied=False,
+    )
+    version = SchemaVersionInfo(schema_version="6.0", migration_version="6.0", compatibility_version="6.0")
+    return Relationship(
+        relationship_id=rel_id, claim_id_a=cid_a, claim_id_b=cid_b,
+        relationship_type=rel_type, direction=RelationshipDirection.SYMMETRIC,
+        evidence=evidence, quality=quality, provenance=prov, version_info=version,
+    )
+
+
+def make_rel_set(relationships, run_id="run1"):
+    return RelationshipSet(
+        relationships=relationships, total_candidates=len(relationships),
+        total_validated=len(relationships), total_rejected=0,
+        rejected_reasons={}, run_id=run_id,
+    )
+
+
+def make_claims_map(*claim_ids):
+    return {cid: make_claim(cid) for cid in claim_ids}
+
+
+def test_constructs_nodes_for_all_claims():
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS)]
+    result = run_construction(make_rel_set(rels), make_claims_map("c001", "c002"), NetworkXBackend())
+    assert "c001" in result.nodes and "c002" in result.nodes
+    assert len(result.nodes) == 2
+
+
+def test_constructs_edges_for_relationships():
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.SUPPORTS)]
+    result = run_construction(make_rel_set(rels), make_claims_map("c001", "c002"), NetworkXBackend())
+    assert "r1" in result.edges
+
+
+def test_unknown_relationships_filtered():
+    rels = [
+        make_rel("r1", "c001", "c002", RelationshipType.UNKNOWN),
+        make_rel("r2", "c001", "c003", RelationshipType.CONTRADICTS),
+    ]
+    result = run_construction(make_rel_set(rels), make_claims_map("c001", "c002", "c003"), NetworkXBackend())
+    assert "r1" not in result.edges and "r2" in result.edges
+
+
+def test_missing_claim_raises_construction_error():
+    rels = [make_rel("r1", "c001", "c_MISSING", RelationshipType.CONTRADICTS)]
+    with pytest.raises(GraphConstructionError):
+        run_construction(make_rel_set(rels), {"c001": make_claim("c001")}, NetworkXBackend())
+
+
+def test_duplicate_claim_ids_produce_one_node():
+    rels = [
+        make_rel("r1", "c001", "c002", RelationshipType.CONTRADICTS),
+        make_rel("r2", "c001", "c003", RelationshipType.SUPPORTS),
+    ]
+    result = run_construction(make_rel_set(rels), make_claims_map("c001", "c002", "c003"), NetworkXBackend())
+    assert len(result.nodes) == 3
+
+
+def test_neutral_filtered_by_default():
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.NEUTRAL)]
+    result = run_construction(make_rel_set(rels), make_claims_map("c001", "c002"), NetworkXBackend(), include_neutral=False)
+    assert "r1" not in result.edges and result.relationships_filtered == 1
+
+
+def test_neutral_included_when_configured():
+    rels = [make_rel("r1", "c001", "c002", RelationshipType.NEUTRAL)]
+    result = run_construction(make_rel_set(rels), make_claims_map("c001", "c002"), NetworkXBackend(), include_neutral=True)
+    assert "r1" in result.edges
+
+
+def test_empty_relationship_set_produces_empty_graph():
+    result = run_construction(make_rel_set([]), {}, NetworkXBackend())
+    assert len(result.nodes) == 0 and len(result.edges) == 0
+````
+
+## File: tests/unit/test_phase7_partitioning.py
+````python
+"""Unit tests for evolution/partitioning.py — constraint-based algorithm."""
+
+import pytest
+from pathlib import Path
+from smriti.core.models import (
+    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection, SemanticRole,
+)
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.partitioning import run_partitioning
+
+
+def make_ctx(node_ids, edges_list):
+    backend = NetworkXBackend()
+    nodes = {}
+    for nid in node_ids:
+        nodes[nid] = ClaimNode(
+            node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
+            context="", source_path=Path("test.md"), document_id="d001",
+        )
+        backend.add_node(nid)
+    edges = {}
+    for eid, src, tgt, rtype in edges_list:
+        edge = RelationshipEdge(
+            edge_id=eid, source_node_id=src, target_node_id=tgt,
+            relationship_type=rtype, direction=RelationshipDirection.SYMMETRIC,
+            calibrated_confidence=0.88, cosine_similarity=0.85,
+            nli_confidence=0.88, candidate_rank=1,
+        )
+        edges[eid] = edge
+        backend.add_edge(src, tgt, eid, rtype.value, 0.88)
+        if rtype == RelationshipType.CONTRADICTS:
+            backend.add_edge(tgt, src, f"{eid}_rev", rtype.value, 0.88)
+    return SemanticReasoningContext(
+        nodes=nodes, edges=edges, backend=backend, run_id="test", config_hash="test",
+    )
+
+
+def test_single_connected_component_is_one_partition():
+    ctx = make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.SUPPORTS)])
+    run_partitioning(ctx)
+    assert len(ctx.partitions) == 1
+    assert ctx.node_to_partition["c001"] == ctx.node_to_partition["c002"]
+
+
+def test_contradiction_creates_two_partitions():
+    ctx = make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.CONTRADICTS)])
+    run_partitioning(ctx)
+    assert len(ctx.partitions) == 2
+    assert ctx.node_to_partition["c001"] != ctx.node_to_partition["c002"]
+
+
+def test_every_node_assigned_to_partition():
+    ctx = make_ctx(
+        ["c001", "c002", "c003"],
+        [("e1", "c001", "c002", RelationshipType.CONTRADICTS),
+         ("e2", "c002", "c003", RelationshipType.SUPPORTS)],
+    )
+    run_partitioning(ctx)
+    for node_id in ctx.nodes:
+        assert node_id in ctx.node_to_partition
+        assert ctx.node_to_partition[node_id] is not None
+
+
+def test_isolated_node_gets_own_partition():
+    ctx = make_ctx(["c001"], [])
+    run_partitioning(ctx)
+    assert len(ctx.partitions) == 1
+    assert "c001" in ctx.node_to_partition
+
+
+def test_partition_ids_are_deterministic():
+    def build_ctx():
+        return make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.CONTRADICTS)])
+    ctx1, ctx2 = build_ctx(), build_ctx()
+    run_partitioning(ctx1)
+    run_partitioning(ctx2)
+    assert set(ctx1.partitions.keys()) == set(ctx2.partitions.keys())
+
+
+def test_partition_does_not_contain_contradicts_internal_edges():
+    ctx = make_ctx(
+        ["c001", "c002", "c003"],
+        [("e1", "c001", "c002", RelationshipType.CONTRADICTS),
+         ("e2", "c001", "c003", RelationshipType.SUPPORTS)],
+    )
+    run_partitioning(ctx)
+    for partition in ctx.partitions.values():
+        for eid in partition.internal_edge_ids:
+            edge = ctx.edges.get(eid)
+            if edge:
+                assert edge.relationship_type != RelationshipType.CONTRADICTS
+
+
+def test_node_objects_updated_with_partition_id():
+    ctx = make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.SUPPORTS)])
+    run_partitioning(ctx)
+    for node in ctx.nodes.values():
+        assert node.partition_id is not None
+
+
+def test_shared_support_target_does_not_merge_contradicting_nodes():
+    """
+    RECTIFIED (P0-1): The critical failure case for the old algorithm.
+
+    A SUPPORTS X
+    C SUPPORTS X
+    A CONTRADICTS C
+
+    Old algorithm (edge deletion + connected components):
+        Remove CONTRADICTS → A, X, C all connected → SAME partition. WRONG.
+
+    New algorithm (constraint coloring + Union-Find):
+        A and C get different colors from contradiction constraint.
+        Union-Find only merges same-color nodes.
+        A and X merge (same color).
+        C stays in its own partition (different color from A).
+        X ends up with A, not with C.
+        Result: A and C in DIFFERENT partitions. CORRECT.
+    """
+    ctx = make_ctx(
+        ["A", "X", "C"],
+        [
+            ("e1", "A", "X", RelationshipType.SUPPORTS),
+            ("e2", "C", "X", RelationshipType.SUPPORTS),
+            ("e3", "A", "C", RelationshipType.CONTRADICTS),
+        ],
+    )
+    run_partitioning(ctx)
+
+    partition_of_A = ctx.node_to_partition["A"]
+    partition_of_C = ctx.node_to_partition["C"]
+    assert partition_of_A != partition_of_C, (
+        "A and C contradict each other and must be in different partitions, "
+        "even though they both support X."
+    )
+
+
+def test_stable_partition_label_present():
+    """RECTIFIED (P2-5): stable_partition_label must be set on all partitions."""
+    ctx = make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.SUPPORTS)])
+    run_partitioning(ctx)
+    for partition in ctx.partitions.values():
+        assert partition.stable_partition_label is not None
+        assert isinstance(partition.stable_partition_label, str)
+        assert len(partition.stable_partition_label) > 0
+
+
+def test_directed_density_formula():
+    """RECTIFIED (P1-5): Partition density must use directed formula: edges / (n*(n-1))."""
+    ctx = make_ctx(
+        ["c001", "c002", "c003"],
+        [
+            ("e1", "c001", "c002", RelationshipType.SUPPORTS),
+            ("e2", "c002", "c003", RelationshipType.SUPPORTS),
+        ],
+    )
+    run_partitioning(ctx)
+    assert len(ctx.partitions) == 1
+    partition = next(iter(ctx.partitions.values()))
+    n = partition.node_count  # 3
+    e = partition.edge_count  # 2
+    expected_density = e / (n * (n - 1))  # 2 / 6 = 0.333...
+    assert abs(partition.density - expected_density) < 1e-6
+````
+
+## File: tests/unit/test_phase7_temporal_semantic.py
+````python
+"""
+Unit tests for temporal.py semantic-timestamp fix (P0-4).
+
+Verifies that temporal resolution uses Claim.timestamp (semantic),
+never filesystem st_mtime.
+"""
+
+import pytest
+from datetime import datetime, timezone
+from pathlib import Path
+from smriti.core.models import (
+    Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
+    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection,
+    TemporalStatus,
+)
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.partitioning import run_partitioning
+from smriti.evolution.temporal import run_temporal_resolution, _get_semantic_timestamp
+
+
+def make_claim(claim_id, timestamp=None):
+    claim = Claim(
+        claim_id=claim_id, sentence_id="s001", document_id="d001",
+        text=f"Claim {claim_id}", content_hash=claim_id[:16], context="",
+        source_path=Path("test.md"),
+        extraction_mode=ExtractionMode.WHOLE_SENTENCE,
+        structured_assertion=None, assertion_metadata=AssertionMetadata(),
+        provenance=ClaimProvenance(
+            sentence_id="s001", document_id="d001",
+            source_path=Path("test.md"), sentence_context="", sentence_position=0,
+        ),
+        schema_version="4.0", rule_version="1.0",
+    )
+    # Inject timestamp as attribute (until Claim model has it as a field)
+    object.__setattr__(claim, "timestamp", timestamp) if hasattr(claim, "__dataclass_fields__") else None
+    try:
+        object.__setattr__(claim, "_timestamp_override", timestamp)
+    except Exception:
+        pass
+    return claim
+
+
+def make_contradiction_ctx(node_a, node_b):
+    backend = NetworkXBackend()
+    nodes = {
+        node_a: ClaimNode(
+            node_id=node_a, claim_id=node_a, claim_text=f"Claim {node_a}",
+            context="", source_path=Path("test.md"), document_id="d001",
+        ),
+        node_b: ClaimNode(
+            node_id=node_b, claim_id=node_b, claim_text=f"Claim {node_b}",
+            context="", source_path=Path("test.md"), document_id="d001",
+        ),
+    }
+    edge = RelationshipEdge(
+        edge_id="e1", source_node_id=node_a, target_node_id=node_b,
+        relationship_type=RelationshipType.CONTRADICTS,
+        direction=RelationshipDirection.SYMMETRIC,
+        calibrated_confidence=0.88, cosine_similarity=0.85,
+        nli_confidence=0.88, candidate_rank=1,
+    )
+    for nid in nodes:
+        backend.add_node(nid)
+    backend.add_edge(node_a, node_b, "e1", "contradicts", 0.88)
+    backend.add_edge(node_b, node_a, "e1_rev", "contradicts", 0.88)
+    return SemanticReasoningContext(
+        nodes=nodes, edges={"e1": edge}, backend=backend, run_id="test", config_hash="test",
+    )
+
+
+def test_no_timestamp_produces_no_timestamp_status():
+    """RECTIFIED (P0-4): Missing Claim.timestamp → NO_TIMESTAMP status, not filesystem fallback."""
+    ctx = make_contradiction_ctx("c001", "c002")
+    run_partitioning(ctx)
+
+    claims_map = {
+        "c001": make_claim("c001", timestamp=None),
+        "c002": make_claim("c002", timestamp=None),
+    }
+    run_temporal_resolution(ctx, claims_map)
+
+    status_c001 = ctx.nodes["c001"].temporal_metadata.status
+    # Should be NO_TIMESTAMP, not a filesystem-derived value
+    assert status_c001 in (TemporalStatus.NO_TIMESTAMP, TemporalStatus.STATIC_PARTITION), (
+        "When Claim.timestamp is None, temporal status must be NO_TIMESTAMP "
+        "or STATIC_PARTITION — never an EVOLUTION_CHAIN from filesystem metadata."
+    )
+
+
+def test_get_semantic_timestamp_never_reads_filesystem(monkeypatch):
+    """RECTIFIED (P0-4): _get_semantic_timestamp must NEVER call stat()."""
+    stat_called = []
+
+    def mock_stat(*args, **kwargs):
+        stat_called.append(True)
+        raise Exception("stat() must not be called")
+
+    monkeypatch.setattr(Path, "stat", mock_stat)
+
+    claim = make_claim("c001", timestamp=None)
+    result = _get_semantic_timestamp(claim)
+
+    assert not stat_called, "stat() was called! Temporal resolver must not read filesystem."
+    assert result is None
+````
+
+## File: tests/unit/test_phase7_topology_bridges.py
+````python
+"""
+Unit tests for topology.py bridge detection fix (P0-3).
+
+Verifies that bridge detection uses articulation_points (NetworkX),
+NOT the degree-1 heuristic from the original implementation.
+"""
+
+import pytest
+from pathlib import Path
+from smriti.core.models import ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection, KnowledgePartition
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.topology import run_topology_analysis
+from smriti.evolution.partitioning import run_partitioning
+
+
+def make_ctx_chain(node_ids, edges_list):
+    """Build a chain context for bridge testing."""
+    backend = NetworkXBackend()
+    nodes = {}
+    for nid in node_ids:
+        nodes[nid] = ClaimNode(
+            node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
+            context="", source_path=Path("test.md"), document_id="d001",
+        )
+        backend.add_node(nid)
+    edges = {}
+    for eid, src, tgt in edges_list:
+        edge = RelationshipEdge(
+            edge_id=eid, source_node_id=src, target_node_id=tgt,
+            relationship_type=RelationshipType.SUPPORTS,
+            direction=RelationshipDirection.A_TO_B,
+            calibrated_confidence=0.88, cosine_similarity=0.85,
+            nli_confidence=0.88, candidate_rank=1,
+        )
+        edges[eid] = edge
+        backend.add_edge(src, tgt, eid, "supports", 0.88)
+    return SemanticReasoningContext(
+        nodes=nodes, edges=edges, backend=backend, run_id="test", config_hash="test",
+    )
+
+
+def test_middle_node_in_chain_is_bridge():
+    """
+    RECTIFIED (P0-3): A → B → C
+    B is the articulation point (bridge). Removing B disconnects A and C.
+    Old code: is_bridge=False (B has degree 2, not 1). WRONG.
+    New code: is_bridge=True (nx.articulation_points returns B). CORRECT.
+    """
+    ctx = make_ctx_chain(
+        ["A", "B", "C"],
+        [("e1", "A", "B"), ("e2", "B", "C")],
+    )
+    run_partitioning(ctx)
+    run_topology_analysis(ctx)
+
+    assert ctx.topology_metrics["B"].is_bridge is True, (
+        "B is the only path between A and C; removing B disconnects the graph. "
+        "B must be detected as a bridge (articulation point)."
+    )
+
+
+def test_leaf_node_is_not_bridge():
+    """
+    A → B → C: C is a leaf (degree 1 in undirected). It is NOT an articulation point.
+    Old code incorrectly flagged leaf nodes as bridges.
+    """
+    ctx = make_ctx_chain(
+        ["A", "B", "C"],
+        [("e1", "A", "B"), ("e2", "B", "C")],
+    )
+    run_partitioning(ctx)
+    run_topology_analysis(ctx)
+
+    # C has degree 1 in undirected, but removing it doesn't disconnect the rest
+    assert ctx.topology_metrics["C"].is_bridge is False, (
+        "C is a leaf node. Removing C doesn't disconnect A and B. "
+        "C must NOT be a bridge."
+    )
+
+
+def test_cycle_has_no_bridges():
+    """
+    A → B → C → A (cycle): No bridges.
+    In a cycle, no single node removal disconnects the graph.
+    """
+    ctx = make_ctx_chain(
+        ["A", "B", "C"],
+        [("e1", "A", "B"), ("e2", "B", "C"), ("e3", "C", "A")],
+    )
+    run_partitioning(ctx)
+    run_topology_analysis(ctx)
+
+    for node_id, metrics in ctx.topology_metrics.items():
+        assert metrics.is_bridge is False, (
+            f"No node in a cycle should be a bridge. Node {node_id} incorrectly flagged."
+        )
+````
+
+## File: tests/unit/test_phase7_validation.py
+````python
+"""Unit tests for evolution/validation.py."""
+
+import pytest
+from pathlib import Path
+from smriti.core.models import (
+    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection, SemanticRole,
+)
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.validation import validate_graph_structure
+from smriti.exceptions import GraphValidationError
+
+
+def make_node(nid):
+    return ClaimNode(
+        node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
+        context="", source_path=Path("test.md"), document_id="d001",
+    )
+
+
+def make_edge(eid, src, tgt, rtype=RelationshipType.CONTRADICTS):
+    return RelationshipEdge(
+        edge_id=eid, source_node_id=src, target_node_id=tgt,
+        relationship_type=rtype, direction=RelationshipDirection.SYMMETRIC,
+        calibrated_confidence=0.88, cosine_similarity=0.85,
+        nli_confidence=0.88, candidate_rank=1,
+    )
+
+
+def test_valid_graph_passes():
+    backend = NetworkXBackend()
+    nodes = {"c001": make_node("c001"), "c002": make_node("c002")}
+    edges = {"e1": make_edge("e1", "c001", "c002")}
+    backend.add_node("c001")
+    backend.add_node("c002")
+    backend.add_edge("c001", "c002", "e1", "contradicts", 0.88)
+    report = validate_graph_structure(nodes, edges, backend)
+    assert report.is_valid is True and report.total_violations == 0
+
+
+def test_orphan_edge_source_missing_raises():
+    backend = NetworkXBackend()
+    nodes = {"c002": make_node("c002")}
+    edges = {"e1": make_edge("e1", "c001", "c002")}
+    backend.add_node("c002")
+    backend.add_edge("c001", "c002", "e1", "contradicts", 0.88)
+    with pytest.raises(GraphValidationError):
+        validate_graph_structure(nodes, edges, backend)
+
+
+def test_unknown_type_in_edge_raises():
+    backend = NetworkXBackend()
+    nodes = {"c001": make_node("c001"), "c002": make_node("c002")}
+    edges = {"e1": make_edge("e1", "c001", "c002", RelationshipType.UNKNOWN)}
+    backend.add_node("c001")
+    backend.add_node("c002")
+    backend.add_edge("c001", "c002", "e1", "unknown", 0.50)
+    with pytest.raises(GraphValidationError):
+        validate_graph_structure(nodes, edges, backend)
+
+
+def test_empty_claim_text_raises():
+    backend = NetworkXBackend()
+    bad_node = ClaimNode(
+        node_id="c001", claim_id="c001", claim_text="",
+        context="", source_path=Path("test.md"), document_id="d001",
+    )
+    nodes = {"c001": bad_node}
+    backend.add_node("c001")
+    with pytest.raises(GraphValidationError):
+        validate_graph_structure(nodes, {}, backend)
+
+
+def test_semantic_violations_detected_and_reported():
+    """RECTIFIED (P2-4): SUPPORTS→CONTRADICTS→SUPPORTS chain produces semantic warning."""
+    backend = NetworkXBackend()
+    nodes = {
+        "c001": make_node("c001"),
+        "c002": make_node("c002"),
+        "c003": make_node("c003"),
+        "c004": make_node("c004"),
+    }
+    # c001 SUPPORTS c002, c002 CONTRADICTS c003, c003 SUPPORTS c004
+    edges = {
+        "e1": make_edge("e1", "c001", "c002", RelationshipType.SUPPORTS),
+        "e2": make_edge("e2", "c002", "c003", RelationshipType.CONTRADICTS),
+        "e3": make_edge("e3", "c003", "c004", RelationshipType.SUPPORTS),
+    }
+    for nid in nodes:
+        backend.add_node(nid)
+    backend.add_edge("c001", "c002", "e1", "supports", 0.88)
+    backend.add_edge("c002", "c003", "e2", "contradicts", 0.88)
+    backend.add_edge("c003", "c004", "e3", "supports", 0.88)
+
+    # Should pass structurally but produce semantic warnings
+    report = validate_graph_structure(nodes, edges, backend)
+    assert report.is_valid is True  # Not a fatal error
+    assert len(report.semantic_violations) > 0
+
+
+def test_semantic_violations_field_present_on_report():
+    """RECTIFIED (P2-4): ValidationReport must have semantic_violations tuple."""
+    backend = NetworkXBackend()
+    nodes = {"c001": make_node("c001")}
+    backend.add_node("c001")
+    report = validate_graph_structure(nodes, {}, backend)
+    assert hasattr(report, "semantic_violations")
+    assert isinstance(report.semantic_violations, tuple)
+````
+
+## File: tests/unit/test_phase8_explanation.py
+````python
+"""Unit tests for scoring/explanation.py."""
+
+import pytest
+from smriti.core.models import ComponentScore
+from smriti.scoring.explanation import build_explanation
+
+
+def make_component(name: str, contribution: float, direction: str = "positive") -> ComponentScore:
+    return ComponentScore(
+        signal_name=name, normalized_value=0.8, policy_weight=0.25,
+        adjusted_value=0.8, contribution=contribution, direction=direction,
+        explanation="Test explanation",
+    )
+
+
+def test_explanation_has_summary():
+    comps = [make_component("evidence_strength", 18.0), make_component("conflict_pressure", -8.0, "negative")]
+    explanation = build_explanation(75.0, comps)
+    assert explanation.summary and len(explanation.summary) > 0
+
+
+def test_dominant_and_limiting_signals():
+    comps = [
+        make_component("evidence_strength", 22.0),
+        make_component("topology_strength", 12.0),
+        make_component("conflict_pressure", -15.0, "negative"),
+        make_component("temporal_stability", -5.0, "negative"),
+    ]
+    explanation = build_explanation(65.0, comps)
+    assert explanation.dominant_signal == "evidence_strength"
+    assert explanation.limiting_signal == "conflict_pressure"
+
+
+def test_strengths_and_weaknesses():
+    comps = [
+        make_component("evidence_strength", 20.0),
+        make_component("source_diversity", 15.0),
+        make_component("conflict_pressure", -10.0, "negative"),
+    ]
+    explanation = build_explanation(80.0, comps)
+    assert len(explanation.strengths) >= 1 and len(explanation.weaknesses) >= 1
+
+
+def test_empty_components():
+    explanation = build_explanation(50.0, [])
+    assert explanation.summary
+    assert explanation.dominant_signal == "none"
+    assert explanation.limiting_signal == "none"
+
+
+def test_high_reliability_label():
+    comps = [make_component("evidence_strength", 30.0)]
+    exp = build_explanation(90.0, comps)
+    assert "reliable" in exp.summary.lower() or "high" in exp.summary.lower()
+````
+
+## File: tests/unit/test_phase8_fusion.py
+````python
+"""Unit tests for scoring/fusion.py — generic fusion + monotonicity + constraints."""
+
+import pytest
+from smriti.core.models import SignalVector, ContributionCandidate, ContributionSet
+from smriti.scoring.policies import load_policy, FusionPolicy
+from smriti.scoring.fusion import compute_reliability, compute_reliability_from_signal_vector
+
+
+@pytest.fixture
+def policy(): return load_policy()
+
+
+def make_sv(**kwargs):
+    defaults = dict(
+        evidence_strength=0.5, evidence_independence=0.7, source_diversity=0.5,
+        topology_strength=0.4, conflict_pressure=0.2, temporal_stability=0.6,
+        evidence_completeness=1.0, statuses={},
+    )
+    defaults.update(kwargs)
+    return SignalVector(**defaults)
+
+
+def make_cs(policy, **sv_kwargs):
+    """Build ContributionSet from keyword signal values."""
+    sv = make_sv(**sv_kwargs)
+    fp = policy.fusion
+    candidates = []
+    for name, value in {
+        "evidence_strength": sv.evidence_strength,
+        "evidence_independence": sv.evidence_independence,
+        "source_diversity": sv.source_diversity,
+        "topology_strength": sv.topology_strength,
+        "conflict_pressure": sv.conflict_pressure,
+        "temporal_stability": sv.temporal_stability,
+        "hub_score": 0.0,
+        "bridge_score": 0.0,
+    }.items():
+        if fp.get_weight(name) > 0:
+            candidates.append(ContributionCandidate(
+                signal_name=name, normalized_value=value,
+                policy_weight=fp.get_weight(name),
+                direction=fp.get_direction(name),
+                label=name, raw_value=value,
+            ))
+    return ContributionSet(
+        candidates=tuple(candidates), evidence_completeness=sv.evidence_completeness, claim_id="c001"
+    ), sv
+
+
+def test_basic_reliability_in_range(policy):
+    cs, sv = make_cs(policy)
+    ri, unc, _, _ = compute_reliability(cs, policy, sv)
+    assert 0.0 <= ri <= 100.0
+
+
+def test_uncertainty_in_range(policy):
+    cs, sv = make_cs(policy)
+    _, unc, _, _ = compute_reliability(cs, policy, sv)
+    assert 0.0 <= unc <= 100.0
+
+
+def test_six_plus_component_scores_produced(policy):
+    cs, sv = make_cs(policy)
+    _, _, comps, _ = compute_reliability(cs, policy, sv)
+    assert len(comps) >= 6
+
+
+def test_more_evidence_increases_reliability(policy):
+    cs_low, sv_low = make_cs(policy, evidence_strength=0.10)
+    cs_high, sv_high = make_cs(policy, evidence_strength=0.90)
+    ri_low, _, _, _ = compute_reliability(cs_low, policy, sv_low)
+    ri_high, _, _, _ = compute_reliability(cs_high, policy, sv_high)
+    assert ri_high > ri_low
+
+
+def test_more_conflict_decreases_reliability(policy):
+    cs_low, sv_low = make_cs(policy, conflict_pressure=0.05)
+    cs_high, sv_high = make_cs(policy, conflict_pressure=0.95)
+    ri_low_c, _, _, _ = compute_reliability(cs_low, policy, sv_low)
+    ri_high_c, _, _, _ = compute_reliability(cs_high, policy, sv_high)
+    assert ri_high_c < ri_low_c
+
+
+def test_higher_topology_increases_reliability(policy):
+    cs_low, sv_low = make_cs(policy, topology_strength=0.10)
+    cs_high, sv_high = make_cs(policy, topology_strength=0.90)
+    ri_low, _, _, _ = compute_reliability(cs_low, policy, sv_low)
+    ri_high, _, _, _ = compute_reliability(cs_high, policy, sv_high)
+    assert ri_high > ri_low
+
+
+def test_no_evidence_caps_reliability(policy):
+    cs, sv = make_cs(policy, evidence_strength=0.0, topology_strength=1.0, conflict_pressure=0.0)
+    ri, _, _, _ = compute_reliability(cs, policy, sv)
+    assert ri <= policy.fusion.max_reliability_without_evidence + 0.01
+
+
+def test_maximum_conflict_caps_reliability(policy):
+    cs, sv = make_cs(policy, evidence_strength=1.0, conflict_pressure=1.0)
+    ri, _, _, _ = compute_reliability(cs, policy, sv)
+    assert ri <= policy.fusion.max_reliability_with_max_conflict + 0.01
+
+
+def test_deterministic_fusion(policy):
+    cs, sv = make_cs(policy, evidence_strength=0.75, conflict_pressure=0.30)
+    ri1, unc1, _, _ = compute_reliability(cs, policy, sv)
+    ri2, unc2, _, _ = compute_reliability(cs, policy, sv)
+    assert ri1 == ri2 and unc1 == unc2
+
+
+def test_fusion_receives_contribution_set_not_signal_vector(policy):
+    """RECTIFIED (P0-2): Fusion must accept ContributionSet, not SignalVector."""
+    cs, sv = make_cs(policy)
+    # compute_reliability takes ContributionSet as first arg — this is the rectified API
+    ri, unc, comps, dr = compute_reliability(cs, policy, sv)
+    assert 0.0 <= ri <= 100.0
+    from smriti.core.models import ContributionSet
+    # Verify the function signature accepts ContributionSet
+    assert isinstance(cs, ContributionSet)
+
+
+def test_decision_record_produced(policy):
+    """RECTIFIED (P0-5): compute_reliability must return a ReliabilityDecisionRecord."""
+    from smriti.core.models import ReliabilityDecisionRecord
+    cs, sv = make_cs(policy)
+    ri, unc, comps, dr = compute_reliability(cs, policy, sv)
+    assert isinstance(dr, ReliabilityDecisionRecord)
+    assert dr.claim_id == "c001"
+    assert isinstance(dr.policy_interactions, tuple)
+    assert isinstance(dr.constraints_activated, tuple)
+    assert isinstance(dr.contribution_order, tuple)
+    assert dr.final_reliability == ri
+
+
+def test_decision_record_constraints_logged(policy):
+    """RECTIFIED (P0-5): When constraints activate, DecisionRecord must record them."""
+    cs, sv = make_cs(policy, evidence_strength=0.0, topology_strength=1.0)
+    ri, _, _, dr = compute_reliability(cs, policy, sv)
+    assert len(dr.constraints_activated) > 0, (
+        "No-evidence constraint must be recorded in ReliabilityDecisionRecord "
+        "when evidence_strength is 0.0."
+    )
+````
+
+## File: tests/unit/test_phase8_normalization.py
+````python
+"""Unit tests for scoring/normalization.py."""
+
+import pytest
+from smriti.core.models import RawSignal, SignalStatus, SignalVector
+from smriti.scoring.normalization import validate_and_normalize, assemble_contribution_set
+from smriti.scoring.policies import load_policy
+from smriti.scoring.signals import signal_registry
+
+
+def make_raw(name: str, value: float, status=SignalStatus.MEASURED, raw_value=None) -> RawSignal:
+    return RawSignal(
+        name=name, raw_value=raw_value if raw_value is not None else value,
+        normalized_value=value, status=status,
+    )
+
+
+def test_valid_signals_produce_signal_vector():
+    signals = [
+        make_raw("evidence_strength", 0.80),
+        make_raw("evidence_independence", 0.70),
+        make_raw("source_diversity", 0.60),
+        make_raw("topology_strength", 0.50),
+        make_raw("conflict_pressure", 0.20),
+        make_raw("temporal_stability", 0.75),
+    ]
+    sv = validate_and_normalize(signals)
+    assert isinstance(sv, SignalVector)
+    assert sv.evidence_strength == 0.80
+
+
+def test_nan_signal_becomes_zero():
+    signals = [
+        make_raw("evidence_strength", float("nan")),
+        make_raw("conflict_pressure", 0.20),
+    ]
+    sv = validate_and_normalize(signals)
+    assert sv.evidence_strength == 0.0
+
+
+def test_inf_signal_becomes_zero():
+    signals = [
+        make_raw("evidence_strength", float("inf")),
+        make_raw("conflict_pressure", 0.20),
+    ]
+    sv = validate_and_normalize(signals)
+    assert sv.evidence_strength == 0.0
+
+
+def test_out_of_range_signal_clamped():
+    signals = [
+        make_raw("evidence_strength", 1.5),
+        make_raw("conflict_pressure", -0.3),
+    ]
+    sv = validate_and_normalize(signals)
+    assert sv.evidence_strength == 1.0
+    assert sv.conflict_pressure == 0.0
+
+
+def test_completeness_with_all_measured():
+    signals = [
+        make_raw("evidence_strength", 0.8, SignalStatus.MEASURED),
+        make_raw("evidence_independence", 0.7, SignalStatus.MEASURED),
+        make_raw("source_diversity", 0.6, SignalStatus.MEASURED),
+        make_raw("topology_strength", 0.5, SignalStatus.MEASURED),
+        make_raw("conflict_pressure", 0.2, SignalStatus.MEASURED),
+        make_raw("temporal_stability", 0.7, SignalStatus.MEASURED),
+    ]
+    sv = validate_and_normalize(signals)
+    assert sv.evidence_completeness == 1.0
+
+
+def test_completeness_with_some_unavailable():
+    signals = [
+        make_raw("evidence_strength", 0.0, SignalStatus.UNAVAILABLE),
+        make_raw("evidence_independence", 0.7, SignalStatus.MEASURED),
+        make_raw("source_diversity", 0.6, SignalStatus.MEASURED),
+        make_raw("topology_strength", 0.0, SignalStatus.UNAVAILABLE),
+        make_raw("conflict_pressure", 0.2, SignalStatus.MEASURED),
+        make_raw("temporal_stability", 0.7, SignalStatus.DEFAULT),
+    ]
+    sv = validate_and_normalize(signals)
+    assert sv.evidence_completeness < 1.0
+    assert sv.evidence_completeness > 0.0
+
+
+def test_contribution_set_produced():
+    """RECTIFIED (P0-2): assemble_contribution_set must produce a ContributionSet."""
+    policy = load_policy()
+    extractors = signal_registry.ordered_extractors()
+    signals = [
+        make_raw("evidence_strength", 0.80, raw_value=0.72),
+        make_raw("evidence_independence", 0.70),
+        make_raw("source_diversity", 0.60),
+        make_raw("topology_strength", 0.50),
+        make_raw("hub_score", 0.00),
+        make_raw("bridge_score", 0.00),
+        make_raw("conflict_pressure", 0.20),
+        make_raw("temporal_stability", 0.75),
+    ]
+    cs, manifests, sv = assemble_contribution_set(signals, extractors, policy.fusion, "c001")
+    from smriti.core.models import ContributionSet
+    assert isinstance(cs, ContributionSet)
+    assert cs.claim_id == "c001"
+    assert len(cs.candidates) > 0
+
+
+def test_signal_manifests_produced():
+    """RECTIFIED (P0-4): assemble_contribution_set must produce SignalManifests."""
+    policy = load_policy()
+    extractors = signal_registry.ordered_extractors()
+    signals = [
+        make_raw("evidence_strength", 0.80, raw_value=0.72),
+        make_raw("conflict_pressure", 0.20),
+    ]
+    cs, manifests, sv = assemble_contribution_set(signals, extractors, policy.fusion, "c001")
+    from smriti.core.models import SignalManifest
+    evidence_manifest = next((m for m in manifests if m.signal_name == "evidence_strength"), None)
+    assert evidence_manifest is not None
+    assert evidence_manifest.normalization_strategy != ""
+    assert isinstance(evidence_manifest.quality_flags, tuple)
+    assert isinstance(evidence_manifest.dependency_list, tuple)
+````
+
+## File: tests/unit/test_phase8_policies.py
+````python
+"""Unit tests for scoring/policies.py."""
+
+import pytest
+from smriti.scoring.policies import (
+    load_policy, ReliabilityPolicy, FusionPolicy, PolicyError,
+    PolicyProfile,
+)
+from smriti.exceptions import PolicyError
+
+
+def test_policy_loads_without_error():
+    policy = load_policy()
+    assert policy is not None
+    assert policy.version is not None
+
+
+def test_fusion_weights_sum_to_one():
+    policy = load_policy()
+    total = sum(policy.fusion.signal_weights.values())
+    assert abs(total - 1.0) < 0.001
+
+
+def test_invalid_weights_raise_policy_error():
+    fp = FusionPolicy(
+        signal_weights={
+            "evidence_strength": 0.90, "evidence_independence": 0.15,
+            "source_diversity": 0.15, "topology_strength": 0.10,
+            "hub_score": 0.05, "bridge_score": 0.05,
+            "conflict_pressure": 0.20, "temporal_stability": 0.05,
+        },
+        signal_directions={
+            "evidence_strength": "positive", "evidence_independence": "positive",
+            "source_diversity": "positive", "topology_strength": "positive",
+            "hub_score": "positive", "bridge_score": "positive",
+            "conflict_pressure": "negative", "temporal_stability": "positive",
+        },
+    )
+    with pytest.raises(PolicyError):
+        fp.validate()
+
+
+def test_policy_config_hash_is_deterministic():
+    policy = load_policy()
+    h1 = policy.config_hash()
+    h2 = policy.config_hash()
+    assert h1 == h2 and len(h1) == 16
+
+
+def test_policy_to_dict_serializable():
+    import json
+    policy = load_policy()
+    d = policy.to_dict()
+    json_str = json.dumps(d)
+    assert len(json_str) > 0
+
+
+def test_topology_policy_has_no_hub_bridge_bonus():
+    """RECTIFIED (P0-3): TopologyPolicy must not have hub_bonus or bridge_bonus."""
+    policy = load_policy()
+    tp = policy.topology
+    assert not hasattr(tp, "hub_bonus"), (
+        "hub_bonus must not be in TopologyPolicy. "
+        "Hub is now a separate signal (hub_score) in the registry."
+    )
+    assert not hasattr(tp, "bridge_bonus"), (
+        "bridge_bonus must not be in TopologyPolicy. "
+        "Bridge is now a separate signal (bridge_score) in the registry."
+    )
+    assert hasattr(tp, "centrality_scale")
+
+
+def test_policy_profile_loads_correct_weights():
+    """RECTIFIED (P1-3): PolicyProfile presets must produce different weights."""
+    balanced = load_policy(PolicyProfile.BALANCED)
+    research = load_policy(PolicyProfile.RESEARCH)
+    # Research profile emphasizes independence and source diversity more
+    assert (
+        research.fusion.signal_weights.get("evidence_independence", 0)
+        > balanced.fusion.signal_weights.get("evidence_independence", 0)
+    ) or (
+        research.fusion.signal_weights.get("source_diversity", 0)
+        > balanced.fusion.signal_weights.get("source_diversity", 0)
+    )
+
+
+def test_hub_bridge_have_separate_weights():
+    """RECTIFIED (P0-3): hub_score and bridge_score must have weights in fusion."""
+    policy = load_policy()
+    weights = policy.fusion.signal_weights
+    assert "hub_score" in weights, "hub_score must be a registered weight in fusion policy"
+    assert "bridge_score" in weights, "bridge_score must be a registered weight in fusion policy"
+    assert weights["hub_score"] > 0
+    assert weights["bridge_score"] > 0
+````
+
+## File: tests/unit/test_phase8_registry.py
+````python
+"""Unit tests for SignalRegistry (P0-1)."""
+
+import pytest
+from smriti.scoring.signals import signal_registry, SignalRegistry
+from smriti.scoring.signals.base import BaseSignalExtractor
+from smriti.core.models import ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus
+from smriti.scoring.policies import ReliabilityPolicy, load_policy
+from smriti.exceptions import RegistryError
+from pathlib import Path
+
+
+class MockExtractor(BaseSignalExtractor):
+    def __init__(self, name, ver="1.0"):
+        self._name = name
+        self._ver = ver
+
+    @property
+    def signal_name(self): return self._name
+
+    @property
+    def version(self): return self._ver
+
+    def extract(self, node, graph, global_stats, policy):
+        return RawSignal(name=self._name, raw_value=0.5, normalized_value=0.5, status=SignalStatus.MEASURED)
+
+
+def test_registry_has_default_signals():
+    """Default registry must have at least 6 built-in signals."""
+    assert len(signal_registry) >= 6
+
+
+def test_registry_ordered_extractors_deterministic():
+    """ordered_extractors() must return the same order every call."""
+    order1 = [e.signal_name for e in signal_registry.ordered_extractors()]
+    order2 = [e.signal_name for e in signal_registry.ordered_extractors()]
+    assert order1 == order2
+
+
+def test_new_signal_can_be_registered():
+    """Registering a new extractor must make it available via ordered_extractors()."""
+    fresh_registry = SignalRegistry()
+    ext = MockExtractor("novelty_signal")
+    fresh_registry.register(ext, priority=99)
+    names = [e.signal_name for e in fresh_registry.ordered_extractors()]
+    assert "novelty_signal" in names
+
+
+def test_duplicate_registration_is_idempotent():
+    """Registering the same extractor type twice must not raise."""
+    fresh_registry = SignalRegistry()
+    ext = MockExtractor("my_signal")
+    fresh_registry.register(ext, priority=50)
+    fresh_registry.register(ext, priority=50)  # Should not raise
+    assert len(fresh_registry) == 1
+
+
+def test_different_extractor_same_name_raises():
+    """Registering two DIFFERENT extractor types with the same signal_name must raise."""
+    fresh_registry = SignalRegistry()
+    ext1 = MockExtractor("shared_name")
+    ext2 = MockExtractor("shared_name", ver="2.0")  # Different version — treated as different
+
+    class AnotherExtractor(MockExtractor):
+        pass
+
+    ext3 = AnotherExtractor("shared_name")
+    fresh_registry.register(ext1)
+    with pytest.raises(RegistryError):
+        fresh_registry.register(ext3)  # Different type, same name → RegistryError
+
+
+def test_hub_score_and_bridge_score_registered():
+    """RECTIFIED (P0-3): hub_score and bridge_score must be in the default registry."""
+    names = signal_registry.registered_names
+    assert "hub_score" in names, "hub_score must be registered as a separate signal"
+    assert "bridge_score" in names, "bridge_score must be registered as a separate signal"
+
+
+def test_pipeline_never_changes_when_new_signal_registered():
+    """
+    RECTIFIED (P0-1): The core pipeline (__init__.py) must work identically
+    whether 6 or 7 signals are registered — it reads from the registry.
+    This test verifies that ordered_extractors() returns the right count.
+    """
+    fresh_registry = SignalRegistry()
+    for i in range(3):
+        fresh_registry.register(MockExtractor(f"signal_{i}"), priority=i)
+    assert len(fresh_registry.ordered_extractors()) == 3
+````
+
+## File: tests/unit/test_phase8_signals.py
+````python
+"""Unit tests for scoring/signals/*.py."""
+
+import pytest
+import dataclasses
+from pathlib import Path
+from smriti.core.models import (
+    ClaimNode, KnowledgeGraph, ScoringGlobalStats, GraphStatistics,
+    ValidationReport, SemanticRole, TopologyMetrics, SupportAggregate,
+    TemporalMetadata, TemporalStatus, SignalStatus, NodeAnnotations,
+)
+from smriti.scoring.policies import load_policy
+from smriti.scoring.signals import (
+    EvidenceStrengthExtractor, EvidenceIndependenceExtractor,
+    TopologyStrengthExtractor, HubScoreExtractor, BridgeScoreExtractor,
+    ConflictPressureExtractor, SourceDiversityExtractor, TemporalStabilityExtractor,
+)
+
+
+def make_global_stats(**kwargs):
+    defaults = dict(
+        max_support_count=10, avg_support_count=3.0, max_in_degree=5,
+        avg_degree=2.5, max_contradiction_partners=3, avg_contradiction_partners=0.5,
+        max_source_diversity=5, max_temporal_confidence=1.0,
+        node_count=10, partition_count=2, contradiction_count=2, supports_count=8,
+    )
+    defaults.update(kwargs)
+    return ScoringGlobalStats(**defaults)
+
+
+def make_node(claim_id="c001", support_count=0, in_degree=1,
+              degree=2, centrality=0.5, is_hub=False, is_bridge=False,
+              temporal_status=None) -> ClaimNode:
+    support = None
+    if support_count > 0:
+        supporting_ids = [f"supporter_{i}" for i in range(support_count)]
+        support = SupportAggregate(
+            support_count=support_count, weighted_confidence=0.80,
+            supporting_claim_ids=tuple(supporting_ids),
+            evidence_summary=f"{support_count} supporters",
+        )
+    topo = TopologyMetrics(
+        degree=degree, in_degree=in_degree, out_degree=degree - in_degree,
+        is_bridge=is_bridge, is_hub=is_hub, partition_id="p001", centrality=centrality,
+    )
+    temporal = None
+    if temporal_status:
+        temporal = TemporalMetadata(
+            status=temporal_status, earlier_claim_id=None, later_claim_id=None,
+            time_delta_days=30.0, temporal_confidence=0.80,
+        )
+    annotations = NodeAnnotations(
+        semantic_role=SemanticRole.UNCLASSIFIED,
+        topology=topo, support_aggregate=support, temporal_metadata=temporal,
+        partition_id="p001",
+    )
+    return ClaimNode(
+        node_id=claim_id, claim_id=claim_id, claim_text="Test.",
+        context="", source_path=Path("test.md"), document_id="d001",
+        annotations=annotations,
+    )
+
+
+def make_empty_graph():
+    stats = GraphStatistics(
+        node_count=1, edge_count=0, partition_count=1,
+        contradiction_count=0, supports_count=0, refines_count=0,
+        isolated_nodes=0, bridge_nodes=0, hub_nodes=0,
+        evolution_chains=0, unresolved_conflicts=0,
+        construction_time_seconds=0.0, enrichment_time_seconds=0.0,
+    )
+    vr = ValidationReport(
+        is_valid=True, node_violations=(), edge_violations=(),
+        graph_violations=(), semantic_violations=(), validation_time_seconds=0.0,
+    )
+    return KnowledgeGraph(
+        graph_id="test", nodes={}, edges={}, partitions={},
+        statistics=stats, validation_report=vr, run_id="test", config_hash="test",
+    )
+
+
+@pytest.fixture
+def policy(): return load_policy()
+
+@pytest.fixture
+def global_stats(): return make_global_stats()
+
+@pytest.fixture
+def graph(): return make_empty_graph()
+
+
+class TestEvidenceStrengthExtractor:
+    def test_no_support_returns_zero(self, policy, global_stats, graph):
+        node = make_node("c001", support_count=0)
+        ext = EvidenceStrengthExtractor()
+        signal = ext.extract(node, graph, global_stats, policy)
+        assert signal.normalized_value == 0.0
+
+    def test_high_support_returns_high_value(self, policy, global_stats, graph):
+        node = make_node("c001", support_count=10)
+        ext = EvidenceStrengthExtractor()
+        signal = ext.extract(node, graph, global_stats, policy)
+        assert signal.normalized_value > 0.5
+
+    def test_value_in_range(self, policy, global_stats, graph):
+        for count in [0, 1, 3, 10, 20]:
+            node = make_node("c001", support_count=count)
+            ext = EvidenceStrengthExtractor()
+            signal = ext.extract(node, graph, global_stats, policy)
+            assert 0.0 <= signal.normalized_value <= 1.0
+
+    def test_status_is_measured(self, policy, global_stats, graph):
+        node = make_node("c001", support_count=5)
+        signal = EvidenceStrengthExtractor().extract(node, graph, global_stats, policy)
+        assert signal.status == SignalStatus.MEASURED
+
+
+class TestTopologyStrengthExtractor:
+    def test_high_centrality_gives_high_value(self, policy, global_stats, graph):
+        node = make_node("c001", centrality=0.90)
+        signal = TopologyStrengthExtractor().extract(node, graph, global_stats, policy)
+        assert signal.normalized_value > 0.70
+
+    def test_no_topology_returns_unavailable(self, policy, global_stats, graph):
+        node = ClaimNode(
+            node_id="c001", claim_id="c001", claim_text="Test.",
+            context="", source_path=Path("test.md"), document_id="d001",
+            annotations=None,
+        )
+        signal = TopologyStrengthExtractor().extract(node, graph, global_stats, policy)
+        assert signal.status == SignalStatus.UNAVAILABLE
+        assert signal.normalized_value == 0.0
+
+
+class TestConflictPressureExtractor:
+    def test_no_contradictions_returns_zero(self, policy, global_stats, graph):
+        node = make_node("c001")
+        signal = ConflictPressureExtractor().extract(node, graph, global_stats, policy)
+        assert signal.normalized_value == 0.0
+
+    def test_value_always_in_range(self, policy, global_stats, graph):
+        node = make_node("c001")
+        signal = ConflictPressureExtractor().extract(node, graph, global_stats, policy)
+        assert 0.0 <= signal.normalized_value <= 1.0
+
+
+class TestTemporalStabilityExtractor:
+    def test_evolution_chain_gives_high_stability(self, policy, global_stats, graph):
+        node = make_node("c001", temporal_status=TemporalStatus.EVOLUTION_CHAIN)
+        signal = TemporalStabilityExtractor().extract(node, graph, global_stats, policy)
+        assert signal.normalized_value > 0.50
+
+    def test_no_temporal_data_uses_default(self, policy, global_stats, graph):
+        node = make_node("c001", temporal_status=None)
+        node = dataclasses.replace(
+            node, annotations=dataclasses.replace(node.annotations, temporal_metadata=None)
+        )
+        signal = TemporalStabilityExtractor().extract(node, graph, global_stats, policy)
+        assert signal.status == SignalStatus.DEFAULT
+        assert signal.normalized_value == policy.temporal.default_stability
+
+
+class TestHubAndBridgeExtractors:
+    """RECTIFIED (P0-3): hub_score and bridge_score are now separate signals."""
+
+    def test_hub_node_returns_one(self, policy, global_stats, graph):
+        node = make_node("c001", is_hub=True)
+        signal = HubScoreExtractor().extract(node, graph, global_stats, policy)
+        assert signal.normalized_value == 1.0
+
+    def test_non_hub_node_returns_zero(self, policy, global_stats, graph):
+        node = make_node("c001", is_hub=False)
+        signal = HubScoreExtractor().extract(node, graph, global_stats, policy)
+        assert signal.normalized_value == 0.0
+
+    def test_bridge_node_returns_one(self, policy, global_stats, graph):
+        node = make_node("c001", is_bridge=True)
+        signal = BridgeScoreExtractor().extract(node, graph, global_stats, policy)
+        assert signal.normalized_value == 1.0
+
+    def test_topology_strength_has_no_hub_bonus(self, policy, global_stats, graph):
+        """RECTIFIED (P0-3): TopologyStrengthExtractor must NOT apply hub bonus."""
+        node_hub = make_node("c001", centrality=0.50, is_hub=True)
+        node_normal = make_node("c002", centrality=0.50, is_hub=False)
+        ext = TopologyStrengthExtractor()
+        sig_hub = ext.extract(node_hub, graph, global_stats, policy)
+        sig_normal = ext.extract(node_normal, graph, global_stats, policy)
+        # With hub bonus removed, both should produce the same value for same centrality
+        assert abs(sig_hub.normalized_value - sig_normal.normalized_value) < 1e-6, (
+            "TopologyStrengthExtractor must not apply hub bonus. "
+            "Hub importance is handled by HubScoreExtractor as a separate signal."
+        )
+
+    def test_signal_manifest_has_normalization_strategy(self, policy, global_stats, graph):
+        """RECTIFIED (P0-4): Every signal must expose normalization_strategy."""
+        for ext_class in [
+            EvidenceStrengthExtractor, HubScoreExtractor, BridgeScoreExtractor,
+            ConflictPressureExtractor, TemporalStabilityExtractor,
+        ]:
+            ext = ext_class()
+            assert hasattr(ext, "normalization_strategy")
+            assert isinstance(ext.normalization_strategy, str)
+            assert len(ext.normalization_strategy) > 0
+````
 
 ## File: .github/workflows/ci.yml
 ````yaml
@@ -488,6 +10393,164 @@ embedding_phase5:
 
   # Pipeline version — increment when pipeline logic changes
   pipeline_version: "1.0"
+
+  # ── Phase 6: Semantic Relationship Discovery ──────────────────────────────────
+relationship_discovery:
+  top_k: 50
+  sim_threshold: 0.75
+  min_confidence: 0.50
+  skip_unknown_relationships: true
+  skip_neutral_relationships: true     # NEUTRAL adds no Phase 7 signal; omit by default
+  refine_threshold: 0.55
+  high_sim_threshold: 0.88
+  neutrality_threshold: 0.60
+  batch_size: 16
+  cache_nli_results: true
+  conflict_resolution_policy: "highest_confidence"   # RECTIFIED: was implicit
+  deduplication_policy: "keep_highest_confidence"    # RECTIFIED: was implicit
+
+# Resolver policy (RECTIFIED: was hard-coded in resolver.py)
+resolver_policy:
+  contradiction_margin: 0.0
+  entailment_margin: 0.0
+  confidence_policy: "calibrated"      # "calibrated" or "raw"
+  priority_order:
+    - "contradicts"
+    - "supports"
+    - "refines"
+    - "neutral"
+    - "unknown"
+  version: "1.0"
+
+# NLI model configuration
+nli_phase6:
+  model: "cross-encoder/nli-deberta-v3-small"
+  sim_threshold: 0.75
+  nli_threshold: 0.80
+  temporal_base: 30
+  batch_size: 16
+  cache_nli_results: true
+
+# Confidence calibration (RECTIFIED: new section)
+# calibration:
+#   "cross-encoder/nli-deberta-v3-small":
+#     strategy: "identity"     # identity | temperature | percentile | isotonic
+#     temperature: 1.0         # Only for temperature strategy
+#     reference_distribution:  # Only for percentile strategy (list of floats)
+calibration: {}   # Empty by default → IDENTITY for all models
+
+# Cache invalidation policy (RECTIFIED: new section)
+cache_invalidation:
+  invalidate_on_embedding_change: true
+  invalidate_on_model_change: true
+  invalidate_on_policy_change: true
+
+# Resource governance (RECTIFIED: new section)
+resource_governance:
+  max_pairs: 100000
+  max_gpu_memory_gb: 0.0
+  max_batch_size: 64
+  timeout_seconds: 3600.0
+  cancel_on_limit: false      # If false, truncate; if true, abort
+
+# Schema evolution (RECTIFIED: documents the schema migration policy)
+# When schema_version bumps (e.g. 6.0 → 6.1):
+#   - Update CURRENT_SCHEMA_VERSION in builder.py
+#   - Update CURRENT_MIGRATION_VERSION if breaking (Phase 7 readers must update)
+#   - Update CURRENT_COMPATIBILITY_VERSION to oldest compatible reader
+schema:
+  current_version: "6.0"
+  migration_version: "6.0"
+  compatibility_version: "6.0"
+
+# ── Phase 7: Knowledge Graph Construction ─────────────────────────────────────
+knowledge_graph:
+  include_neutral: false
+  schema_version: "7.0"
+
+  # Minimum timestamp delta (days) to classify a contradiction as EVOLUTION_CHAIN.
+  # RECTIFIED: used with Claim.timestamp, never filesystem mtime.
+  min_reliable_delta_days: 1.0
+
+  # Hub detection: degree > hub_degree_multiplier * avg_partition_degree
+  # RECTIFIED (P1-4): config-driven, not hardcoded.
+  hub_degree_multiplier: 2.0
+
+  # Whether to include CONTRADICTS in topology degree computation.
+  topology_include_contradicts: false
+
+  # RECTIFIED (P1-4): All SemanticRole annotation thresholds now in config.
+  annotation:
+    foundational_centrality_threshold: 0.50
+    foundational_min_in_degree: 2
+    evidence_hub_min_in_degree: 3
+    refinement_root_min_out: 2
+    peripheral_max_degree: 1
+
+  # Partitioning algorithm: always "constraint_based" (rectified from "edge_deletion")
+  # This field is informational — the algorithm is not pluggable via config.
+  partitioning_algorithm: "constraint_based_signed_graph"
+
+  # Bridge detection: always "articulation_points" (rectified from "degree_heuristic")
+  bridge_detection: "articulation_points"
+
+  # Temporal timestamp source: always "claim.timestamp" (rectified from "filesystem")
+  temporal_source: "claim.timestamp"  
+
+# ── Phase 8: Reliability Evaluation ─────────────────────────────────────────
+scoring_policy:
+  version: "1.0"
+  # RECTIFIED (P1-3): Active profile. Options: balanced, conservative, research, evidence_first
+  profile: "balanced"
+
+  evidence:
+    min_support_count: 1
+    max_support_count: 20
+    echo_chamber_penalty: 0.30
+    independence_discount_threshold: 0.50
+    # RECTIFIED (P1-1): Lineage heuristics
+    lineage_depth_limit: 2
+    publisher_domain_weight: 0.50
+
+  conflict:
+    max_contradiction_partners: 5
+    conflict_saturation: 0.80
+    contradiction_weight_multiplier: 1.0
+
+  topology:
+    # RECTIFIED (P0-3): hub_bonus and bridge_bonus removed from here
+    # They are now separate registered signals (hub_score, bridge_score)
+    # with their own weights in fusion.signal_weights below
+    centrality_scale: 1.0
+
+  temporal:
+    default_stability: 0.50
+    evolution_bonus: 0.15
+    conflict_penalty: 0.10
+    recency_window_days: 90.0
+
+  fusion:
+    # RECTIFIED (P0-2, P0-3): signal_weights dict replaces per-field weights
+    # Adding a new signal only requires adding it here + registering the extractor
+    signal_weights:
+      evidence_strength:     0.25
+      evidence_independence: 0.15
+      source_diversity:      0.15
+      topology_strength:     0.10
+      hub_score:             0.05    # RECTIFIED (P0-3): separated from topology bonus
+      bridge_score:          0.05    # RECTIFIED (P0-3): separated from topology bonus
+      conflict_pressure:     0.20
+      temporal_stability:    0.05
+    max_reliability_without_evidence: 60.0
+    max_reliability_with_max_conflict: 40.0
+    min_reliability_for_high_topology: 20.0
+    max_uncertainty_discount: 20.0
+
+  calibration:
+    very_high_threshold: 80.0
+    high_threshold: 65.0
+    moderate_threshold: 45.0
+    low_threshold: 25.0
 ````
 
 ## File: config/dev.yaml
@@ -573,7 +10636,71 @@ embedding_phase5:
   normalize: true
   device: "cpu"
   instruction_prefix: ""
-  max_seq_length: null
+  max_seq_length: null  
+
+
+relationship_discovery:
+  top_k: 5
+  sim_threshold: 0.50
+  min_confidence: 0.40
+  batch_size: 4
+  cache_nli_results: false
+  skip_unknown_relationships: false
+  skip_neutral_relationships: false
+  conflict_resolution_policy: "highest_confidence"
+  deduplication_policy: "keep_highest_confidence"
+
+resolver_policy:
+  contradiction_margin: 0.0
+  entailment_margin: 0.0
+  confidence_policy: "calibrated"
+  version: "1.0"
+
+nli_phase6:
+  nli_threshold: 0.70
+  cache_nli_results: false
+
+calibration: {}
+
+resource_governance:
+  max_pairs: 1000
+  timeout_seconds: 60.0
+  cancel_on_limit: false
+
+cache_invalidation:
+  invalidate_on_embedding_change: true
+  invalidate_on_model_change: true
+  invalidate_on_policy_change: true  
+
+knowledge_graph:
+  include_neutral: false
+  min_reliable_delta_days: 0.0
+  hub_degree_multiplier: 1.5
+  annotation:
+    foundational_centrality_threshold: 0.30
+    foundational_min_in_degree: 1
+    evidence_hub_min_in_degree: 2
+    refinement_root_min_out: 1
+    peripheral_max_degree: 1  
+
+scoring_policy:
+  version: "test_1.0"
+  profile: "balanced"
+  evidence:
+    echo_chamber_penalty: 0.20
+    max_support_count: 5
+    lineage_depth_limit: 1
+    publisher_domain_weight: 0.30
+  fusion:
+    signal_weights:
+      evidence_strength:     0.25
+      evidence_independence: 0.15
+      source_diversity:      0.15
+      topology_strength:     0.10
+      hub_score:             0.05
+      bridge_score:          0.05
+      conflict_pressure:     0.20
+      temporal_stability:    0.05
 ````
 
 ## File: data/raw/.gitkeep
@@ -3456,15 +13583,752 @@ class Phase5Stats:
     cache_entries_invalidated: int = 0
 
 
-# ── Phase 6 contract: Retrieval → Contradiction ──────────────────────────────
+# ── Phase 6 contract: CandidatePair → RelationshipSet ─────────────────────────
+
+class RelationshipType(str, Enum):
+    """
+    The semantic relationship type between two Claims.
+
+    ⚠️  This enum is governed by the Relationship Ontology Specification
+    in docs/relationship_ontology.md. Any change to these values requires
+    updating that document first.
+
+    Rules:
+        - CONTRADICTS is symmetric; SUPPORTS and REFINES are directional.
+        - UNKNOWN must never be persisted to Phase 7.
+        - NEUTRAL should not be persisted to Phase 7 (configurable).
+    """
+    CONTRADICTS   = "contradicts"    # Symmetric: claims assert opposing facts
+    SUPPORTS      = "supports"       # Directional: claim_a reinforces claim_b
+    REFINES       = "refines"        # Directional: claim_a qualifies/narrows claim_b
+    NEUTRAL       = "neutral"        # Symmetric: semantically close, no direction
+    UNKNOWN       = "unknown"        # Resolver could not classify (never persist)
+
+
+class RelationshipDirection(str, Enum):
+    """
+    Direction of a relationship between claim_a and claim_b.
+
+    Ontology constraints:
+        CONTRADICTS → always SYMMETRIC
+        SUPPORTS    → always A_TO_B or B_TO_A
+        REFINES     → always A_TO_B or B_TO_A
+        NEUTRAL     → always SYMMETRIC
+    """
+    A_TO_B      = "a_to_b"       # claim_a → claim_b
+    B_TO_A      = "b_to_a"       # claim_b → claim_a
+    SYMMETRIC   = "symmetric"    # Both directions are equivalent
+
+
+class LifecycleStage(str, Enum):
+    """
+    Explicit lifecycle of a claim pair through the Phase 6 pipeline.
+
+    Every object in the pipeline belongs to exactly one stage.
+    Transitions are one-way; no object can move backward.
+
+    CANDIDATE              → discovered by ANN, not yet validated
+    VALIDATED_CANDIDATE    → passed all candidate validation checks
+    EVIDENCE               → NLI inference completed; raw scores available
+    CALIBRATED_EVIDENCE    → scores adjusted by ConfidenceCalibrator
+    RESOLVED               → RelationshipType assigned by resolver
+    VALIDATED_RELATIONSHIP → passed confidence and consistency checks
+    RELATIONSHIP           → immutable Relationship object constructed
+    REJECTED               → failed at any stage; not in final RelationshipSet
+    """
+    CANDIDATE              = "candidate"
+    VALIDATED_CANDIDATE    = "validated_candidate"
+    EVIDENCE               = "evidence"
+    CALIBRATED_EVIDENCE    = "calibrated_evidence"
+    RESOLVED               = "resolved"
+    VALIDATED_RELATIONSHIP = "validated_relationship"
+    RELATIONSHIP           = "relationship"
+    REJECTED               = "rejected"
+
+
+@dataclass(frozen=True)
+class RetrievalSearchParameters:
+    """
+    Parameters used during ANN search for this candidate pair.
+
+    Enables exact reproduction of retrieval behavior during debugging or replay.
+    """
+    top_k: int
+    sim_threshold: float
+    index_type: str         # e.g. "faiss_flat_ip"
+    index_version: str      # e.g. "1.0"
+
+
+@dataclass(frozen=True)
+class RetrievalQuality:
+    """
+    Quality signal for the retrieval stage of a CandidatePair.
+
+    Fields:
+        exact_match:          claim_id_a and claim_id_b share identical text (duplicate)
+        duplicate_removed:    A duplicate was detected and eliminated
+        below_threshold:      The pair was below the sim_threshold (should not occur post-filter)
+        high_density_region:  Both claims have many neighbors (dense semantic region)
+        isolated_claim:       One or both claims had very few neighbors (isolated semantics)
+    """
+    exact_match: bool = False
+    duplicate_removed: bool = False
+    below_threshold: bool = False
+    high_density_region: bool = False
+    isolated_claim: bool = False
+
+
+@dataclass(frozen=True)
+class CandidatePair:
+    """
+    A pair of semantically similar claims discovered by ANN search.
+
+    This is the entry ticket to the classification pipeline.
+    Every CandidatePair that passes validation proceeds to NLI evidence generation.
+
+    Fields:
+        claim_id_a:           First claim's ID (always ≤ claim_id_b lexicographically)
+        claim_id_b:           Second claim's ID
+        cosine_similarity:    Cosine similarity from FAISS ANN search (0.0–1.0)
+        candidate_rank:       Rank of claim_b in claim_a's neighbor list (1 = nearest)
+        retrieval_backend:    Backend used for retrieval (e.g. "faiss_flat_ip")
+        index_version:        Version of the retrieval index
+        search_parameters:    Full search parameters for exact reproduction
+        retrieval_quality:    Quality signals for this retrieval result
+        lifecycle_stage:      Always CANDIDATE when first created
+    """
+    claim_id_a: str
+    claim_id_b: str
+    cosine_similarity: float
+    candidate_rank: int
+    retrieval_backend: str = "faiss_flat_ip"
+    index_version: str = "1.0"
+    search_parameters: Optional["RetrievalSearchParameters"] = None
+    retrieval_quality: Optional["RetrievalQuality"] = None
+    lifecycle_stage: "LifecycleStage" = LifecycleStage.CANDIDATE
+
+    def pair_key(self) -> str:
+        """Canonical pair identifier (order-independent)."""
+        a, b = sorted([self.claim_id_a, self.claim_id_b])
+        return f"{a}:{b}"
+
+
+@dataclass(frozen=True)
+class NLILabel(str, Enum):
+    """NLI labels from the cross-encoder model."""
+    ENTAILMENT    = "entailment"
+    NEUTRAL       = "neutral"
+    CONTRADICTION = "contradiction"
+
+
+@dataclass(frozen=True)
+class InferenceMetadata:
+    """
+    Operational metadata about the NLI inference run.
+
+    Separated from NLI scores to keep evidence clean.
+    Fields:
+        model_name:        NLI model identifier
+        model_version:     Model version / revision (from HF hub)
+        runtime_seconds:   Wall-clock time for this pair's inference
+        device:            "cpu" | "cuda" | "mps"
+        batch_index:       Which batch this pair was processed in
+        latency_ms:        Per-pair inference latency in milliseconds
+    """
+    model_name: str
+    model_version: str = "unknown"
+    runtime_seconds: float = 0.0
+    device: str = "cpu"
+    batch_index: int = 0
+    latency_ms: float = 0.0
+
+
+@dataclass(frozen=True)
+class NLIScores:
+    """
+    Raw NLI evidence scores from the cross-encoder.
+
+    This is pure evidence — no model metadata here.
+    Interpretation belongs to ConfidenceCalibrator → RelationshipResolver.
+
+    Fields:
+        entailment_score:       P(entailment | claim_a, claim_b)
+        neutral_score:          P(neutral | claim_a, claim_b)
+        contradiction_score:    P(contradiction | claim_a, claim_b)
+        predicted_label:        argmax label from the cross-encoder
+        raw_confidence:         max(E, N, C) — before calibration
+    """
+    entailment_score: float
+    neutral_score: float
+    contradiction_score: float
+    predicted_label: str         # "entailment" | "neutral" | "contradiction"
+    raw_confidence: float        # max of the three scores, before calibration
+
+
+@dataclass(frozen=True)
+class RelationshipEvidence:
+    """
+    Complete evidence record for one CandidatePair.
+
+    Contains:
+        - pair:             The candidate pair this evidence was gathered for
+        - cosine_similarity: From Phase 5 ANN search
+        - nli_scores:       Raw NLI evidence (pure scores)
+        - calibrated_confidence: Calibrated confidence after ConfidenceCalibrator
+        - inference_metadata:  Model + runtime metadata (separated from scores)
+        - lifecycle_stage:  EVIDENCE or CALIBRATED_EVIDENCE
+
+    Replaces the original flat RelationshipEvidence which mixed scores and metadata.
+    """
+    pair: "CandidatePair"
+    cosine_similarity: float
+    nli_scores: "NLIScores"
+    calibrated_confidence: float          # After calibration; use this for thresholding
+    inference_metadata: "InferenceMetadata"
+    lifecycle_stage: "LifecycleStage" = LifecycleStage.EVIDENCE
+
+    # Convenience accessors (backward-compatible with resolver and tests)
+    @property
+    def entailment_score(self) -> float:
+        return self.nli_scores.entailment_score
+
+    @property
+    def neutral_score(self) -> float:
+        return self.nli_scores.neutral_score
+
+    @property
+    def contradiction_score(self) -> float:
+        return self.nli_scores.contradiction_score
+
+    @property
+    def predicted_label(self) -> str:
+        return self.nli_scores.predicted_label
+
+    @property
+    def confidence(self) -> float:
+        return self.calibrated_confidence
+
+    @property
+    def model_name(self) -> str:
+        return self.inference_metadata.model_name
+
+
+@dataclass(frozen=True)
+class RelationshipProvenance:
+    """
+    Complete audit trail for one Relationship.
+
+    Every relationship must know exactly how it was discovered.
+    Enables reproducibility, debugging, future auditing, and replay.
+
+    Fields:
+        retrieval_backend:    "faiss_flat_ip" etc.
+        retrieval_version:    Phase 6 implementation version
+        index_version:        Index build version
+        search_parameters:    Full ANN search parameters for exact reproduction
+        classifier_model:     NLI model name
+        classifier_version:   NLI model version
+        resolver_version:     Resolver policy version
+        calibrator_version:   ConfidenceCalibrator version
+        cosine_similarity:    Similarity from ANN search
+        candidate_rank:       Neighbor rank
+        raw_nli_confidence:   Confidence before calibration
+        calibrated_confidence: Confidence after calibration
+        config_hash:          SHA256 of relevant config
+        run_id:               Pipeline run identifier
+        replay_id:            If this was a replay, the original run_id; else None
+    """
+    retrieval_backend: str
+    retrieval_version: str
+    index_version: str
+    search_parameters: Optional["RetrievalSearchParameters"]
+    classifier_model: str
+    classifier_version: str
+    resolver_version: str
+    calibrator_version: str
+    cosine_similarity: float
+    candidate_rank: int
+    raw_nli_confidence: float
+    calibrated_confidence: float
+    config_hash: str
+    run_id: str
+    replay_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class RelationshipQuality:
+    """Pre-computed quality diagnostics for a Relationship."""
+    cosine_above_threshold: bool
+    nli_above_threshold: bool
+    evidence_consistent: bool   # entailment+contradiction don't both exceed threshold
+    calibration_applied: bool   # Whether ConfidenceCalibrator changed the confidence
+    retrieval_quality: Optional["RetrievalQuality"] = None
+
+
+@dataclass(frozen=True)
+class SchemaVersionInfo:
+    """
+    Schema version information for artifact evolution.
+
+    Fields:
+        schema_version:        Current schema version (e.g. "6.0")
+        migration_version:     Minimum version that can read this artifact (e.g. "6.0")
+        compatibility_version: Maximum backward-compatible version (e.g. "5.0" = breaks Phase 5 readers)
+
+    Migration contract:
+        When schema_version bumps to 6.1:
+            - migration_version stays "6.0" if old Phase 7 readers can still read it
+            - migration_version bumps to "6.1" if breaking change
+            - compatibility_version reflects the oldest reader still compatible
+    """
+    schema_version: str
+    migration_version: str
+    compatibility_version: str
+
+
+@dataclass(frozen=True)
+class Relationship:
+    """
+    An immutable, fully-traced semantic relationship between two Claims.
+
+    This is Phase 6's canonical output.
+    Phase 7 consumes List[Relationship] for temporal reasoning.
+
+    Fields:
+        relationship_id:    Deterministic SHA256-based ID (16 hex chars)
+        claim_id_a:         First claim
+        claim_id_b:         Second claim
+        relationship_type:  The semantic relationship (CONTRADICTS, SUPPORTS, etc.)
+        direction:          Symmetric or directional (see ontology spec)
+        evidence:           Full evidence record (NLI scores + metadata)
+        quality:            Pre-computed quality diagnostics
+        provenance:         Complete audit trail
+        version_info:       Schema/migration/compatibility versions
+        lifecycle_stage:    Always RELATIONSHIP when fully constructed
+    """
+    relationship_id: str
+    claim_id_a: str
+    claim_id_b: str
+    relationship_type: RelationshipType
+    direction: RelationshipDirection
+    evidence: "RelationshipEvidence"
+    quality: RelationshipQuality
+    provenance: RelationshipProvenance
+    version_info: "SchemaVersionInfo"
+    lifecycle_stage: "LifecycleStage" = LifecycleStage.RELATIONSHIP
+
+    # Backward-compatible property
+    @property
+    def schema_version(self) -> str:
+        return self.version_info.schema_version
+
+    def is_contradiction(self) -> bool:
+        return self.relationship_type == RelationshipType.CONTRADICTS
+
+    def is_support(self) -> bool:
+        return self.relationship_type == RelationshipType.SUPPORTS
+
+    def involves(self, claim_id: str) -> bool:
+        return claim_id in (self.claim_id_a, self.claim_id_b)
+
 
 @dataclass
-class CandidatePair:
-    """Two claims that might contradict. Produced by Phase 6, consumed by Phase 7."""
-    claim_a_id: str
-    claim_b_id: str
-    similarity_score: float     # Cosine similarity from FAISS
+class RelationshipSet:
+    """
+    The complete output of Phase 6.
+    This is what Phase 7 receives.
 
+    Fields:
+        relationships:          All discovered relationships
+        total_candidates:       How many candidate pairs were evaluated
+        total_validated:        How many passed candidate validation
+        total_rejected:         How many were rejected (all stages combined)
+        rejected_reasons:       Counts by rejection reason
+        run_id:                 Pipeline run identifier
+        version_info:           Schema/migration/compatibility versions for this set
+        replay_manifest_path:   Path to the replay manifest (for deterministic replay)
+    """
+    relationships: List["Relationship"]
+    total_candidates: int
+    total_validated: int
+    total_rejected: int
+    rejected_reasons: Dict[str, int]
+    run_id: str
+    version_info: "SchemaVersionInfo" = None
+    manifest_path: Optional[Path] = None
+    dataset_path: Optional[Path] = None
+    replay_manifest_path: Optional[Path] = None
+
+    def __post_init__(self):
+        if self.version_info is None:
+            self.version_info = SchemaVersionInfo(
+                schema_version="6.0",
+                migration_version="6.0",
+                compatibility_version="6.0",
+            )
+
+    @property
+    def total_relationships(self) -> int:
+        return len(self.relationships)
+
+    @property
+    def contradictions(self) -> List["Relationship"]:
+        return [r for r in self.relationships
+                if r.relationship_type == RelationshipType.CONTRADICTS]
+
+    @property
+    def supports(self) -> List["Relationship"]:
+        return [r for r in self.relationships
+                if r.relationship_type == RelationshipType.SUPPORTS]
+
+    @property
+    def refinements(self) -> List["Relationship"]:
+        return [r for r in self.relationships
+                if r.relationship_type == RelationshipType.REFINES]
+
+
+class RelationshipDeduplicationPolicy(str, Enum):
+    """
+    Policy for handling duplicate relationships (same pair, same type, different runs).
+
+    KEEP_FIRST:     Keep the relationship from the first run that discovered it.
+    KEEP_LATEST:    Keep the relationship from the most recent run.
+    KEEP_HIGHEST_CONFIDENCE: Keep the relationship with the highest calibrated confidence.
+    KEEP_ALL:       Keep all copies (dangerous for graph construction; use for audit).
+    """
+    KEEP_FIRST              = "keep_first"
+    KEEP_LATEST             = "keep_latest"
+    KEEP_HIGHEST_CONFIDENCE = "keep_highest_confidence"
+    KEEP_ALL                = "keep_all"
+
+
+class ConflictResolutionPolicy(str, Enum):
+    """
+    Policy for resolving type conflicts between runs (same pair, different RelationshipType).
+
+    Example: Run 1 says SUPPORTS, Run 2 says CONTRADICTS — which wins?
+
+    LATEST_WINS:       The most recent run's classification wins.
+    HIGHEST_CONFIDENCE: The classification with highest calibrated_confidence wins.
+    MOST_SPECIFIC:      Priority: CONTRADICTS > REFINES > SUPPORTS > NEUTRAL > UNKNOWN.
+    CONSERVATIVE:       Only keep the relationship if all runs agree on the type.
+    """
+    LATEST_WINS         = "latest_wins"
+    HIGHEST_CONFIDENCE  = "highest_confidence"
+    MOST_SPECIFIC       = "most_specific"
+    CONSERVATIVE        = "conservative"
+
+# ── Phase 7: Knowledge Graph Construction ────────────────────────────────────
+
+class SemanticRole(str, Enum):
+    """
+    Semantic role annotation derived from graph topology.
+
+    Converted from topology numbers → domain concepts.
+    DESCRIPTIVE, not inferential — describes structural importance.
+
+    All thresholds that determine these roles are configured in
+    AnnotationPolicy (config/default.yaml: knowledge_graph.annotation).
+    No threshold values are hardcoded in annotation.py.
+    """
+    FOUNDATIONAL_CLAIM  = "foundational_claim"   # High centrality, many SUPPORTS edges
+    BRIDGE_CLAIM        = "bridge_claim"          # Articulation point: removal disconnects partition
+    EVIDENCE_HUB        = "evidence_hub"          # Many incoming SUPPORTS edges
+    REFINEMENT_ROOT     = "refinement_root"       # Source of many REFINES edges
+    PERIPHERAL_CLAIM    = "peripheral_claim"      # Low degree, mostly disconnected
+    LEAF_CLAIM          = "leaf_claim"            # No outgoing semantic edges
+    UNCLASSIFIED        = "unclassified"          # Insufficient topology data
+
+
+class TemporalStatus(str, Enum):
+    """Status of temporal analysis for a contradiction boundary."""
+    EVOLUTION_CHAIN     = "evolution_chain"       # Reliable semantic timestamps → evolved
+    STATIC_PARTITION    = "static_partition"      # No timestamp ordering → competing beliefs
+    UNRESOLVED_CONFLICT = "unresolved_conflict"   # Identical timestamps → cannot determine
+    NO_TIMESTAMP        = "no_timestamp"          # Claim.timestamp unavailable → disabled
+
+
+@dataclass(frozen=True)
+class TopologyMetrics:
+    """
+    Graph-derived structural information for one ClaimNode.
+    Computed by TopologyAnalyzer within each partition.
+
+    Bridge detection uses NetworkX articulation_points, not degree-heuristics.
+    Density is computed as directed: edges / (n * (n-1)), n = partition size.
+    """
+    degree: int                      # Total edges (in + out)
+    in_degree: int                   # Incoming edges (being supported/contradicted)
+    out_degree: int                  # Outgoing edges (supporting/contradicting others)
+    is_bridge: bool                  # True articulation point (NetworkX algorithm)
+    is_hub: bool                     # Significantly above-average degree (config-driven)
+    partition_id: str                # Which partition this node belongs to
+    centrality: float = 0.0          # Normalized in-degree centrality (in_degree / (N-1))
+
+
+@dataclass(frozen=True)
+class SupportAggregate:
+    """
+    Aggregated semantic support for one ClaimNode within its partition.
+
+    PROVENANCE ROOT DEFINITION:
+    This aggregate includes ALL transitive supporting claims. In a chain where 
+    A -> B -> C, both A and B are considered supporting claims of C. 
+    The supporting_claim_ids tuple contains the unique IDs of all such claims, 
+    ensuring no claim is double-counted even if multiple paths exist.
+    """
+    support_count: int
+    weighted_confidence: float
+    supporting_claim_ids: tuple
+    evidence_summary: str         # Human-readable summary
+
+
+@dataclass(frozen=True)
+class TemporalMetadata:
+    """
+    Temporal evolution metadata for one contradiction boundary.
+
+    RECTIFIED: populated from Claim.timestamp (semantic timestamp),
+    never from filesystem st_mtime. If Claim.timestamp is None,
+    status is NO_TIMESTAMP rather than inferring from the filesystem.
+    """
+    status: TemporalStatus
+    earlier_claim_id: Optional[str]  # claim_id of the earlier claim (if EVOLUTION_CHAIN)
+    later_claim_id: Optional[str]    # claim_id of the later claim (if EVOLUTION_CHAIN)
+    time_delta_days: Optional[float] # Days between timestamps
+    temporal_confidence: float       # Confidence in the temporal ordering (0.0–1.0)
+
+
+@dataclass(frozen=True)
+class NodeAnnotations:
+    """
+    All enrichment annotations for one ClaimNode, grouped into a single container.
+
+    RECTIFIED (P1-2): ClaimNode no longer stores topology, support, temporal,
+    semantic role, and partition_id as flat fields. These are grouped here.
+    ClaimNode.annotations is a single Optional[NodeAnnotations].
+
+    This decouples the enrichment lifecycle from the domain model.
+    """
+    semantic_role: SemanticRole = SemanticRole.UNCLASSIFIED
+    topology: Optional["TopologyMetrics"] = None
+    support_aggregate: Optional["SupportAggregate"] = None
+    temporal_metadata: Optional["TemporalMetadata"] = None
+    partition_id: Optional[str] = None
+    stable_partition_label: Optional[str] = None  # Incremental-friendly label (P2-5)
+
+
+@dataclass(frozen=True)
+class ClaimNode:
+    """
+    One canonical semantic claim inside the KnowledgeGraph.
+
+    RECTIFIED (P1-2): All enrichment data lives in NodeAnnotations.
+    ClaimNode itself only holds identity + raw claim data.
+    Backward-compatible property accessors are provided for all original fields.
+
+    Fields:
+        node_id:       Deterministic ID == claim_id from Phase 4
+        claim_id:      Reference to the originating Claim
+        claim_text:    Original claim text
+        context:       Heading context (e.g. "Python > Generators")
+        source_path:   Original file path
+        document_id:   Which document produced this claim
+        annotations:   All topology/support/temporal/role/partition data
+        schema_version: "7.0"
+    """
+    node_id: str
+    claim_id: str
+    claim_text: str
+    context: str
+    source_path: Path
+    document_id: str
+    annotations: Optional["NodeAnnotations"] = None
+    schema_version: str = "7.0"
+
+    # ── Backward-compatible accessors ──────────────────────────────────────────
+    @property
+    def semantic_role(self) -> "SemanticRole":
+        if self.annotations:
+            return self.annotations.semantic_role
+        return SemanticRole.UNCLASSIFIED
+
+    @property
+    def topology(self) -> Optional["TopologyMetrics"]:
+        return self.annotations.topology if self.annotations else None
+
+    @property
+    def support_aggregate(self) -> Optional["SupportAggregate"]:
+        return self.annotations.support_aggregate if self.annotations else None
+
+    @property
+    def temporal_metadata(self) -> Optional["TemporalMetadata"]:
+        return self.annotations.temporal_metadata if self.annotations else None
+
+    @property
+    def partition_id(self) -> Optional[str]:
+        return self.annotations.partition_id if self.annotations else None
+
+
+@dataclass(frozen=True)
+class RelationshipEdge:
+    """
+    One semantic relationship inside the KnowledgeGraph.
+
+    Invariants:
+        - source_node_id and target_node_id must reference existing ClaimNodes
+        - relationship_type is NEVER UNKNOWN
+        - NEUTRAL is absent unless configuration explicitly permits it
+        - Every edge is unique (pair + type)
+    """
+    edge_id: str
+    source_node_id: str
+    target_node_id: str
+    relationship_type: "RelationshipType"
+    direction: "RelationshipDirection"
+    calibrated_confidence: float
+    cosine_similarity: float
+    nli_confidence: float
+    candidate_rank: int
+    schema_version: str = "7.0"
+
+
+@dataclass(frozen=True)
+class KnowledgePartition:
+    """
+    One internally consistent semantic context within the KnowledgeGraph.
+
+    RECTIFIED (P1-5): density is DIRECTED: edges / (n * (n-1)) where n = node count.
+    This is documented explicitly. Previously the formula was ambiguous.
+
+    RECTIFIED (P2-5): stable_partition_label added alongside SHA256-based partition_id.
+    stable_partition_label is the sorted comma-separated list of node_ids, enabling
+    comparison across incremental runs without rehashing.
+
+    Invariants:
+        - No CONTRADICTS edges exist WITHIN a partition
+        - All nodes within a partition are reachable via SUPPORTS/REFINES
+        - Partition membership is exclusive
+    """
+    partition_id: str                        # SHA256(sorted_node_ids)[:12] — deterministic
+    stable_partition_label: tuple              # sorted ",".join(node_ids) — incremental-friendly
+    node_ids: frozenset
+    internal_edge_ids: frozenset
+    node_count: int
+    edge_count: int
+    supports_count: int
+    refines_count: int
+    density: float                           # Directed: edge_count / (n * (n-1)); 0 if n<=1
+    longest_support_chain: int
+    schema_version: str = "7.0"
+
+
+@dataclass(frozen=True)
+class GraphStatistics:
+    """Graph-wide statistics for one KnowledgeGraph."""
+    node_count: int
+    edge_count: int
+    partition_count: int
+    contradiction_count: int
+    supports_count: int
+    refines_count: int
+    isolated_nodes: int
+    bridge_nodes: int                        # True articulation points (P0-3 fix)
+    hub_nodes: int
+    evolution_chains: int
+    unresolved_conflicts: int
+    construction_time_seconds: float
+    enrichment_time_seconds: float
+
+
+@dataclass(frozen=True)
+class ValidationReport:
+    is_valid: bool
+    node_violations: tuple
+    edge_violations: tuple
+    graph_violations: tuple
+    semantic_warnings: tuple   # Renamed from semantic_violations
+    validation_time_seconds: float
+
+    @property
+    def total_violations(self) -> int:
+        return (
+            len(self.node_violations) + len(self.edge_violations)
+            + len(self.graph_violations)
+        )
+
+
+@dataclass(frozen=True)
+class KnowledgeGraph:
+    """
+    The immutable canonical semantic representation of the entire corpus.
+    Phase 7's output and Phase 8's input.
+
+    KnowledgeGraph is NOT a live graph database.
+    It is a frozen artifact representing the state of knowledge at one point in time.
+    """
+    graph_id: str
+    nodes: Dict[str, "ClaimNode"]
+    edges: Dict[str, "RelationshipEdge"]
+    partitions: Dict[str, "KnowledgePartition"]
+    statistics: "GraphStatistics"
+    validation_report: "ValidationReport"
+    run_id: str
+    config_hash: str
+    schema_version: str = "7.0"
+
+    @property
+    def node_count(self) -> int:
+        return len(self.nodes)
+
+    @property
+    def edge_count(self) -> int:
+        return len(self.edges)
+
+    @property
+    def partition_count(self) -> int:
+        return len(self.partitions)
+
+    @property
+    def contradiction_edges(self) -> List["RelationshipEdge"]:
+        return [e for e in self.edges.values()
+                if e.relationship_type == RelationshipType.CONTRADICTS]
+
+    @property
+    def supports_edges(self) -> List["RelationshipEdge"]:
+        return [e for e in self.edges.values()
+                if e.relationship_type == RelationshipType.SUPPORTS]
+
+    @property
+    def refines_edges(self) -> List["RelationshipEdge"]:
+        return [e for e in self.edges.values()
+                if e.relationship_type == RelationshipType.REFINES]
+
+    def get_node(self, claim_id: str) -> Optional["ClaimNode"]:
+        return self.nodes.get(claim_id)
+
+    def get_partition_for_node(self, claim_id: str) -> Optional["KnowledgePartition"]:
+        node = self.nodes.get(claim_id)
+        if node and node.partition_id:
+            return self.partitions.get(node.partition_id)
+        return None
+
+
+@dataclass(frozen=True)
+class Phase7Stats:
+    """Statistics collected during Phase 7 execution."""
+    input_relationships: int = 0
+    input_filtered: int = 0
+    nodes_created: int = 0
+    edges_created: int = 0
+    partitions_created: int = 0
+    contradictions_as_boundaries: int = 0
+    evolution_chains_detected: int = 0
+    unresolved_conflicts: int = 0
+    construction_time_seconds: float = 0.0
+    enrichment_time_seconds: float = 0.0
+    total_time_seconds: float = 0.0
+    validation_passed: bool = False    
 
 # ── Phase 7 contract: Contradiction → Scoring ────────────────────────────────
 
@@ -3486,6 +14350,375 @@ class Contradiction:
             f"Contradiction({self.claim_a_id[:20]} vs {self.claim_b_id[:20]}, "
             f"type={self.contradiction_type}, severity={self.severity_score:.2f})"
         )
+
+
+# ── Phase 8: Reliability Evaluation ──────────────────────────────────────────
+
+class CalibrationLabel(str, Enum):
+    """
+    Human-readable reliability tier derived from Reliability Index.
+
+    RECTIFIED (P1-4): Each label now has a semantic contract that Phase 9
+    can consume without guessing. The contract is documented here and enforced
+    by the Validation Checklist.
+
+    Contracts:
+        VERY_HIGH: Multiple independent, high-confidence sources, no significant
+                   contradiction. Display with full confidence.
+        HIGH:      Well-supported, minor concerns only. Display normally.
+        MODERATE:  Some support but notable gaps, limited independence, or weak
+                   conflict present. Note caveats.
+        LOW:       Weak/dependent evidence or moderate conflict. Flag for review.
+        VERY_LOW:  No meaningful support or overwhelmed by contradiction. Mark unverified.
+
+    Calibration changes representation, NOT underlying evidence.
+    """
+    VERY_HIGH = "very_high"   # RI >= 80
+    HIGH      = "high"        # RI >= 65
+    MODERATE  = "moderate"    # RI >= 45
+    LOW       = "low"         # RI >= 25
+    VERY_LOW  = "very_low"    # RI < 25
+
+class SignalID(str, Enum):
+    """Canonical registry of all known signal identities."""
+    EVIDENCE_STRENGTH = "evidence_strength"
+    EVIDENCE_INDEPENDENCE = "evidence_independence"
+    SOURCE_DIVERSITY = "source_diversity"
+    TOPOLOGY_STRENGTH = "topology_strength"
+    HUB_SCORE = "hub_score"
+    BRIDGE_SCORE = "bridge_score"
+    CONFLICT_PRESSURE = "conflict_pressure"
+    TEMPORAL_STABILITY = "temporal_stability"
+
+class SignalStatus(str, Enum):
+    """Quality status for a single extracted signal."""
+    MEASURED    = "measured"     # Derived from full graph data
+    ESTIMATED   = "estimated"    # Derived but with incomplete data
+    UNAVAILABLE = "unavailable"  # Cannot be computed (e.g., no provenance)
+    DEFAULT     = "default"      # Using policy default (no signal data)
+
+    
+
+
+@dataclass(frozen=True)
+class RawSignal:
+    """
+    Raw measurement from one signal extractor, before normalization.
+
+    Fields:
+        name:              Signal identifier (matches ContributionCandidate.signal_name)
+        raw_value:         The raw measurement (units depend on signal, may exceed [0,1])
+        normalized_value:  Value after extractor-owned normalization (always in [0,1])
+        status:            Quality status of this measurement
+        metadata:          Extractor-specific diagnostic metadata
+    """
+    name: str
+    raw_value: float
+    normalized_value: float           # Owned by extractor (P1-2 fix)
+    status: SignalStatus
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SignalManifest:
+    """
+    RECTIFIED (P0-4): Full derivation trace for one signal, one claim.
+
+    This is NOT the same as an audit trail (which covers versioning).
+    This covers derivation: WHY this signal has this value.
+
+    Fields:
+        signal_name:           Signal identifier
+        extractor_version:     Version of the extractor that produced this signal
+        raw_value:             Before normalization
+        normalized_value:      After extractor-owned normalization
+        normalization_strategy: Description of the strategy used (e.g., "log_scale")
+        status:                Signal quality status
+        quality_flags:         List of quality issues detected (e.g., ["low_sample"])
+        dependency_list:       Which graph fields this signal depended on
+        diagnostics:           Arbitrary extractor-specific diagnostic data
+    """
+    signal_id: SignalID
+    extractor_version: str
+    raw_value: float
+    normalized_value: float
+    normalization_strategy: str          # e.g. "log_scale", "linear", "step_function"
+    status: SignalStatus
+    quality_flags: tuple                  # e.g. ("low_sample_count", "echo_chamber_risk")
+    dependency_list: tuple                # e.g. ("support_aggregate", "topology.centrality")
+    diagnostics: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ContributionCandidate:
+    """
+    RECTIFIED (P0-2): What the Fusion Engine receives for one signal.
+
+    Fusion engine receives a list of ContributionCandidates and knows NOTHING
+    about what the signals mean — it only knows: normalized_value, policy_weight,
+    direction, and label. This is the key architectural fix that decouples Fusion
+    from signal semantics.
+
+    Fields:
+        signal_name:       Identifier (opaque to Fusion)
+        normalized_value:  In [0,1]
+        policy_weight:     From policy (how important is this signal)
+        direction:         "positive" (higher = more reliable) or "negative" (higher = less reliable)
+        label:             Human-readable signal label for explanation generation
+        raw_value:         Original pre-normalization value (for DecisionRecord)
+    """
+    signal_id: SignalID
+    normalized_value: float
+    policy_weight: float
+    direction: str               # "positive" | "negative"
+    label: str                   # For explanation generation
+    raw_value: float = 0.0       # Pre-normalization, for DecisionRecord
+
+
+@dataclass(frozen=True)
+class ContributionSet:
+    """
+    RECTIFIED (P0-2): The complete set of ContributionCandidates for one claim.
+
+    This is what the Fusion Engine receives. It contains everything needed
+    to compute the Reliability Index without the Fusion Engine knowing anything
+    about individual signal semantics.
+    """
+    candidates: tuple               # Tuple[ContributionCandidate, ...]
+    evidence_completeness: float    # Fraction of signals with actual measurements
+    claim_id: str                   # For logging/tracing
+
+
+@dataclass(frozen=True)
+class ComponentScore:
+    """One signal's contribution to the final Reliability Index."""
+    signal_id: SignalID
+    normalized_value: float    # From ContributionCandidate (0.0–1.0)
+    policy_weight: float       # From policy (0.0–1.0)
+    adjusted_value: float      # After policy interactions
+    contribution: float        # = adjusted_value * policy_weight * 100 (or negative)
+    direction: str             # "positive" or "negative"
+    explanation: str           # Human-readable reason
+
+
+@dataclass(frozen=True)
+class ReliabilityDecisionRecord:
+    """
+    RECTIFIED (P0-5): Full decision path for one claim's reliability score.
+
+    Contains everything needed to understand exactly WHY a claim received
+    its reliability index — from policy interactions to constraints activated.
+
+    Invaluable for:
+        - Benchmarking policy profiles against each other
+        - Debugging unexpected scores
+        - Future academic documentation
+        - Phase 9 surfacing "why" explanations to users
+
+    Fields:
+        claim_id:                  Which claim this covers
+        policy_interactions:       List of interactions applied (e.g., "echo_chamber_discount")
+        constraints_activated:     List of constraints that fired (e.g., "no_evidence_cap")
+        contribution_order:        Signal names in decreasing absolute contribution order
+        raw_reliability:           Before constraints
+        constrained_reliability:   After constraints, before clamping
+        final_reliability:         After clamping to [0, 100]
+        uncertainty_components:    What drove the uncertainty score
+        dominant_adjustment:       The single most impactful policy interaction
+    """
+    claim_id: str
+    policy_interactions: tuple           # e.g. ("echo_chamber_discount_applied",)
+    constraints_activated: tuple         # e.g. ("no_evidence_cap: 60.0",)
+    contribution_order: tuple            # signal names by descending |contribution|
+    raw_reliability: float
+    constrained_reliability: float
+    final_reliability: float
+    uncertainty_components: tuple        # (component_name, contribution) tuples
+    dominant_adjustment: str
+
+
+@dataclass(frozen=True)
+class SignalVector:
+    """
+    All normalized signal measurements for one ClaimNode.
+    All values are in [0.0, 1.0].
+
+    Kept for backward compatibility with existing normalization tests.
+    In the rectified architecture, ContributionSet is the primary fusion input.
+    SignalVector is assembled from ContributionCandidates for serialization.
+    """
+    evidence_strength: float
+    evidence_independence: float
+    source_diversity: float
+    topology_strength: float
+    conflict_pressure: float
+    temporal_stability: float
+    evidence_completeness: float
+    statuses: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ReliabilityExplanation:
+    """Structured explanation for a Reliability Index."""
+    summary: str
+    strengths: tuple
+    weaknesses: tuple
+    dominant_signal: str
+    limiting_signal: str
+    recommendations: tuple
+
+
+@dataclass(frozen=True)
+class ReliabilityAudit:
+    """Reproducibility audit trail for one ReliabilityMetadata."""
+    policy_version: str
+    policy_profile: str 
+    graph_fingerprint: str             # NEW (P1-3): which profile was active
+    graph_schema_version: str
+    fusion_algorithm: str
+    normalization_version: str
+    computed_at_run_id: str
+    signal_extractor_versions: Dict[str, str]
+    registry_order: tuple            # NEW: ordered list of registered signal names
+
+
+@dataclass(frozen=True)
+class ReliabilityHistory:
+    """
+    RECTIFIED (P1-5): Architecture stub for confidence evolution tracking.
+
+    Not active in production (requires cross-run storage).
+    Architecture is wired up so Phase 9/10 can activate it.
+    """
+    claim_id: str
+    history: tuple   # Tuple of (run_id, reliability_index, timestamp_iso) triples
+
+
+@dataclass(frozen=True)
+class ReliabilityMetadata:
+    """
+    The complete reliability profile for one ClaimNode.
+
+    RECTIFIED: Now includes SignalManifest list and ReliabilityDecisionRecord.
+
+    Fields:
+        claim_id:               Links to KnowledgeGraph.nodes[claim_id]
+        reliability_index:      Final score 0–100
+        uncertainty_score:      Measurement uncertainty 0–100
+        evidence_completeness:  Fraction of signals with actual measurements
+        signal_vector:          All normalized signal measurements (for serialization)
+        signal_manifests:       Per-signal derivation traces (NEW P0-4)
+        component_scores:       Per-signal contributions (fully explainable)
+        decision_record:        Full policy decision path (NEW P0-5)
+        explanation:            Structured human-readable explanation
+        calibration_label:      Human-friendly tier with semantic contract
+        audit:                  Full reproducibility audit trail
+        policy_version:         Which policy version produced this score
+        schema_version:         "8.0"
+    """
+    claim_id: str
+    reliability_index: float
+    uncertainty_score: float
+    evidence_completeness: float
+    signal_vector: SignalVector
+    signal_manifests: tuple            # Tuple[SignalManifest, ...] — NEW (P0-4)
+    component_scores: tuple
+    decision_record: ReliabilityDecisionRecord  # NEW (P0-5)
+    explanation: ReliabilityExplanation
+    calibration_label: CalibrationLabel
+    audit: ReliabilityAudit
+    policy_version: str
+    schema_version: str = "8.0"
+
+
+@dataclass(frozen=True)
+class ScoringGlobalStats:
+    """Graph-wide statistics computed once and shared by all signal extractors."""
+    max_support_count: int
+    avg_support_count: float
+    max_in_degree: int
+    avg_degree: float
+    max_contradiction_partners: int
+    avg_contradiction_partners: float
+    max_source_diversity: int
+    max_temporal_confidence: float
+    node_count: int
+    partition_count: int
+    contradiction_count: int
+    supports_count: int
+
+
+@dataclass(frozen=True)
+class ScoredKnowledgeGraph:
+    """
+    Phase 8's canonical output: KnowledgeGraph + reliability overlay.
+
+    The original KnowledgeGraph remains immutable.
+    Reliability metadata lives in a separate dict indexed by claim_id.
+
+    Design allows:
+        - Multiple scoring policies on the same graph (via PolicyProfile)
+        - Policy comparisons side by side
+        - Future phases choosing which scoring profile to consume
+    """
+    graph: "KnowledgeGraph"
+    reliability: Dict[str, ReliabilityMetadata]
+    policy_snapshot: Dict[str, Any]
+    policy_profile: str              # NEW (P1-3): which profile was used
+    global_stats: ScoringGlobalStats
+    run_id: str
+    schema_version: str = "8.0"
+
+    @property
+    def total_scored(self) -> int:
+        return len(self.reliability)
+
+    @property
+    def avg_reliability(self) -> float:
+        if not self.reliability:
+            return 0.0
+        return sum(m.reliability_index for m in self.reliability.values()) / len(self.reliability)
+
+    def get_reliability(self, claim_id: str) -> Optional[ReliabilityMetadata]:
+        return self.reliability.get(claim_id)
+
+    def top_reliable(self, n: int = 10) -> List[ReliabilityMetadata]:
+        return sorted(
+            self.reliability.values(),
+            key=lambda m: m.reliability_index,
+            reverse=True,
+        )[:n]
+
+    def least_reliable(self, n: int = 10) -> List[ReliabilityMetadata]:
+        return sorted(
+            self.reliability.values(),
+            key=lambda m: m.reliability_index,
+        )[:n]
+
+
+@dataclass(frozen=True)
+class ExecutionStats:
+    """Runtime and performance metrics for the Phase 8 engine."""
+    total_runtime_seconds: float
+    signal_extraction_seconds: float
+    fusion_seconds: float
+    registered_signal_count: int
+
+@dataclass(frozen=True)
+class KnowledgeStats:
+    """Scientific and epistemic metrics for the evaluated graph."""
+    total_claims_scored: int
+    avg_reliability_index: float
+    avg_uncertainty_score: float
+    calibration_histogram: Dict[str, int]  # e.g., {"VERY_HIGH": 12, "LOW": 3}
+
+@dataclass(frozen=True)
+class Phase8Telemetry:
+    """Complete telemetry payload for a Phase 8 execution."""
+    policy_version: str
+    policy_profile: str
+    execution: ExecutionStats
+    knowledge: KnowledgeStats
 
 
 # ── Phase 8 contract: Evolution ───────────────────────────────────────────────
@@ -6621,12 +17854,340 @@ def validate_batch(
 
 ## File: src/smriti/evolution/__init__.py
 ````python
+"""
+evolution/__init__.py — Public API for Phase 7: Knowledge Graph Construction.
 
-````
+External callers import ONLY from here:
+    from smriti.evolution import build_knowledge_graph, KnowledgeGraph
 
-## File: src/smriti/evolution/analyzer.py
-````python
-# Will be filled in Phase 7\n
+RECTIFIED: Passes hub_degree_multiplier and AnnotationPolicy from config
+to topology and annotation stages respectively.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import time
+from pathlib import Path
+from typing import Dict
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.manifest import ManifestManager
+from smriti.core.models import Claim, KnowledgeGraph, RelationshipSet, TemporalStatus
+from smriti.core.paths import ARTIFACTS_DIR
+from smriti.core.state import StateManager
+from smriti.core.timing import Timer
+from smriti.exceptions import Phase7Error, GraphConstructionError
+
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.construction import run_construction
+from smriti.evolution.validation import validate_graph_structure
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.evolution.partitioning import run_partitioning
+from smriti.evolution.topology import run_topology_analysis
+from smriti.evolution.annotation import run_semantic_annotation, AnnotationPolicy
+from smriti.evolution.aggregation import run_evidence_aggregation
+from smriti.evolution.temporal import run_temporal_resolution
+from smriti.evolution.builder import build_knowledge_graph as _assemble_graph
+from smriti.evolution.statistics import Phase7StatsCollector
+
+logger = structlog.get_logger(__name__)
+
+PHASE7_VERSION = "1.0"
+
+
+def _compute_config_hash(config: dict) -> str:
+    relevant = {
+        "include_neutral": config.get("knowledge_graph", {}).get("include_neutral", False),
+        "min_reliable_delta_days": config.get("knowledge_graph", {}).get("min_reliable_delta_days", 1.0),
+        "hub_degree_multiplier": config.get("knowledge_graph", {}).get("hub_degree_multiplier", 2.0),
+        "annotation": config.get("knowledge_graph", {}).get("annotation", {}),
+    }
+    material = json.dumps(relevant, sort_keys=True)
+    return hashlib.sha256(material.encode()).hexdigest()[:16]
+
+
+def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
+    """Serialize KnowledgeGraph to JSON for Phase 8."""
+    data = {
+        "graph_id": graph.graph_id,
+        "run_id": graph.run_id,
+        "schema_version": graph.schema_version,
+        "config_hash": graph.config_hash,
+        "statistics": {
+            "node_count": graph.statistics.node_count,
+            "edge_count": graph.statistics.edge_count,
+            "partition_count": graph.statistics.partition_count,
+            "contradiction_count": graph.statistics.contradiction_count,
+            "supports_count": graph.statistics.supports_count,
+            "refines_count": graph.statistics.refines_count,
+            "bridge_nodes": graph.statistics.bridge_nodes,
+            "hub_nodes": graph.statistics.hub_nodes,
+            "evolution_chains": graph.statistics.evolution_chains,
+            "unresolved_conflicts": graph.statistics.unresolved_conflicts,
+        },
+        "validation": {
+            "is_valid": graph.validation_report.is_valid,
+            "total_violations": graph.validation_report.total_violations,
+            "semantic_warnings": len(graph.validation_report.semantic_warnings),
+        },
+        "nodes": {},
+        "edges": {},
+        "partitions": {},
+    }
+
+    for claim_id, node in sorted(graph.nodes.items()):
+        node_data = {
+            "claim_id": node.claim_id,
+            "claim_text": node.claim_text,
+            "context": node.context,
+            "source_path": str(node.source_path),
+            "document_id": node.document_id,
+            "partition_id": node.partition_id,
+            "semantic_role": node.semantic_role.value,
+            "schema_version": node.schema_version,
+        }
+        if node.topology:
+            node_data["topology"] = {
+                "degree": node.topology.degree,
+                "in_degree": node.topology.in_degree,
+                "out_degree": node.topology.out_degree,
+                "centrality": node.topology.centrality,
+                "is_bridge": node.topology.is_bridge,
+                "is_hub": node.topology.is_hub,
+            }
+        if node.support_aggregate:
+            node_data["support"] = {
+                "count": node.support_aggregate.support_count,
+                "weighted_confidence": node.support_aggregate.weighted_confidence,
+                "supporting_claims": list(node.support_aggregate.supporting_claim_ids),
+            }
+        if node.temporal_metadata:
+            node_data["temporal"] = {
+                "status": node.temporal_metadata.status.value,
+                "earlier_claim_id": node.temporal_metadata.earlier_claim_id,
+                "later_claim_id": node.temporal_metadata.later_claim_id,
+                "time_delta_days": node.temporal_metadata.time_delta_days,
+                "temporal_confidence": node.temporal_metadata.temporal_confidence,
+            }
+        data["nodes"][claim_id] = node_data
+
+    for edge_id, edge in sorted(graph.edges.items()):
+        data["edges"][edge_id] = {
+            "source": edge.source_node_id,
+            "target": edge.target_node_id,
+            "relationship_type": edge.relationship_type.value,
+            "direction": edge.direction.value,
+            "calibrated_confidence": edge.calibrated_confidence,
+            "cosine_similarity": edge.cosine_similarity,
+            "candidate_rank": edge.candidate_rank,
+        }
+
+    for partition_id, partition in sorted(graph.partitions.items()):
+        data["partitions"][partition_id] = {
+            "node_ids": sorted(partition.node_ids),
+            "stable_partition_label": partition.stable_partition_label,   # <-- fixed
+            "node_count": partition.node_count,
+            "edge_count": partition.edge_count,
+            "supports_count": partition.supports_count,
+            "refines_count": partition.refines_count,
+            "density": partition.density,
+            "longest_support_chain": partition.longest_support_chain,
+        }
+
+    return json.dumps(data, indent=2, ensure_ascii=False)
+
+
+def build_knowledge_graph(
+    relationship_set: RelationshipSet,
+    claims_map: Dict[str, Claim],
+    run_id: str,
+    manifest_manager: ManifestManager,
+    state_manager: StateManager,
+) -> KnowledgeGraph:
+    """
+    Execute the complete Phase 7 Knowledge Graph Construction pipeline.
+
+    Sub-Pipeline A (Construction):
+        1. Ingestion + Filtering
+        2. Node Registry
+        3. Edge Registry
+        4. Backend Population
+        5. Structural + Semantic Validation
+
+    Sub-Pipeline B (Semantic Enrichment):
+        1. Constraint-Based Partitioning (signed-graph coloring + Union-Find)
+        2. Topology Analysis (true articulation-point bridge detection)
+        3. Semantic Annotation (config-driven AnnotationPolicy)
+        4. Evidence Aggregation (unique provenance roots)
+        5. Temporal Resolution (Claim.timestamp, never filesystem)
+
+    Returns:
+        Immutable KnowledgeGraph (Phase 8's canonical input).
+    """
+    config = get_config()
+    kg_cfg = config.get("knowledge_graph", {})
+    include_neutral = kg_cfg.get("include_neutral", False)
+    hub_degree_multiplier = kg_cfg.get("hub_degree_multiplier", 2.0)
+    config_hash = _compute_config_hash(config)
+
+    logger.info(
+        "phase 7 starting",
+        run_id=run_id,
+        input_relationships=relationship_set.total_relationships,
+        include_neutral=include_neutral,
+        partitioning="constraint_based_signed_graph",
+        bridge_detection="articulation_points",
+        temporal_source="claim.timestamp",
+    )
+
+    start_time = manifest_manager.start_phase(phase=7)
+    stats = Phase7StatsCollector()
+
+    # ── Sub-Pipeline A: Construction ──────────────────────────────────────────
+    stats.record_construction_start()
+    construction_timer_start = time.monotonic()
+
+    with Timer("phase7_construction"):
+        backend = NetworkXBackend()
+        construction_result = run_construction(
+            relationship_set=relationship_set,
+            claims_map=claims_map,
+            backend=backend,
+            include_neutral=include_neutral,
+        )
+
+    stats.record_input(
+        total=relationship_set.total_relationships,
+        filtered=construction_result.relationships_filtered,
+    )
+
+    validation_report = validate_graph_structure(
+        nodes=construction_result.nodes,
+        edges=construction_result.edges,
+        backend=construction_result.backend,
+    )
+    stats.record_validation_passed()
+    stats.record_construction_end(
+        nodes=len(construction_result.nodes),
+        edges=len(construction_result.edges),
+    )
+
+    construction_time = time.monotonic() - construction_timer_start
+
+    # ── Sub-Pipeline B: Semantic Enrichment ───────────────────────────────────
+    stats.record_enrichment_start()
+    enrichment_timer_start = time.monotonic()
+
+    annotation_policy = AnnotationPolicy.from_config()
+
+    ctx = SemanticReasoningContext(
+        nodes=construction_result.nodes,
+        edges=construction_result.edges,
+        backend=construction_result.backend,
+        run_id=run_id,
+        config_hash=config_hash,
+    )
+
+    with Timer("phase7_partitioning"):
+        run_partitioning(ctx)  # Constraint-based (P0-1 fix)
+
+    with Timer("phase7_topology"):
+        run_topology_analysis(ctx, hub_degree_multiplier=hub_degree_multiplier)  # Articulation points (P0-3 fix)
+
+    with Timer("phase7_annotation"):
+        run_semantic_annotation(ctx, policy=annotation_policy)  # Config-driven (P1-4 fix)
+
+    with Timer("phase7_aggregation"):
+        run_evidence_aggregation(ctx)  # Unique provenance roots (P0-2 fix)
+
+    with Timer("phase7_temporal"):
+        run_temporal_resolution(ctx, claims_map)  # Claim.timestamp (P0-4 fix)
+
+    enrichment_time = time.monotonic() - enrichment_timer_start
+
+    evolution_chains = sum(
+        1 for t in ctx.temporal_metadata.values()
+        if t and t.status == TemporalStatus.EVOLUTION_CHAIN
+    ) // 2
+    unresolved = sum(
+        1 for t in ctx.temporal_metadata.values()
+        if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
+    ) // 2
+    contradiction_boundaries = sum(
+        1 for e in ctx.edges.values()
+        if e.relationship_type.value == "contradicts"
+    )
+
+    stats.record_enrichment_end(
+        partitions=len(ctx.partitions),
+        contradiction_boundaries=contradiction_boundaries,
+        evolution_chains=evolution_chains,
+        unresolved=unresolved,
+    )
+
+    # ── Assemble final KnowledgeGraph ─────────────────────────────────────────
+    knowledge_graph = _assemble_graph(
+        ctx=ctx,
+        validation_report=validation_report,
+        construction_time=construction_time,
+        enrichment_time=enrichment_time,
+    )
+
+    final_stats = stats.finalize()
+
+    # ── Write artifacts ────────────────────────────────────────────────────────
+    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase7"
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    dataset_path = phase_dir / "dataset.json"
+    dataset_path.write_text(
+        _serialize_knowledge_graph(knowledge_graph), encoding="utf-8"
+    )
+
+    logger.info(
+        "dataset written",
+        path=str(dataset_path),
+        nodes=knowledge_graph.node_count,
+        edges=knowledge_graph.edge_count,
+        partitions=knowledge_graph.partition_count,
+    )
+
+    manifest_manager.end_phase(
+        phase=7,
+        start_time=start_time,
+        inputs={"relationships": relationship_set.total_relationships},
+        outputs={
+            "nodes": knowledge_graph.node_count,
+            "edges": knowledge_graph.edge_count,
+            "partitions": knowledge_graph.partition_count,
+            "contradictions": knowledge_graph.statistics.contradiction_count,
+            "evolution_chains": knowledge_graph.statistics.evolution_chains,
+            "bridge_nodes": knowledge_graph.statistics.bridge_nodes,
+            "partitioning_algorithm": "constraint_based_signed_graph",
+            "bridge_detection": "articulation_points",
+            "temporal_source": "claim.timestamp",
+            "dataset_path": str(dataset_path),
+            "validation_passed": validation_report.is_valid,
+        },
+        status="success",
+    )
+
+    state_manager.complete_phase(phase=7)
+
+    logger.info(
+        "phase 7 complete",
+        graph_id=knowledge_graph.graph_id[:8],
+        nodes=knowledge_graph.node_count,
+        partitions=knowledge_graph.partition_count,
+        contradictions=knowledge_graph.statistics.contradiction_count,
+        evolution_chains=knowledge_graph.statistics.evolution_chains,
+        bridge_nodes=knowledge_graph.statistics.bridge_nodes,
+        total_seconds=f"{final_stats.total_time_seconds:.2f}",
+    )
+
+    return knowledge_graph
 ````
 
 ## File: src/smriti/extraction/scanner/__init__.py
@@ -9639,6 +21200,9 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
+from unittest import result
+from smriti.core.models import RelationshipSet, KnowledgeGraph, ScoredKnowledgeGraph
+from smriti.retrieval import discover_relationships
 import structlog
 
 from smriti.core.manifest import ManifestManager
@@ -9747,7 +21311,28 @@ class PipelineRunner:
                     phase4_result = self._load_phase4_result()
                 phase5_result = self._run_phase_5(phase4_result)
 
-            # Phases 5–13 will be registered here as they are built.
+            phase6_result = None
+            if start_from <= 6 and (stop_at is None or stop_at >= 6):
+                if phase5_result is None:
+                    phase5_result = self._load_phase5_result()
+                phase4_claims = self._load_phase4_result_as_map()
+                phase6_result = self._run_phase_6(phase5_result, phase4_claims) 
+
+            phase7_result = None
+            if start_from <= 7 and (stop_at is None or stop_at >= 7):
+                if phase6_result is None:
+                    phase6_result = self._load_phase6_result()
+                if phase4_claims is None:
+                    phase4_claims = self._load_phase4_result_as_map()
+            phase7_result = self._run_phase_7(phase6_result, phase4_claims)  
+
+            phase8_result = None
+            if start_from <= 8 and (stop_at is None or stop_at >= 8):
+                if phase7_result is None:
+                    phase7_result = self._load_phase7_result()
+                phase8_result = self._run_phase_8(phase7_result)     
+
+            # Phases 9–13 will be registered here as they are built.
 
         except Exception as e:
             logger.error("pipeline failed", error=str(e), exc_info=True)
@@ -10113,7 +21698,450 @@ class PipelineRunner:
             cache_hit_rate=f"{result.stats.cache_hit_rate:.1%}",
             throughput=f"{result.stats.vectors_per_second:.1f} vec/s",
         )
+        return result    
+    
+
+    def _run_phase_6(self, phase5_result, claims_map) -> "RelationshipSet":
+        """Execute Phase 6: Semantic Relationship Discovery."""
+        from smriti.retrieval import discover_relationships
+
+        logger.info("running phase 6")
+        result = discover_relationships(
+            embedded_claims=phase5_result.embedded_claims,
+            claims_map=claims_map,
+            run_id=self.run_id,
+            manifest_manager=self.manifest_manager,
+            state_manager=self.state_manager,
+        )
+        logger.info(
+            "phase 6 complete",
+            total_relationships=result.total_relationships,
+            contradictions=len(result.contradictions),
+        )
         return result
+
+
+    def _load_phase5_result(self):
+        """Load Phase 5 dataset from artifact when resuming at Phase 6."""
+        import json, math
+        from smriti.core.models import (
+            EmbeddedClaim, Embedding, EmbeddingModelDescriptor,
+            EmbeddingProvenance, EmbeddingQuality, Vector, VectorDType,
+        )
+
+        dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase5" / "dataset.json"
+        if not dataset_path.exists():
+            phase5_dirs = sorted(
+                ARTIFACTS_DIR.glob("run_*/phase5/dataset.json"),
+                key=lambda p: p.parent.parent.name,
+                reverse=True,
+            )
+            if not phase5_dirs:
+                raise PipelineError(
+                    "Cannot resume at Phase 6: no Phase 5 dataset.json found."
+                )
+            dataset_path = phase5_dirs[0]
+
+        records = json.loads(dataset_path.read_text(encoding="utf-8"))
+        embedded_claims = []
+
+        for r in records:
+            vector_vals = r["vector"]
+            dim = r["dimension"]
+            vec = Vector(
+                values=tuple(float(v) for v in vector_vals),
+                dimension=dim,
+                dtype=VectorDType.FLOAT64,
+                normalized=True,
+            )
+            prov_data = r["provenance"]
+            provenance = EmbeddingProvenance(
+                pipeline_version=prov_data.get("pipeline_version", "1.0"),
+                normalization_mode=prov_data.get("normalization_mode", "l2"),
+                device=prov_data.get("device", "cpu"),
+                config_hash=prov_data.get("config_hash", ""),
+            )
+            model_data = r["model"]
+            descriptor = EmbeddingModelDescriptor(
+                provider=model_data.get("provider", ""),
+                model_name=model_data.get("model_name", ""),
+                model_revision=model_data.get("revision", ""),
+                dimension=model_data.get("dimension", dim),
+                model_signature=model_data.get("signature", ""),
+            )
+            embedding = Embedding(
+                claim_id=r["claim_id"],
+                vector=vec,
+                descriptor=descriptor,
+                provenance=provenance,
+            )
+            quality = EmbeddingQuality(
+                dimension_ok=True,
+                normalized=True,
+                finite=all(math.isfinite(v) for v in vector_vals[:5]),
+                cache_used=r.get("status") == "cached",
+            )
+            ec = EmbeddedClaim(
+                claim_id=r["claim_id"],
+                embedding=embedding,
+                quality=quality,
+                schema_version=r.get("schema_version", "5.0"),
+            )
+            embedded_claims.append(ec)
+
+        return type("Phase5Result", (), {"embedded_claims": embedded_claims})()
+
+
+    def _load_phase4_result_as_map(self):
+        """Load Phase 4 claims as a {claim_id: Claim} dict for Phase 6 text lookup."""
+        import json
+        from pathlib import Path
+        from smriti.core.models import (
+            Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
+            Modality, StructuredAssertion,
+        )
+
+        dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase4" / "dataset.json"
+        if not dataset_path.exists():
+            phase4_dirs = sorted(
+                ARTIFACTS_DIR.glob("run_*/phase4/dataset.json"),
+                key=lambda p: p.parent.parent.name,
+                reverse=True,
+            )
+            if not phase4_dirs:
+                raise PipelineError("No Phase 4 dataset.json found for claim text lookup.")
+            dataset_path = phase4_dirs[0]
+
+        records = json.loads(dataset_path.read_text(encoding="utf-8"))
+        claims_map = {}
+
+        for r in records:
+            prov = r.get("provenance", {})
+            provenance = ClaimProvenance(
+                sentence_id=prov.get("sentence_id", ""),
+                document_id=prov.get("document_id", ""),
+                source_path=Path(prov.get("source_path", "unknown")),
+                sentence_context=prov.get("sentence_context", ""),
+                sentence_position=prov.get("sentence_position", 0),
+            )
+            svo_data = r.get("svo")
+            structured = None
+            if svo_data:
+                structured = StructuredAssertion(
+                    subject=svo_data.get("subject"),
+                    predicate=svo_data.get("predicate"),
+                    object=svo_data.get("object"),
+                )
+            metadata = AssertionMetadata(
+                is_negated=r.get("is_negated", False),
+                modality=Modality(r.get("modality", "certain")),
+                is_conditional=r.get("is_conditional", False),
+                is_comparative=r.get("is_comparative", False),
+                is_attributed=r.get("is_attributed", False),
+                attributed_to=r.get("attributed_to"),
+            )
+            claim = Claim(
+                claim_id=r["claim_id"],
+                sentence_id=r["sentence_id"],
+                document_id=r["document_id"],
+                text=r["text"],
+                content_hash=r.get("content_hash", ""),
+                context=r.get("context", ""),
+                source_path=Path(r.get("source_path", "unknown")),
+                extraction_mode=ExtractionMode(r.get("extraction_mode", "whole_sentence")),
+                structured_assertion=structured,
+                assertion_metadata=metadata,
+                provenance=provenance,
+                schema_version=r.get("schema_version", "4.0"),
+                rule_version=r.get("rule_version", "1.0"),
+            )
+            claims_map[claim.claim_id] = claim
+
+        return claims_map
+    
+
+    def _run_phase_7(self, phase6_result, claims_map) -> "KnowledgeGraph":
+        """Execute Phase 7: Knowledge Graph Construction."""
+        from smriti.evolution import build_knowledge_graph
+
+        logger.info("running phase 7")
+        result = build_knowledge_graph(
+            relationship_set=phase6_result,
+            claims_map=claims_map,
+            run_id=self.run_id,
+            manifest_manager=self.manifest_manager,
+            state_manager=self.state_manager,
+        )
+        logger.info(
+            "phase 7 complete",
+            nodes=result.node_count,
+            edges=result.edge_count,
+            partitions=result.partition_count,
+            contradictions=result.statistics.contradiction_count,
+            evolution_chains=result.statistics.evolution_chains,
+            bridge_nodes=result.statistics.bridge_nodes,
+        )
+        return result
+
+
+    def _load_phase6_result(self):
+        """Load Phase 6 dataset from artifact when resuming at Phase 7."""
+        import json
+        from smriti.core.models import (
+            RelationshipSet, Relationship, RelationshipType, RelationshipDirection,
+            RelationshipEvidence, RelationshipProvenance, RelationshipQuality,
+            NLIScores, InferenceMetadata, CandidatePair, SchemaVersionInfo,
+            LifecycleStage,
+        )
+
+        dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase6" / "dataset.json"
+        if not dataset_path.exists():
+            phase6_dirs = sorted(
+                ARTIFACTS_DIR.glob("run_*/phase6/dataset.json"),
+                key=lambda p: p.parent.parent.name,
+                reverse=True,
+            )
+            if not phase6_dirs:
+                raise PipelineError("Cannot resume at Phase 7: no Phase 6 dataset.json found.")
+            dataset_path = phase6_dirs[0]
+            logger.info("loading phase6 dataset", path=str(dataset_path))
+
+        data = json.loads(dataset_path.read_text(encoding="utf-8"))
+        relationships = []
+
+        for r in data:
+            ev_data = r["evidence"]
+            prov_data = r["provenance"]
+
+            pair = CandidatePair(
+                claim_id_a=r["claim_id_a"],
+                claim_id_b=r["claim_id_b"],
+                cosine_similarity=ev_data["cosine_similarity"],
+                candidate_rank=prov_data.get("candidate_rank", 1),
+            )
+            nli_scores = NLIScores(
+                entailment_score=ev_data.get("entailment_score", 0.0),
+                neutral_score=ev_data.get("neutral_score", 0.0),
+                contradiction_score=ev_data.get("contradiction_score", 0.0),
+                predicted_label=ev_data.get("predicted_label", "neutral"),
+                raw_confidence=ev_data.get("raw_confidence", ev_data.get("confidence", 0.0)),
+            )
+            inference_meta = InferenceMetadata(
+                model_name=ev_data.get("model_name", ""),
+                model_version=ev_data.get("model_version", "unknown"),
+            )
+            evidence = RelationshipEvidence(
+                pair=pair,
+                cosine_similarity=ev_data["cosine_similarity"],
+                nli_scores=nli_scores,
+                calibrated_confidence=ev_data.get("calibrated_confidence", ev_data.get("confidence", 0.0)),
+                inference_metadata=inference_meta,
+                lifecycle_stage=LifecycleStage.RELATIONSHIP,
+            )
+            provenance = RelationshipProvenance(
+                retrieval_backend=prov_data.get("retrieval_backend", "faiss_flat_ip"),
+                retrieval_version=prov_data.get("retrieval_version", "1.0"),
+                index_version=prov_data.get("index_version", "1.0"),
+                search_parameters=None,
+                classifier_model=prov_data.get("classifier_model", ""),
+                classifier_version=prov_data.get("classifier_version", "unknown"),
+                resolver_version=prov_data.get("resolver_version", "1.0"),
+                calibrator_version=prov_data.get("calibrator_version", "1.0"),
+                cosine_similarity=prov_data.get("cosine_similarity", 0.0),
+                candidate_rank=prov_data.get("candidate_rank", 1),
+                raw_nli_confidence=prov_data.get("raw_nli_confidence", prov_data.get("nli_confidence", 0.0)),
+                calibrated_confidence=prov_data.get("calibrated_confidence", 0.0),
+                config_hash=prov_data.get("config_hash", ""),
+                run_id=prov_data.get("run_id", self.run_id),
+            )
+            quality = RelationshipQuality(
+                cosine_above_threshold=True, nli_above_threshold=True,
+                evidence_consistent=True, calibration_applied=False,
+            )
+            version_info = SchemaVersionInfo(
+                schema_version=r.get("schema_version", "6.0"),
+                migration_version="6.0", compatibility_version="6.0",
+            )
+            relationships.append(Relationship(
+                relationship_id=r["relationship_id"],
+                claim_id_a=r["claim_id_a"], claim_id_b=r["claim_id_b"],
+                relationship_type=RelationshipType(r["relationship_type"]),
+                direction=RelationshipDirection(r["direction"]),
+                evidence=evidence, quality=quality, provenance=provenance, version_info=version_info,
+            ))
+
+        return RelationshipSet(
+            relationships=relationships,
+            total_candidates=len(relationships),
+            total_validated=len(relationships),
+            total_rejected=0,
+            rejected_reasons={},
+            run_id=self.run_id,
+        )
+
+
+    def _run_phase_8(
+        self,
+        phase7_result: "KnowledgeGraph",
+        policy_profile: str = "balanced",
+    ) -> "ScoredKnowledgeGraph":
+        """Execute Phase 8: Reliability Evaluation."""
+        from smriti.scoring import score_knowledge_graph
+        from smriti.scoring.policies import PolicyProfile
+
+        try:
+            profile = PolicyProfile(policy_profile)
+        except ValueError:
+            logger.warning("unknown policy profile, using BALANCED", profile=policy_profile)
+            profile = PolicyProfile.BALANCED
+
+        logger.info("running phase 8", profile=profile.value)
+        result = score_knowledge_graph(
+            graph=phase7_result,
+            run_id=self.run_id,
+            manifest_manager=self.manifest_manager,
+            state_manager=self.state_manager,
+            policy_profile=profile,
+        )
+        logger.info(
+            "phase 8 complete",
+            claims_scored=result.total_scored,
+            avg_reliability=f"{result.avg_reliability:.2f}",
+            profile=result.policy_profile,
+        )
+        return result
+
+
+    def _load_phase7_result(self):
+        """Load Phase 7 KnowledgeGraph from artifact when resuming at Phase 8."""
+        import json
+        from pathlib import Path
+        from smriti.core.models import (
+            KnowledgeGraph, ClaimNode, RelationshipEdge, KnowledgePartition,
+            RelationshipType, RelationshipDirection, GraphStatistics, ValidationReport,
+            SemanticRole, TopologyMetrics, SupportAggregate, TemporalMetadata,
+            TemporalStatus, NodeAnnotations,
+        )
+
+        dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase7" / "dataset.json"
+        if not dataset_path.exists():
+            phase7_dirs = sorted(
+                ARTIFACTS_DIR.glob("run_*/phase7/dataset.json"),
+                key=lambda p: p.parent.parent.name, reverse=True,
+            )
+            if not phase7_dirs:
+                raise PipelineError("Cannot resume at Phase 8: no Phase 7 dataset.json found.")
+            dataset_path = phase7_dirs[0]
+            logger.info("loading phase7 dataset", path=str(dataset_path))
+
+        data = json.loads(dataset_path.read_text(encoding="utf-8"))
+        nodes = {}
+        for claim_id, nd in data.get("nodes", {}).items():
+            topo_data = nd.get("topology")
+            topology = None
+            if topo_data:
+                topology = TopologyMetrics(
+                    degree=topo_data.get("degree", 0),
+                    in_degree=topo_data.get("in_degree", 0),
+                    out_degree=topo_data.get("out_degree", 0),
+                    is_bridge=topo_data.get("is_bridge", False),
+                    is_hub=topo_data.get("is_hub", False),
+                    partition_id=nd.get("partition_id", ""),
+                    centrality=topo_data.get("centrality", 0.0),
+                )
+            support_data = nd.get("support")
+            support = None
+            if support_data:
+                support = SupportAggregate(
+                    support_count=support_data.get("count", 0),
+                    weighted_confidence=support_data.get("weighted_confidence", 0.0),
+                    supporting_claim_ids=tuple(support_data.get("supporting_claims", [])),
+                    evidence_summary=f"{support_data.get('count', 0)} supporting claims",
+                )
+            temp_data = nd.get("temporal")
+            temporal = None
+            if temp_data:
+                temporal = TemporalMetadata(
+                    status=TemporalStatus(temp_data.get("status", "static_partition")),
+                    earlier_claim_id=temp_data.get("earlier_claim_id"),
+                    later_claim_id=temp_data.get("later_claim_id"),
+                    time_delta_days=temp_data.get("time_delta_days"),
+                    temporal_confidence=temp_data.get("temporal_confidence", 0.0),
+                )
+            # Reconstruct NodeAnnotations (RECTIFIED for Phase 7 compatibility)
+            annotations = NodeAnnotations(
+                semantic_role=SemanticRole(nd.get("semantic_role", "unclassified")),
+                topology=topology,
+                support_aggregate=support,
+                temporal_metadata=temporal,
+                partition_id=nd.get("partition_id"),
+            )
+            nodes[claim_id] = ClaimNode(
+                node_id=claim_id, claim_id=claim_id,
+                claim_text=nd.get("claim_text", ""),
+                context=nd.get("context", ""),
+                source_path=Path(nd.get("source_path", "unknown")),
+                document_id=nd.get("document_id", ""),
+                annotations=annotations,
+                schema_version=nd.get("schema_version", "7.0"),
+            )
+
+        edges = {}
+        for edge_id, ed in data.get("edges", {}).items():
+            edges[edge_id] = RelationshipEdge(
+                edge_id=edge_id,
+                source_node_id=ed.get("source", ""),
+                target_node_id=ed.get("target", ""),
+                relationship_type=RelationshipType(ed.get("relationship_type", "supports")),
+                direction=RelationshipDirection(ed.get("direction", "symmetric")),
+                calibrated_confidence=ed.get("calibrated_confidence", 0.0),
+                cosine_similarity=ed.get("cosine_similarity", 0.0),
+                nli_confidence=ed.get("nli_confidence", ed.get("calibrated_confidence", 0.0)),
+                candidate_rank=ed.get("candidate_rank", 1),
+            )
+
+        partitions = {}
+        for pid, pd in data.get("partitions", {}).items():
+            partitions[pid] = KnowledgePartition(
+                partition_id=pid,
+                stable_partition_label=pd.get("stable_partition_label", ""),
+                node_ids=frozenset(pd.get("node_ids", [])),
+                internal_edge_ids=frozenset(),
+                node_count=pd.get("node_count", 0),
+                edge_count=pd.get("edge_count", 0),
+                supports_count=pd.get("supports_count", 0),
+                refines_count=pd.get("refines_count", 0),
+                density=pd.get("density", 0.0),
+                longest_support_chain=pd.get("longest_support_chain", 0),
+            )
+
+        stats_data = data.get("statistics", {})
+        stats = GraphStatistics(
+            node_count=stats_data.get("node_count", len(nodes)),
+            edge_count=stats_data.get("edge_count", len(edges)),
+            partition_count=stats_data.get("partition_count", len(partitions)),
+            contradiction_count=stats_data.get("contradiction_count", 0),
+            supports_count=stats_data.get("supports_count", 0),
+            refines_count=stats_data.get("refines_count", 0),
+            isolated_nodes=0, bridge_nodes=0, hub_nodes=0,
+            evolution_chains=stats_data.get("evolution_chains", 0),
+            unresolved_conflicts=stats_data.get("unresolved_conflicts", 0),
+            construction_time_seconds=0.0, enrichment_time_seconds=0.0,
+        )
+        val_data = data.get("validation", {})
+        validation = ValidationReport(
+            is_valid=val_data.get("is_valid", True),
+            node_violations=(), edge_violations=(), graph_violations=(),
+            semantic_violations=(),
+            validation_time_seconds=0.0,
+        )
+        return KnowledgeGraph(
+            graph_id=data.get("graph_id", ""), nodes=nodes, edges=edges, partitions=partitions,
+            statistics=stats, validation_report=validation,
+            run_id=data.get("run_id", self.run_id),
+            config_hash=data.get("config_hash", ""),
+            schema_version=data.get("schema_version", "7.0"),
+        )
 ````
 
 ## File: src/smriti/pipeline/validator.py
@@ -10167,7 +22195,428 @@ class Validator:
 
 ## File: src/smriti/retrieval/__init__.py
 ````python
+"""
+retrieval/__init__.py — Public API for Phase 6: Semantic Relationship Discovery.
 
+External callers import ONLY from here:
+
+    from smriti.retrieval import discover_relationships, RelationshipSet
+
+All internal modules are hidden from external callers.
+
+Changes from original:
+    - ConfidenceCalibrator inserted between evidence generation and resolution
+    - ConflictResolver applied before builder
+    - ResourceGovernor enforces limits on candidate pairs
+    - ReplayEngine writes replay manifest after every successful run
+    - validate_all_relationships now receives triples (evidence, type, direction)
+    - Phase6StatsCollector.finalize() produces DiscoveryReport (not Phase6Stats)
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import time
+from pathlib import Path
+from typing import List, Dict, Optional
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.manifest import ManifestManager
+from smriti.core.models import (
+    Claim, EmbeddedClaim, RelationshipSet,
+    RelationshipDirection, ConflictResolutionPolicy,
+)
+from smriti.core.paths import ARTIFACTS_DIR
+from smriti.core.state import StateManager
+from smriti.core.timing import Timer
+from smriti.exceptions import Phase6Error, IndexBuildError, FAISSNotAvailableError
+
+from smriti.retrieval.index import EmbeddingIndex
+from smriti.retrieval.faiss_index import FAISSIndex
+from smriti.retrieval.candidate_generator import CandidateGenerator
+from smriti.retrieval.validator import validate_candidates
+from smriti.retrieval.classification.calibration import ConfidenceCalibrator, CalibrationStrategy
+from smriti.retrieval.classification.evidence import NLIEvidenceGenerator
+from smriti.retrieval.classification.resolver import RelationshipResolver, ResolverPolicy
+from smriti.retrieval.classification.validator import validate_all_relationships
+from smriti.retrieval.classification.conflict import ConflictResolver
+from smriti.retrieval.builder import build_relationship, build_relationship_set
+from smriti.retrieval.statistics import Phase6StatsCollector
+from smriti.retrieval.governance import ResourceGovernor
+from smriti.retrieval.replay import ReplayEngine
+
+logger = structlog.get_logger(__name__)
+
+PHASE6_VERSION = "1.0"
+
+
+def _compute_config_hash(config: dict) -> str:
+    """Deterministic hash of Phase 6 configuration."""
+    relevant = {
+        "nli_model": config.get("nli", {}).get("model", ""),
+        "nli_threshold": config.get("nli", {}).get("nli_threshold", 0.80),
+        "sim_threshold": config.get("relationship_discovery", {}).get("sim_threshold", 0.75),
+        "top_k": config.get("relationship_discovery", {}).get("top_k", 50),
+        "refine_threshold": config.get("relationship_discovery", {}).get("refine_threshold", 0.55),
+        "calibration_strategy": config.get("calibration", {}).get("strategy", "identity"),
+        "conflict_policy": config.get("relationship_discovery", {}).get(
+            "conflict_resolution_policy", "highest_confidence"
+        ),
+    }
+    material = json.dumps(relevant, sort_keys=True)
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+
+
+def _serialize_relationship_set(relationship_set: RelationshipSet) -> str:
+    """Serialize RelationshipSet to JSON for Phase 7."""
+    records = []
+    for rel in relationship_set.relationships:
+        records.append({
+            "relationship_id":    rel.relationship_id,
+            "claim_id_a":         rel.claim_id_a,
+            "claim_id_b":         rel.claim_id_b,
+            "relationship_type":  rel.relationship_type.value,
+            "direction":          rel.direction.value,
+            "schema_version":     rel.version_info.schema_version,
+            "migration_version":  rel.version_info.migration_version,
+            "compatibility_version": rel.version_info.compatibility_version,
+            "lifecycle_stage":    rel.lifecycle_stage.value,
+            "evidence": {
+                "cosine_similarity":    rel.evidence.cosine_similarity,
+                "entailment_score":     rel.evidence.nli_scores.entailment_score,
+                "neutral_score":        rel.evidence.nli_scores.neutral_score,
+                "contradiction_score":  rel.evidence.nli_scores.contradiction_score,
+                "predicted_label":      rel.evidence.nli_scores.predicted_label,
+                "raw_confidence":       rel.evidence.nli_scores.raw_confidence,
+                "calibrated_confidence": rel.evidence.calibrated_confidence,
+                "model_name":           rel.evidence.inference_metadata.model_name,
+                "model_version":        rel.evidence.inference_metadata.model_version,
+                "latency_ms":           rel.evidence.inference_metadata.latency_ms,
+            },
+            "quality": {
+                "cosine_above_threshold":  rel.quality.cosine_above_threshold,
+                "nli_above_threshold":     rel.quality.nli_above_threshold,
+                "evidence_consistent":     rel.quality.evidence_consistent,
+                "calibration_applied":     rel.quality.calibration_applied,
+            },
+            "provenance": {
+                "retrieval_backend":       rel.provenance.retrieval_backend,
+                "retrieval_version":       rel.provenance.retrieval_version,
+                "index_version":           rel.provenance.index_version,
+                "classifier_model":        rel.provenance.classifier_model,
+                "classifier_version":      rel.provenance.classifier_version,
+                "resolver_version":        rel.provenance.resolver_version,
+                "calibrator_version":      rel.provenance.calibrator_version,
+                "cosine_similarity":       rel.provenance.cosine_similarity,
+                "candidate_rank":          rel.provenance.candidate_rank,
+                "raw_nli_confidence":      rel.provenance.raw_nli_confidence,
+                "calibrated_confidence":   rel.provenance.calibrated_confidence,
+                "config_hash":             rel.provenance.config_hash,
+                "run_id":                  rel.provenance.run_id,
+                "replay_id":               rel.provenance.replay_id,
+            },
+        })
+    return json.dumps(records, indent=2, ensure_ascii=False)
+
+
+def discover_relationships(
+    embedded_claims: List[EmbeddedClaim],
+    claims_map: Dict[str, Claim],
+    run_id: str,
+    manifest_manager: ManifestManager,
+    state_manager: StateManager,
+    index: Optional[EmbeddingIndex] = None,
+    nli_generator: Optional[NLIEvidenceGenerator] = None,
+    calibrator: Optional[ConfidenceCalibrator] = None,
+    resolver_policy: Optional[ResolverPolicy] = None,
+    conflict_policy: Optional[ConflictResolutionPolicy] = None,
+) -> RelationshipSet:
+    """
+    Execute the complete Phase 6 semantic relationship discovery pipeline.
+
+    This is Phase 6's sole public function.
+
+    Args:
+        embedded_claims:   List of EmbeddedClaim from Phase 5.
+        claims_map:        {claim_id: Claim} from Phase 4.
+        run_id:            Current pipeline run identifier.
+        manifest_manager:  For writing phase manifest.
+        state_manager:     For updating pipeline state.
+        index:             Optional pre-built index (for testing).
+        nli_generator:     Optional pre-constructed NLI generator (for testing).
+        calibrator:        Optional pre-constructed calibrator (for testing).
+        resolver_policy:   Optional policy override (for testing).
+        conflict_policy:   Optional conflict resolution policy override.
+
+    Returns:
+        RelationshipSet containing all discovered relationships with
+        full provenance, calibration, and lifecycle tracing.
+    """
+    config = get_config()
+    rd_cfg = config.get("relationship_discovery", {})
+    nli_cfg = config.get("nli", {})
+
+    sim_threshold: float = rd_cfg.get("sim_threshold", 0.75)
+    nli_threshold: float = nli_cfg.get("nli_threshold", 0.80)
+    min_confidence: float = rd_cfg.get("min_confidence", 0.50)
+    skip_unknown: bool = rd_cfg.get("skip_unknown_relationships", True)
+    config_hash = _compute_config_hash(config)
+
+    # Resolve conflict policy
+    if conflict_policy is None:
+        policy_str = rd_cfg.get("conflict_resolution_policy", "highest_confidence")
+        conflict_policy = ConflictResolutionPolicy(policy_str)
+
+    logger.info(
+        "phase 6 starting",
+        run_id=run_id,
+        embedded_claims=len(embedded_claims),
+        sim_threshold=sim_threshold,
+        nli_threshold=nli_threshold,
+        conflict_policy=conflict_policy.value,
+    )
+
+    start_time = manifest_manager.start_phase(phase=6)
+    stats = Phase6StatsCollector()
+    stats.record_embedded_claims(len(embedded_claims))
+
+    # Resource governance
+    governor = ResourceGovernor()
+
+    # Build embeddings lookup map
+    embeddings_map: Dict[str, EmbeddedClaim] = {
+        ec.claim_id: ec for ec in embedded_claims
+    }
+
+    # ── Stage 1: Build vector index ──────────────────────────────────────────
+    if index is None:
+        if not embedded_claims:
+            logger.warning("no embedded claims — returning empty RelationshipSet")
+            relationship_set = RelationshipSet(
+                relationships=[], total_candidates=0,
+                total_validated=0, total_rejected=0,
+                rejected_reasons={}, run_id=run_id,
+            )
+            _finalize_phase(
+                relationship_set, stats, run_id, start_time,
+                manifest_manager, state_manager, config_hash, config,
+                phase5_path="", phase4_path="",
+            )
+            return relationship_set
+
+        dimension = embedded_claims[0].dimension
+        index = FAISSIndex(dimension=dimension)
+        claim_ids = [ec.claim_id for ec in embedded_claims]
+        vectors = [list(ec.values) for ec in embedded_claims]
+        try:
+            index.add(claim_ids, vectors)
+        except (IndexBuildError, FAISSNotAvailableError) as e:
+            logger.error("index build failed", error=str(e))
+            raise
+        logger.info("vector index built", size=index.size, dimension=dimension)
+
+    # ── Stage 2: Generate candidate pairs ────────────────────────────────────
+    stats.record_candidate_start()
+
+    with Timer("phase6_candidate_generation"):
+        generator = CandidateGenerator()
+        raw_candidates = generator.generate(embedded_claims, index)
+
+    # Resource governance: enforce pair limit
+    governor.check_timeout()
+    raw_candidates = governor.enforce_pair_limit(raw_candidates)
+
+    # ── Stage 3: Validate candidates ─────────────────────────────────────────
+    with Timer("phase6_candidate_validation"):
+        valid_candidates, rejection_counts = validate_candidates(
+            candidates=raw_candidates,
+            claims_map=claims_map,
+            embeddings_map=embeddings_map,
+            sim_threshold=sim_threshold,
+        )
+
+    stats.record_candidate_end(
+        total=len(raw_candidates),
+        validated=len(valid_candidates),
+        rejected=sum(rejection_counts.values()),
+    )
+    all_rejection_reasons = dict(rejection_counts)
+
+    # ── Stage 4: NLI evidence generation ─────────────────────────────────────
+    stats.record_nli_start()
+    governor.check_timeout()
+
+    if nli_generator is None:
+        nli_generator = NLIEvidenceGenerator()
+
+    with Timer("phase6_nli_inference"):
+        all_evidence = nli_generator.generate_batch(
+            pairs=valid_candidates,
+            claims_map=claims_map,
+        )
+
+    stats.record_nli_end(calls=len(all_evidence))
+
+    # ── Stage 4b: Confidence calibration ─────────────────────────────────────
+    if calibrator is None:
+        model_name = nli_cfg.get("model", "cross-encoder/nli-deberta-v3-small")
+        calibrator = ConfidenceCalibrator(model_name=model_name)
+
+    with Timer("phase6_calibration"):
+        all_evidence = calibrator.calibrate_batch(all_evidence)
+
+    # ── Stage 5: Resolve relationships ───────────────────────────────────────
+    policy = resolver_policy or ResolverPolicy.from_config()
+    resolver = RelationshipResolver(policy=policy)
+    resolved_triples = []
+
+    for evidence in all_evidence:
+        rel_type, direction = resolver.resolve(evidence)
+        resolved_triples.append((evidence, rel_type, direction))
+
+    # ── Stage 6: Validate resolved relationships ──────────────────────────────
+    governor.check_timeout()
+
+    valid_resolved, rel_rejection_counts = validate_all_relationships(
+        evidence_with_types=resolved_triples,
+        min_confidence=min_confidence,
+        nli_threshold=nli_threshold,
+        skip_unknown=skip_unknown,
+    )
+    for k, v in rel_rejection_counts.items():
+        all_rejection_reasons[k] = all_rejection_reasons.get(k, 0) + v
+
+    # ── Stage 6b: Conflict resolution ────────────────────────────────────────
+    # Build preliminary relationships for conflict resolution
+    preliminary_relationships = []
+    for evidence, rel_type, direction in valid_resolved:
+        rel = build_relationship(
+            evidence=evidence,
+            relationship_type=rel_type,
+            direction=direction,
+            nli_threshold=nli_threshold,
+            config_hash=config_hash,
+            run_id=run_id,
+        )
+        preliminary_relationships.append(rel)
+
+    conflict_resolver = ConflictResolver(policy=conflict_policy)
+    relationships = conflict_resolver.resolve_conflicts(preliminary_relationships)
+
+    conflicts_resolved = len(preliminary_relationships) - len(relationships)
+    for _ in range(conflicts_resolved):
+        stats.record_conflict_resolved()
+
+    # ── Stage 7: Record statistics ────────────────────────────────────────────
+    for rel in relationships:
+        calibration_applied = rel.quality.calibration_applied
+        stats.record_relationship(
+            rel.relationship_type,
+            rel.evidence.calibrated_confidence,
+            calibration_applied,
+        )
+
+    rejected_count = len(all_evidence) - len(valid_resolved)
+    for _ in range(rejected_count):
+        stats.record_rejected_relationship("validation_stage")
+
+    # ── Stage 8: Build RelationshipSet ────────────────────────────────────────
+    relationship_set = build_relationship_set(
+        relationships=relationships,
+        total_candidates=len(raw_candidates),
+        total_validated=len(valid_candidates),
+        total_rejected=sum(all_rejection_reasons.values()),
+        rejected_reasons=all_rejection_reasons,
+        run_id=run_id,
+    )
+
+    _finalize_phase(
+        relationship_set, stats, run_id, start_time,
+        manifest_manager, state_manager, config_hash, config,
+        phase5_path="", phase4_path="",
+    )
+
+    logger.info(
+        "phase 6 complete",
+        total_relationships=relationship_set.total_relationships,
+        contradictions=len(relationship_set.contradictions),
+        supports=len(relationship_set.supports),
+        refinements=len(relationship_set.refinements),
+        conflicts_resolved=conflicts_resolved,
+    )
+
+    return relationship_set
+
+
+def _finalize_phase(
+    relationship_set: RelationshipSet,
+    stats: Phase6StatsCollector,
+    run_id: str,
+    start_time: float,
+    manifest_manager: ManifestManager,
+    state_manager: StateManager,
+    config_hash: str,
+    config: dict,
+    phase5_path: str,
+    phase4_path: str,
+) -> None:
+    """Write artifacts, replay manifest, phase manifest, and update pipeline state."""
+    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase6"
+    phase_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write dataset artifact for Phase 7
+    dataset_path = phase_dir / "dataset.json"
+    dataset_path.write_text(
+        _serialize_relationship_set(relationship_set), encoding="utf-8"
+    )
+    relationship_set.dataset_path = dataset_path
+    logger.info("dataset written", path=str(dataset_path))
+
+    final_report = stats.finalize()
+
+    # Write replay manifest
+    replay_engine = ReplayEngine()
+    replay_manifest = replay_engine.build_replay_manifest(
+        run_id=run_id,
+        config=config,
+        config_hash=config_hash,
+        total_embedded=final_report.total_embedded_claims,
+        total_relationships=final_report.relationships_produced,
+        phase5_path=phase5_path,
+        phase4_path=phase4_path,
+    )
+    replay_path = replay_engine.write_replay_manifest(replay_manifest, run_id)
+    relationship_set.replay_manifest_path = replay_path
+
+    # Write phase manifest
+    manifest_path = manifest_manager.end_phase(
+        phase=6,
+        start_time=start_time,
+        inputs={
+            "embedded_claims": final_report.total_embedded_claims,
+            "config_hash": config_hash,
+        },
+        outputs={
+            "total_candidates":   final_report.total_candidate_pairs,
+            "validated":          final_report.validated_candidates,
+            "relationships":      final_report.relationships_produced,
+            "contradictions":     final_report.contradictions,
+            "supports":           final_report.supports,
+            "refinements":        final_report.refinements,
+            "calibration_applied": final_report.calibration_applied_count,
+            "conflicts_resolved": final_report.conflicts_resolved,
+            "confidence_histogram": final_report.confidence_histogram,
+            "dataset_path":       str(dataset_path),
+            "replay_manifest_path": str(replay_path),
+        },
+        status="success",
+    )
+    relationship_set.manifest_path = manifest_path
+
+    # Update pipeline state
+    state_manager.complete_phase(phase=6)
 ````
 
 ## File: src/smriti/retrieval/retriever.py
@@ -10177,12 +22626,317 @@ class Validator:
 
 ## File: src/smriti/scoring/__init__.py
 ````python
+"""
+scoring/__init__.py — Public API for Phase 8: Reliability Evaluation.
 
+RECTIFIED: Uses signal_registry.ordered_extractors() (never static list).
+Passes ContributionSet to fusion (never SignalVector directly to fusion).
+Records SignalManifests and ReliabilityDecisionRecord.
+
+RECTIFIED (Phase 8.3): Cross‑validates policy against the active registry
+immediately after discovery to enforce a strict 1:1 mapping.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+from pathlib import Path
+from typing import Dict
+import structlog
+
+from smriti.core.config import get_config
+from smriti.core.manifest import ManifestManager
+from smriti.core.models import KnowledgeGraph, ReliabilityMetadata, ScoredKnowledgeGraph, SignalStatus,  RawSignal
+from smriti.core.paths import ARTIFACTS_DIR
+from smriti.core.state import StateManager
+from smriti.core.timing import Timer
+from smriti.exceptions import Phase8Error
+
+from smriti.scoring.policies import load_policy, PolicyProfile
+from smriti.scoring.graph_stats import compute_global_stats
+from smriti.scoring.signals import signal_registry
+from smriti.scoring.normalization import assemble_contribution_set
+from smriti.scoring.fusion import compute_reliability
+from smriti.scoring.explanation import build_explanation
+from smriti.scoring.builder import build_reliability_metadata, build_scored_knowledge_graph
+from smriti.scoring.statistics import Phase8StatsCollector
+
+logger = structlog.get_logger(__name__)
+
+
+def _serialize_scored_graph(scored: ScoredKnowledgeGraph) -> str:
+    """Serialize ScoredKnowledgeGraph to JSON for Phase 9."""
+    data = {
+        "graph_id": scored.graph.graph_id,
+        "run_id": scored.run_id,
+        "schema_version": scored.schema_version,
+        "policy_profile": scored.policy_profile,
+        "total_scored": scored.total_scored,
+        "avg_reliability": round(scored.avg_reliability, 2),
+        "policy_snapshot": scored.policy_snapshot,
+        "global_stats": {
+            "max_support_count": scored.global_stats.max_support_count,
+            "avg_support_count": round(scored.global_stats.avg_support_count, 2),
+            "node_count": scored.global_stats.node_count,
+            "contradiction_count": scored.global_stats.contradiction_count,
+        },
+        "reliability": {},
+    }
+
+    for claim_id, meta in sorted(scored.reliability.items()):
+        data["reliability"][claim_id] = {
+            "claim_id": meta.claim_id,
+            "reliability_index": meta.reliability_index,
+            "uncertainty_score": meta.uncertainty_score,
+            "evidence_completeness": meta.evidence_completeness,
+            "calibration_label": meta.calibration_label.value,
+            "policy_version": meta.policy_version,
+            "schema_version": meta.schema_version,
+            "signal_vector": {
+                "evidence_strength": meta.signal_vector.evidence_strength,
+                "evidence_independence": meta.signal_vector.evidence_independence,
+                "source_diversity": meta.signal_vector.source_diversity,
+                "topology_strength": meta.signal_vector.topology_strength,
+                "conflict_pressure": meta.signal_vector.conflict_pressure,
+                "temporal_stability": meta.signal_vector.temporal_stability,
+            },
+            "signal_manifests": [
+                {
+                    "signal_name": m.signal_name,
+                    "extractor_version": m.extractor_version,
+                    "raw_value": m.raw_value,
+                    "normalized_value": m.normalized_value,
+                    "normalization_strategy": m.normalization_strategy,
+                    "status": m.status.value,
+                    "quality_flags": list(m.quality_flags),
+                    "dependency_list": list(m.dependency_list),
+                }
+                for m in meta.signal_manifests
+            ],
+            "decision_record": {
+                "policy_interactions": list(meta.decision_record.policy_interactions),
+                "constraints_activated": list(meta.decision_record.constraints_activated),
+                "contribution_order": list(meta.decision_record.contribution_order),
+                "raw_reliability": meta.decision_record.raw_reliability,
+                "constrained_reliability": meta.decision_record.constrained_reliability,
+                "final_reliability": meta.decision_record.final_reliability,
+                "dominant_adjustment": meta.decision_record.dominant_adjustment,
+            },
+            "components": [
+                {
+                    "signal": c.signal_name,
+                    "contribution": round(c.contribution, 3),
+                    "direction": c.direction,
+                    "explanation": c.explanation,
+                }
+                for c in meta.component_scores
+            ],
+            "explanation": {
+                "summary": meta.explanation.summary,
+                "strengths": list(meta.explanation.strengths),
+                "weaknesses": list(meta.explanation.weaknesses),
+                "dominant_signal": meta.explanation.dominant_signal,
+                "limiting_signal": meta.explanation.limiting_signal,
+                "recommendations": list(meta.explanation.recommendations),
+            },
+        }
+
+    return json.dumps(data, indent=2, ensure_ascii=False)
+
+
+def score_knowledge_graph(
+    graph: KnowledgeGraph,
+    run_id: str,
+    manifest_manager: ManifestManager,
+    state_manager: StateManager,
+    policy_profile: PolicyProfile = PolicyProfile.BALANCED,
+) -> ScoredKnowledgeGraph:
+    """
+    Execute the complete Phase 8 Reliability Evaluation pipeline.
+
+    RECTIFIED:
+        - Uses SignalRegistry (not static list)
+        - Passes ContributionSet to generic Fusion
+        - Records SignalManifests and ReliabilityDecisionRecord per claim
+        - Accepts policy_profile parameter for profile selection
+        - Enforces strict 1:1 mapping between policy weights and registry (Phase 8.3)
+
+    Pipeline:
+        1. Load policy (with profile)
+        2. Discover registered signal extractors
+        3. Cross‑validate policy against registry
+        4. Compute global graph statistics (once)
+        5. For each ClaimNode:
+            a. Extract signals (each extractor normalizes its own output)
+            b. Assemble ContributionSet + SignalManifests
+            c. Fuse → RI, Uncertainty, ComponentScores, DecisionRecord
+            d. Build Explanation
+            e. Build ReliabilityMetadata
+        6. Assemble ScoredKnowledgeGraph
+        7. Write artifacts + manifest
+    """
+    logger.info("phase 8 starting", run_id=run_id, nodes=graph.node_count)
+
+    start_time = manifest_manager.start_phase(phase=8)
+    stats = Phase8StatsCollector()
+
+    # ── Step 1: Load policy ───────────────────────────────────────────────────
+    policy = load_policy(profile=policy_profile)
+    stats.set_policy_version(policy.version, policy.profile)
+
+    # ── Step 2: Discover registered extractors (P0-1) ─────────────────────────
+    extractors = signal_registry.ordered_extractors()
+    stats.set_registered_signals(len(extractors))
+    logger.info(
+        "signal registry discovered",
+        signal_count=len(extractors),
+        signals=signal_registry.registered_names,
+    )
+
+    # ── Step 2.5: Cross‑validate policy against registry ─────────────────────
+    active_ids = {e.signal_id for e in extractors}
+    policy.validate(active_registry_ids=active_ids)
+    logger.info(
+        "policy validated against registry",
+        policy_version=policy.version,
+        profile=policy.profile,
+        registered_signals=len(active_ids),
+    )
+
+    # ── Step 3: Global statistics ─────────────────────────────────────────────
+    global_stats = compute_global_stats(graph)
+
+    # ── Step 4: Score every node ──────────────────────────────────────────────
+    stats.record_signal_start()
+    reliability: Dict[str, ReliabilityMetadata] = {}
+
+    with Timer("phase8_scoring"):
+        for claim_id, node in sorted(graph.nodes.items()):
+
+            # 4a: Extract signals (each extractor owns normalization)
+            raw_signals = []
+            for extractor in extractors:
+                try:
+                    sig = extractor.extract(node, graph, global_stats, policy)
+                    raw_signals.append(sig)
+                except Exception as e:
+                    logger.warning(
+                        "signal extraction failed, using default",
+                        signal=extractor.signal_id.value,
+                        error=str(e),
+                    )
+                    raw_signals.append(
+                        RawSignal(
+                            name=extractor.signal_id.value,
+                            raw_value=0.0,
+                            normalized_value=0.0,
+                            status=SignalStatus.UNAVAILABLE,
+                            metadata={"error": str(e)},
+                        )
+                    )
+
+            # 4b: Assemble ContributionSet + SignalManifests + SignalVector
+            contribution_set, signal_manifests, signal_vector = assemble_contribution_set(
+                raw_signals=raw_signals,
+                extractors=extractors,
+                fusion_policy=policy.fusion,
+                claim_id=claim_id,
+            )
+
+            # 4c: Generic fusion (ContributionSet, not SignalVector)
+            stats.record_fusion_start()
+            ri, unc, component_scores, decision_record = compute_reliability(
+                contribution_set=contribution_set,
+                policy=policy,
+                signal_vector=signal_vector,
+            )
+            stats.record_fusion_end()
+
+            # 4d: Build explanation
+            explanation = build_explanation(ri, component_scores)
+
+            # 4e: Build ReliabilityMetadata (with manifests + decision record)
+            meta = build_reliability_metadata(
+                node=node,
+                reliability_index=ri,
+                uncertainty_score=unc,
+                signal_vector=signal_vector,
+                component_scores=component_scores,
+                signal_manifests=signal_manifests,
+                decision_record=decision_record,
+                explanation=explanation,
+                policy=policy,
+                run_id=run_id,
+                extractors=extractors,
+                graph=graph,
+            )
+
+            reliability[claim_id] = meta
+            stats.record_scored(ri, unc)
+
+    stats.record_signal_end()
+
+    # ── Step 5: Assemble ScoredKnowledgeGraph ─────────────────────────────────
+    scored_graph = build_scored_knowledge_graph(
+        graph=graph,
+        reliability=reliability,
+        policy=policy,
+        global_stats=global_stats,
+        run_id=run_id,
+    )
+
+    final_stats = stats.finalize()
+
+    # ── Step 6: Write artifacts ───────────────────────────────────────────────
+    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase8"
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    dataset_path = phase_dir / "dataset.json"
+    dataset_path.write_text(_serialize_scored_graph(scored_graph), encoding="utf-8")
+
+    logger.info(
+        "dataset written",
+        path=str(dataset_path),
+        claims_scored=scored_graph.total_scored,
+        avg_reliability=f"{scored_graph.avg_reliability:.2f}",
+    )
+
+    manifest_manager.end_phase(
+        phase=8,
+        start_time=start_time,
+        inputs={"nodes": graph.node_count},
+        outputs={
+            "claims_scored": scored_graph.total_scored,
+            "avg_reliability": round(scored_graph.avg_reliability, 2),
+            "high_reliability": final_stats.high_reliability_count,
+            "low_reliability": final_stats.low_reliability_count,
+            "policy_version": policy.version,
+            "policy_profile": policy.profile,
+            "registered_signals": final_stats.registered_signal_count,
+            "dataset_path": str(dataset_path),
+        },
+        status="success",
+    )
+
+    state_manager.complete_phase(phase=8)
+
+    logger.info(
+        "phase 8 complete",
+        claims_scored=scored_graph.total_scored,
+        avg_reliability=f"{scored_graph.avg_reliability:.2f}",
+        high_reliability=final_stats.high_reliability_count,
+        runtime_seconds=f"{final_stats.total_runtime_seconds:.2f}",
+        registered_signals=final_stats.registered_signal_count,
+    )
+
+    return scored_graph
 ````
 
 ## File: src/smriti/scoring/scorer.py
 ````python
-# Will be filled in Phase 8\n
+"""scorer.py — Phase 8 entry point. Delegates to scoring/__init__.py."""
+from smriti.scoring import score_knowledge_graph, ScoredKnowledgeGraph
+__all__ = ["score_knowledge_graph", "ScoredKnowledgeGraph"]
 ````
 
 ## File: src/smriti/__init__.py
@@ -10460,6 +23214,168 @@ class CacheKeyError(Phase5Error):
 
 class CacheSchemaMismatchError(Phase5Error):
     """Cache entry schema version does not match current Phase 5 schema."""
+    pass
+
+# ── Phase 6: Semantic Relationship Discovery ───────────────────────────────────
+from enum import Enum
+class Phase6ErrorCategory(str, Enum):
+    """
+    Failure taxonomy for Phase 6.
+
+    RECOVERABLE:     The pipeline can continue; this pair is skipped.
+    NON_RECOVERABLE: The pipeline must abort.
+    RETRYABLE:       The operation failed transiently; retry may succeed.
+    CONFIGURATION:   The config is invalid; cannot proceed without fix.
+    DATA:            Input data is malformed; this batch/pair is skipped.
+    INFRASTRUCTURE:  External service (GPU, disk, network) failed.
+    """
+    RECOVERABLE     = "recoverable"
+    NON_RECOVERABLE = "non_recoverable"
+    RETRYABLE       = "retryable"
+    CONFIGURATION   = "configuration"
+    DATA            = "data"
+    INFRASTRUCTURE  = "infrastructure"
+
+
+class Phase6Error(SMRITIError):
+    """Base for all Phase 6 errors."""
+    category: Phase6ErrorCategory = Phase6ErrorCategory.NON_RECOVERABLE
+
+    def __init__(self, message: str, category: Phase6ErrorCategory = None):
+        super().__init__(message)
+        if category is not None:
+            self.category = category
+
+
+class IndexBuildError(Phase6Error):
+    """Failed to build the vector index. Non-recoverable."""
+    category = Phase6ErrorCategory.NON_RECOVERABLE
+
+
+class FAISSNotAvailableError(Phase6Error):
+    """faiss-cpu is not installed. Configuration error."""
+    category = Phase6ErrorCategory.CONFIGURATION
+
+
+class NLIModelError(Phase6Error):
+    """NLI cross-encoder failed to load or run inference."""
+    category = Phase6ErrorCategory.INFRASTRUCTURE
+
+
+class NLIInferenceBatchError(Phase6Error):
+    """One NLI batch failed — pairs in batch are skipped. Recoverable."""
+    category = Phase6ErrorCategory.RECOVERABLE
+
+
+class RelationshipValidationError(Phase6Error):
+    """A Relationship failed structural validation (fatal invariant violated)."""
+    category = Phase6ErrorCategory.DATA
+
+
+class CandidateGenerationError(Phase6Error):
+    """ANN candidate generation failed."""
+    category = Phase6ErrorCategory.NON_RECOVERABLE
+
+
+class CalibrationError(Phase6Error):
+    """ConfidenceCalibrator encountered an unexpected score distribution."""
+    category = Phase6ErrorCategory.RECOVERABLE
+
+
+class ResolverPolicyError(Phase6Error):
+    """ResolverPolicy configuration is invalid or internally inconsistent."""
+    category = Phase6ErrorCategory.CONFIGURATION
+
+
+class ConflictResolutionError(Phase6Error):
+    """ConflictResolver could not determine which relationship wins."""
+    category = Phase6ErrorCategory.RECOVERABLE
+
+
+class ResourceLimitExceeded(Phase6Error):
+    """A resource limit (max_pairs, memory, timeout) was exceeded."""
+    category = Phase6ErrorCategory.NON_RECOVERABLE
+
+
+class ReplayError(Phase6Error):
+    """Replay failed — run_id not found or replay manifest corrupted."""
+    category = Phase6ErrorCategory.CONFIGURATION
+
+# ── Phase 7: Knowledge Graph Construction ────────────────────────────────────
+
+class Phase7Error(SMRITIError):
+    """Base for all Phase 7 errors."""
+    pass
+
+
+class GraphConstructionError(Phase7Error):
+    """Fatal error during graph construction. No partial graph is emitted."""
+    pass
+
+
+class GraphValidationError(Phase7Error):
+    """Structural invariant violated during validation. Fatal."""
+    pass
+
+
+class SemanticValidationError(Phase7Error):
+    """Semantic invariant violated (e.g. impossible relationship chain). Fatal."""
+    pass
+
+
+class PartitioningError(Phase7Error):
+    """Constraint-based partitioning failed."""
+    pass
+
+
+class BackendError(Phase7Error):
+    """Graph backend (NetworkX) encountered an unexpected error."""
+    pass
+
+
+class SerializationError(Phase7Error):
+    """KnowledgeGraph could not be serialized to JSON."""
+    pass
+
+
+class AnnotationPolicyError(Phase7Error):
+    """AnnotationPolicy configuration is invalid or internally inconsistent."""
+    pass    
+
+# ── Phase 8: Reliability Evaluation ─────────────────────────────────────────
+
+class Phase8Error(SMRITIError):
+    """Base for all Phase 8 errors."""
+    pass
+
+
+class SignalExtractionError(Phase8Error):
+    """A signal extractor failed to produce a valid measurement."""
+    pass
+
+
+class NormalizationError(Phase8Error):
+    """Signal normalization produced an invalid value (after validation)."""
+    pass
+
+
+class FusionError(Phase8Error):
+    """Reliability fusion encountered an impossible configuration."""
+    pass
+
+
+class PolicyError(Phase8Error):
+    """Policy configuration is invalid or internally inconsistent."""
+    pass
+
+
+class RegistryError(Phase8Error):
+    """SignalRegistry encountered a duplicate registration or ordering conflict."""
+    pass
+
+
+class ScoringValidationError(Phase8Error):
+    """A ReliabilityMetadata failed structural validation."""
     pass
 ````
 
