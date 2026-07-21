@@ -18,6 +18,8 @@ from smriti.core.manifest import ManifestManager
 from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.exceptions import PipelineError, Phase5Error
+from smriti.api import KnowledgeAccessService, run_api_initialization
+from smriti.governance import stable
 
 logger = structlog.get_logger(__name__)
 
@@ -26,7 +28,7 @@ def _make_run_id() -> str:
     """Produce a timestamp-based run_id. Unique per execution."""
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
-
+@stable("1.0")
 class PipelineRunner:
     """
     Orchestrates pipeline phases.
@@ -139,9 +141,21 @@ class PipelineRunner:
             if start_from <= 8 and (stop_at is None or stop_at >= 8):
                 if phase7_result is None:
                     phase7_result = self._load_phase7_result()
-                phase8_result = self._run_phase_8(phase7_result)     
+                phase8_result = self._run_phase_8(phase7_result) 
 
-            # Phases 9–13 will be registered here as they are built.
+            phase9_api = None
+            if start_from <= 9 and (stop_at is None or stop_at >= 9):
+                if phase8_result is None:
+                    phase8_result = self._load_phase8_result()
+                phase9_api = self._run_phase_9(phase8_result)   
+
+            if start_from <= 10 and (stop_at is None or stop_at >= 10):
+                 self._run_phase_10(phase9_api)
+
+            if start_from <= 11 and (stop_at is None or stop_at >= 11):
+                self._run_phase_11()     
+
+            # Phases 12 will be registered here as they are built.
 
         except Exception as e:
             logger.error("pipeline failed", error=str(e), exc_info=True)
@@ -951,3 +965,239 @@ class PipelineRunner:
             config_hash=data.get("config_hash", ""),
             schema_version=data.get("schema_version", "7.0"),
         )
+    
+    def _run_phase_9(self, phase8_result: "ScoredKnowledgeGraph") -> "KnowledgeAccessService":
+        """Execute Phase 9: Knowledge Access Layer initialization."""
+        from smriti.api import run_api_initialization
+
+        logger.info("running phase 9")
+        api = run_api_initialization(
+            scored_graph=phase8_result,
+            run_id=self.run_id,
+            manifest_manager=self.manifest_manager,
+            state_manager=self.state_manager,
+        )
+        logger.info(
+            "phase 9 complete",
+            nodes_indexed=api.node_count,
+            api_version=api.api_version,
+        )
+        return api
+    
+    def _run_phase_10(self, knowledge_api) -> None:
+        """
+        Phase 10: Prepare and register the Streamlit dashboard.
+
+        Writes phase10/dashboard_info.json and phase10/manifest.json.
+        Dashboard is launched separately (blocking Streamlit inside runner is wrong).
+        """
+        import json
+
+        logger.info("phase 10 starting — registering dashboard")
+        start_time = self.manifest_manager.start_phase(phase=10)
+
+        phase_dir = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase10"
+        phase_dir.mkdir(parents=True, exist_ok=True)
+
+        dashboard_info = {
+            "run_id":          self.run_id,
+            "api_version":     getattr(knowledge_api, "api_version", "1.0"),
+            "nodes_indexed":   getattr(knowledge_api, "node_count", 0),
+            "dashboard_entry": "src/smriti/dashboard/app.py",
+            "command":         "poetry run streamlit run src/smriti/dashboard/app.py",
+        }
+        info_path = phase_dir / "dashboard_info.json"
+        info_path.write_text(json.dumps(dashboard_info, indent=2))
+
+        self.manifest_manager.end_phase(
+            phase=10,
+            start_time=start_time,
+            inputs={"knowledge_api_nodes": getattr(knowledge_api, "node_count", 0)},
+            outputs={
+                "dashboard_info": str(info_path),
+                "command":        dashboard_info["command"],
+            },
+            status="success",
+        )
+        self.state_manager.complete_phase(phase=10)
+
+        logger.info("phase 10 complete", dashboard_command=dashboard_info["command"])
+        print("\n" + "=" * 60)
+        print("SMRITI Dashboard Ready")
+        print("=" * 60)
+        print(f"Run ID: {self.run_id}")
+        print(f"Nodes indexed: {getattr(knowledge_api, 'node_count', 0)}")
+        print(f"\nTo launch the dashboard:")
+        print(f"  {dashboard_info['command']}")
+        print("=" * 60 + "\n")
+
+
+    def _run_phase_11(self) -> None:
+        """
+        Execute Phase 11: Operational Runtime & Engineering Infrastructure.
+
+        RECTIFIED: Now uses OperationalContext + EventBus + CapabilityModel + RuntimeScheduler.
+        Fully integrates DependencyGraph with HealthCoordinator and CapabilityModel.
+
+        Steps:
+            1. Build OperationalContext (P0-1)
+            2. Subscribe TelemetryCollector to EventBus (P0-2)
+            3. Activate RuntimeCoordinator (split via sub-coordinators, P0-3)
+            4. Enable CapabilityModel (P0-4)
+            5. Wire DependencyGraph to HealthCoordinator and CapabilityModel
+            6. Start RuntimeScheduler for periodic tasks (P1-2)
+            7. Assert system invariants
+            8. Write RuntimeManifest with architecture version (P1-5)
+            9. Register shutdown handler
+        """
+        from smriti.runtime import get_runtime, OperationalContext
+        from smriti.runtime.events import get_event_bus
+        from smriti.runtime.scheduler import RuntimeScheduler
+        from smriti.runtime.health_coordinator import HealthCoordinator
+        from smriti.infrastructure.provenance import ProvenanceBuilder
+        from smriti.governance.invariants import assert_all_invariants
+        from smriti.observability.telemetry import TelemetryCollector
+        from smriti.core.paths import ARTIFACTS_DIR
+        from smriti.core.config import get_config
+        from smriti.observability.health import HealthStatus  # for check return types
+        import hashlib
+
+        logger.info("running phase 11")
+        config = get_config()
+        cfg11 = config.get("feature_flags", {})
+
+        # ── Step 1: Build OperationalContext (P0-1) ───────────────────────────────
+        ctx = OperationalContext.create(
+            run_id=self.run_id,
+            config_hash="",  # populated after coordinator starts
+            env=config.env,
+        )
+
+        # ── Step 2: Subscribe TelemetryCollector to EventBus (P0-2) ──────────────
+        if cfg11.get("enable_event_bus", True):
+            telemetry = TelemetryCollector(run_id=self.run_id)
+            telemetry.subscribe_to_event_bus()
+
+        # ── Step 3: Activate RuntimeCoordinator ───────────────────────────────────
+        coordinator = get_runtime()
+        coordinator.start(run_id=self.run_id)
+
+        # ── Step 4: Get the dependency graph and wire it ─────────────────────────
+        dep_graph = coordinator.dependency_graph
+
+        # ── Step 5: Wire HealthCoordinator with the graph ────────────────────────
+        # Get the HealthCoordinator from the runtime coordinator.
+        # (We access the private attribute; consider adding a public property later.)
+        health_coordinator = coordinator._health_coordinator
+        health_coordinator.bind_graph(dep_graph)
+
+        # Register default health checks with node mappings
+        from smriti.core.paths import ARTIFACTS_DIR
+
+        def check_config() -> bool:
+            try:
+                cfg = get_config()
+                return bool(cfg)
+            except Exception:
+                return False
+
+        def check_artifacts_dir() -> bool:
+            try:
+                return ARTIFACTS_DIR.exists()
+            except Exception:
+                return False
+
+        def check_memory() -> bool:
+            try:
+                import psutil
+                mem = psutil.virtual_memory()
+                # Consider healthy if memory usage < 90%
+                return mem.percent < 90
+            except Exception:
+                return False
+
+        # Register checks with the coordinator, mapping to dependency nodes
+        health_coordinator.register(
+            "configuration",
+            check_config,
+            dependency_node="config"      # assume a node named "config" exists
+        )
+        health_coordinator.register(
+            "artifacts_directory",
+            check_artifacts_dir,
+            dependency_node="artifacts"   # node named "artifacts"
+        )
+        health_coordinator.register(
+            "memory_pressure",
+            check_memory,
+            dependency_node=None          # no node mapping; purely informational
+        )
+
+        # ── Step 6: Capability Model (P0-4) with graph sync ──────────────────────
+        if cfg11.get("enable_capability_model", True):
+            capabilities = coordinator.capabilities
+            # Initial sync with the graph
+            capabilities.sync_with_graph(dep_graph)
+            logger.info("capability_model_active", capabilities=capabilities.snapshot())
+
+        # ── Step 7: Start RuntimeScheduler (P1-2) with health coordinator task ──
+        if cfg11.get("enable_scheduler", True):
+            scheduler = RuntimeScheduler(tick_interval=1.0)
+            sched_cfg = config.get("runtime", {}).get("scheduler", {})
+            # Register a task that runs the health coordinator's checks
+            scheduler.register(
+                "health_check",
+                interval_seconds=sched_cfg.get("tasks", {}).get("health_check", {}).get("interval_seconds", 30.0),
+                task=lambda: health_coordinator.run_all(),  # runs checks and updates graph
+            )
+            # Optionally register a task to sync capabilities from the graph
+            scheduler.register(
+                "capability_sync",
+                interval_seconds=60.0,
+                task=lambda: capabilities.sync_with_graph(dep_graph),
+            )
+            coordinator._shutdown.register(
+                "scheduler_stop",
+                handler=scheduler.stop,
+                priority=10,
+            )
+            scheduler.start()
+
+        # ── Step 8: Assert invariants ─────────────────────────────────────────────
+        if config.get("runtime", {}).get("assert_invariants_on_startup", True):
+            try:
+                assert_all_invariants()
+            except Exception as exc:
+                logger.error("invariant_assertion_failed", error=str(exc))
+
+        # ── Step 9: Write RuntimeManifest with architecture version (P1-5) ────────
+        if config.get("runtime", {}).get("write_runtime_manifest", True):
+            cfg_ctx = coordinator.config_context
+            # Compute ADR set version from accepted ADRs
+            from smriti.governance.adr import ADRRegistry
+            adr_registry = ADRRegistry()
+            accepted_ids = "|".join(sorted(a.adr_id for a in adr_registry.all_accepted()))
+            adr_version = hashlib.sha256(accepted_ids.encode()).hexdigest()[:8]
+
+            builder = (
+                ProvenanceBuilder(run_id=self.run_id)
+                .set_config_version(cfg_ctx.config_hash if cfg_ctx else "unknown")
+                .set_schema_version("1.0")
+                .set_knowledge_version(self.run_id)
+                .set_architecture_version("11.0")
+                .set_adr_set_version(adr_version)
+                .set_compliance_rule_version("1.0")
+                .set_invariant_version("1.0")
+            )
+            manifest = builder.build()
+            manifest.write_artifact(ARTIFACTS_DIR)
+
+        # ── Step 10: Register shutdown handler ──────────────────────────────────
+        coordinator._shutdown.register(
+            name="pipeline_runner_shutdown",
+            handler=lambda: logger.info("pipeline_runner_shutdown_handler_called"),
+            priority=90,
+        )
+
+        self.state_manager.complete_phase(phase=11)
+        logger.info("phase 11 complete", run_id=self.run_id)  

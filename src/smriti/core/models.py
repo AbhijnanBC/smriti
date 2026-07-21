@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from enum import Enum
 
-
+from smriti.core.config import get_config
 # ── Enums ────────────────────────────────────────────────────────────────────
 
 class FileFormat(str, Enum):
@@ -1683,6 +1683,337 @@ class Phase8Telemetry:
     execution: ExecutionStats
     knowledge: KnowledgeStats
 
+
+# ── Phase 9: Knowledge Access Layer ──────────────────────────────────────────
+
+class QueryFamily(str, Enum):
+    """The five fundamental query families Phase 9 supports."""
+    POINT          = "point"
+    FILTER         = "filter"
+    TRAVERSAL      = "traversal"
+    AGGREGATION    = "aggregation"
+    EXPLAINABILITY = "explainability"
+
+
+class SortOrder(str, Enum):
+    ASC  = "asc"
+    DESC = "desc"
+
+
+class ProjectionLevel(str, Enum):
+    """
+    Projection level controlling how much data is returned.
+    Clients request the level they need — responses are predictable.
+    """
+    SUMMARY        = "summary"
+    STANDARD       = "standard"
+    DETAILED       = "detailed"
+    EXPLAINABILITY = "explainability"
+    FULL_AUDIT     = "full_audit"
+
+
+class NavigationMode(str, Enum):
+    LOCAL      = "local"
+    PATH       = "path"
+    PROVENANCE = "provenance"
+
+
+class ExplainabilityLevel(int, Enum):
+    """
+    Explainability depth for responses.
+    Integer enum for easy >= comparison.
+    """
+    NONE      = 0
+    SUMMARY   = 1
+    DETAILED  = 2
+    FULL_AUDIT = 3
+
+
+class ExportFormat(str, Enum):
+    JSON    = "json"
+    CSV     = "csv"
+    GRAPHML = "graphml"
+
+
+class PredicateOperator(str, Enum):
+    EQ  = "eq"
+    NEQ = "neq"
+    GT  = "gt"
+    GTE = "gte"
+    LT  = "lt"
+    LTE = "lte"
+    IN  = "in"
+
+
+@dataclass(frozen=True)
+class ExecutionBudget:
+    """
+    Hard constraints for query execution to prevent resource exhaustion.
+
+    Injected into ExecutionContext so services can check limits without
+    hardcoded constants.
+    """
+    max_traversal_depth: int
+    max_returned_rows: int
+    timeout_ms: float
+    max_export_size_mb: float
+
+    @classmethod
+    def from_config(cls) -> "ExecutionBudget":
+        """Load execution budget from config/default.yaml."""
+        config = get_config()
+        api_cfg = config.get("knowledge_api", {})
+        budget_cfg = api_cfg.get("execution_budget", {})
+        return cls(
+            max_traversal_depth=budget_cfg.get("max_traversal_depth", 5),
+            max_returned_rows=budget_cfg.get("max_returned_rows", 10_000),
+            timeout_ms=budget_cfg.get("timeout_ms", 30_000.0),
+            max_export_size_mb=budget_cfg.get("max_export_size_mb", 100.0),
+        )
+@dataclass(frozen=True)
+class ExecutionContext:
+    """
+    Shared execution context flowing through all pipeline stages.
+
+    Replaces passing 10 arguments through every method.
+    Immutable — stages create new contexts via dataclasses.replace().
+
+    Fields:
+        request_id:      Unique per-request UUID
+        run_id:          Snapshot identifier
+        api_version:     "1.0"
+        query_family:    Which query family this is
+        projection_level: Requested projection
+        explain_level:   Requested explainability depth
+        plan_id:         Set after planning (empty before)
+        cache_hit:       Set after cache check
+        planner_ms:      Set after planning
+        execution_ms:    Set after execution
+        total_ms:        Set after full pipeline
+        rows_returned:   Set after execution
+        budget:          ExecutionBudget for resource limits (NEW)
+    """
+    request_id: str
+    run_id: str
+    api_version: str
+    query_family: str
+    projection_level: str
+    explain_level: int
+    plan_id: str = ""
+    cache_hit: bool = False
+    planner_ms: float = 0.0
+    execution_ms: float = 0.0
+    total_ms: float = 0.0
+    rows_returned: int = 0
+    budget: ExecutionBudget = field(default_factory=ExecutionBudget.from_config)
+
+
+@dataclass(frozen=True)
+class ResponseMeta:
+    """
+    Metadata envelope attached to every Phase 9 response.
+    Produced from ExecutionContext at the end of the pipeline.
+    """
+    request_id: str
+    run_id: str
+    api_version: str
+    query_family: str
+    execution_plan_id: str
+    cache_hit: bool
+    planner_ms: float
+    execution_ms: float
+    total_ms: float
+    rows_returned: int
+    projection_used: str
+
+
+@dataclass(frozen=True)
+class Phase9Stats:
+    """Statistics for Phase 9 initialization."""
+    nodes_indexed: int = 0
+    edges_indexed: int = 0
+    partitions_indexed: int = 0
+    reliability_records_loaded: int = 0
+    index_build_seconds: float = 0.0
+    run_id: str = ""
+    api_version: str = "1.0"
+    capability_count: int = 0
+
+
+# ── Phase 10: Human Knowledge Interaction Layer ────────────────────────────────
+
+class WorkspaceType(str, Enum):
+    """All registered knowledge workspace types."""
+    RESEARCH    = "research"
+    RELIABILITY = "reliability"
+    CONFLICT    = "conflict"
+    AUDIT       = "audit"
+    PROVENANCE  = "provenance"
+    STATISTICS  = "statistics"
+    TOPOLOGY    = "topology"
+
+
+class EpistemicLens(str, Enum):
+    """
+    The investigative perspective through which knowledge is interpreted.
+    Different lenses activate different workspace compositions and
+    presentation priorities without changing the underlying knowledge.
+    """
+    EXPLORATION = "exploration"     # General browsing
+    RELIABILITY = "reliability"     # Trust evaluation
+    EVIDENCE    = "evidence"        # Evidence quality
+    CONFLICT    = "conflict"        # Contradiction investigation
+    TOPOLOGY    = "topology"        # Graph structure
+    AUDIT       = "audit"           # Full decision audit
+    PROVENANCE  = "provenance"      # Knowledge lineage
+
+
+class InteractionIntent(str, Enum):
+    """
+    What the user is trying to accomplish.
+    Intent → Lens → Workspace (deterministic selection chain).
+    """
+    EXPLORE_KNOWLEDGE       = "explore_knowledge"
+    EVALUATE_RELIABILITY    = "evaluate_reliability"
+    INVESTIGATE_CONFLICT    = "investigate_conflict"
+    AUDIT_REASONING         = "audit_reasoning"
+    TRACE_PROVENANCE        = "trace_provenance"
+    UNDERSTAND_STRUCTURE    = "understand_structure"
+    ANALYZE_STATISTICS      = "analyze_statistics"
+
+
+class InteractionEventType(str, Enum):
+    """Every possible user action is one of these event types."""
+    CLAIM_SELECTED          = "claim_selected"
+    CLAIM_DESELECTED        = "claim_deselected"
+    WORKSPACE_ACTIVATED     = "workspace_activated"
+    WORKSPACE_CLOSED        = "workspace_closed"
+    WORKSPACE_SUSPENDED     = "workspace_suspended"
+    WORKSPACE_RESUMED       = "workspace_resumed"
+    LENS_CHANGED            = "lens_changed"
+    FILTER_APPLIED          = "filter_applied"
+    FILTER_REMOVED          = "filter_removed"
+    SEARCH_SUBMITTED        = "search_submitted"
+    NAVIGATION_REQUESTED    = "navigation_requested"
+    EXPLAINABILITY_CHANGED  = "explainability_changed"
+    COMPARISON_STARTED      = "comparison_started"
+    COMPARISON_ENDED        = "comparison_ended"
+    EXPORT_REQUESTED        = "export_requested"
+    WORKSPACE_SERIALIZED    = "workspace_serialized"
+    WORKSPACE_RESTORED      = "workspace_restored"
+    COMMAND_DISPATCHED      = "command_dispatched"
+    NOTIFICATION_SENT       = "notification_sent"
+
+
+@dataclass(frozen=True)
+class InteractionEvent:
+    """An immutable event produced by every user action."""
+    event_type: InteractionEventType
+    payload: Dict[str, Any]         # Event-specific data
+    timestamp_ms: float             # Monotonic timestamp for ordering
+    session_id: str
+
+
+@dataclass(frozen=True)
+class WorkspaceCapabilities:
+    """Declares what a workspace is capable of."""
+    supports_search: bool = True
+    supports_comparison: bool = False
+    supports_export: bool = True
+    supports_graph: bool = False
+    supports_audit: bool = False
+    max_views: int = 4
+
+
+@dataclass(frozen=True)
+class WorkspaceVersion:
+    """Versioning for workspace schema compatibility."""
+    major: int = 1
+    minor: int = 0
+    patch: int = 0
+
+    def __str__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.patch}"
+
+
+class WorkspaceStatus(str, Enum):
+    """Lifecycle status of a workspace instance."""
+    CREATED   = "created"
+    ACTIVE    = "active"
+    SUSPENDED = "suspended"
+    DISPOSED  = "disposed"
+
+
+@dataclass(frozen=True)
+class WorkspaceProfile:
+    """
+    Describes the cognitive characteristics of one workspace type.
+    Behavior, not layout. Policy, not pixels.
+    """
+    workspace_type: WorkspaceType
+    investigative_objective: str
+    default_lens: EpistemicLens
+    default_explainability: int               # ExplainabilityLevel value
+    primary_views: tuple                      # View names in composition order
+    navigation_strategy: str
+    max_results_per_page: int = 20
+    capabilities: WorkspaceCapabilities = field(default_factory=WorkspaceCapabilities)
+    version: WorkspaceVersion = field(default_factory=WorkspaceVersion)
+
+
+@dataclass
+class EpistemicState:
+    """
+    The single source of truth for the current interaction session.
+
+    This is the session's epistemic memory:
+        What is the user investigating?
+        What have they selected?
+        Where have they navigated?
+        What filters are active?
+
+    MUTABLE by design (session state evolves as the user interacts).
+    Never persisted across sessions (transient).
+    Serializable for workspace restoration within a session.
+    """
+    # Current investigative context
+    workspace_type: WorkspaceType = WorkspaceType.RESEARCH
+    active_lens: EpistemicLens = EpistemicLens.EXPLORATION
+    intent: InteractionIntent = InteractionIntent.EXPLORE_KNOWLEDGE
+
+    # Selection
+    selected_claim_id: Optional[str] = None
+    comparison_claim_ids: tuple = field(default_factory=tuple)
+
+    # Search + filters
+    search_query: str = ""
+    active_filters: Dict[str, Any] = field(default_factory=dict)
+    sort_field: str = "reliability_index"
+    sort_order: str = "desc"
+    page: int = 0
+    page_size: int = 20
+
+    # Explainability
+    explainability_level: int = 0   # ExplainabilityLevel.NONE
+
+    # Navigation
+    breadcrumbs: List[Dict[str, str]] = field(default_factory=list)
+    navigation_history: List[str] = field(default_factory=list)
+
+    # Workspace status
+    workspace_status: WorkspaceStatus = WorkspaceStatus.CREATED
+
+    # Run context
+    run_id: str = ""
+    session_id: str = ""
+
+
+@dataclass(frozen=True)
+class Phase10Stats:
+    """Statistics for one Phase 10 dashboard session initialization."""
+    workspaces_registered: int = 0
+    api_version: str = "1.0"
+    run_id: str = ""    
 
 # ── Phase 8 contract: Evolution ───────────────────────────────────────────────
 

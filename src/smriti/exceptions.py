@@ -377,3 +377,147 @@ class RegistryError(Phase8Error):
 class ScoringValidationError(Phase8Error):
     """A ReliabilityMetadata failed structural validation."""
     pass
+
+# ── Phase 9: Knowledge Access Layer ──────────────────────────────────────────
+
+class Phase9Error(SMRITIError):
+    """Base for all Phase 9 errors."""
+    pass
+
+
+class RequestValidationError(Phase9Error):
+    """Incoming request failed validation."""
+    code: str = "VALIDATION_ERROR"
+
+
+class ClaimNotFoundError(Phase9Error):
+    """Requested claim_id does not exist in the current snapshot."""
+    code: str = "NOT_FOUND"
+
+
+class QueryPlanError(Phase9Error):
+    """Planner could not produce a valid plan."""
+    code: str = "QUERY_ERROR"
+
+
+class ReadStoreError(Phase9Error):
+    """ReadStore encountered an unexpected error."""
+    code: str = "EXECUTION_ERROR"
+
+
+class ExportError(Phase9Error):
+    """Export service failed to serialize knowledge."""
+    code: str = "EXPORT_ERROR"
+
+
+class CacheError(Phase9Error):
+    """Knowledge view cache encountered an error."""
+    code: str = "CACHE_ERROR"
+
+
+class TraversalDepthExceededError(Phase9Error):
+    """Traversal exceeded the configured maximum depth."""
+    code: str = "TRAVERSAL_DEPTH_EXCEEDED"
+
+
+class IndexError(Phase9Error):
+    """Index registry or builder encountered an error."""
+    code: str = "INDEX_ERROR"
+
+
+class NormalizationError(Phase9Error):
+    """QueryNormalizer could not canonicalize the request."""
+    code: str = "NORMALIZATION_ERROR"
+
+# ── Phase 10: Human Knowledge Interaction Layer ───────────────────────────────
+
+class Phase10Error(SMRITIError):
+    """Base for all Phase 10 errors."""
+    pass
+
+
+class WorkspaceNotFoundError(Phase10Error):
+    """Requested workspace type is not registered."""
+    pass
+
+
+class InteractionPolicyViolationError(Phase10Error):
+    """User action violates an interaction policy."""
+    pass
+
+
+class PresentationError(Phase10Error):
+    """A presentation component failed to render."""
+    pass
+
+
+class WorkspaceSerializationError(Phase10Error):
+    """Workspace state could not be serialized or restored."""
+    pass
+
+
+class ServiceClientError(Phase10Error):
+    """ServiceClient failed to retrieve data from Phase 9."""
+    pass
+
+
+class CommandDispatchError(Phase10Error):
+    """A command could not be dispatched (policy rejection or state conflict)."""
+    pass
+
+
+class ViewRegistryError(Phase10Error):
+    """A requested view type is not registered."""
+    pass
+
+
+class ExportPipelineError(Phase10Error):
+    """An export exporter failed."""
+    pass    
+
+
+# ── Phase 11: Architectural Error Hierarchy ──────────────────────────────────
+
+class ArchitectureException(SMRITIError):
+    """Root of all architectural and operational errors."""
+    pass
+
+class RuntimeException(ArchitectureException):
+    """State machine violations and lifecycle errors."""
+    pass
+
+class InfrastructureException(ArchitectureException):
+    """Resource budgets, dependency cycles, and telemetry failures."""
+    pass
+
+class ComplianceException(ArchitectureException):
+    """Architectural compliance rule violations."""
+    pass
+
+class PolicyException(ArchitectureException):
+    """Interaction or operational policy violations."""
+    pass
+
+class GovernanceException(ArchitectureException):
+    """ADR conflicts, version incompatibility, or interface stability violations."""
+    pass
+
+class CapabilityException(ArchitectureException):
+    """Invocation of an unavailable or degraded capability."""
+    pass
+
+class SchedulerException(ArchitectureException):
+    """Background task or periodic scheduler failures."""
+    pass
+
+# ── Backward Compatibility Aliases ──────────────────────────────────────────
+# These allow old code to continue working
+
+Phase11RuntimeError = RuntimeException
+Phase11LifecycleError = RuntimeException
+Phase11CapabilityError = CapabilityException
+ResourceBudgetExceeded = InfrastructureException
+ArchitectureEventError = InfrastructureException
+SchedulerError = SchedulerException
+Phase11ComplianceError = ComplianceException
+Phase11GovernanceError = GovernanceException

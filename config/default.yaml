@@ -371,3 +371,146 @@ scoring_policy:
     high_threshold: 65.0
     moderate_threshold: 45.0
     low_threshold: 25.0  
+
+# ── Phase 9: Knowledge Access Layer ──────────────────────────────────────────
+knowledge_api:
+  api_version: "1.0"
+  max_page_size: 1000
+  default_page_size: 50
+  max_traversal_depth: 5
+
+  cache:
+    enabled: true
+    max_size: 256
+
+  pagination:
+    default_limit: 50
+    max_limit: 1000
+
+  export:
+    max_claims_per_export: 100000
+    include_reliability_by_default: true
+
+  default_projection: "summary"
+
+  # RECTIFIED (P0-3): Indexes managed here, not hardcoded in planner
+  indexes:
+    enabled: true
+    fields:
+      - "calibration_label"
+      - "partition_id"
+      - "semantic_role"
+      - "document_id"
+      - "reliability_index_bucket"
+
+  observability:
+    log_all_requests: false
+    log_slow_queries_above_ms: 100.0    
+
+# ── Phase 10: Human Knowledge Interaction Layer ──────────────────────────────
+interaction:
+  # Dashboard title shown in browser tab
+  title: "SMRITI Knowledge Analysis"
+
+  # Visualization limits (VisualizationPolicy)
+  max_nodes_in_graph: 50
+  max_edges_in_graph: 100
+  max_traversal_depth: 3
+
+  # Comparison limits (ComparisonPolicy)
+  max_comparison_claims: 2
+
+  # Navigation limits (NavigationPolicy)
+  max_breadcrumb_depth: 8
+  max_history_length: 20
+  allow_cross_partition_navigation: true
+
+  # Pagination
+  default_page_size: 20
+  max_page_size: 100
+
+  # Default workspace on startup
+  default_workspace: "research"
+
+  # Default explainability level (0=NONE, 1=SUMMARY, 2=DETAILED, 3=FULL_AUDIT)
+  default_explainability: 1
+
+  # Export permissions (ExportPolicy)
+  allow_json_export: true
+  allow_csv_export: true
+  allow_graphml_export: false
+  max_claims_in_export: 10000
+
+  # Streamlit page settings
+  page_icon: "🧠"
+  layout: "wide"
+
+  # Policy registry — named policy profiles
+  policy_profiles:
+    restricted:
+      max_nodes_in_graph: 20
+      allow_json_export: false
+      allow_csv_export: false
+    audit_mode:
+      default_explainability: 3
+      max_traversal_depth: 5    
+
+# ── Phase 11: Operational Runtime & Engineering Infrastructure ─────────────────
+
+runtime:
+  health_check_interval_seconds: 30
+  startup_warning_threshold_seconds: 5.0
+  startup_critical_threshold_seconds: 15.0
+  assert_invariants_on_startup: true
+  write_runtime_manifest: true
+  # RECTIFIED (P1-2): Scheduler configuration
+  scheduler:
+    enabled: true
+    tick_interval_seconds: 1.0
+    tasks:
+      health_check:    { interval_seconds: 30.0 }
+      telemetry_flush: { interval_seconds: 60.0 }
+      compliance_scan: { interval_seconds: 3600.0 }
+
+observability:
+  telemetry_max_buffer: 10000
+  histogram_buckets_ms: [5, 10, 25, 50, 100, 250, 500, 1000]
+  health_check_timeout_seconds: 5.0
+  quality_startup_target_seconds: 5.0
+  quality_query_p95_target_ms: 200.0
+  quality_memory_ceiling_mb: 512.0
+  # RECTIFIED (P0-2): Event bus configuration
+  event_bus:
+    enabled: true
+
+governance:
+  run_compliance_on_startup: false
+  adr_export_dir: "docs/adr"
+  fail_on_compliance_errors: true
+  # RECTIFIED (P1-5): Architecture version tracking
+  architecture_version: "11.0"
+  adr_set_version: "unknown"
+  compliance_rule_version: "1.0"
+  invariant_version: "1.0"
+
+infrastructure:
+  claim_view_cache_max_bytes: 52428800
+  export_buffer_max_bytes: 26214400
+  export_buffer_ttl_seconds: 300
+  # RECTIFIED (P1-3): Budget configuration
+  budgets:
+    memory_mb:       { limit: 512.0,    enforcement: "warn" }
+    traversal_depth: { limit: 5.0,      enforcement: "block" }
+    export_mb:       { limit: 25.0,     enforcement: "block" }
+    api_calls:       { limit: 10000.0,  enforcement: "log_only" }
+    execution_ms:    { limit: 30000.0,  enforcement: "warn" }
+
+feature_flags:
+  enable_runtime_coordinator: true
+  enable_telemetry: true
+  enable_maturity_assessment: true
+  # RECTIFIED (P0-2, P1-2):
+  enable_event_bus: true
+  enable_scheduler: true
+  # RECTIFIED (P0-4):
+  enable_capability_model: true      
