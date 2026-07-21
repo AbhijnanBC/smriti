@@ -4,7 +4,7 @@ json_exporter.py — JSONExporter for Phase 10.
 
 from __future__ import annotations
 
-from smriti.dashboard.export.pipeline import ExportResult
+from smriti.dashboard.export.models import ExportResult
 from smriti.exceptions import ExportPipelineError
 
 

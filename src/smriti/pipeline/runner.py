@@ -972,6 +972,160 @@ class PipelineRunner:
             schema_version=data.get("schema_version", "7.0"),
         )
     
+    def _load_phase8_result(self):
+        """Load Phase 8 ScoredKnowledgeGraph from artifact when resuming at Phase 9."""
+        import json
+        from smriti.core.models import ScoredKnowledgeGraph, KnowledgeGraph, ClaimNode, RelationshipEdge, KnowledgePartition, GraphStatistics, ValidationReport, NodeAnnotations
+        from smriti.core.paths import ARTIFACTS_DIR
+        from smriti.exceptions import PipelineError
+
+        dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase8" / "dataset.json"
+        if not dataset_path.exists():
+            # Try to find the most recent Phase 8 artifact
+            phase8_dirs = sorted(
+                ARTIFACTS_DIR.glob("run_*/phase8/dataset.json"),
+                key=lambda p: p.parent.parent.name,
+                reverse=True,
+            )
+            if not phase8_dirs:
+                raise PipelineError(
+                    "Cannot resume at Phase 9: no Phase 8 dataset.json found. "
+                    "Run from Phase 8 first."
+                )
+            dataset_path = phase8_dirs[0]
+            logger.info("loading phase8 dataset", path=str(dataset_path))
+
+        data = json.loads(dataset_path.read_text(encoding="utf-8"))
+
+        # Reconstruct KnowledgeGraph from the dataset
+        # Phase 8 dataset contains the graph + reliability overlay
+        # We need to build the KnowledgeGraph first, then the ScoredKnowledgeGraph
+        graph_data = data.get("graph", data)  # Phase 8 dataset may have graph nested
+
+        # For simplicity, call the existing Phase 7 loader (since Phase 8 dataset includes the full graph)
+        # But we need to make sure we load the Phase 7 graph from the Phase 7 artifact
+        # because Phase 8 dataset may not contain the full graph structure in the same format.
+        # Actually, Phase 8 dataset includes reliability but references the graph ID.
+        # The best approach: load the Phase 7 dataset and then overlay reliability from Phase 8.
+
+        # To avoid complexity, we'll load the Phase 7 graph and the Phase 8 reliability separately.
+        phase7_graph = self._load_phase7_result()
+        
+        # Now load reliability data from Phase 8 dataset
+        reliability_data = data.get("reliability", {})
+        
+        # Reconstruct ScoredKnowledgeGraph
+        from smriti.core.models import ScoredKnowledgeGraph, ReliabilityMetadata, CalibrationLabel, SignalVector, ComponentScore, ReliabilityExplanation, ReliabilityAudit, ReliabilityDecisionRecord, SignalStatus, SignalManifest, EvidenceGrade
+        
+        reliability_metadata = {}
+        for claim_id, meta_data in reliability_data.items():
+            # Parse calibration label
+            calibration_label = CalibrationLabel(meta_data.get("calibration_label", "very_low"))
+            
+            # Parse signal vector
+            sv_data = meta_data.get("signal_vector", {})
+            signal_vector = SignalVector(
+                evidence_strength=sv_data.get("evidence_strength", 0.0),
+                evidence_independence=sv_data.get("evidence_independence", 0.0),
+                source_diversity=sv_data.get("source_diversity", 0.0),
+                topology_strength=sv_data.get("topology_strength", 0.0),
+                conflict_pressure=sv_data.get("conflict_pressure", 0.0),
+                temporal_stability=sv_data.get("temporal_stability", 0.0),
+                evidence_completeness=sv_data.get("evidence_completeness", 0.0),
+                statuses={},
+            )
+            
+            # Parse component scores
+            component_scores = []
+            for comp in meta_data.get("components", []):
+                component_scores.append(ComponentScore(
+                    signal_id=comp.get("signal", ""),
+                    normalized_value=0.0,
+                    policy_weight=0.0,
+                    adjusted_value=0.0,
+                    contribution=comp.get("contribution", 0.0),
+                    direction=comp.get("direction", "positive"),
+                    explanation=comp.get("explanation", ""),
+                ))
+            
+            # Parse explanation
+            exp_data = meta_data.get("explanation", {})
+            explanation = ReliabilityExplanation(
+                summary=exp_data.get("summary", ""),
+                strengths=tuple(exp_data.get("strengths", [])),
+                weaknesses=tuple(exp_data.get("weaknesses", [])),
+                dominant_signal=exp_data.get("dominant_signal", ""),
+                limiting_signal=exp_data.get("limiting_signal", ""),
+                recommendations=tuple(exp_data.get("recommendations", [])),
+            )
+            
+            # Parse audit
+            audit_data = meta_data.get("audit", {})
+            audit = ReliabilityAudit(
+                policy_version=audit_data.get("policy_version", ""),
+                policy_profile=audit_data.get("policy_profile", ""),
+                graph_fingerprint=audit_data.get("graph_fingerprint", ""),
+                graph_schema_version=audit_data.get("graph_schema_version", ""),
+                fusion_algorithm=audit_data.get("fusion_algorithm", ""),
+                normalization_version=audit_data.get("normalization_version", ""),
+                computed_at_run_id=audit_data.get("computed_at_run_id", ""),
+                signal_extractor_versions=audit_data.get("signal_extractor_versions", {}),
+                registry_order=tuple(audit_data.get("registry_order", [])),
+            )
+            
+            # Parse decision record
+            dr_data = meta_data.get("decision_record", {})
+            decision_record = ReliabilityDecisionRecord(
+                claim_id=claim_id,
+                policy_interactions=tuple(dr_data.get("policy_interactions", [])),
+                constraints_activated=tuple(dr_data.get("constraints_activated", [])),
+                contribution_order=tuple(dr_data.get("contribution_order", [])),
+                raw_reliability=dr_data.get("raw_reliability", 0.0),
+                constrained_reliability=dr_data.get("constrained_reliability", 0.0),
+                final_reliability=dr_data.get("final_reliability", 0.0),
+                uncertainty_components=tuple(dr_data.get("uncertainty_components", [])),
+                dominant_adjustment=dr_data.get("dominant_adjustment", ""),
+            )
+            
+            reliability_metadata[claim_id] = ReliabilityMetadata(
+                claim_id=claim_id,
+                reliability_index=meta_data.get("reliability_index", 0.0),
+                uncertainty_score=meta_data.get("uncertainty_score", 0.0),
+                evidence_completeness=meta_data.get("evidence_completeness", 0.0),
+                signal_vector=signal_vector,
+                signal_manifests=tuple([SignalManifest(
+                    signal_id=m.get("signal_id", ""),
+                    extractor_version=m.get("extractor_version", ""),
+                    raw_value=m.get("raw_value", 0.0),
+                    normalized_value=m.get("normalized_value", 0.0),
+                    normalization_strategy=m.get("normalization_strategy", ""),
+                    status=SignalStatus(m.get("status", "measured")),
+                    quality_flags=tuple(m.get("quality_flags", [])),
+                    dependency_list=tuple(m.get("dependency_list", [])),
+                ) for m in meta_data.get("signal_manifests", [])]),
+                component_scores=tuple(component_scores),
+                decision_record=decision_record,
+                explanation=explanation,
+                calibration_label=calibration_label,
+                audit=audit,
+                policy_version=meta_data.get("policy_version", ""),
+                schema_version=meta_data.get("schema_version", "8.0"),
+            )
+        
+        # Build ScoredKnowledgeGraph from Phase 7 graph + reliability
+        scored_graph = ScoredKnowledgeGraph(
+            graph=phase7_graph,
+            reliability=reliability_metadata,
+            policy_snapshot=data.get("policy_snapshot", {}),
+            policy_profile=data.get("policy_profile", "balanced"),
+            global_stats=phase7_graph.statistics,  # Use graph stats as fallback
+            run_id=self.run_id,
+            schema_version=data.get("schema_version", "8.0"),
+        )
+        
+        logger.info("phase8 dataset loaded", claims_scored=len(reliability_metadata))
+        return scored_graph
+
     def _run_phase_9(self, phase8_result: "ScoredKnowledgeGraph") -> "KnowledgeAccessService":
         """Execute Phase 9: Knowledge Access Layer initialization."""
         from smriti.api import run_api_initialization

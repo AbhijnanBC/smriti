@@ -81,7 +81,14 @@ class QueryService:
     def top_claims(self, n: int = 10) -> List[Dict]:
         """Return top N most reliable claims."""
         try:
-            resp = self._api.top_claims(n=n, projection=ProjectionLevel.STANDARD)
+            resp = self._api.search(
+                predicates=(),
+                sort_field="reliability_index",
+                sort_order="desc",
+                limit=n,
+                offset=0,
+                projection=ProjectionLevel.STANDARD,
+            )
             return [
                 c.to_dict() if hasattr(c, "to_dict") else vars(c)
                 for c in resp.data
@@ -89,3 +96,39 @@ class QueryService:
         except Exception as e:
             logger.error("top_claims failed", error=str(e))
             return []
+
+    # ── NEW: Compatibility execute method ──────────────────────────────────
+    def execute(self, request) -> Dict[str, Any]:
+        """
+        Compatibility method for the Phase 10 architecture.
+        If called with a SearchRequest-like object, delegate to search_claims.
+        Otherwise return an empty result.
+        """
+        # If it's a dict, try to extract fields
+        if isinstance(request, dict):
+            return self.search_claims(
+                text_query=request.get("text_contains", ""),
+                filters=request.get("predicates", {}),
+                sort_field=request.get("sort_field", "reliability_index"),
+                sort_order=request.get("sort_order", "desc"),
+                limit=request.get("limit", 20),
+                offset=request.get("offset", 0),
+            )
+        # If it's an object, try attribute access
+        try:
+            text_query = getattr(request, "text_contains", "")
+            filters = getattr(request, "predicates", {})
+            sort_field = getattr(request, "sort_field", "reliability_index")
+            sort_order = getattr(request, "sort_order", "desc")
+            limit = getattr(request, "limit", 20)
+            offset = getattr(request, "offset", 0)
+            return self.search_claims(
+                text_query=text_query,
+                filters=filters,
+                sort_field=sort_field,
+                sort_order=sort_order,
+                limit=limit,
+                offset=offset,
+            )
+        except Exception:
+            return {"claims": [], "total": 0}

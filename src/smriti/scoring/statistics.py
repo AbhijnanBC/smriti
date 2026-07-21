@@ -4,6 +4,9 @@ statistics.py — Phase 8 execution telemetry. Observes. Never influences.
 RECTIFIED (Phase 8.4): Now returns Phase8Telemetry with cleanly segregated
 ExecutionStats (timing and infrastructure) and KnowledgeStats (knowledge outcomes).
 Calibration histogram is tracked per claim for better diagnostics.
+
+RECTIFIED: finalize() now includes high_reliability_count and low_reliability_count
+in KnowledgeStats as required by the Phase8Telemetry model.
 """
 
 from __future__ import annotations
@@ -116,6 +119,8 @@ class Phase8StatsCollector:
             avg_reliability_index=round(self._ri_sum / n, 2),
             avg_uncertainty_score=round(self._unc_sum / n, 2),
             calibration_histogram=dict(self._calibration_histogram),
+            high_reliability_count=self._high_ri,   # RECTIFICATION: added
+            low_reliability_count=self._low_ri,     # RECTIFICATION: added
         )
 
         return Phase8Telemetry(

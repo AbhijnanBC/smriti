@@ -76,3 +76,25 @@ class QueryService:
             rows_returned=len(dtos),
         )
         return KnowledgeResponse(data=dtos, meta=make_response_meta(ctx), total_count=total)
+
+    # ── RECTIFIED: Routing execute method ──────────────────────────────────
+    def execute(self, request, plan: PhysicalPlan, ctx: ExecutionContext) -> KnowledgeResponse:
+        """
+        Route the request to the specific execution method.
+
+        Args:
+            request: A KnowledgeRequest subclass (ClaimRequest or SearchRequest).
+            plan:    The PhysicalPlan for this request.
+            ctx:     ExecutionContext.
+
+        Returns:
+            KnowledgeResponse.
+
+        Raises:
+            ValueError: If the request type is not supported.
+        """
+        if isinstance(request, ClaimRequest):
+            return self.execute_point_lookup(request, plan, ctx)
+        elif isinstance(request, SearchRequest):
+            return self.execute_filter(request, plan, ctx)
+        raise ValueError(f"QueryService cannot handle request type: {type(request)}")

@@ -7,6 +7,9 @@ NavigationService owns BFS and path-finding logic.
 
 RECTIFIED (ExecutionBudget): Uses context.budget.max_traversal_depth
 instead of hardcoded MAX_TRAVERSAL_DEPTH.
+
+RECTIFIED (Method naming): execute_traversal renamed to execute for
+consistent service interface.
 """
 
 from __future__ import annotations
@@ -44,9 +47,21 @@ class NavigationService:
         self._adj = store.get_adjacency()
         self._edge_records = {er["edge_id"]: er for er in store.get_edge_records()}
 
-    def execute_traversal(
+    # ── RECTIFIED: Renamed from execute_traversal to execute ──────────────
+    def execute(
         self, request: TraversalRequest, plan: PhysicalPlan, ctx: ExecutionContext
     ) -> KnowledgeResponse:
+        """
+        Execute a graph traversal request.
+
+        Args:
+            request: TraversalRequest with start node, depth, and filters.
+            plan:    PhysicalPlan for this request.
+            ctx:     ExecutionContext with budget constraints.
+
+        Returns:
+            KnowledgeResponse containing nodes and edges in the traversed neighborhood.
+        """
         t0 = time.monotonic()
 
         # Use budget from context instead of hardcoded constant

@@ -24,3 +24,11 @@ class StatisticsService:
         except Exception as e:
             logger.error("get_statistics failed", error=str(e))
             return {}
+
+    # ── NEW: Compatibility execute method ──────────────────────────────────
+    def execute(self, request) -> Dict[str, Any]:
+        """
+        Compatibility method for the Phase 10 architecture.
+        Delegates to get_statistics().
+        """
+        return self.get_statistics()

@@ -83,10 +83,10 @@ class DTOMapper:
         if view.component_scores:
             all_fields["component_scores"] = [
                 ComponentScoreDTO(
-                    signal_name=c["signal_name"],
-                    contribution=round(c["contribution"], 3),
-                    direction=c["direction"],
-                    explanation=c["explanation"],
+                    signal_name=c.get("signal_name", ""),
+                    contribution=round(c.get("contribution", 0.0), 3),
+                    direction=c.get("direction", "positive"),
+                    explanation=c.get("explanation", ""),
                 )
                 for c in view.component_scores
             ]

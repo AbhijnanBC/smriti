@@ -1456,12 +1456,17 @@ class ContributionSet:
 class ComponentScore:
     """One signal's contribution to the final Reliability Index."""
     signal_id: SignalID
-    normalized_value: float    # From ContributionCandidate (0.0–1.0)
-    policy_weight: float       # From policy (0.0–1.0)
-    adjusted_value: float      # After policy interactions
-    contribution: float        # = adjusted_value * policy_weight * 100 (or negative)
-    direction: str             # "positive" or "negative"
-    explanation: str           # Human-readable reason
+    normalized_value: float
+    policy_weight: float
+    adjusted_value: float
+    contribution: float
+    direction: str
+    explanation: str
+
+    @property
+    def signal_name(self) -> str:
+        """Backward-compatible alias for signal_id.value."""
+        return self.signal_id.value
 
 
 @dataclass(frozen=True)
@@ -1674,6 +1679,8 @@ class KnowledgeStats:
     avg_reliability_index: float
     avg_uncertainty_score: float
     calibration_histogram: Dict[str, int]  # e.g., {"VERY_HIGH": 12, "LOW": 3}
+    high_reliability_count: int = 0        # RECTIFIED: claims with RI >= 65
+    low_reliability_count: int = 0         # RECTIFIED: claims with RI < 45
 
 @dataclass(frozen=True)
 class Phase8Telemetry:

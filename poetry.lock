@@ -712,7 +712,6 @@ description = "A library for efficient similarity search and clustering of dense
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "sys_platform != \"win32\""
 files = [
     {file = "faiss_cpu-1.14.3-cp310-abi3-macosx_14_0_arm64.whl", hash = "sha256:a9369863290a3f0e033757e4c10577b6ef7431f1cede394dabd0a137e4e2ed45"},
     {file = "faiss_cpu-1.14.3-cp310-abi3-macosx_15_0_x86_64.whl", hash = "sha256:f9d0e84d909194f63f027bbd3c1e35e905e48c9345c2db6e6f24da09a6bc5906"},
@@ -4823,4 +4822,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "678bc0403a3605ac97e7aefb4e4b74e484d04354f983637933aef9e8199733f7"
+content-hash = "35b35c6c76d8da5b4dd3998678cb90f61c8b68d1a6b68768f903ef5f99cc264b"

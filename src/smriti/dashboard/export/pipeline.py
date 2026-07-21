@@ -24,26 +24,16 @@ Rules:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 import structlog
 
+from smriti.dashboard.export.models import ExportResult
 from smriti.dashboard.export.json_exporter import JSONExporter
 from smriti.dashboard.export.csv_exporter import CSVExporter
 from smriti.dashboard.policies.policies import PolicyEngine
 from smriti.exceptions import ExportPipelineError
 
 logger = structlog.get_logger(__name__)
-
-
-@dataclass(frozen=True)
-class ExportResult:
-    """Result of a successful export operation."""
-    content: str
-    mime_type: str
-    filename: str
-    format: str
-    byte_size: int
 
 
 class ExportPipeline:

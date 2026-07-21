@@ -4,6 +4,9 @@ statistics_service.py — Statistics aggregation service.
 RECTIFIED (P0-1): Aggregation logic MOVED HERE from ReadStore.
 ReadStore only provides stream() of records.
 StatisticsService owns aggregation logic via StatisticsViewBuilder.
+
+RECTIFIED (Method naming): execute_statistics renamed to execute for
+consistent service interface.
 """
 
 from __future__ import annotations
@@ -30,9 +33,21 @@ class StatisticsService:
         # Load graph metadata once (primitive retrieval)
         self._graph_metadata = getattr(store, "_graph", None)
 
-    def execute_statistics(
+    # ── RECTIFIED: Renamed from execute_statistics to execute ──────────────
+    def execute(
         self, request: StatisticsRequest, plan: PhysicalPlan, ctx: ExecutionContext
     ) -> KnowledgeResponse:
+        """
+        Execute a statistics aggregation request.
+
+        Args:
+            request: StatisticsRequest with aggregation options.
+            plan:    PhysicalPlan for this request.
+            ctx:     ExecutionContext.
+
+        Returns:
+            KnowledgeResponse containing graph-wide statistics.
+        """
         t0 = time.monotonic()
 
         # Collect graph-wide metadata

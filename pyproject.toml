@@ -19,7 +19,6 @@ torch = "^2.5"
 transformers = "^4.48"
 
 # Retrieval (FAISS strictly on non-Windows, scikit-learn available as fallback)
-faiss-cpu = {version = "^1.10", markers = "sys_platform != 'win32'"}
 scikit-learn = "^1.4"
 
 # Data processing
@@ -45,6 +44,7 @@ tqdm = "^4.66"
 click = "^8.1"
 pendulum = "^3.0"
 psutil = "^5.9"
+faiss-cpu = "^1.14.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1"

@@ -31,7 +31,11 @@ from smriti.scoring.signals import signal_registry
 from smriti.scoring.normalization import assemble_contribution_set
 from smriti.scoring.fusion import compute_reliability
 from smriti.scoring.explanation import build_explanation
-from smriti.scoring.builder import build_reliability_metadata, build_scored_knowledge_graph
+from smriti.scoring.builder import (
+    build_reliability_metadata,
+    build_scored_knowledge_graph,
+    apply_calibration_label,          # <-- RECTIFICATION: added import
+)
 from smriti.scoring.statistics import Phase8StatsCollector
 
 logger = structlog.get_logger(__name__)
@@ -225,6 +229,11 @@ def score_knowledge_graph(
             )
             stats.record_fusion_end()
 
+            # ── RECTIFICATION: compute calibration label and record ──
+            calibration_label = apply_calibration_label(ri, policy)
+            stats.record_scored(ri, unc, calibration_label)
+            # ──────────────────────────────────────────────────────────
+
             # 4d: Build explanation
             explanation = build_explanation(ri, component_scores)
 
@@ -245,7 +254,6 @@ def score_knowledge_graph(
             )
 
             reliability[claim_id] = meta
-            stats.record_scored(ri, unc)
 
     stats.record_signal_end()
 
@@ -280,11 +288,11 @@ def score_knowledge_graph(
         outputs={
             "claims_scored": scored_graph.total_scored,
             "avg_reliability": round(scored_graph.avg_reliability, 2),
-            "high_reliability": final_stats.high_reliability_count,
-            "low_reliability": final_stats.low_reliability_count,
+            "high_reliability": final_stats.knowledge.high_reliability_count,   # FIXED
+            "low_reliability": final_stats.knowledge.low_reliability_count,      # FIXED
             "policy_version": policy.version,
             "policy_profile": policy.profile,
-            "registered_signals": final_stats.registered_signal_count,
+            "registered_signals": final_stats.execution.registered_signal_count,  # Use execution
             "dataset_path": str(dataset_path),
         },
         status="success",
@@ -296,9 +304,9 @@ def score_knowledge_graph(
         "phase 8 complete",
         claims_scored=scored_graph.total_scored,
         avg_reliability=f"{scored_graph.avg_reliability:.2f}",
-        high_reliability=final_stats.high_reliability_count,
-        runtime_seconds=f"{final_stats.total_runtime_seconds:.2f}",
-        registered_signals=final_stats.registered_signal_count,
+        high_reliability=final_stats.knowledge.high_reliability_count,
+        runtime_seconds=f"{final_stats.execution.total_runtime_seconds:.2f}",
+        registered_signals=final_stats.execution.registered_signal_count,
     )
 
     return scored_graph

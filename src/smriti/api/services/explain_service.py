@@ -1,4 +1,8 @@
-"""explain_service.py — Four-level explainability service."""
+"""explain_service.py — Four-level explainability service.
+
+RECTIFIED (Method naming): execute_explanation renamed to execute for
+consistent service interface.
+"""
 
 from __future__ import annotations
 
@@ -22,9 +26,21 @@ class ExplainabilityService:
     def __init__(self, store: ReadStore) -> None:
         self._store = store
 
-    def execute_explanation(
+    # ── RECTIFIED: Renamed from execute_explanation to execute ──────────────
+    def execute(
         self, request: ExplanationRequest, plan: PhysicalPlan, ctx: ExecutionContext
     ) -> KnowledgeResponse:
+        """
+        Execute an explainability request.
+
+        Args:
+            request: ExplanationRequest with claim_id and level.
+            plan:    PhysicalPlan for this request.
+            ctx:     ExecutionContext.
+
+        Returns:
+            KnowledgeResponse containing the explanation record.
+        """
         t0 = time.monotonic()
 
         rel_record = self._store.fetch_relationship(request.claim_id)

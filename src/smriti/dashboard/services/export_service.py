@@ -28,3 +28,16 @@ class ExportService:
         except Exception as e:
             logger.error("get_raw_export failed", error=str(e))
             return None
+
+    # ── NEW: Compatibility execute method ──────────────────────────────────
+    def execute(self, request) -> Optional[str]:
+        """
+        Compatibility method for the Phase 10 architecture.
+        Delegates to get_raw_export().
+        """
+        fmt = "json"  # default
+        if hasattr(request, "export_format"):
+            fmt = request.export_format
+        elif isinstance(request, dict) and "export_format" in request:
+            fmt = request["export_format"]
+        return self.get_raw_export(fmt)

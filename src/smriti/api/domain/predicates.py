@@ -82,7 +82,7 @@ class ProjectionPolicy:
 
 SUMMARY_POLICY = ProjectionPolicy(
     allowed_fields=frozenset([
-        "claim_id", "claim_text", "reliability_index", "calibration_label",
+        "claim_id", "claim_text", "context", "reliability_index", "calibration_label",
         "uncertainty_score"
     ]),
     excluded_fields=frozenset(),

@@ -16,9 +16,17 @@ Responsibilities:
 from __future__ import annotations
 
 import streamlit as st
+import structlog
 
-from smriti.dashboard.workspaces.context import WorkspaceContext
+from smriti.dashboard.workspaces.context import (
+    WorkspaceContext,
+    InteractionContext,
+    RenderingContext,
+    InfrastructureContext,
+)
 from smriti.exceptions import WorkspaceNotFoundError
+
+logger = structlog.get_logger(__name__)
 
 
 class RenderCoordinator:
@@ -47,12 +55,23 @@ class RenderCoordinator:
         # Render notifications first
         notification_center.render()
 
-        # Build context
-        context = WorkspaceContext(
+        # Build the three sub-contexts (RECTIFIED for WorkspaceContext)
+        interaction = InteractionContext(
             state_manager=state_manager,
-            client=client,
             policy_engine=policy_engine,
+        )
+        rendering = RenderingContext(
             notification_center=notification_center,
+        )
+        infrastructure = InfrastructureContext(
+            client=client,
+            logger=logger,
+        )
+
+        context = WorkspaceContext(
+            interaction=interaction,
+            rendering=rendering,
+            infrastructure=infrastructure,
         )
 
         # Get and render workspace

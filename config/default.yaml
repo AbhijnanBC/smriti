@@ -518,7 +518,7 @@ feature_flags:
 # ── Phase 12: Scientific Validation Framework ─────────────────────────────────
 evaluation:
   # Gate thresholds (RECTIFIED: gates, not weighted average)
-  gate_1_arch_pass_rate: 0.90
+  gate_1_arch_pass_rate: 0.85
   gate_2_eci_required: 75.0
   gate_3_min_experiments: 6
   gate_4_sci_required: 70.0

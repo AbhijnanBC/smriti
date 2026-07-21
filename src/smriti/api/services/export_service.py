@@ -1,4 +1,8 @@
-"""export_service.py — Knowledge export in JSON, CSV, and GraphML formats."""
+"""export_service.py — Knowledge export in JSON, CSV, and GraphML formats.
+
+RECTIFIED (Method naming): execute_export renamed to execute for
+consistent service interface.
+"""
 
 from __future__ import annotations
 
@@ -26,9 +30,24 @@ class ExportService:
     def __init__(self, store: ReadStore) -> None:
         self._store = store
 
-    def execute_export(
+    # ── RECTIFIED: Renamed from execute_export to execute ──────────────────
+    def execute(
         self, request: ExportRequest, plan: Any, ctx: ExecutionContext
     ) -> KnowledgeResponse:
+        """
+        Execute an export request.
+
+        Args:
+            request: ExportRequest with format and options.
+            plan:    PhysicalPlan for this request.
+            ctx:     ExecutionContext.
+
+        Returns:
+            KnowledgeResponse containing the exported content.
+
+        Raises:
+            ExportError: If the export format is unsupported or fails.
+        """
         t0 = time.monotonic()
 
         try:

@@ -12,6 +12,9 @@ REMOVED from this class. It now does exactly:
 
 NavigationService owns traversal.
 StatisticsService owns aggregation.
+
+RECTIFIED (Phase 9 compatibility): Safely extracts all enum-like fields,
+handling both enum objects and strings from deserialized JSON.
 """
 
 from __future__ import annotations
@@ -29,6 +32,34 @@ from smriti.exceptions import ReadStoreError
 logger = structlog.get_logger(__name__)
 
 STORE_VERSION = "1.0"
+
+
+def _safe_str(value) -> str:
+    """
+    Safely convert a value to a string.
+    If it's an enum with a `value` attribute, return that.
+    If it's already a string, return it as-is.
+    If None, return an empty string.
+    """
+    if value is None:
+        return ""
+    if hasattr(value, "value"):
+        return str(value.value)
+    return str(value)
+
+
+def _safe_int(value) -> int:
+    """Safely convert a value to an int."""
+    if value is None:
+        return 0
+    return int(value)
+
+
+def _safe_float(value) -> float:
+    """Safely convert a value to a float."""
+    if value is None:
+        return 0.0
+    return float(value)
 
 
 class InMemoryReadStore(ReadStore):
@@ -72,6 +103,7 @@ class InMemoryReadStore(ReadStore):
 
             rel_meta = reliability.get(claim_id)
 
+            # ── SAFE ENUM ACCESS: use _safe_str for all enum fields ─────────────
             self._claim_records[claim_id] = {
                 "claim_id": claim_id,
                 "claim_text": node.claim_text,
@@ -79,22 +111,22 @@ class InMemoryReadStore(ReadStore):
                 "document_id": node.document_id,
                 "source_path": str(node.source_path),
                 "partition_id": partition_id,
-                "semantic_role": role.value if role else "unclassified",
-                "reliability_index": rel_meta.reliability_index if rel_meta else 0.0,
-                "uncertainty_score": rel_meta.uncertainty_score if rel_meta else 100.0,
-                "evidence_completeness": rel_meta.evidence_completeness if rel_meta else 0.0,
-                "calibration_label": rel_meta.calibration_label.value if rel_meta else "very_low",
-                "policy_version": rel_meta.policy_version if rel_meta else "",
-                "degree": topo.degree if topo else 0,
-                "in_degree": topo.in_degree if topo else 0,
-                "centrality": topo.centrality if topo else 0.0,
-                "is_hub": topo.is_hub if topo else False,
-                "is_bridge": topo.is_bridge if topo else False,
-                "support_count": support.support_count if support else 0,
-                "weighted_confidence": support.weighted_confidence if support else 0.0,
+                "semantic_role": _safe_str(role) if role else "unclassified",
+                "reliability_index": _safe_float(rel_meta.reliability_index if rel_meta else 0.0),
+                "uncertainty_score": _safe_float(rel_meta.uncertainty_score if rel_meta else 100.0),
+                "evidence_completeness": _safe_float(rel_meta.evidence_completeness if rel_meta else 0.0),
+                "calibration_label": _safe_str(rel_meta.calibration_label if rel_meta else "very_low"),
+                "policy_version": _safe_str(rel_meta.policy_version if rel_meta else ""),
+                "degree": _safe_int(topo.degree if topo else 0),
+                "in_degree": _safe_int(topo.in_degree if topo else 0),
+                "centrality": _safe_float(topo.centrality if topo else 0.0),
+                "is_hub": bool(topo.is_hub if topo else False),
+                "is_bridge": bool(topo.is_bridge if topo else False),
+                "support_count": _safe_int(support.support_count if support else 0),
+                "weighted_confidence": _safe_float(support.weighted_confidence if support else 0.0),
                 "supporting_claim_ids": list(support.supporting_claim_ids) if support else [],
-                "temporal_status": temporal.status.value if temporal else "unknown",
-                "temporal_confidence": temporal.temporal_confidence if temporal else 0.0,
+                "temporal_status": _safe_str(temporal.status if temporal else "unknown"),
+                "temporal_confidence": _safe_float(temporal.temporal_confidence if temporal else 0.0),
                 "time_delta_days": temporal.time_delta_days if temporal else None,
             }
 
@@ -105,7 +137,7 @@ class InMemoryReadStore(ReadStore):
                 "reliability_index": meta.reliability_index,
                 "uncertainty_score": meta.uncertainty_score,
                 "evidence_completeness": meta.evidence_completeness,
-                "calibration_label": meta.calibration_label.value,
+                "calibration_label": _safe_str(meta.calibration_label),
                 "policy_version": meta.policy_version,
                 "schema_version": meta.schema_version,
                 "signal_vector": {
@@ -120,7 +152,7 @@ class InMemoryReadStore(ReadStore):
                 "signal_statuses": dict(sv.statuses),
                 "component_scores": [
                     {
-                        "signal_name": c.signal_name,
+                        "signal_name": _safe_str(c.signal_id) if hasattr(c, "signal_id") else _safe_str(c.get("signal_name", "")),
                         "contribution": c.contribution,
                         "direction": c.direction,
                         "normalized_value": c.normalized_value,
@@ -147,23 +179,27 @@ class InMemoryReadStore(ReadStore):
                 "policy_snapshot": scored_graph.policy_snapshot,
             }
 
+        # ── RECTIFIED: Safe edge record building ──────────────────────────────
         for edge_id, edge in graph.edges.items():
+            rel_type = _safe_str(edge.relationship_type)
+            direction = _safe_str(edge.direction)
+
             rec = {
                 "edge_id": edge_id,
                 "source_claim_id": edge.source_node_id,
                 "target_claim_id": edge.target_node_id,
-                "relationship_type": edge.relationship_type.value,
-                "direction": edge.direction.value,
+                "relationship_type": rel_type,
+                "direction": direction,
                 "calibrated_confidence": edge.calibrated_confidence,
                 "cosine_similarity": edge.cosine_similarity,
                 "candidate_rank": edge.candidate_rank,
             }
             self._edge_records.append(rec)
+
             src, tgt = edge.source_node_id, edge.target_node_id
-            rtype = edge.relationship_type.value
-            self._adj[src].append((tgt, edge_id, rtype))
-            if edge.direction.value == "symmetric":
-                self._adj[tgt].append((src, edge_id, rtype))
+            self._adj[src].append((tgt, edge_id, rel_type))
+            if direction == "symmetric":
+                self._adj[tgt].append((src, edge_id, rel_type))
 
     @property
     def run_id(self) -> str:
@@ -194,16 +230,13 @@ class InMemoryReadStore(ReadStore):
 
         total = len(results)
 
-        # ----- RECTIFIED SORTING (stable, type‑safe) -----
-        # Sort by tiebreaker ascending first (stable step)
+        # Stable sort: tiebreaker first (ascending), then primary with desired order
         if sort.tiebreaker_field:
             results.sort(key=lambda r: r.get(sort.tiebreaker_field, "") or "")
-        # Then sort by primary field with the desired order (stable)
         results.sort(
             key=lambda r: r.get(sort.field, 0) or 0,
             reverse=(sort.order == SortOrder.DESC)
         )
-        # -------------------------------------------------
 
         return results[pagination.offset: pagination.offset + pagination.limit], total
 
