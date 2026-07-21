@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus, TemporalStatus,
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalID, SignalStatus, TemporalStatus,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -13,8 +13,8 @@ from smriti.scoring.signals.base import BaseSignalExtractor
 class TemporalStabilityExtractor(BaseSignalExtractor):
 
     @property
-    def signal_name(self) -> str:
-        return "temporal_stability"
+    def signal_id(self) -> SignalID:
+        return SignalID.TEMPORAL_STABILITY
 
     @property
     def version(self) -> str:
@@ -40,7 +40,7 @@ class TemporalStabilityExtractor(BaseSignalExtractor):
 
         if temp is None:
             return RawSignal(
-                name=self.signal_name,
+                name=self.signal_id,
                 raw_value=tp.default_stability,
                 normalized_value=tp.default_stability,
                 status=SignalStatus.DEFAULT,
@@ -64,7 +64,7 @@ class TemporalStabilityExtractor(BaseSignalExtractor):
         normalized = self.normalize(raw_value, global_stats)
 
         return RawSignal(
-            name=self.signal_name,
+            name=self.signal_id,
             raw_value=raw_value,
             normalized_value=normalized,
             status=status,

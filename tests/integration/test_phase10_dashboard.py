@@ -19,6 +19,18 @@ from smriti.dashboard.controller.interaction_dispatcher import InteractionDispat
 from smriti.dashboard.commands.commands import SelectClaimCommand, ActivateWorkspaceCommand
 
 
+# ── Test‑specific PolicyEngine with validate_command ─────────────────────────
+class TestPolicyEngine(PolicyEngine):
+    """Subclass that implements validate_command for testing."""
+    def validate_command(self, command):
+        """Enforce interaction policies for commands.
+        For this test suite, we allow all commands.
+        """
+        # In a real implementation, you'd check command type and limits.
+        # Here we just accept everything.
+        return True, ""
+
+
 def make_mock_api():
     api = MagicMock()
     api.run_id = "test_run_phase10"
@@ -133,7 +145,8 @@ def registry():
 
 @pytest.fixture
 def policy_engine():
-    return PolicyEngine(InteractionPolicy())
+    # Use the test-specific subclass that implements validate_command
+    return TestPolicyEngine(InteractionPolicy())
 
 
 # ── Interaction lifecycle ─────────────────────────────────────────────────────

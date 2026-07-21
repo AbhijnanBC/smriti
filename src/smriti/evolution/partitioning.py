@@ -93,31 +93,32 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
                     return False  # Odd cycle — not 2-colorable
         return True
 
-    # Process connected components of the contradiction graph
+    # ── FIX: Assign default color 0 to all nodes with no contradiction constraints ──
+    # This ensures all SUPPORTS chains among non‑contradictory nodes merge into one partition.
     for node_id in sorted(all_node_ids):
-        if node_id not in node_color:
-            if not contradiction_constraints[node_id]:
-                # Isolated in contradiction graph — assign unique color
-                node_color[node_id] = color_counter[0]
-                color_counter[0] += 1
-            else:
-                if not bfs_color(node_id):
-                    # Odd contradiction cycle detected.
-                    # DESIGN DECISION: We intentionally degrade into singleton partitions
-                    # rather than attempting approximate graph-cut optimization.
-                    visited = set()
-                    q = deque([node_id])
-                    while q:
-                        n = q.popleft()
-                        if n in visited:
-                            continue
-                        visited.add(n)
-                        if n not in node_color:
-                            node_color[n] = color_counter[0]
-                            color_counter[0] += 1
-                        for nb in contradiction_constraints.get(n, set()):
-                            if nb not in visited:
-                                q.append(nb)
+        if not contradiction_constraints[node_id]:
+            node_color[node_id] = 0
+
+    # Process connected components of the contradiction graph that have constraints
+    for node_id in sorted(all_node_ids):
+        if node_id not in node_color:  # Has contradictions and not yet colored
+            if not bfs_color(node_id):
+                # Odd contradiction cycle detected.
+                # DESIGN DECISION: We intentionally degrade into singleton partitions
+                # rather than attempting approximate graph-cut optimization.
+                visited = set()
+                q = deque([node_id])
+                while q:
+                    n = q.popleft()
+                    if n in visited:
+                        continue
+                    visited.add(n)
+                    if n not in node_color:
+                        node_color[n] = color_counter[0]
+                        color_counter[0] += 1
+                    for nb in contradiction_constraints.get(n, set()):
+                        if nb not in visited:
+                            q.append(nb)
 
     # ── Step 3: Union-Find on SUPPORTS/REFINES edges (same-color only) ────────
     parent: Dict[str, str] = {nid: nid for nid in all_node_ids}

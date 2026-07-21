@@ -7,14 +7,14 @@ import pytest
 from pathlib import Path
 from datetime import datetime, timezone
 from smriti.core.models import SemanticSentence
-from smriti.claims.parser import LinguisticParser
+from smriti.claims.parser import SpaCyParser
 
 
 @pytest.fixture(scope="module")
 def parser():
     """Load spaCy model once per test module."""
     try:
-        return LinguisticParser()
+        return SpaCyParser()
     except Exception:
         pytest.skip("spaCy model not available")
 

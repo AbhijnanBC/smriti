@@ -21,7 +21,7 @@ from unittest.mock import MagicMock
 
 from smriti.core.models import (
     Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
-    Modality, EmbeddingStatus, EmbeddedClaim,
+    Modality, EmbeddedClaim,
     EmbeddingModelDescriptor, EmbeddingProvenance,
     EmbeddingQuality, Vector,
 )
@@ -29,6 +29,7 @@ from smriti.core.manifest import ManifestManager
 from smriti.core.state import StateManager
 from smriti.embedding import embed_claims, Phase5Result
 from smriti.embedding.embedder import BaseEmbedder, EmbedderCapabilities
+from smriti.embedding.models import EmbeddingStatus 
 
 
 # ── Mock embedder ─────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from typing import List
-from smriti.core.models import ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus
+from smriti.core.models import ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalID, SignalStatus
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
 
@@ -12,8 +12,8 @@ from smriti.scoring.signals.base import BaseSignalExtractor
 class SourceDiversityExtractor(BaseSignalExtractor):
 
     @property
-    def signal_name(self) -> str:
-        return "source_diversity"
+    def signal_id(self) -> SignalID:
+        return SignalID.SOURCE_DIVERSITY
 
     @property
     def version(self) -> str:
@@ -36,7 +36,7 @@ class SourceDiversityExtractor(BaseSignalExtractor):
     ) -> RawSignal:
         if node.support_aggregate is None:
             return RawSignal(
-                name=self.signal_name, raw_value=0.0, normalized_value=0.0,
+                name=self.signal_id, raw_value=0.0, normalized_value=0.0,
                 status=SignalStatus.UNAVAILABLE,
                 metadata={"reason": "no_support_aggregate"},
             )
@@ -44,7 +44,7 @@ class SourceDiversityExtractor(BaseSignalExtractor):
         supporting_ids = node.support_aggregate.supporting_claim_ids
         if not supporting_ids:
             return RawSignal(
-                name=self.signal_name, raw_value=0.0, normalized_value=0.0,
+                name=self.signal_id, raw_value=0.0, normalized_value=0.0,
                 status=SignalStatus.MEASURED,
                 metadata={"unique_documents": 0},
             )
@@ -61,7 +61,7 @@ class SourceDiversityExtractor(BaseSignalExtractor):
         normalized = self.normalize(raw_value, global_stats)
 
         return RawSignal(
-            name=self.signal_name,
+            name=self.signal_id,
             raw_value=raw_value,
             normalized_value=normalized,
             status=SignalStatus.MEASURED,

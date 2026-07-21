@@ -75,7 +75,7 @@ def _serialize_scored_graph(scored: ScoredKnowledgeGraph) -> str:
             },
             "signal_manifests": [
                 {
-                    "signal_name": m.signal_name,
+                    "signal_id": m.signal_id,
                     "extractor_version": m.extractor_version,
                     "raw_value": m.raw_value,
                     "normalized_value": m.normalized_value,
@@ -97,7 +97,7 @@ def _serialize_scored_graph(scored: ScoredKnowledgeGraph) -> str:
             },
             "components": [
                 {
-                    "signal": c.signal_name,
+                    "signal": c.signal_id,
                     "contribution": round(c.contribution, 3),
                     "direction": c.direction,
                     "explanation": c.explanation,

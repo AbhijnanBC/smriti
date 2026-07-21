@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import List
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus, RelationshipType,
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalID, SignalStatus, RelationshipType,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -14,8 +14,8 @@ from smriti.scoring.signals.base import BaseSignalExtractor
 class ConflictPressureExtractor(BaseSignalExtractor):
 
     @property
-    def signal_name(self) -> str:
-        return "conflict_pressure"
+    def signal_id(self) -> SignalID:
+        return SignalID.CONFLICT_PRESSURE
 
     @property
     def version(self) -> str:
@@ -46,7 +46,7 @@ class ConflictPressureExtractor(BaseSignalExtractor):
 
         if n_contradictions == 0:
             return RawSignal(
-                name=self.signal_name, raw_value=0.0, normalized_value=0.0,
+                name=self.signal_id, raw_value=0.0, normalized_value=0.0,
                 status=SignalStatus.MEASURED,
                 metadata={"contradiction_count": 0},
             )
@@ -63,7 +63,7 @@ class ConflictPressureExtractor(BaseSignalExtractor):
         normalized = self.normalize(raw_value, global_stats)
 
         return RawSignal(
-            name=self.signal_name,
+            name=self.signal_id,
             raw_value=raw_value,
             normalized_value=normalized,
             status=SignalStatus.MEASURED,

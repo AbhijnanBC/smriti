@@ -27,16 +27,16 @@ def build_explanation(
     )
 
     strengths = tuple(
-        (c.signal_name, round(c.contribution, 2))
+        (c.signal_id, round(c.contribution, 2))
         for c in positive[:MAX_EXPLANATION_SIGNALS]
     )
     weaknesses = tuple(
-        (c.signal_name, round(c.contribution, 2))
+        (c.signal_id, round(c.contribution, 2))
         for c in negative[:MAX_EXPLANATION_SIGNALS]
     )
 
-    dominant = positive[0].signal_name if positive else "none"
-    limiting = negative[0].signal_name if negative else "none"
+    dominant = positive[0].signal_id if positive else "none"
+    limiting = negative[0].signal_id if negative else "none"
 
     summary = _build_summary(reliability_index, positive, negative)
     recommendations = _build_recommendations(component_scores)
@@ -64,11 +64,11 @@ def _build_summary(ri: float, positive: list, negative: list) -> str:
         base = "Very low reliability."
 
     if positive:
-        top = positive[0].signal_name.replace("_", " ").capitalize()
+        top = positive[0].signal_id.replace("_", " ").capitalize()
         base += f" Primary strength: {top}."
 
     if negative:
-        top_neg = negative[0].signal_name.replace("_", " ").capitalize()
+        top_neg = negative[0].signal_id.replace("_", " ").capitalize()
         base += f" Main concern: {top_neg}."
 
     return base
@@ -76,7 +76,7 @@ def _build_summary(ri: float, positive: list, negative: list) -> str:
 
 def _build_recommendations(component_scores: List[ComponentScore]) -> tuple:
     recs = []
-    score_map = {c.signal_name: c.contribution for c in component_scores}
+    score_map = {c.signal_id: c.contribution for c in component_scores}
 
     if score_map.get("conflict_pressure", 0) < -10:
         recs.append("Review contradicting claims in other partitions.")

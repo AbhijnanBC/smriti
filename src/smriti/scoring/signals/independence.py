@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import List, Set
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus,
+    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalID, SignalStatus,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -26,9 +26,10 @@ from smriti.scoring.signals.base import BaseSignalExtractor
 
 class EvidenceIndependenceExtractor(BaseSignalExtractor):
 
+    
     @property
-    def signal_name(self) -> str:
-        return "evidence_independence"
+    def signal_id(self) -> SignalID:
+        return SignalID.EVIDENCE_INDEPENDENCE
 
     @property
     def version(self) -> str:
@@ -55,7 +56,7 @@ class EvidenceIndependenceExtractor(BaseSignalExtractor):
     ) -> RawSignal:
         if node.support_aggregate is None or node.support_aggregate.support_count == 0:
             return RawSignal(
-                name=self.signal_name, raw_value=1.0, normalized_value=1.0,
+                name=self.signal_id, raw_value=1.0, normalized_value=1.0,
                 status=SignalStatus.DEFAULT,
                 metadata={"reason": "no_support_to_evaluate"},
             )
@@ -63,7 +64,7 @@ class EvidenceIndependenceExtractor(BaseSignalExtractor):
         supporting_ids = node.support_aggregate.supporting_claim_ids
         if not supporting_ids:
             return RawSignal(
-                name=self.signal_name, raw_value=1.0, normalized_value=1.0,
+                name=self.signal_id, raw_value=1.0, normalized_value=1.0,
                 status=SignalStatus.MEASURED,
                 metadata={"support_count": 0},
             )
@@ -114,7 +115,7 @@ class EvidenceIndependenceExtractor(BaseSignalExtractor):
         normalized = self.normalize(raw_value, global_stats)
 
         return RawSignal(
-            name=self.signal_name,
+            name=self.signal_id,
             raw_value=raw_value,
             normalized_value=normalized,
             status=SignalStatus.MEASURED,

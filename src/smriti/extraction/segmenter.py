@@ -176,7 +176,7 @@ class SentenceSegmenter:
 
                 # Check: followed by whitespace then uppercase (or end of string)
                 j = i + 1
-                while j < length and prose[j] in '"\')\]':
+                while j < length and prose[j] in '"\')\\]':
                     j += 1
 
                 if j >= length:

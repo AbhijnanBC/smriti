@@ -961,7 +961,7 @@ class PipelineRunner:
         validation = ValidationReport(
             is_valid=val_data.get("is_valid", True),
             node_violations=(), edge_violations=(), graph_violations=(),
-            semantic_violations=(),
+            semantic_warnings=(),
             validation_time_seconds=0.0,
         )
         return KnowledgeGraph(

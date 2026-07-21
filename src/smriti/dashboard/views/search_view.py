@@ -9,7 +9,7 @@ from smriti.dashboard.commands.commands import (
     ApplyFilterCommand,
     ClearFiltersCommand,
 )
-from smriti.dashboard.events.event_bus import InteractionDispatcher
+from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
 
 
 class SearchView(BaseView):

@@ -142,7 +142,7 @@ def test_stable_partition_label_present():
     run_partitioning(ctx)
     for partition in ctx.partitions.values():
         assert partition.stable_partition_label is not None
-        assert isinstance(partition.stable_partition_label, str)
+        assert isinstance(partition.stable_partition_label, tuple)
         assert len(partition.stable_partition_label) > 0
 
 

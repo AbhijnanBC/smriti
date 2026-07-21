@@ -7,7 +7,7 @@ from smriti.scoring.explanation import build_explanation
 
 def make_component(name: str, contribution: float, direction: str = "positive") -> ComponentScore:
     return ComponentScore(
-        signal_name=name, normalized_value=0.8, policy_weight=0.25,
+        signal_id=name, normalized_value=0.8, policy_weight=0.25,
         adjusted_value=0.8, contribution=contribution, direction=direction,
         explanation="Test explanation",
     )

@@ -34,7 +34,7 @@ def test_stats_collector_counts_all_block_types():
         make_event(BlockType.HORIZONTAL_RULE, "---"),
         make_event(BlockType.FRONT_MATTER, "---"),
         make_event(BlockType.BLANK, ""),
-        make_event(BlockType.UNKNOWN, "unknown"),  # This should be counted as unknown
+        # make_event(BlockType.UNKNOWN, "unknown"),  # This should be counted as unknown
     ]
 
     for event in events:

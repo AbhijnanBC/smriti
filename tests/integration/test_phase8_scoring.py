@@ -90,7 +90,7 @@ def make_minimal_graph(run_id="test_run") -> KnowledgeGraph:
     )
     vr = ValidationReport(
         is_valid=True, node_violations=(), edge_violations=(),
-        graph_violations=(), semantic_violations=(), validation_time_seconds=0.01,
+        graph_violations=(), semantic_warnings=(), validation_time_seconds=0.01,
     )
     return KnowledgeGraph(
         graph_id="test_graph_001", nodes=nodes, edges=edges, partitions=partitions,

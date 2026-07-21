@@ -193,15 +193,18 @@ class InMemoryReadStore(ReadStore):
             results.append(record)
 
         total = len(results)
-        reverse = (sort.order == SortOrder.DESC)
-        tb_reverse = (sort.tiebreaker_order == SortOrder.DESC)
+
+        # ----- RECTIFIED SORTING (stable, type‑safe) -----
+        # Sort by tiebreaker ascending first (stable step)
+        if sort.tiebreaker_field:
+            results.sort(key=lambda r: r.get(sort.tiebreaker_field, "") or "")
+        # Then sort by primary field with the desired order (stable)
         results.sort(
-            key=lambda r: (
-                -(r.get(sort.field, 0) or 0) if reverse else (r.get(sort.field, 0) or 0),
-                -(r.get(sort.tiebreaker_field, "") or "") if tb_reverse
-                else (r.get(sort.tiebreaker_field, "") or ""),
-            )
+            key=lambda r: r.get(sort.field, 0) or 0,
+            reverse=(sort.order == SortOrder.DESC)
         )
+        # -------------------------------------------------
+
         return results[pagination.offset: pagination.offset + pagination.limit], total
 
     def fetch_relationship(self, claim_id: str) -> Optional[Dict[str, Any]]:

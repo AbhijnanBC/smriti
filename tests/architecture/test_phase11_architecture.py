@@ -9,7 +9,7 @@ import ast
 import pytest
 from pathlib import Path
 from typing import Set
-from smriti.api import knowledge
+import smriti.api as knowledge
 
 SRC = Path("src/smriti")
 

@@ -70,7 +70,7 @@ def test_empty_claim_text_raises():
         validate_graph_structure(nodes, {}, backend)
 
 
-def test_semantic_violations_detected_and_reported():
+def test_semantic_warnings_detected_and_reported():
     """RECTIFIED (P2-4): SUPPORTS→CONTRADICTS→SUPPORTS chain produces semantic warning."""
     backend = NetworkXBackend()
     nodes = {
@@ -94,14 +94,14 @@ def test_semantic_violations_detected_and_reported():
     # Should pass structurally but produce semantic warnings
     report = validate_graph_structure(nodes, edges, backend)
     assert report.is_valid is True  # Not a fatal error
-    assert len(report.semantic_violations) > 0
+    assert len(report.semantic_warnings) > 0
 
 
-def test_semantic_violations_field_present_on_report():
-    """RECTIFIED (P2-4): ValidationReport must have semantic_violations tuple."""
+def test_semantic_warnings_field_present_on_report():
+    """RECTIFIED (P2-4): ValidationReport must have semantic_warnings tuple."""
     backend = NetworkXBackend()
     nodes = {"c001": make_node("c001")}
     backend.add_node("c001")
     report = validate_graph_structure(nodes, {}, backend)
-    assert hasattr(report, "semantic_violations")
-    assert isinstance(report.semantic_violations, tuple)
+    assert hasattr(report, "semantic_warnings")
+    assert isinstance(report.semantic_warnings, tuple)

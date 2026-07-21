@@ -37,7 +37,7 @@ def make_cs(policy, **sv_kwargs):
     }.items():
         if fp.get_weight(name) > 0:
             candidates.append(ContributionCandidate(
-                signal_name=name, normalized_value=value,
+                signal_id=name, normalized_value=value,
                 policy_weight=fp.get_weight(name),
                 direction=fp.get_direction(name),
                 label=name, raw_value=value,

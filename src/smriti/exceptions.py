@@ -502,6 +502,9 @@ class GovernanceException(ArchitectureException):
     """ADR conflicts, version incompatibility, or interface stability violations."""
     pass
 
+class Phase11InvariantViolation(ArchitectureException):
+    """Raised when a system invariant is violated during Phase 11 runtime."""
+    pass
 class CapabilityException(ArchitectureException):
     """Invocation of an unavailable or degraded capability."""
     pass
@@ -521,6 +524,7 @@ ArchitectureEventError = InfrastructureException
 SchedulerError = SchedulerException
 Phase11ComplianceError = ComplianceException
 Phase11GovernanceError = GovernanceException
+Phase11InvariantViolation = Phase11InvariantViolation
 
 
 # ── Phase 12: Scientific Validation Framework ──────────────────────────────────

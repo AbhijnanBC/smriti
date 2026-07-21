@@ -52,7 +52,8 @@ def assemble_contribution_set(
     Returns:
         (ContributionSet, manifests, signal_vector)
     """
-    extractor_map = {e.signal_name: e for e in extractors}
+    # FIXED: Use .value to get string keys for lookup by sig.name (a string)
+    extractor_map = {e.signal_id.value: e for e in extractors}
     validated: Dict[str, RawSignal] = {}
     status_map: Dict[str, str] = {}
     manifests: List[SignalManifest] = []
@@ -89,7 +90,7 @@ def assemble_contribution_set(
         validated[sig.name] = corrected_sig
         status_map[sig.name] = status.value
 
-        # Build SignalManifest (P0-4)
+        # Build SignalManifest (P0-4) - now lookup works because keys are strings
         extractor = extractor_map.get(sig.name)
         if extractor:
             manifest = extractor.build_manifest(corrected_sig, quality_flags)
@@ -97,16 +98,16 @@ def assemble_contribution_set(
 
     # ── Build ContributionSet (P0-2) ────────────────────────────────────────
     candidates = []
-    for signal_name, sig in validated.items():
-        weight = fusion_policy.get_weight(signal_name)
-        direction = fusion_policy.get_direction(signal_name)
+    for signal_id, sig in validated.items():
+        weight = fusion_policy.get_weight(signal_id)
+        direction = fusion_policy.get_direction(signal_id)
         if weight > 0:
             candidates.append(ContributionCandidate(
-                signal_name=signal_name,
+                signal_id=signal_id,
                 normalized_value=sig.normalized_value,
                 policy_weight=weight,
                 direction=direction,
-                label=signal_name.replace("_", " ").title(),
+                label=signal_id.replace("_", " ").title(),
                 raw_value=sig.raw_value,
             ))
 

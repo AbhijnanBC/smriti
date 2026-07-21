@@ -5,7 +5,7 @@ Includes schema_version validation (critical fix).
 
 import pytest
 import pickle
-from smriti.core.models import EmbeddingStatus
+from smriti.embedding.models import EmbeddingStatus
 from smriti.embedding.cache import EmbeddingCachePolicy, CACHE_SCHEMA_VERSION
 
 

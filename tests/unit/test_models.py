@@ -6,7 +6,7 @@ from pathlib import Path
 
 from smriti.core.models import (
     Claim, Contradiction, ContradictionType,
-    Document, FileFormat, Sentence, Embedding,
+    Document, FileFormat, SemanticSentence, Embedding,
     Topic, ManifestEntry,
 )
 

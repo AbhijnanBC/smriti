@@ -38,6 +38,7 @@ def extraction_result():
         raw_text="# Hello\n\nWorld.",
         warnings=(),
         method=ExtractionMethod.MARKDOWN,
+        encoding_used="utf-8",  # RECTIFICATION: added missing field
     )
 
 
@@ -79,6 +80,7 @@ def test_warnings_merged(source_doc, stats):
         raw_text="text",
         warnings=(WarningCode.NO_EXTRACTABLE_TEXT,),
         method=ExtractionMethod.MARKDOWN,
+        encoding_used="utf-8",  # RECTIFICATION: added missing field
     )
     norm_warnings = (WarningCode.BLANK_LINES_COLLAPSED,)
     doc = build_document(source_doc, extraction_result, "text", norm_warnings, stats)
@@ -109,6 +111,7 @@ def test_empty_document_produces_warning(source_doc, stats):
         raw_text="",
         warnings=(),
         method=ExtractionMethod.MARKDOWN,
+        encoding_used="utf-8",  # RECTIFICATION: added missing field
     )
     empty_stats = TextStatistics(
         character_count=0, word_count=0, line_count=0,

@@ -70,7 +70,7 @@ def make_empty_graph():
     )
     vr = ValidationReport(
         is_valid=True, node_violations=(), edge_violations=(),
-        graph_violations=(), semantic_violations=(), validation_time_seconds=0.0,
+        graph_violations=(), semantic_warnings=(), validation_time_seconds=0.0,
     )
     return KnowledgeGraph(
         graph_id="test", nodes={}, edges={}, partitions={},

@@ -5,7 +5,7 @@ Unit tests for claims/structure.py.
 import pytest
 from pathlib import Path
 from smriti.core.models import SemanticSentence, ExtractionMode
-from smriti.claims.parser import LinguisticParser
+from smriti.claims.parser import SpaCyParser
 from smriti.claims.boundaries import BoundaryDetector
 from smriti.claims.structure import StructureExtractor
 
@@ -13,7 +13,7 @@ from smriti.claims.structure import StructureExtractor
 @pytest.fixture(scope="module")
 def parser():
     try:
-        return LinguisticParser()
+        return SpaCyParser()
     except Exception:
         pytest.skip("spaCy model not available")
 
@@ -24,7 +24,7 @@ def extractor():
 
 
 def make_parsed(parser, text):
-    from smriti.claims.parser import LinguisticParser
+    from smriti.claims.parser import SpaCyParser
     sentence = SemanticSentence(
         sentence_id="s001",
         document_id="d001",

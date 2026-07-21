@@ -61,7 +61,7 @@ def run_pipeline(pipeline, sentence, max_claims=10):
     return extract_claims_from_sentence(
         sentence=sentence, parser=parser, boundary_detector=bd,
         structure_extractor=se, annotator=ann, degradation_handler=dh,
-        stats_collector=stats, max_claims=max_claims,
+        stats_collector=stats, max_claims=max_claims, global_seen_ids={}, 
     )
 
 

@@ -8,11 +8,10 @@ from smriti.extraction.normalizer import normalize_event
 from smriti.core.models import SegmentationWarning
 
 
-def make_event(block_type, text, raw_text=None, heading_level=None, lines=None):
+def make_event(block_type, text, heading_level=None, lines=None):
     return ScannerEvent(
         block_type=block_type,
         text=text,
-        raw_text=raw_text or text,
         heading_level=heading_level,
         char_start=0,
         char_end=len(text),
@@ -80,7 +79,6 @@ def test_table_normalized_to_prose():
     event = ScannerEvent(
         block_type=BlockType.TABLE,
         text=raw,
-        raw_text=raw,
         heading_level=None,
         char_start=0,
         char_end=len(raw),
@@ -98,7 +96,6 @@ def test_malformed_table_emits_warning():
     event = ScannerEvent(
         block_type=BlockType.TABLE,
         text=raw,
-        raw_text=raw,
         heading_level=None,
         char_start=0,
         char_end=len(raw),

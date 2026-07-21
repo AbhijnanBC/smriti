@@ -75,7 +75,7 @@ def build_reliability_metadata(
     """
     calibration_label = apply_calibration_label(reliability_index, policy)
 
-    registry_order = tuple(e.signal_name for e in extractors)
+    registry_order = tuple(e.signal_id for e in extractors)
 
     audit = ReliabilityAudit(
         policy_version=policy.version,
@@ -86,7 +86,7 @@ def build_reliability_metadata(
         normalization_version="1.1",
         computed_at_run_id=run_id,
         signal_extractor_versions={
-            e.signal_name: e.version for e in extractors
+            e.signal_id: e.version for e in extractors
         },
         registry_order=registry_order,
     )

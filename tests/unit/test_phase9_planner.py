@@ -23,9 +23,12 @@ def index_registry():
     return reg
 
 
+
 @pytest.fixture
 def index_selector(index_registry):
-    return IndexSelector(index_registry)
+    from smriti.api.index.statistics import IndexStatistics
+    stats = IndexStatistics().compute(index_registry)
+    return IndexSelector(registry=index_registry, statistics=stats)
 
 
 @pytest.fixture

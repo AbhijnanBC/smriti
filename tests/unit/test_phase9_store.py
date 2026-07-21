@@ -73,7 +73,7 @@ def make_test_scored_graph():
             ),
             calibration_label=label,
             audit=ReliabilityAudit(
-                policy_version="1.0", policy_profile="balanced",
+                policy_version="1.0", policy_profile="balanced", graph_fingerprint="test_fingerprint",
                 graph_schema_version="7.0", fusion_algorithm="v2",
                 normalization_version="1.1", computed_at_run_id="r1",
                 signal_extractor_versions={}, registry_order=(),
@@ -117,7 +117,7 @@ def make_test_scored_graph():
     )
     vr = ValidationReport(
         is_valid=True, node_violations=(), edge_violations=(),
-        graph_violations=(), semantic_violations=(), validation_time_seconds=0.01,
+        graph_violations=(), semantic_warnings=(), validation_time_seconds=0.01,
     )
     kg = KnowledgeGraph(
         graph_id="g001", nodes=nodes, edges=edges, partitions=partitions,

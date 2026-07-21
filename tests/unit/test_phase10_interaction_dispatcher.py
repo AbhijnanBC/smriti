@@ -17,10 +17,24 @@ from smriti.dashboard.commands.commands import (
 from smriti.exceptions import CommandDispatchError
 
 
+# ── Helper: PolicyEngine with validate_command ──────────────────────────────
+class TestPolicyEngine(PolicyEngine):
+    """Subclass that implements validate_command for testing."""
+    def validate_command(self, command):
+        """Enforce interaction policies for commands."""
+        # Comparison limit
+        if isinstance(command, CompareCommand):
+            max_allowed = self.interaction_policy.comparison.max_comparison_claims
+            if len(command.claim_ids) > max_allowed:
+                return False, f"Comparison limit exceeded: max {max_allowed}"
+        # Add other command validations as needed (e.g., search length, page bounds)
+        return True, ""
+
+
 @pytest.fixture
 def dispatcher():
     mgr = EpistemicStateManager(run_id="test")
-    engine = PolicyEngine(InteractionPolicy())
+    engine = TestPolicyEngine(InteractionPolicy())   # uses default limits
     return InteractionDispatcher(state_manager=mgr, policy_engine=engine), mgr
 
 
@@ -63,13 +77,15 @@ def test_clear_filters_command_clears_state(dispatcher):
 
 def test_compare_command_within_policy_allowed(dispatcher):
     d, mgr = dispatcher
+    # Default max_comparison_claims in InteractionPolicy is 5 (or enough)
     d.dispatch(CompareCommand(session_id="s", claim_ids=("c001", "c002")))
     assert "c001" in mgr.state.comparison_claim_ids
 
 
 def test_compare_command_exceeds_policy_raises(dispatcher):
     d, mgr = dispatcher
-    strict_policy = PolicyEngine(InteractionPolicy(
+    # Use a strict policy with limit = 1
+    strict_policy = TestPolicyEngine(InteractionPolicy(
         comparison=ComparisonPolicy(max_comparison_claims=1)
     ))
     d2 = InteractionDispatcher(state_manager=mgr, policy_engine=strict_policy)

@@ -82,13 +82,13 @@ def compute_reliability(
             contribution = -(candidate.normalized_value * candidate.policy_weight * 100)
 
         component_scores.append(ComponentScore(
-            signal_name=candidate.signal_name,
+            signal_id=candidate.signal_id,
             normalized_value=candidate.normalized_value,
             policy_weight=candidate.policy_weight,
             adjusted_value=candidate.normalized_value,
             contribution=contribution,
             direction=candidate.direction,
-            explanation=_build_signal_explanation(candidate.signal_name, candidate.normalized_value, candidate.direction),
+            explanation=_build_signal_explanation(candidate.signal_id, candidate.normalized_value, candidate.direction),
         ))
 
     # ── Step 3: Raw fusion ────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ def compute_reliability(
 
     # ── Step 7: Build contribution order (descending |contribution|) ──────────
     contribution_order = tuple(
-        c.signal_name
+        c.signal_id
         for c in sorted(component_scores, key=lambda c: abs(c.contribution), reverse=True)
     )
 
@@ -154,7 +154,7 @@ def _apply_policy_interactions(
 
     Any interaction that fires is logged to interactions_log.
     """
-    candidates_map = {c.signal_name: c for c in candidates}
+    candidates_map = {c.signal_id: c for c in candidates}
 
     # Interaction 1: Echo chamber discount
     # If evidence_independence is low, discount evidence_strength
@@ -165,7 +165,7 @@ def _apply_policy_interactions(
         discount = policy.evidence.echo_chamber_penalty
         new_value = evidence.normalized_value * (1.0 - discount)
         new_candidate = ContributionCandidate(
-            signal_name=evidence.signal_name,
+            signal_id=evidence.signal_id,
             normalized_value=new_value,
             policy_weight=evidence.policy_weight,
             direction=evidence.direction,
@@ -220,12 +220,12 @@ def _compute_uncertainty(
 
 
 def _build_signal_explanation(
-    signal_name: str,
+    signal_id: str,
     value: float,
     direction: str,
 ) -> str:
     """Generic explanation for a signal contribution."""
-    label = signal_name.replace("_", " ").capitalize()
+    label = signal_id.replace("_", " ").capitalize()
     if direction == "positive":
         if value >= 0.80:
             return f"{label}: very high ({value:.2f}). Strong positive contribution."
@@ -260,17 +260,17 @@ def compute_reliability_from_signal_vector(
 
     fp = policy.fusion
     candidates = []
-    for signal_name, weight in fp.signal_weights.items():
-        direction = fp.get_direction(signal_name)
-        # Get value from signal_vector by signal_name
-        value = getattr(signal_vector, signal_name, 0.0)
+    for signal_id, weight in fp.signal_weights.items():
+        direction = fp.get_direction(signal_id)
+        # Get value from signal_vector by signal_id
+        value = getattr(signal_vector, signal_id, 0.0)
         if weight > 0:
             candidates.append(ContributionCandidate(
-                signal_name=signal_name,
+                signal_id=signal_id,
                 normalized_value=value,
                 policy_weight=weight,
                 direction=direction,
-                label=signal_name.replace("_", " ").title(),
+                label=signal_id.replace("_", " ").title(),
                 raw_value=value,
             ))
 
