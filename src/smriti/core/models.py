@@ -2073,3 +2073,543 @@ class PipelineState:
 # ── Internal embedding models (not exported) ────────────────────────────────
 # These are used internally by Phase 5; they never cross the phase boundary.
 
+# ── Phase 12: Scientific Validation Framework ─────────────────────────────────
+
+class CertificationLevel(int, Enum):
+    """
+    8-level research certification hierarchy.
+    Each level requires ALL previous levels — this is a gate, not a score.
+    """
+    PROTOTYPE                 = 0  # Code exists and runs
+    ARCHITECTURALLY_VERIFIED  = 1  # All architectural invariants pass
+    ENGINEERING_VALIDATED     = 2  # All engineering contracts satisfied
+    SCIENTIFICALLY_EVALUATED  = 3  # All 6 scientific domains evaluated
+    STATISTICALLY_VERIFIED    = 4  # Statistical rigor established
+    REPRODUCIBLE              = 5  # Independent reproduction confirmed
+    PUBLICATION_READY         = 6  # All publication criteria met
+    RESEARCH_CERTIFIED        = 7  # Living Research System established
+
+
+class EvidenceGrade(str, Enum):
+    """Evidence strength grades — borrowed from evidence-based disciplines."""
+    A = "A"  # Multiple independent experiments
+    B = "B"  # One experiment + baseline comparison
+    C = "C"  # Single controlled experiment
+    D = "D"  # Observational / retrospective
+    E = "E"  # Hypothesis only
+
+
+class ValidationDomain(str, Enum):
+    ARCHITECTURAL = "architectural"
+    ENGINEERING   = "engineering"
+    SCIENTIFIC    = "scientific"
+    OPERATIONAL   = "operational"
+    RESEARCH      = "research"
+
+
+class VerificationStatus(str, Enum):
+    PASSED  = "passed"
+    FAILED  = "failed"
+    WARNING = "warning"
+    SKIPPED = "skipped"
+    PENDING = "pending"
+
+
+class ScientificDomain(str, Enum):
+    KNOWLEDGE_EXTRACTION = "knowledge_extraction"
+    EMBEDDING_QUALITY    = "embedding_quality"
+    KNOWLEDGE_GRAPH      = "knowledge_graph"
+    RETRIEVAL            = "retrieval"
+    RELIABILITY_SCORING  = "reliability_scoring"
+    EXPLAINABILITY       = "explainability"
+
+
+class PublicationReadinessLevel(str, Enum):
+    """
+    RECTIFIED (P1-6): Publication readiness is not binary.
+    Mirrors standard journal reviewer language.
+    """
+    COMPLETE        = "complete"       # All criteria met — ready to submit
+    MINOR_REVISION  = "minor_revision" # Small gaps, easily addressed
+    MAJOR_REVISION  = "major_revision" # Significant work required
+    NOT_READY       = "not_ready"      # Fundamental gaps remain
+
+
+class ExperimentLifecycleState(str, Enum):
+    """
+    RECTIFIED (P1-2): Formal lifecycle for experiments.
+    Enforces pre-registration principle.
+    """
+    DRAFT      = "draft"      # Being designed
+    REGISTERED = "registered" # Formally committed (acceptance criteria locked)
+    APPROVED   = "approved"   # Ready to execute
+    EXECUTED   = "executed"   # Results available
+    VALIDATED  = "validated"  # Results reviewed and accepted
+    ARCHIVED   = "archived"   # Permanently recorded
+
+
+class GateDecision(str, Enum):
+    """RECTIFIED (P0-1): Certification gate decision — not a score."""
+    PASS  = "pass"   # Gate criteria met — proceed to next gate
+    BLOCK = "block"  # Gate criteria not met — certification stops here
+
+
+@dataclass(frozen=True)
+class ValidationPrinciple:
+    """One of the 8 validation principles."""
+    number: int
+    name: str
+    statement: str
+
+
+@dataclass(frozen=True)
+class VerificationRule:
+    """A single executable architectural verification rule."""
+    rule_id: str
+    domain: ValidationDomain
+    description: str
+    category: str
+    phase_scope: tuple
+    acceptance_criterion: str
+
+
+@dataclass(frozen=True)
+class VerificationResult:
+    rule_id: str
+    status: VerificationStatus
+    observed_value: str
+    expected_value: str
+    evidence: str
+    timestamp_iso: str
+    duration_ms: float
+
+
+@dataclass(frozen=True)
+class VerificationCoverage:
+    category: str
+    total_rules: int
+    rules_passed: int
+    rules_failed: int
+    rules_skipped: int
+    coverage_percentage: float
+
+
+@dataclass(frozen=True)
+class EngineeringConfidenceIndex:
+    """ECI — answers 'Can the engineering architecture itself be trusted?'"""
+    architecture_confidence: float
+    runtime_confidence: float
+    infrastructure_confidence: float
+    observability_confidence: float
+    governance_confidence: float
+    integration_confidence: float
+    compliance_confidence: float
+    overall_confidence: float         # Continuous 0–100 (RECTIFIED P0-2: not a gate)
+    engineering_readiness_level: int  # 0–5
+
+
+@dataclass(frozen=True)
+class GroundTruthRepository:
+    """
+    RECTIFIED (P0-4): Ground Truth is a repository, not a dataset.
+
+    Ground truth is an ecosystem with annotation protocol, validity scope,
+    and quality scoring. This replaces the minimal GroundTruthDataset.
+    """
+    repository_id: str
+    task: ScientificDomain
+    version: str
+    dataset_id: str             # The underlying dataset
+    item_count: int
+    annotation_schema: str      # Format specification
+    annotation_protocol: str    # How items were labeled
+    annotator_agreement: Optional[float]
+    created_at: str
+    checksum: str
+    validity_scope: str         # Where these labels are applicable
+    applicable_experiments: tuple  # Which experiment IDs can use this
+    known_limitations: tuple       # Known gaps in the ground truth
+    quality_score: float        # 0.0–1.0 overall quality estimate
+    license: str = "internal"
+
+
+@dataclass(frozen=True)
+class EvaluationProtocol:
+    """
+    RECTIFIED (P1-1): Full protocol specification for an experiment.
+
+    Every experiment must have a protocol committed before execution.
+    """
+    protocol_id: str
+    experiment_id: str
+    execution_steps: tuple      # Ordered steps as strings
+    stopping_criteria: str      # When to stop early
+    expected_runtime_seconds: float
+    failure_conditions: tuple   # What constitutes a failure
+    acceptance_logic: str       # How to decide pass/fail
+    rollback_procedure: str     # How to undo if needed
+    reviewer_notes: str
+
+
+@dataclass(frozen=True)
+class ExperimentDesign:
+    """
+    Complete experimental design specification.
+    RECTIFIED (P1-2): Now includes lifecycle_state.
+    """
+    experiment_id: str
+    scientific_domain: ScientificDomain
+    hypothesis: str
+    independent_variables: tuple
+    dependent_variables: tuple
+    controlled_variables: tuple
+    confounding_variables: tuple
+    ground_truth_version: str
+    acceptance_criteria: Dict[str, float]
+    random_seed: int
+    lifecycle_state: ExperimentLifecycleState = ExperimentLifecycleState.REGISTERED
+
+
+@dataclass(frozen=True)
+class ExperimentResult:
+    experiment_id: str
+    run_id: str
+    metrics: Dict[str, float]
+    raw_outputs: Dict[str, Any]
+    execution_time_seconds: float
+    manifest_path: Optional[str]
+    status: VerificationStatus
+
+
+@dataclass(frozen=True)
+class StatisticalAnalysis:
+    metric_name: str
+    values: tuple
+    mean: float
+    std_dev: float
+    median: float
+    min_value: float
+    max_value: float
+    ci_lower: float
+    ci_upper: float
+    coefficient_of_variation: float
+    n_samples: int
+
+
+@dataclass(frozen=True)
+class EffectSize:
+    metric_name: str
+    condition_a: str
+    condition_b: str
+    cohens_d: float
+    magnitude: str
+
+
+@dataclass(frozen=True)
+class ReproducibilityAssessment:
+    experiment_id: str
+    n_runs: int
+    mean_metric: float
+    std_dev_metric: float
+    coefficient_of_variation: float
+    reproducibility_level: str
+    is_reproducible: bool
+
+
+@dataclass(frozen=True)
+class ThreatToValidity:
+    threat_id: str
+    category: str
+    description: str
+    mitigation: str
+    residual_risk: str
+
+
+@dataclass(frozen=True)
+class ScienceEvidence:
+    """One piece of scientific evidence from one experiment."""
+    evidence_id: str
+    experiment_id: str
+    scientific_domain: ScientificDomain
+    metric_name: str
+    observed_value: float
+    threshold: float
+    grade: EvidenceGrade
+    supports_claim: str
+    statistical_analysis: Optional[StatisticalAnalysis]
+
+
+@dataclass(frozen=True)
+class ResearchClaim:
+    """
+    RECTIFIED (P0-3): Enriched scientific claim object.
+
+    Original was metadata-only (statement, confidence, supported).
+    Now a proper scientific object with research question, hypotheses,
+    assumptions, threats, and applicability.
+    """
+    claim_id: str
+    statement: str
+    scientific_domain: ScientificDomain
+    evidence_ids: tuple
+    evidence_grade: EvidenceGrade
+    is_supported: bool
+    confidence_score: float     # Continuous 0.0–1.0
+
+    # RECTIFIED (P0-3): Scientific fields
+    research_question: str = ""     # The question this claim addresses
+    null_hypothesis: str = ""       # H₀: what would falsify this claim
+    assumptions: tuple = ()         # Assumptions underlying this claim
+    threats: tuple = ()             # Known threats to this specific claim
+    supporting_limitations: tuple = ()  # Limitations the evidence rests on
+    applicability: str = ""         # Where this claim is valid
+
+
+@dataclass(frozen=True)
+class AssumptionRecord:
+    """
+    RECTIFIED (P1-3): First-class system assumption record.
+
+    Every major assumption underlying SMRITI's outputs should be registered.
+    """
+    assumption_id: str
+    description: str
+    affected_modules: tuple     # Which modules rely on this assumption
+    affected_claims: tuple      # Which research claims depend on this
+    phase: int                  # Which phase makes this assumption
+    risk_if_violated: str       # "low" | "medium" | "high"
+    validation_experiment: Optional[str]  # Which experiment tests this
+
+
+@dataclass(frozen=True)
+class LimitationRecord:
+    """
+    RECTIFIED (P1-4): Known architectural limitation record.
+
+    A limitation is a known boundary, NOT a risk.
+    Limitations are architectural facts; threats are risks.
+    """
+    limitation_id: str
+    description: str
+    affected_module: str
+    affected_claims: tuple
+    severity: str               # "minor" | "moderate" | "significant"
+    possible_future_work: str
+
+
+@dataclass(frozen=True)
+class EvidenceConflict:
+    """
+    RECTIFIED (P1-5): A conflict between two pieces of evidence on the same claim.
+    """
+    conflict_id: str
+    claim_id: str
+    evidence_a_id: str          # Experiment supporting the claim
+    evidence_b_id: str          # Experiment contradicting the claim
+    conflict_type: str          # "contradicts" | "partially_contradicts"
+    resolution: str             # How conflict was resolved
+    confidence_impact: float    # Change to claim confidence score
+    reviewer_note: str
+
+
+@dataclass(frozen=True)
+class CertificationGateResult:
+    """
+    RECTIFIED (P0-1): Result of one certification gate evaluation.
+
+    Certification is a sequence of pass/block gates, NOT a weighted average.
+    """
+    gate_number: int
+    gate_name: str
+    decision: GateDecision
+    rationale: str
+    metric_observed: Optional[float] = None
+    metric_required: Optional[float] = None
+    blocking_reason: str = ""
+
+
+@dataclass(frozen=True)
+class ScientificConfidenceIndex:
+    """SCI — continuous confidence 0–100. Separate from certification gate."""
+    accuracy_confidence: float
+    consistency_confidence: float
+    robustness_confidence: float
+    generalization_confidence: float
+    interpretability_confidence: float
+    statistical_support: float
+    overall_confidence: float     # Continuous 0–100
+    evidence_grade: EvidenceGrade
+
+
+@dataclass(frozen=True)
+class PublicationReadinessAssessment:
+    """
+    RECTIFIED (P1-6): Publication readiness level (not binary).
+    """
+    readiness_level: PublicationReadinessLevel    # COMPLETE / MINOR / MAJOR / NOT_READY
+    criteria_met: tuple
+    criteria_missing: tuple
+    criteria_partial: tuple
+    revision_notes: str
+
+    # Backward compat
+    @property
+    def overall_ready(self) -> bool:
+        return self.readiness_level == PublicationReadinessLevel.COMPLETE
+
+    @property
+    def missing_criteria(self) -> tuple:
+        return self.criteria_missing
+
+
+@dataclass(frozen=True)
+class EvaluationManifest:
+    """
+    RECTIFIED (P2-1): Evaluation-specific reproducibility manifest.
+
+    Different from RuntimeManifest (Phase 11) — captures evaluation parameters.
+    """
+    manifest_id: str
+    run_id: str
+    experiment_ids: tuple
+    ground_truth_versions: Dict[str, str]   # experiment_id → GT version
+    policy_version: str
+    random_seeds: Dict[str, int]            # experiment_id → seed
+    metrics_evaluated: tuple
+    acceptance_criteria: Dict[str, float]
+    software_versions: Dict[str, str]       # library → version
+    hardware_description: str
+    created_at: str
+
+
+@dataclass(frozen=True)
+class MetricDefinition:
+    """
+    RECTIFIED (P2-3): First-class metric object.
+
+    Metrics are no longer hardcoded — they are registered objects.
+    """
+    metric_name: str
+    definition: str
+    formula: str
+    units: str
+    range_min: float
+    range_max: float
+    interpretation: str        # What a high/low score means
+    direction: str             # "higher_is_better" | "lower_is_better"
+    dependencies: tuple        # Which other metrics this requires
+
+
+@dataclass(frozen=True)
+class DatasetSuitabilityAssessment:
+    """
+    RECTIFIED (P2-2): Assesses whether a dataset is appropriate for an experiment.
+    """
+    dataset_id: str
+    experiment_id: str
+    coverage_score: float       # 0.0–1.0 domain coverage
+    balance_score: float        # Class/type balance
+    bias_risk: str              # "low" | "medium" | "high"
+    representativeness: str     # How representative of real usage
+    noise_level: str            # "low" | "medium" | "high"
+    completeness_score: float   # Fraction with complete annotations
+    missing_value_rate: float   # Fraction with missing fields
+    ground_truth_quality: float # Overall GT quality score
+    is_suitable: bool
+
+
+@dataclass(frozen=True)
+class CertificationReport:
+    """
+    RECTIFIED (P0-big): CertificationReport is ONE artifact in the package.
+
+    The gate-based certification record (not the top-level container).
+    overall_confidence_index is kept for backward compatibility with tests
+    but is no longer used to determine certification level.
+    """
+    report_id: str
+    run_id: str
+    timestamp_iso: str
+
+    # Part 2 outputs
+    verification_results: tuple
+    verification_coverage: tuple
+    engineering_confidence: EngineeringConfidenceIndex
+
+    # Part 3 outputs
+    experiment_results: tuple
+    science_evidence: tuple
+    research_claims: tuple
+
+    # Part 4 outputs
+    statistical_analyses: tuple
+    reproducibility_assessments: tuple
+    threats_to_validity: tuple
+    scientific_confidence: ScientificConfidenceIndex
+
+    # Part 5 outputs (RECTIFIED)
+    publication_readiness: PublicationReadinessAssessment  # Now ordinal
+    gate_results: tuple                                    # NEW: gate-by-gate decisions
+    certification_level: CertificationLevel
+    certification_rationale: str
+
+    # Summary metrics
+    total_rules_passed: int
+    total_rules_failed: int
+    engineering_confidence_index: float
+    scientific_confidence_index: float
+    overall_confidence_index: float  # Kept for backward compat (no longer drives gates)
+
+    schema_version: str = "12.1"
+
+
+@dataclass(frozen=True)
+class ResearchAssurancePackage:
+    """
+    RECTIFIED (P0-big): Top-level container for all Phase 12 outputs.
+
+    CertificationReport is one component of this package.
+    This architecture scales to multiple publications and repeated evaluation cycles.
+    """
+    package_id: str
+    run_id: str
+    created_at: str
+    certification_report: CertificationReport
+    experiment_registry: tuple       # All ExperimentDesign objects
+    evidence_ledger: tuple           # All ScienceEvidence objects
+    evaluation_manifest: "EvaluationManifest"
+    assumption_registry: tuple       # All AssumptionRecord objects
+    limitation_registry: tuple       # All LimitationRecord objects
+    evidence_conflicts: tuple        # All resolved EvidenceConflict objects
+    integrity_checksums: Dict[str, str]  # artifact → SHA256
+    schema_version: str = "12.1"
+
+    @property
+    def certification_level(self) -> CertificationLevel:
+        return self.certification_report.certification_level
+
+    @property
+    def eci(self) -> float:
+        return self.certification_report.engineering_confidence_index
+
+    @property
+    def sci(self) -> float:
+        return self.certification_report.scientific_confidence_index
+
+
+@dataclass(frozen=True)
+class Phase12Stats:
+    """Statistics for one Phase 12 execution."""
+    rules_executed: int = 0
+    rules_passed: int = 0
+    rules_failed: int = 0
+    experiments_run: int = 0
+    evidence_items_produced: int = 0
+    research_claims_assessed: int = 0
+    certification_level: int = 0
+    gates_passed: int = 0
+    gates_blocked: int = 0
+    eci: float = 0.0
+    sci: float = 0.0
+    total_runtime_seconds: float = 0.0
+

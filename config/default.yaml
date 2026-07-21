@@ -513,4 +513,55 @@ feature_flags:
   enable_event_bus: true
   enable_scheduler: true
   # RECTIFIED (P0-4):
-  enable_capability_model: true      
+  enable_capability_model: true   
+
+# ── Phase 12: Scientific Validation Framework ─────────────────────────────────
+evaluation:
+  # Gate thresholds (RECTIFIED: gates, not weighted average)
+  gate_1_arch_pass_rate: 0.90
+  gate_2_eci_required: 75.0
+  gate_3_min_experiments: 6
+  gate_4_sci_required: 70.0
+  gate_5_reproducibility_rate: 0.80
+  # Gate 6 requires PublicationReadinessLevel.COMPLETE
+
+  # Statistical analysis
+  confidence_level: 0.95
+  reproducibility_cv_threshold: 0.10
+  min_runs_for_reproducibility: 2
+
+  # Publication readiness (RECTIFIED: ordinal thresholds)
+  pub_readiness_min_claims: 4
+  pub_readiness_eci_for_artifacts: 60.0
+
+  # Research claims (RECTIFIED P0-3): enriched scientific objects
+  claims_require_null_hypothesis: true
+  claims_require_research_question: true
+  claims_require_applicability: true
+
+  # Ground truth repository (RECTIFIED P0-4)
+  ground_truth_requires_annotation_protocol: true
+  ground_truth_requires_validity_scope: true
+
+  # Assumption registry (NEW P1-3)
+  register_all_assumptions: true
+  fail_on_high_risk_assumption_unvalidated: false
+
+  # Limitation registry (NEW P1-4)
+  register_all_limitations: true
+
+  # Evaluation protocol (NEW P1-1)
+  require_protocol_before_execution: true
+
+  # Evaluation manifest (NEW P2-1)
+  write_evaluation_manifest: true
+
+  # Metric registry (NEW P2-3)
+  use_metric_registry: true
+
+  # Output formats
+  output_formats:
+    - json
+    - markdown
+    - text
+    - evaluation_manifest     

@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 from unittest import result
-from smriti.core.models import RelationshipSet, KnowledgeGraph, ScoredKnowledgeGraph
+from smriti.core.models import RelationshipSet, KnowledgeGraph, ScoredKnowledgeGraph, CertificationReport
 from smriti.retrieval import discover_relationships
 import structlog
 
@@ -155,7 +155,13 @@ class PipelineRunner:
             if start_from <= 11 and (stop_at is None or stop_at >= 11):
                 self._run_phase_11()     
 
-            # Phases 12 will be registered here as they are built.
+            if start_from <= 12 and (stop_at is None or stop_at >= 12):
+                if phase9_api is None:
+                    phase8_result = self._load_phase8_result()
+                    from smriti.api import build_knowledge_api
+                    phase9_api = build_knowledge_api(phase8_result)
+                self._run_phase_12(phase9_api)
+            
 
         except Exception as e:
             logger.error("pipeline failed", error=str(e), exc_info=True)
@@ -1201,3 +1207,23 @@ class PipelineRunner:
 
         self.state_manager.complete_phase(phase=11)
         logger.info("phase 11 complete", run_id=self.run_id)  
+
+    def _run_phase_12(self, knowledge_api) -> "CertificationReport":
+        from smriti.evaluation import run_evaluation
+        from smriti.reporting.exporter import write_certification_artifacts, export_text_summary
+        from smriti.core.paths import ARTIFACTS_DIR
+
+        logger.info("running phase 12 — scientific validation framework (gate-based)")
+        report = run_evaluation(
+            knowledge_api=knowledge_api,
+            run_id=self.run_id,
+            manifest_manager=self.manifest_manager,
+            state_manager=self.state_manager,
+        )
+        artifacts_dir = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase12"
+        write_certification_artifacts(report, artifacts_dir)
+        logger.info("phase 12 complete",
+                    certification_level=report.certification_level.name,
+                    pub_readiness=report.publication_readiness.readiness_level.value)
+        print(export_text_summary(report))
+        return report    

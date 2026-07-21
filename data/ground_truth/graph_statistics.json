@@ -1,0 +1,10 @@
+{
+  "nodes": 11,
+  "relationships": 3,
+  "contradictions": 1,
+  "connected_components": 3,
+  "isolated_nodes": 2,
+  "cycles": 1,
+  "duplicate_clusters": 1,
+  "broken_links": 1
+}

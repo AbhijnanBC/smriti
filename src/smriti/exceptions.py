@@ -521,3 +521,42 @@ ArchitectureEventError = InfrastructureException
 SchedulerError = SchedulerException
 Phase11ComplianceError = ComplianceException
 Phase11GovernanceError = GovernanceException
+
+
+# ── Phase 12: Scientific Validation Framework ──────────────────────────────────
+
+class Phase12Error(SMRITIError):
+    """Base for all Phase 12 errors."""
+    pass
+
+class VerificationRuleError(Phase12Error):
+    """A verification rule failed in a way that prevents further execution."""
+    pass
+
+class GroundTruthError(Phase12Error):
+    """Ground truth repository is missing, corrupt, or incompatible."""
+    pass
+
+class ExperimentError(Phase12Error):
+    """An experiment failed to execute."""
+    pass
+
+class CertificationError(Phase12Error):
+    """Certification level could not be determined."""
+    pass
+
+class ReproducibilityError(Phase12Error):
+    """Reproducibility assessment could not be completed."""
+    pass
+
+class GateViolationError(Phase12Error):
+    """A certification gate was violated — used for strict mode only."""
+    pass
+
+class EvidenceConflictError(Phase12Error):
+    """An evidence conflict could not be resolved."""
+    pass
+
+class AssumptionViolationError(Phase12Error):
+    """A registered assumption was detected as violated."""
+    pass
