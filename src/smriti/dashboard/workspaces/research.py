@@ -55,7 +55,7 @@ class ResearchWorkspace(BaseWorkspace):
         )
         claims_dtos = result.get("claims", [])
         total = result.get("total", 0)
-        claim_pms = DTOTransformer.to_claims_list(claims_dtos)
+        claim_pms = DTOTransformer.to_claims_list(result.get("claims", [])) or []
 
         selected_pm = None
         if state.selected_claim_id:

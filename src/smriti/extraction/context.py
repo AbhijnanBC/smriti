@@ -19,7 +19,11 @@ Example:
     Sentence A        →  current_context() → "Python > Generators"
     ## Decorators     →  pop to level 1, push("Decorators") → stack: ["Python", "Decorators"]
     Sentence B        →  current_context() → "Python > Decorators"
+
+RECTIFIED (Issue 4): Added heading title validation to reject malformed contexts.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Optional
@@ -28,6 +32,15 @@ import structlog
 from smriti.extraction.rules import CONTEXT_SEPARATOR
 
 logger = structlog.get_logger(__name__)
+
+
+def _is_valid_heading_title(title: str) -> bool:
+    """
+    Return True if the title contains at least one alphanumeric character.
+    Rejects titles like '#', '---', '***', '===', etc.
+    Used by both scanner and context stack for consistency.
+    """
+    return any(c.isalnum() for c in title)
 
 
 @dataclass
@@ -63,14 +76,25 @@ class ContextStack:
         Args:
             heading: The heading text (without # markers).
             level:   Heading level (1=H1, 2=H2, ... 6=H6).
+
+        RECTIFIED (Issue 4): Skips headings with invalid titles (no alnum).
         """
+        # ── RECTIFIED: Validate heading title ──────────────────────────────────
+        clean_heading = heading.strip()
+        if not _is_valid_heading_title(clean_heading):
+            logger.debug(
+                "heading skipped (invalid title)",
+                heading=clean_heading[:20],
+            )
+            return
+
         # Pop all frames at the same or deeper level
         while self._stack and self._stack[-1].level >= level:
             popped = self._stack.pop()
             logger.debug("context popped", heading=popped.heading, level=popped.level)
 
-        self._stack.append(_ContextFrame(heading=heading.strip(), level=level))
-        logger.debug("context pushed", heading=heading.strip(), level=level, depth=len(self._stack))
+        self._stack.append(_ContextFrame(heading=clean_heading, level=level))
+        logger.debug("context pushed", heading=clean_heading, level=level, depth=len(self._stack))
 
     def peek(self) -> Optional[str]:
         """Return the topmost heading text, or None if stack is empty."""

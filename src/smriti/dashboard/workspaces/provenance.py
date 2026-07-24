@@ -36,7 +36,7 @@ class ProvenanceWorkspace(BaseWorkspace):
         result = context.client.search_claims(
             sort_field="support_count", sort_order="desc", limit=state.page_size,
         )
-        claim_pms = DTOTransformer.to_claims_list(result.get("claims", []))
+        claim_pms = DTOTransformer.to_claims_list(result.get("claims", [])) or []
 
         col_list, col_prov = st.columns([1, 2])
         with col_list:

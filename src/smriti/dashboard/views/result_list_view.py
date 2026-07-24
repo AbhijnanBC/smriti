@@ -1,7 +1,9 @@
 """result_list_view.py — ResultListView: renders a paginated claim list."""
 from __future__ import annotations
+
 from typing import List
 import streamlit as st
+
 from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.models.presentation import ClaimPresentationModel
 from smriti.dashboard.state.epistemic_state import EpistemicStateManager

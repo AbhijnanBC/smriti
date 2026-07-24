@@ -53,7 +53,7 @@ class ReliabilityWorkspace(BaseWorkspace):
             limit=state.page_size,
             offset=state.page * state.page_size,
         )
-        claim_pms = DTOTransformer.to_claims_list(result.get("claims", []))
+        claim_pms = DTOTransformer.to_claims_list(result.get("claims", [])) or []
         total = result.get("total", 0)
 
         stats_pm = None

@@ -1276,21 +1276,21 @@ class PipelineRunner:
             except Exception:
                 return False
 
-        # Register checks with the coordinator, mapping to dependency nodes
+        # Register checks — no dependency graph mappings (nodes not registered)
         health_coordinator.register(
             "configuration",
             check_config,
-            dependency_node="config"      # assume a node named "config" exists
+            dependency_node=None
         )
         health_coordinator.register(
             "artifacts_directory",
             check_artifacts_dir,
-            dependency_node="artifacts"   # node named "artifacts"
+            dependency_node=None
         )
         health_coordinator.register(
             "memory_pressure",
             check_memory,
-            dependency_node=None          # no node mapping; purely informational
+            dependency_node=None
         )
 
         # ── Step 6: Capability Model (P0-4) with graph sync ──────────────────────
