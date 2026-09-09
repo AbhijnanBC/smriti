@@ -212,7 +212,12 @@ class SentenceSegmenter:
 
         word_end = dot_pos
         word_start = dot_pos - 1
-        while word_start > 0 and text[word_start - 1].isalpha():
+        # Scan back over letters AND internal periods, so multi-part
+        # abbreviations like "e.g", "i.e", "u.s", "a.m" are reconstructed
+        # in full rather than stopping at the first internal ".".
+        while word_start > 0 and (
+            text[word_start - 1].isalpha() or text[word_start - 1] == "."
+        ):
             word_start -= 1
 
         preceding_word = text[word_start:word_end].lower()

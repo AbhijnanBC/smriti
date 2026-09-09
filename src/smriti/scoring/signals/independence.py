@@ -54,10 +54,19 @@ class EvidenceIndependenceExtractor(BaseSignalExtractor):
         self, node: ClaimNode, graph: KnowledgeGraph,
         global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
     ) -> RawSignal:
+        # RECTIFIED (P0-8): a claim with NO supporting evidence is not
+        # thereby maximally "independent" -- independence is a property of
+        # the evidence a claim HAS, and there is nothing here to evaluate.
+        # The previous version returned raw_value=1.0 ("no evidence" ==
+        # "maximum independence"), which let claims with zero support
+        # receive a full-strength positive contribution from this signal.
+        # UNAVAILABLE + 0.0 correctly withholds that contribution (see
+        # normalization.py's evidence_completeness accounting) rather than
+        # rewarding absence of evidence.
         if node.support_aggregate is None or node.support_aggregate.support_count == 0:
             return RawSignal(
-                name=self.signal_id, raw_value=1.0, normalized_value=1.0,
-                status=SignalStatus.DEFAULT,
+                name=self.signal_id, raw_value=0.0, normalized_value=0.0,
+                status=SignalStatus.UNAVAILABLE,
                 metadata={"reason": "no_support_to_evaluate"},
             )
 

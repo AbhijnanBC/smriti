@@ -1,0 +1,1904 @@
+{
+  "75136bc7f3af3dd1": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "* * Transformations * * ( e.g. , ` map ` , ` filter ` , ` flatMap ` )",
+      "predicate": "produce",
+      "object": "a new RDD"
+    }
+  },
+  "eec7f792621a9fc6": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Sphere and water - tight triangle meshes",
+      "predicate": "supported",
+      "object": null
+    }
+  },
+  "da125b57432c94a8": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Channels",
+      "predicate": "be",
+      "object": "memory - based for high throughput or file - based for durability"
+    }
+  },
+  "eedd16c30c9cf078": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This",
+      "predicate": "makes",
+      "object": null
+    }
+  },
+  "d9a9aafbed6f30d9": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "provides",
+      "object": "a SQL - like language called HiveQL , which allows users to write queries that are automatically translated into MapReduce or Tez jobs for execution on the cluster"
+    }
+  },
+  "06ea7604dac4cdca": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Persistence options",
+      "predicate": "include",
+      "object": null
+    }
+  },
+  "f10ff22c417878de": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This metadata",
+      "predicate": "includes",
+      "object": "schema information"
+    }
+  },
+  "a1ec741701156c95": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "uses",
+      "object": "a local costmap that incorporates real - time sensor data to avoid dynamic obstacles"
+    }
+  },
+  "b2680663564b5cc1": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This design",
+      "predicate": "improves",
+      "object": "overall system throughput"
+    }
+  },
+  "758241654ff04767": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The tight coupling between ROS 2 and Gazebo",
+      "predicate": "allows",
+      "object": null
+    }
+  },
+  "43b304b50d4040d0": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Gazebo",
+      "predicate": "acts",
+      "object": null
+    }
+  },
+  "f9820e47b60b740f": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "they",
+      "predicate": "start",
+      "object": null
+    }
+  },
+  "9d385bdba5085644": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "These world files",
+      "predicate": "customised",
+      "object": null
+    }
+  },
+  "2d672e0ce7035cf0": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This integration",
+      "predicate": "enables",
+      "object": "developers"
+    }
+  },
+  "274e4c301d23d11a": {
+    "extraction_mode": "lexical",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": null
+  },
+  "fe8e451402c5a29d": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "some partitions",
+      "predicate": "recomputed",
+      "object": null
+    }
+  },
+  "ad2e1af17440a2fb": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "Spark",
+      "predicate": "replicate",
+      "object": "partitions across nodes"
+    }
+  },
+  "e79427be03c0783d": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "required",
+    "is_negated": false,
+    "svo": {
+      "subject": "it",
+      "predicate": "receive",
+      "object": "an IP"
+    }
+  },
+  "6a149cf0f0a0e3df": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Users",
+      "predicate": "ask",
+      "object": "Spark"
+    }
+  },
+  "2b37c844039c8220": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The entire system",
+      "predicate": "launched",
+      "object": null
+    }
+  },
+  "eb0011463c898172": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The ROS 2 bridge nodes",
+      "predicate": "translate",
+      "object": "Gazebo 's internal data structures"
+    }
+  },
+  "db3b783f80657683": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Gazebo Harmonic",
+      "predicate": "publishes",
+      "object": "standard ROS 2 messages , such as PointCloud2 ,"
+    }
+  },
+  "be21d25ef0dd0ea9": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Hive stores its metadata in a relational database ( such as MySQL or PostgreSQL )",
+      "predicate": "called",
+      "object": null
+    }
+  },
+  "650771cb58c1d7b5": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "is",
+      "object": "the successor to the classic Gazebo"
+    }
+  },
+  "e976f05bfa8871fb": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Nav2 stack",
+      "predicate": "is",
+      "object": "the official navigation solution for ROS 2"
+    }
+  },
+  "b0e93072108fc766": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "HDFS",
+      "predicate": "has",
+      "object": "two main layers"
+    }
+  },
+  "983ff959b3d4dc31": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "* * Actions * * ( e.g. , ` count ` , ` collect ` , ` saveAsTextFile ` )",
+      "predicate": "trigger",
+      "object": "the execution of the transformation graph"
+    }
+  },
+  "618420bff2e77eb5": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Sources",
+      "predicate": "configured",
+      "object": null
+    }
+  },
+  "d51da6eaf23978a4": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The simulation engine",
+      "predicate": "supports",
+      "object": "multiple physics solvers , including ODE and Bullet ,"
+    }
+  },
+  "cb4f1ed9af0abe40": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "integrated",
+      "object": null
+    }
+  },
+  "1de097d7ee83719a": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "VirtualBox",
+      "predicate": "provides",
+      "object": "several networking modes"
+    }
+  },
+  "05c6c52ab92f3179": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Apache Flume",
+      "predicate": "is",
+      "object": "a distributed , reliable , and available service for efficiently collecting , aggregating , and moving large amounts of log data"
+    }
+  },
+  "1757e40d5e274dae": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "recent advances in transformer - based architectures",
+      "predicate": "rendered",
+      "object": null
+    }
+  },
+  "15d7f18c547d7bfc": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Claiming that U - Net is still \"",
+      "predicate": "is",
+      "object": "a nostalgic holdover that ignores clear evidence from multiple benchmarks"
+    }
+  },
+  "df7573c4a0a8a5cb": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "U - Net 's reliance on local convolutions",
+      "predicate": "limits",
+      "object": "its ability to capture long - range spatial dependencies"
+    }
+  },
+  "0c6574550a54afe3": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the global context",
+      "predicate": "is",
+      "object": "crucial"
+    }
+  },
+  "9fcbf4426da33942": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "U- Net 's skip connections",
+      "predicate": "mitigate",
+      "object": "this"
+    }
+  },
+  "c9d617a7bac96884": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "U- Net 's skip connections",
+      "predicate": "compensate",
+      "object": null
+    }
+  },
+  "ae1fff2420b38e05": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This",
+      "predicate": "is",
+      "object": null
+    }
+  },
+  "c15864da343b9a87": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Vision Transformers ( ViTs ) and their specialised variants ( e.g. , TransUNet , Swin - UNet )",
+      "predicate": "outperformed",
+      "object": "U"
+    }
+  },
+  "4f7aa7434aff5fb0": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "These models",
+      "predicate": "use",
+      "object": "self - attention mechanisms"
+    }
+  },
+  "6904f1213295dac5": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "TransUNet",
+      "predicate": "achieved",
+      "object": "a Dice score of 82.3 %"
+    }
+  },
+  "fd821d0a17b7cd27": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Transformers",
+      "predicate": "are",
+      "object": "more adaptable"
+    }
+  },
+  "3d3f1e10b7a982ff": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "they",
+      "predicate": "process",
+      "object": "images at comparable speeds"
+    }
+  },
+  "5ad9cfea46097b5b": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "transformers",
+      "predicate": "be",
+      "object": "pre-"
+    }
+  },
+  "942033784617a146": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "trained",
+      "object": null
+    }
+  },
+  "694db2423665104e": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "U",
+      "predicate": "requires",
+      "object": "extensive augmentation to avoid overfitting due to its limited inductive bias"
+    }
+  },
+  "b4591c3773efc36a": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The medical imaging community",
+      "predicate": "moving",
+      "object": null
+    }
+  },
+  "9fb081679bf405ce": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Newer architectures built on transformers or hybrid convolutional - transformer designs",
+      "predicate": "are",
+      "object": "the gold standard"
+    }
+  },
+  "b3bdc4b7b7b867e4": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Continuing to rely on U - Net for research or clinical applications",
+      "predicate": "is",
+      "object": "a choice to underperform"
+    }
+  },
+  "c743e9038b81d122": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "The future",
+      "predicate": "belongs",
+      "object": null
+    }
+  },
+  "029b0902f69e6e22": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "U",
+      "predicate": "is",
+      "object": "a convolutional neural network designed for biomedical image segmentation"
+    }
+  },
+  "b4ae580d7c90d2df": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "developed",
+      "object": null
+    }
+  },
+  "4cc24ea7450f76fd": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "produce",
+      "object": "accurate segmentations"
+    }
+  },
+  "aeb8a795cd8c264b": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The architecture",
+      "predicate": "consists",
+      "object": null
+    }
+  },
+  "ec9260c779007e06": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "reduces",
+      "object": "the spatial resolution"
+    }
+  },
+  "897cec1b08aea02b": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This",
+      "predicate": "allows",
+      "object": null
+    }
+  },
+  "28c579c9f16d5bc0": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The U - like shape , with skip connections that bridge the encoder and decoder",
+      "predicate": "enables",
+      "object": "precise localization"
+    }
+  },
+  "a7b5ca26dfbe0b1b": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "U",
+      "predicate": "become",
+      "object": "the de facto standard for medical image segmentation in tasks such as brain tumor segmentation , lung nodule detection , and cell counting"
+    }
+  },
+  "b2106b14b8137b15": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "U",
+      "predicate": "spawned",
+      "object": "numerous variants , such as 3D U - Net , V - Net , Attention U - Net , and U - Net++"
+    }
+  },
+  "9988722f2d4e71b8": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Each variant",
+      "predicate": "addresses",
+      "object": "specific challenges"
+    }
+  },
+  "76568f509d54addb": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "These adaptations",
+      "predicate": "made",
+      "object": "U - Net"
+    }
+  },
+  "b5f51e327948a4cd": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "StyleGAN",
+      "predicate": "exhibited",
+      "object": "characteristic artifacts , such as water droplets and texture noise , which limited its practical applications"
+    }
+  },
+  "0a20b8f066295bc6": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "A dynamic multi- scale WGAN- GP framework",
+      "predicate": "combines",
+      "object": "image denoising"
+    }
+  },
+  "ab85c3598d0d9d12": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "a deeper examination of T20 cricket",
+      "predicate": "reveals",
+      "object": null
+    }
+  },
+  "cc4d05c5521db53b": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Aggregate data from IPL 2021 - 2025",
+      "predicate": "shows",
+      "object": null
+    }
+  },
+  "fde2a2ada8a496d0": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The difference",
+      "predicate": "is",
+      "object": "more pronounced on flat pitches , where wrist - spinners ' variations are easier to read and often punished"
+    }
+  },
+  "c439c05520b0f899": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "finger - spinners",
+      "predicate": "rely",
+      "object": null
+    }
+  },
+  "d345c87aaa3008cf": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The narrative that wrist - spinners are \" wicket - takers \"",
+      "predicate": "is",
+      "object": "statistically misleading"
+    }
+  },
+  "cd0358e81a1786df": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": true,
+    "svo": {
+      "subject": "A wrist - spinner who concedes 8 runs per over while taking a wicket in the 14th over",
+      "predicate": "gives",
+      "object": "more runs than a finger - spinner who bowls a tight over for 4 runs without taking a wicket"
+    }
+  },
+  "77872a714bde0dfe": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "pressure built through dot balls",
+      "predicate": "is",
+      "object": "more decisive than isolated breakthroughs"
+    }
+  },
+  "846afc269ad4453e": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Finger- spinners",
+      "predicate": "are",
+      "object": "easier to set fields for"
+    }
+  },
+  "533710bed7c4e28b": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Finger- spinners",
+      "predicate": "relied",
+      "object": null
+    }
+  },
+  "5f806745a7568615": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Wrist - spinners",
+      "predicate": "are",
+      "object": "prone to bowling \" loose \" deliveries -- the odd full - toss or short ball that gets dispatched"
+    }
+  },
+  "4b1c49dd3d061c92": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Teams that have relied heavily on wrist - spinners",
+      "predicate": "let",
+      "object": null
+    }
+  },
+  "d7ef583afc53ad5f": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The data",
+      "predicate": "suggests",
+      "object": null
+    }
+  },
+  "1071f33d21320f81": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Finger- spinners",
+      "predicate": "offer",
+      "object": "superior control"
+    }
+  },
+  "3afa3f2e8eab994b": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Finger- spinners",
+      "predicate": "offer",
+      "object": "better economy"
+    }
+  },
+  "5ad3f502f629cc94": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Kuldeep Yadav and Noor Ahmad , both left - arm wrist spinners ,",
+      "predicate": "demonstrated",
+      "object": "exceptional control"
+    }
+  },
+  "3d8cdcc83826343f": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Noor Ahmad",
+      "predicate": "been",
+      "object": "a revelation"
+    }
+  },
+  "a63861d9c6662472": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "both statistics",
+      "predicate": "drop",
+      "object": null
+    }
+  },
+  "cf641317fe21bcb7": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Teams",
+      "predicate": "using",
+      "object": "data analytics"
+    }
+  },
+  "ee9d9466c1b68653": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Teams",
+      "predicate": "are",
+      "object": null
+    }
+  },
+  "a096e31cd3f52fd3": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Their ability to turn the ball both ways and bowl multiple variations",
+      "predicate": "makes",
+      "object": null
+    }
+  },
+  "ba9a810a4a28fbf5": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Leg- spinners bowling in the middle overs ( overs 11- 40 ) of limited- overs cricket",
+      "predicate": "bowling",
+      "object": null
+    }
+  },
+  "a13ae2164fa05ede": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Leg- spinners",
+      "predicate": "bowling",
+      "object": null
+    }
+  },
+  "a8eecc3fcd56a3cd": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Senior India spinner Yuzvendra Chahal",
+      "predicate": "continued",
+      "object": null
+    }
+  },
+  "d4eeae9435e4caa4": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The key role of spinners",
+      "predicate": "is",
+      "object": null
+    }
+  },
+  "cfe464b7653ac574": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "wrist - spinners",
+      "predicate": "be",
+      "object": "particularly effective"
+    }
+  },
+  "24800a551c9ca126": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Their effectiveness",
+      "predicate": "depends",
+      "object": null
+    }
+  },
+  "8e659e5aa4a7a206": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The tactical resilience of T20 's mystery spinners",
+      "predicate": "continues",
+      "object": null
+    }
+  },
+  "d8cb940444a6fb61": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": true,
+    "svo": {
+      "subject": "Their ability to bowl multiple variations without revealing their plans to the batter",
+      "predicate": "makes",
+      "object": null
+    }
+  },
+  "df7c96afde50bf51": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Mystery spinners , such as Varun Chakravarthy and Sunil Narine ,",
+      "predicate": "have",
+      "object": "an immediate impact"
+    }
+  },
+  "a5744eadae3790f4": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Their unpredictability",
+      "predicate": "allows",
+      "object": null
+    }
+  },
+  "1502c87dbcd01033": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "the demand for bowlers who can consistently beat the bat",
+      "predicate": "increasing",
+      "object": null
+    }
+  },
+  "8f051992cf3c6ff7": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Wrist - spinners like Kuldeep Yadav and Noor Ahmad , armed with variations and stifling accuracy",
+      "predicate": "turning",
+      "object": null
+    }
+  },
+  "26649d7cfd6dbb83": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Their styles",
+      "predicate": "be",
+      "object": "contrasting"
+    }
+  },
+  "869d9ae7053da863": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Their styles",
+      "predicate": "is",
+      "object": "similar"
+    }
+  },
+  "890da5cba0eef9b8": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Left - arm wrist - spinners",
+      "predicate": "are",
+      "object": "particularly effective against right - handed batters"
+    }
+  },
+  "cb9aeb1431dbde59": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Their ability to bowl the googly ( turning into the right - hander ) and",
+      "predicate": "makes",
+      "object": null
+    }
+  },
+  "7b39aad9f212430a": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "their use for a dish as delicate as Rogan Josh",
+      "predicate": "is",
+      "object": "a culinary betrayal"
+    }
+  },
+  "5c5f004045115748": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "The intense , rapid heat and high pressure",
+      "predicate": "destroy",
+      "object": "the collagen structure of lamb"
+    }
+  },
+  "e3bf72a4ad55c639": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": true,
+    "svo": {
+      "subject": "The intense , rapid heat and high pressure",
+      "predicate": "stringy",
+      "object": "texture"
+    }
+  },
+  "10ea67ab56d2d6c5": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Lamb shoulder",
+      "predicate": "prized",
+      "object": null
+    }
+  },
+  "e2351c24e5237a82": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Slow cooking at a gentle simmer ( around 85 - 90C ) for 2 - 3 hours",
+      "predicate": "allows",
+      "object": null
+    }
+  },
+  "5a6a3673d65b1cd8": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the temperature",
+      "predicate": "exceeds",
+      "object": "120C"
+    }
+  },
+  "4a166dbe6624856c": {
+    "extraction_mode": "lexical",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": null
+  },
+  "1b561bf5b64fda9e": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the temperature",
+      "predicate": "compressed",
+      "object": null
+    }
+  },
+  "499bbe653265354c": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This aggressive heat",
+      "predicate": "accelerates",
+      "object": "collagen breakdown"
+    }
+  },
+  "72e39433a2a202e0": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This aggressive heat",
+      "predicate": "causes",
+      "object": null
+    }
+  },
+  "fd0d5884da31521c": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the meat",
+      "predicate": "falls",
+      "object": null
+    }
+  },
+  "a91beb16dc21bf87": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the meat",
+      "predicate": "lacks",
+      "object": "the succulence of a slow- braised dish"
+    }
+  },
+  "cf52aa1a5dc9bf36": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The sealed environment of a pressure cooker traps volatile aromatics and",
+      "predicate": "prevents",
+      "object": "the natural reduction of the sauce"
+    }
+  },
+  "affda2b4953aed61": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "A classic Rogan Josh",
+      "predicate": "relies",
+      "object": null
+    }
+  },
+  "9feb0eab4165282f": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Pressure cooking",
+      "predicate": "produces",
+      "object": "a thin , watery sauce that requires lengthy post - cooking reduction , which further dries out the meat"
+    }
+  },
+  "fc6e0f9fe2d260bf": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": true,
+    "svo": {
+      "subject": "they",
+      "predicate": "remain",
+      "object": "harsh and raw"
+    }
+  },
+  "6a4b5287ce140d19": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": true,
+    "svo": {
+      "subject": "they",
+      "predicate": "mellowed",
+      "object": null
+    }
+  },
+  "3d7e68a8300f0ecd": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": true,
+    "svo": {
+      "subject": "Authentic Kashmiri recipes",
+      "predicate": "use",
+      "object": "pressure cookers"
+    }
+  },
+  "96aa92db931adeb9": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The traditional method",
+      "predicate": "involves",
+      "object": null
+    }
+  },
+  "4c5204f2863bb6ee": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This slow process",
+      "predicate": "allows",
+      "object": null
+    }
+  },
+  "533c17adc5d2d7b9": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Any deviation from this time - honoured technique",
+      "predicate": "produces",
+      "object": "a dish that may be edible but is a far cry from the real Rogan Josh"
+    }
+  },
+  "1204f13d0a01f293": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the pressure cooker",
+      "predicate": "is",
+      "object": "a shortcut that cuts quality"
+    }
+  },
+  "4b40530afbbcbe76": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Rogan Josh",
+      "predicate": "is",
+      "object": "a classic Indian curry originating from Kashmir"
+    }
+  },
+  "546247e92095fd3e": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The name",
+      "predicate": "means",
+      "object": "meat in spicy red sauce"
+    }
+  },
+  "2e70e695f0c4ecd3": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This recipe",
+      "predicate": "uses",
+      "object": "a pressure cooker"
+    }
+  },
+  "30e4a87c4a6bb1af": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "1 kg lamb shoulder ,",
+      "predicate": "cut",
+      "object": null
+    }
+  },
+  "cf0ebe893138b46a": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "4",
+      "predicate": "cloves",
+      "object": "garlic"
+    }
+  },
+  "f18cb88f29648f51": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This version",
+      "predicate": "adds",
+      "object": "a freshly ground spice blend to enhance the aroma of the curry"
+    }
+  },
+  "c4be1e7f8c16e3e8": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "1 onion",
+      "predicate": "sliced",
+      "object": null
+    }
+  },
+  "6fcb9b2fbef69457": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "This recipe",
+      "predicate": "emphasises",
+      "object": "the use of traditional spices and a slow cooking process , even with a pressure cooker"
+    }
+  },
+  "3c5275f333233a90": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "Add",
+      "object": "the whole spices ( cardamom and"
+    }
+  },
+  "d0583ec1142da5ff": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "cloves",
+      "object": null
+    }
+  },
+  "696125264fa200ec": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "let",
+      "object": null
+    }
+  },
+  "f357051f7abb5241": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "Stir",
+      "object": null
+    }
+  },
+  "80e99ed5ac511648": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "saute",
+      "object": null
+    }
+  },
+  "005e7add3f3b9c83": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "using",
+      "object": "a pressure cooker ,"
+    }
+  },
+  "6b4c89c799c3783f": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "cook",
+      "object": "low heat"
+    }
+  },
+  "fbeed6f1742d2d72": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "open",
+      "object": "the lid"
+    }
+  },
+  "84c55714e69211a4": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "let",
+      "object": null
+    }
+  },
+  "a82852b5fc91bb59": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The pressure cooker",
+      "predicate": "is",
+      "object": "the time - saver here ,"
+    }
+  },
+  "af3a321f4922429d": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "simmer",
+      "object": "the curry uncovered to thicken the gravy and concentrate the flavour"
+    }
+  },
+  "c15b5b2b789fad20": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": null,
+      "predicate": "avoid",
+      "object": "lean cuts"
+    }
+  },
+  "8c389e0e36dcbd0b": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The existence of plate tectonics and a magnetic field",
+      "predicate": "believed",
+      "object": null
+    }
+  },
+  "0f29a57258a8dc33": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The boundary structures",
+      "predicate": "define",
+      "object": "the zone influenced by the Sun 's magnetic field and solar wind"
+    }
+  },
+  "a5e703861a807ccc": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth",
+      "predicate": "is",
+      "object": null
+    }
+  },
+  "ba6efe74acc087e7": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "It",
+      "predicate": "is",
+      "object": "the largest of the Solar System 's four terrestrial planets"
+    }
+  },
+  "9b8b470c30eae772": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The planet 's surface",
+      "predicate": "divided",
+      "object": null
+    }
+  },
+  "5f1ada9dad142a22": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Late Heavy Bombardment , about 4 billion years ago ,",
+      "predicate": "delivered",
+      "object": "water"
+    }
+  },
+  "ad1abd7dff017936": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth 's age",
+      "predicate": "estimated",
+      "object": null
+    }
+  },
+  "fd2f632a6bb7cd2c": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Its gravitational pull",
+      "predicate": "holds",
+      "object": "the entire system"
+    }
+  },
+  "b886aeca0b9a2532": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth",
+      "predicate": "is",
+      "object": "the third planet from the Sun"
+    }
+  },
+  "32302788baf8dfaf": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "probable",
+    "is_negated": false,
+    "svo": {
+      "subject": "The collapse",
+      "predicate": "triggered",
+      "object": null
+    }
+  },
+  "687874298efd0bb7": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Solar activity , such as sunspots and solar flares ,",
+      "predicate": "affect",
+      "object": "space weather"
+    }
+  },
+  "cd06a428cd7ea404": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The International Astronomical Union ( IAU )",
+      "predicate": "defines",
+      "object": "a planet"
+    }
+  },
+  "546ae38cee5c76d6": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth",
+      "predicate": "is",
+      "object": "the densest planet in the Solar System , with an average density of 5.51 g / cm3"
+    }
+  },
+  "5f79e5589ca5a5fb": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Solar System",
+      "predicate": "contains",
+      "object": "a vast number of minor bodies"
+    }
+  },
+  "f61a9029dc4f933d": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Solar System",
+      "predicate": "is",
+      "object": "the objects that orbit it"
+    }
+  },
+  "92e66b5d85b01f2c": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Solar System",
+      "predicate": "is",
+      "object": "the gravitationally bound system of the Sun"
+    }
+  },
+  "6f8c045d5e1de240": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The collapse",
+      "predicate": "created",
+      "object": "the Sun"
+    }
+  },
+  "dc7a8c4eeb26c29a": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Its atmosphere",
+      "predicate": "protects",
+      "object": "us"
+    }
+  },
+  "e5bb73215e2286ed": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Solar System",
+      "predicate": "contains",
+      "object": "hundreds of thousands of asteroids , comets , and many moons"
+    }
+  },
+  "0c799a516ee54c9d": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the Oort Cloud , a spherical reservoir of comets extending up to 100,000 AU",
+      "predicate": "lies",
+      "object": null
+    }
+  },
+  "c0875234b01de5cd": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth",
+      "predicate": "is",
+      "object": null
+    }
+  },
+  "c60e754bd67e9fbc": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Late Heavy Bombardment , about 4 billion years ago ,",
+      "predicate": "delivered",
+      "object": "organic molecules"
+    }
+  },
+  "942dc18e4c665c93": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The central concentration",
+      "predicate": "became",
+      "object": "the Sun"
+    }
+  },
+  "4a2e9072d005e275": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Over 99.86 % of its mass",
+      "predicate": "contained",
+      "object": null
+    }
+  },
+  "a9bfe8edb29afabe": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth",
+      "predicate": "is",
+      "object": "the densest and fifth- largest of the eight planets"
+    }
+  },
+  "448a80c42d0cdcb9": {
+    "extraction_mode": "lexical",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": null
+  },
+  "bb55496943616c21": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Solar System",
+      "predicate": "formed",
+      "object": null
+    }
+  },
+  "cf3de8dbb7d46d07": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "the giant planets (",
+      "predicate": "formed",
+      "object": null
+    }
+  },
+  "de2a9b0250a87ae0": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth",
+      "predicate": "orbits",
+      "object": "the Sun"
+    }
+  },
+  "476dfc9ad9bf38fb": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "possible",
+    "is_negated": false,
+    "svo": {
+      "subject": "Earth 's position in the \" habitable zone \" -- where water can exist as a liquid",
+      "predicate": "is",
+      "object": "a key factor in its ability to sustain life"
+    }
+  },
+  "48ef316a6d18cfff": {
+    "extraction_mode": "partial",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "The Solar System",
+      "predicate": "consists",
+      "object": null
+    }
+  },
+  "a17682ab3a3eb3e2": {
+    "extraction_mode": "structured",
+    "is_metadata_line": false,
+    "modality": "certain",
+    "is_negated": false,
+    "svo": {
+      "subject": "Its atmosphere",
+      "predicate": "provides",
+      "object": "the oxygen we breathe"
+    }
+  }
+}

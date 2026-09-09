@@ -29,6 +29,7 @@ import structlog
 
 from smriti.core.config import get_config
 from smriti.core.models import EmbeddingModelDescriptor
+from smriti.core.model_provenance import resolve_hf_revision, resolve_checkpoint_sha
 from smriti.exceptions import EmbeddingModelError, EmbeddingInferenceError
 
 logger = structlog.get_logger(__name__)
@@ -179,7 +180,16 @@ class SentenceTransformerEmbedder(BaseEmbedder):
         except Exception:
             dimension = 384  # MiniLM default fallback
 
-        revision = "default"  # sentence-transformers doesn't expose git revision easily
+        # Resolve the real HF commit hash for the loaded model, instead of a
+        # hardcoded placeholder. sentence-transformers wraps the underlying
+        # transformers model as module [0]; its config carries `_commit_hash`
+        # once loaded from the local HF cache or the hub.
+        try:
+            hf_config = self._model[0].auto_model.config
+        except Exception:
+            hf_config = None
+        revision = resolve_hf_revision(hf_config, self._model_name)
+        checkpoint_sha = resolve_checkpoint_sha(self._model_name, revision)
 
         return EmbeddingModelDescriptor(
             provider="sentence-transformers",
@@ -190,7 +200,7 @@ class SentenceTransformerEmbedder(BaseEmbedder):
                 "sentence-transformers", self._model_name, revision
             ),
             embedding_family="SentenceTransformer",
-            checkpoint_sha="",  # Not available from sentence-transformers API
+            checkpoint_sha=checkpoint_sha,
         )
 
     @property

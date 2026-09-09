@@ -2,20 +2,36 @@
 from __future__ import annotations
 import streamlit as st
 from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
+from smriti.dashboard.commands.commands import NavigateBackCommand
+from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
 
 
 class NavigationView(BaseView):
-    """Renders breadcrumbs and back navigation."""
+    """Renders breadcrumbs and back navigation. Dispatches NavigateBackCommand."""
 
-    def __init__(self, state_manager: EpistemicStateManager) -> None:
-        self._sm = state_manager
+    def __init__(
+        self,
+        dispatcher: InteractionDispatcher | None = None,
+        state_manager=None,
+    ) -> None:
+        """Accept either a dispatcher or a state_manager (builds a default dispatcher)."""
+        if dispatcher is not None:
+            self._dispatcher = dispatcher
+        elif state_manager is not None:
+            from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
+
+            self._dispatcher = InteractionDispatcher(
+                state_manager=state_manager,
+                policy_engine=PolicyEngine(InteractionPolicy()),
+            )
+        else:
+            raise ValueError("NavigationView requires either dispatcher or state_manager")
 
     def supports(self, context) -> bool:
-        return bool(self._sm.state.breadcrumbs)
+        return bool(self._dispatcher._sm.state.breadcrumbs)
 
     def render(self) -> None:
-        breadcrumbs = self._sm.state.breadcrumbs
+        breadcrumbs = self._dispatcher._sm.state.breadcrumbs
         if not breadcrumbs:
             return
         crumb_parts = []
@@ -25,5 +41,7 @@ class NavigationView(BaseView):
         st.markdown("🗺️ " + " → ".join(crumb_parts))
         if len(breadcrumbs) > 1:
             if st.button("← Back", key="breadcrumb_back"):
-                self._sm.navigate_back()
+                self._dispatcher.dispatch(
+                    NavigateBackCommand(session_id=self._dispatcher._sm._session_id)
+                )
                 st.rerun()

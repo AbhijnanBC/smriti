@@ -280,15 +280,22 @@ def test_api_has_capability_registry(api):
     caps = api.capabilities
     assert hasattr(caps, "supported_query_families")
     assert hasattr(caps, "supported_projections")
-    assert "point" in caps.supported_query_families
+    # Capability names are the CapabilityDescriptor.name values (e.g.
+    # "point_query"), a distinct, richer scheme from the internal
+    # QueryFamily enum ("point") used for planning/dispatch — see
+    # CapabilityRegistry in src/smriti/api/__init__.py.
+    assert "point_query" in caps.supported_query_families
 
 
 def test_view_not_dto_in_cache(api):
     """RECTIFIED (P0-4): Cache must store Views, not DTOs."""
     api.get_claim("c001")  # Populate cache
-    # Access internal cache via app service
+    # Access internal cache via app service — the KnowledgeViewCache lives on
+    # the ApplicationService's snapshot (see application.py::clear_cache,
+    # which reaches it the same way: self._snapshot.cache), not directly on
+    # ApplicationService itself.
     app = api._app
-    cache = app._cache
+    cache = app._snapshot.cache
     # The cache should have a view stored
     assert cache.size > 0
     # If a cached value is a ClaimDTO, this is a violation

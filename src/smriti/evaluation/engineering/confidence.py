@@ -83,11 +83,27 @@ def compute_eci(results: List[VerificationResult]) -> EngineeringConfidenceIndex
         total = len(dim_results)
         dimension_scores[dimension] = (passed / total) * 100.0
 
-    # Compute weighted aggregate
-    overall = sum(
-        dimension_scores[dim] * weight
-        for dim, weight in DIMENSION_WEIGHTS.items()
+    # Compute weighted aggregate.
+    # RECTIFIED: renormalize across only the dimensions that actually have
+    # verification results. dimension_scores defaults every dimension to
+    # 100.0 (see above) so untested dimensions have a defined value to
+    # report individually, but blindly including them at full weight in the
+    # aggregate silently assumes "no data" == "fully verified" — which lets
+    # ECI stay high even when the one dimension that IS covered scores
+    # poorly (e.g. today's ARCHITECTURAL_RULES registry only emits "ARCH"
+    # rule_ids, so 75% of DIMENSION_WEIGHTS would otherwise be dead weight
+    # fixed at 100). Only measured dimensions count toward the aggregate.
+    measured_weight = sum(
+        weight for dim, weight in DIMENSION_WEIGHTS.items() if dimension_results[dim]
     )
+    if measured_weight > 0:
+        overall = sum(
+            dimension_scores[dim] * weight
+            for dim, weight in DIMENSION_WEIGHTS.items()
+            if dimension_results[dim]
+        ) / measured_weight
+    else:
+        overall = 0.0
 
     # Determine readiness level
     if overall >= 95:

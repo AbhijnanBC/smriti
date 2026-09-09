@@ -1,0 +1,64 @@
+\subsection{Latency and Throughput}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Corpus} & \textbf{Docs} & \textbf{Claims} & \textbf{Total (s)} \\
+\midrule
+scale\_small (synth.) & 10 & 20 & 36.1 \\
+scale\_medium (synth.) & 50 & 100 & 398.0 \\
+SMRITI-Reference (real) & 53 & 397 & 70.2 \\
+scale\_large (synth.) & 150 & 300 & 1271.7 \\
+\bottomrule
+\end{tabular}
+\caption{End-to-end wall-clock time (Phases 1--9, single CPU-only run per
+corpus). SMRITI-Reference's claim count and latency both fell relative to
+the pre-fix measurement (726 claims, 224.9s) because the assertion
+classifier (\S\ref{sec:system}) removes non-declarative noise before the
+expensive Phase 5/6 embedding and NLI stages ever see it --- a fix aimed at
+precision that also happens to substantially improve throughput.}
+\label{tab:latency}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/latency_throughput.pdf}
+  \caption{Left: total pipeline latency by corpus. Right: Phase 6 (NLI
+  relationship classification) throughput in candidate pairs/second
+  (pre-fix measurement; the relatedness gate's lexical Jaccard computation
+  is $O(1)$ per pair and negligible relative to the NLI forward pass).}
+  \label{fig:latency}
+\end{figure}
+
+Phase 6 dominates end-to-end latency in every run, consistent with it
+being the only phase that invokes a transformer forward pass per
+candidate pair. A notable finding carried forward from the pre-fix
+measurement: per-pair NLI throughput on our synthetic scalability corpus
+is consistently 3--4$\times$ slower than on real corpus prose across every
+synthetic corpus size tested, traced to sentence length (our synthetic
+template sentences are longer, information-dense compound sentences,
+while SMRITI-Reference's Phase 4 claims are frequently much shorter
+SVO-decomposed fragments) --- throughput should be reasoned about in terms
+of total token volume, not document or claim count.
+
+\subsection{Baseline Comparison: Extraction Volume}
+
+Baseline B1 (naive keyword extraction), run directly against the raw
+SMRITI-Reference markdown files, produced 690 claims --- now
+\emph{more} than SMRITI's own (post-fix) Phase 4 output of 397 claims from
+the same 53 documents, a reversal from the pre-fix comparison (726 vs.\
+690). This is the assertion classifier working as intended: SMRITI now
+recovers substantially \emph{less} volume than the naive baseline because
+it explicitly discards non-declarative sentence types the naive baseline
+cannot distinguish (\S\ref{sec:results-annotation} quantifies the
+resulting gain in structural validity directly).
+
+\subsection{Precision, Recall, and Agreement Against SMRITI-Reference}
+\label{sec:results-annotation}
+\input{sections/reference_results.tex}
+
+\subsection{Reliability Signal Ablation}
+\label{sec:ablation}
+\input{sections/ablation.tex}

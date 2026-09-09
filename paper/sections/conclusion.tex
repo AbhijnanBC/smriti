@@ -1,0 +1,45 @@
+This paper is, in a specific sense, a paper about being wrong and then
+checking the work. Its predecessor built genuine engineering rigor ---
+phase-isolated boundaries, full provenance, reproducible manifests --- and
+then measured its own scientific claims with a self-evaluation layer that,
+on inspection, was not measuring what it claimed to. The corrective
+process was not cosmetic: deleting the fabricated metrics did not, by
+itself, fix anything --- it only stopped hiding that the underlying
+relationship classifier had a 3.2\% CONTRADICTS precision. Finding and
+fixing \emph{that} required reading the resolver code line by line and
+noticing it never checked the neutral score. The fix is one function; the
+evidence that it generalizes required building a corpus specifically
+designed to need no interpretation at all.
+
+Three things now stand on genuinely independent legs. SMRITI-Controlled
+(\S\ref{sec:controlled}) shows 100\% CONTRADICTS classification accuracy
+on every retrieved pair across six distinct contradiction categories, with
+zero false positives on six deliberately unrelated control pairs --- by
+construction, not by annotation. The metamorphic and reconstruction tests
+(\S\ref{sec:metamorphic}) show the reliability model is not
+self-contradictory in basic, checkable ways, and that its audit trail
+means what it says. And the re-run SMRITI-Reference annotation
+(\S\ref{sec:results-annotation}) gives the fourth leg a very different
+shape than the other three: it does not confirm the fix's real-world
+value, it discloses the fix's real-world limit. CONTRADICTS precision on
+SMRITI-Reference's actual prose is 4.6\%, statistically no better than
+the 3.2\% measured before any of this paper's fixes, because the corpus's
+genuine disagreements are argued rhetorically, not asserted
+propositionally, and an off-the-shelf entailment model simply does not
+hear rhetoric as contradiction. We could have stopped at
+SMRITI-Controlled's 100\% and called the story finished; re-running the
+annotation after the fix, rather than reusing the pre-fix round, is what
+surfaced that it was not.
+
+What does not yet stand on solid ground is explicitly listed in
+\S\ref{sec:limitations}, not hidden in a "future work" paragraph few
+readers reach: the resolver fix does not transfer to rhetorical
+disagreement in real text, SUPPORTS classification is still weak on both
+corpora, source-diversity and temporal signals still rest on filesystem
+heuristics rather than real provenance, and no genuine human evaluation
+exists. We release SMRITI-Reference, SMRITI-Controlled, both annotation
+rounds, the scoring code, and the fixed system itself, so that closing
+those gaps --- including, eventually, the human validation study we could
+not ourselves produce, and a genuinely stance-aware relationship
+classifier --- starts from a system that has already been checked once,
+rather than one whose self-report has to be checked first.

@@ -8,6 +8,7 @@ Every constant is configurable via config/default.yaml [claim_extraction].
 These are the hard-coded defaults for those config values.
 """
 
+import re
 from typing import FrozenSet
 
 # ── Coordinating conjunctions that split claims ───────────────────────────────
@@ -93,3 +94,29 @@ PHASE4_PIPELINE_VERSION = "1.0"
 # ── Limits ────────────────────────────────────────────────────────────────────
 MAX_CLAIMS_PER_SENTENCE_DEFAULT = 10
 MIN_CLAIM_CHARS_DEFAULT = 3
+
+# ── Assertion-type classification patterns ────────────────────────────────────
+# Used by claims.classifier.AssertionClassifier to route non-assertion text
+# (bibliographic metadata, leaked heading markup, etc.) away from Claim
+# construction, before any Claim object is ever built.
+
+# "**Source:** Flavor Quotient" / "**Contradicts:** Some other claim"
+# A bold markdown label immediately followed by a colon and a value.
+METADATA_BOLD_LABEL_PATTERN = re.compile(r"^\*\*[^*\n]+:\*\*\s*\S")
+
+# A leaked ATX heading marker, e.g. "## Ingredients" appearing as prose text
+# (Phase 3 normally strips real headings before they become sentences, but
+# malformed or non-standard markdown can leak the marker through).
+HEADING_ATX_LEAK_PATTERN = re.compile(r"^#{1,6}\s+\S")
+
+# A bare bold label with no colon and no trailing sentence punctuation,
+# e.g. "**Ingredients**" used as an ad-hoc section title.
+HEADING_BARE_BOLD_PATTERN = re.compile(r"^\*\*[^*:\n]+\*\*[.\s]*$")
+
+# spaCy POS tags treated as "noun-like" roots for LIST_ITEM / HEADING
+# classification when no verb governs the sentence.
+NOUN_LIKE_ROOT_POS_TAGS: FrozenSet[str] = frozenset(["NOUN", "PROPN", "ADJ", "NUM"])
+
+# Maximum word count for a bare, verbless phrase to still be considered
+# heading-like (as opposed to a runaway noun-phrase list item).
+HEADING_LIKE_MAX_WORDS = 8

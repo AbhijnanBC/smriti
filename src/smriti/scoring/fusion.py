@@ -203,15 +203,28 @@ def _compute_uncertainty(
     sv: SignalVector,
     fp: FusionPolicy,
 ) -> Tuple[float, List[Tuple[str, float]]]:
-    """Compute uncertainty score and decompose into named components."""
+    """
+    Compute uncertainty score and decompose into named components.
+
+    RECTIFIED (P0-12): a claim under active dispute (high conflict_pressure)
+    was previously only penalized in reliability_index, never in
+    uncertainty_score -- the two are distinct published metrics, and a
+    heavily-contested claim is definitionally MORE uncertain, not merely
+    less reliable. conflict_pressure is already a [0,1] "how contested is
+    this claim" signal (see signals/conflict.py), so it is added directly
+    (not inverted, unlike the evidence-sufficiency components below) as a
+    fourth weighted component.
+    """
     incompleteness = 1.0 - sv.evidence_completeness
     low_diversity = 1.0 - sv.source_diversity
     low_independence = 1.0 - sv.evidence_independence
+    contested = sv.conflict_pressure
 
     components = [
-        ("evidence_incompleteness", incompleteness * 0.50),
-        ("low_source_diversity", low_diversity * 0.25),
-        ("low_independence", low_independence * 0.25),
+        ("evidence_incompleteness", incompleteness * 0.35),
+        ("low_source_diversity", low_diversity * 0.20),
+        ("low_independence", low_independence * 0.20),
+        ("conflict_pressure", contested * 0.25),
     ]
 
     raw_uncertainty = sum(v for _, v in components) * 100.0

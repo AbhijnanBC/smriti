@@ -116,8 +116,16 @@ class CapabilityModel:
     """
 
     def __init__(self) -> None:
+        # RECTIFIED: default every capability to ENABLED, not INSTALLED.
+        # Nothing in the codebase calls .enable() during bootstrap
+        # (RuntimeCoordinator just constructs CapabilityModel() and reads
+        # .snapshot()) — starting at INSTALLED meant is_enabled()/is_usable()
+        # were permanently False for every capability (the health-check loop
+        # only promotes to AVAILABLE `elif all_healthy and state.is_enabled`,
+        # which never becomes true), silently disabling every feature.
+        # Capabilities are on by default; disable() is the explicit opt-out.
         self._capabilities: Dict[Capability, CapabilityState] = {
-            cap: CapabilityState(capability=cap, status=FeatureStatus.INSTALLED)
+            cap: CapabilityState(capability=cap, status=FeatureStatus.ENABLED)
             for cap in Capability
         }
         self._lock = threading.Lock()
@@ -152,17 +160,23 @@ class CapabilityModel:
 
     def disable(self, capability: Capability, reason: str = "") -> None:
         """
-        Make the feature unavailable (set to UNAVAILABLE) while keeping it enabled.
-        This does not turn the feature off; it only indicates that dependencies
-        are failing or the feature is temporarily out of service.
+        Toggle the feature OFF (set to INSTALLED) — the counterpart of enable().
+
+        RECTIFIED: this previously duplicated mark_unavailable() (setting
+        UNAVAILABLE), which per is_enabled's own definition still counts as
+        "enabled" ("enabled but dependencies are failing" — see
+        FeatureStatus docstring). That made disable() never actually change
+        is_enabled()/is_usable(), breaking the enable()/disable() toggle pair
+        this class's docstring documents. Use mark_unavailable() instead when
+        a dependency failure — not an admin toggle — is the cause.
         """
         with self._lock:
             state = self._capabilities[capability]
-            if state.status != FeatureStatus.UNAVAILABLE:
-                state.status = FeatureStatus.UNAVAILABLE
+            if state.status != FeatureStatus.INSTALLED:
+                state.status = FeatureStatus.INSTALLED
                 state.reason = reason
                 state.updated_at = time.monotonic()
-                self._publish_change(capability, FeatureStatus.UNAVAILABLE)
+                self._publish_change(capability, FeatureStatus.INSTALLED)
 
     def mark_available(self, capability: Capability) -> None:
         """Mark the feature as fully operational (healthy dependencies)."""

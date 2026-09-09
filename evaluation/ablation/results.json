@@ -1,0 +1,79 @@
+{
+  "run_id": "20260909_193441",
+  "n_claims": 215,
+  "baseline_mean_ri": 4.985,
+  "results": [
+    {
+      "signal": "topology_strength",
+      "original_weight": 0.1,
+      "baseline_mean": 4.985,
+      "ablated_mean": 3.172,
+      "mean_shift": -1.813,
+      "mean_abs_per_claim_delta": 1.813,
+      "pearson_r_vs_baseline": 0.9535
+    },
+    {
+      "signal": "temporal_stability",
+      "original_weight": 0.05,
+      "baseline_mean": 4.985,
+      "ablated_mean": 3.671,
+      "mean_shift": -1.314,
+      "mean_abs_per_claim_delta": 1.314,
+      "pearson_r_vs_baseline": 0.9929
+    },
+    {
+      "signal": "conflict_pressure",
+      "original_weight": 0.2,
+      "baseline_mean": 4.985,
+      "ablated_mean": 6.297,
+      "mean_shift": 1.312,
+      "mean_abs_per_claim_delta": 1.312,
+      "pearson_r_vs_baseline": 0.9892
+    },
+    {
+      "signal": "evidence_independence",
+      "original_weight": 0.15,
+      "baseline_mean": 4.985,
+      "ablated_mean": 4.386,
+      "mean_shift": -0.6,
+      "mean_abs_per_claim_delta": 0.656,
+      "pearson_r_vs_baseline": 0.9714
+    },
+    {
+      "signal": "evidence_strength",
+      "original_weight": 0.25,
+      "baseline_mean": 4.985,
+      "ablated_mean": 4.377,
+      "mean_shift": -0.609,
+      "mean_abs_per_claim_delta": 0.609,
+      "pearson_r_vs_baseline": 0.9862
+    },
+    {
+      "signal": "bridge_score",
+      "original_weight": 0.05,
+      "baseline_mean": 4.985,
+      "ablated_mean": 4.59,
+      "mean_shift": -0.395,
+      "mean_abs_per_claim_delta": 0.395,
+      "pearson_r_vs_baseline": 0.9911
+    },
+    {
+      "signal": "source_diversity",
+      "original_weight": 0.15,
+      "baseline_mean": 4.985,
+      "ablated_mean": 4.765,
+      "mean_shift": -0.22,
+      "mean_abs_per_claim_delta": 0.22,
+      "pearson_r_vs_baseline": 0.9988
+    },
+    {
+      "signal": "hub_score",
+      "original_weight": 0.05,
+      "baseline_mean": 4.985,
+      "ablated_mean": 4.962,
+      "mean_shift": -0.023,
+      "mean_abs_per_claim_delta": 0.023,
+      "pearson_r_vs_baseline": 0.9994
+    }
+  ]
+}

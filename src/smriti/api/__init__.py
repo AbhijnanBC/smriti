@@ -525,7 +525,7 @@ def run_api_initialization(
     api = build_knowledge_api(scored_graph)
     stats = api.initialization_stats
 
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase9"
+    phase_dir = manifest_manager.run_dir / "phase9"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     capabilities_path = phase_dir / "capabilities.json"

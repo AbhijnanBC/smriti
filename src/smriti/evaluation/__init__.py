@@ -32,10 +32,9 @@ from smriti.exceptions import Phase12Error
 from smriti.evaluation.engineering.architectural import run_architectural_verification
 from smriti.evaluation.engineering.confidence import compute_eci, compute_verification_coverage
 from smriti.evaluation.scientific.experiment import EXPERIMENT_REGISTRY, run_experiment
-from smriti.evaluation.scientific.ground_truth import build_synthetic_ground_truth_repository
 from smriti.evaluation.scientific.conflict import detect_evidence_conflicts, apply_conflict_adjustments
 from smriti.evaluation.statistical.analysis import (
-    compute_statistical_analysis, assess_reproducibility, STANDARD_THREATS,
+    compute_statistical_analysis, STANDARD_THREATS,
 )
 from smriti.evaluation.statistical.assumptions import ASSUMPTION_REGISTRY
 from smriti.evaluation.statistical.limitations import LIMITATION_REGISTRY
@@ -100,7 +99,20 @@ class CertificationEngine:
         # ── Part 4: Statistical Analysis ──────────────────────────────────────
         logger.info("part 4: statistical analysis")
         statistical_analyses = []
-        reproducibility_assessments = []
+        # RECTIFIED (scientific cleanup): reproducibility assessments require
+        # REAL independent repeated runs of an experiment. The previous
+        # version fabricated one by duplicating a single measurement
+        # (`values=[primary_metric, primary_metric]`), which has zero
+        # variance by construction and therefore ALWAYS reports "excellent"
+        # reproducibility regardless of whether the experiment is remotely
+        # stable. Since a single pipeline invocation runs each experiment
+        # exactly once, there is no real multi-run data to assess here —
+        # reproducibility_assessments is honestly empty. Gate 5 in gates.py
+        # correctly treats an empty list as 0% reproducible and blocks
+        # advancement past STATISTICALLY_VERIFIED, which is the accurate
+        # state of affairs until a genuine multi-run study is performed
+        # (see paper Limitations: "single-run experiments").
+        reproducibility_assessments: list = []
 
         for result in experiment_results:
             for metric, value in result.metrics.items():
@@ -110,16 +122,6 @@ class CertificationEngine:
                         values=[value],
                     )
                     statistical_analyses.append(sa)
-            primary_metric = next(
-                (v for v in result.metrics.values() if isinstance(v, float)), 0.0
-            )
-            ra = assess_reproducibility(
-                experiment_id=result.experiment_id,
-                metric_name="primary_metric",
-                values=[primary_metric, primary_metric],
-                cv_threshold=0.05,
-            )
-            reproducibility_assessments.append(ra)
 
         research_claims = assess_research_claims(experiment_results)
 
@@ -226,7 +228,7 @@ def run_evaluation(knowledge_api, run_id: str, manifest_manager, state_manager) 
     report = package.certification_report
 
     # Write artifacts
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase12"
+    phase_dir = manifest_manager.run_dir / "phase12"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     report_json = serialize_certification_report(report)
@@ -241,6 +243,7 @@ def run_evaluation(knowledge_api, run_id: str, manifest_manager, state_manager) 
         "policy_version": package.evaluation_manifest.policy_version,
         "random_seeds": package.evaluation_manifest.random_seeds,
         "software_versions": package.evaluation_manifest.software_versions,
+        "hardware_description": package.evaluation_manifest.hardware_description,
         "created_at": package.evaluation_manifest.created_at,
     }
     (phase_dir / "evaluation_manifest.json").write_text(

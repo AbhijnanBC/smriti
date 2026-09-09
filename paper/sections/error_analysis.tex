@@ -1,0 +1,133 @@
+This section reports the failure mode that motivated this paper's central
+fix, largely as originally measured (on the pre-fix system), because the
+finding itself --- and the diagnostic process that led from a suspicious
+number to a specific one-line root cause --- is the useful part.
+\S\ref{sec:controlled} and \S\ref{sec:results} report the post-fix
+measurement.
+
+The dominant failure mode observed on the pre-fix system was
+over-fragmentation of the knowledge graph driven by a high rate of
+predicted CONTRADICTS edges, most of them spurious. On SMRITI-Reference,
+Phase 6 classified 1{,}539 of 4{,}847 validated candidate pairs (31.8\%)
+as CONTRADICTS, and Phase 7's partitioning collapsed 569 claim nodes into
+472 partitions --- an 82.9\% singleton rate. Given the corpus was
+deliberately constructed with exactly three genuinely contradictory
+document pairs, a rate this high could not be explained by genuine
+semantic conflict.
+
+To isolate the mechanism, we drew a sample of 60 candidate pairs in which
+one claim comes from a deliberately-planted adversarial document and the
+other comes from an \emph{unrelated} document elsewhere in the corpus ---
+pairs that should essentially always be NEUTRAL. SMRITI classified 11 of
+these 60 pairs (18.3\%) as CONTRADICTS; both independent annotation passes
+agreed that all 11 (100\%) were false positives.
+
+\paragraph{Root cause.} Inspecting the resolver directly
+(\texttt{retrieval/classification/resolver.py}) rather than only its
+output distribution located the mechanism precisely: the CONTRADICTS rule
+required \texttt{contradiction\_score > entailment\_score} by a margin,
+but never compared against \texttt{neutral\_score} at all. On a candidate
+pair drawn from embedding-retrieval rather than a curated, topically-
+coherent test set, an off-the-shelf NLI model frequently assigns its
+\emph{highest} probability to neutral (correctly recognizing the pair as
+unrelated) while still assigning contradiction a higher score than
+entailment (incorrectly, but not the model's dominant judgment) --- and the
+old resolver committed to CONTRADICTS anyway, because it never looked at
+the class the model actually favored. This is not a fundamental limitation
+of the NLI model; it is an integration bug in how a three-class output was
+reduced to a decision. \S\ref{sec:system} describes the fix (require the
+winning class to be the true arg-max of all three scores, plus a
+topical-relatedness gate specific to CONTRADICTS), and \S\ref{sec:controlled}
+and \S\ref{sec:results} report that it holds on both a fully objective
+corpus and the re-annotated SMRITI-Reference sample.
+
+\paragraph{Downstream consequence for reliability scoring.} Because Phase
+8's reliability signals include topology strength computed over each
+claim's partition, the fragmentation above directly and mechanically
+suppressed reliability scores system-wide: a claim isolated into its own
+singleton partition has no corroborating neighbors by construction,
+regardless of how well-established the claim itself is. This is not a
+Phase 8 calibration bug in isolation --- it is a symptom propagating upward
+from Phase 6, and improves automatically as Phase 6's precision improves
+(the partition count and singleton rate reported in \S\ref{sec:results}
+for the post-fix system are lower in both absolute and relative terms).
+
+\paragraph{Secondary failure mode: claim-extraction noise from document
+metadata.} Phase 4 previously extracted a claim from every semantic
+sentence Phase 3 produced, including purely bibliographic or structural
+sentences. \S\ref{sec:system}'s assertion classifier addresses this
+directly; \S\ref{sec:results} quantifies the resulting change in extracted
+claim volume and validity.
+
+\subsection{Error Taxonomy}
+\label{sec:error-taxonomy}
+
+Rather than propose failure categories in the abstract, we derive a
+taxonomy directly from the 24 row-level outcomes in
+Table~\ref{tab:controlled} (the fully-adjudicated, zero-annotation
+SMRITI-Reference-Controlled corpus) plus the two pipeline-level failure
+modes already characterized above on SMRITI-Reference. Every entry below
+is traceable to specific, real pair IDs; we do not report a category we
+did not actually observe.
+
+\begin{itemize}
+  \item \textbf{E1 -- Retrieval miss.} The true pair is never surfaced as
+    an NLI candidate at all, so no classification is possible. Observed on
+    4/24 controlled pairs (\texttt{D02} direct, \texttt{D08} temporal,
+    \texttt{S05}/\texttt{S06} supports) and is the sole determinant of
+    SMRITI-Controlled's retrieval-recall ceiling (\S\ref{sec:controlled}).
+    Root cause is Phase 5/6 candidate generation (cosine-similarity
+    thresholding), upstream of the resolver fix this paper centers on.
+  \item \textbf{E2 -- Entailment under-call.} A genuinely-SUPPORTS pair is
+    retrieved but the NLI model's own top class is neutral rather than
+    entailment, so the (correctly arg-max-respecting) resolver reports
+    NEUTRAL. Observed on 2/6 retrieved supports pairs (\texttt{S01},
+    \texttt{S02}). This is a model-calibration limitation, not a resolver
+    logic bug: the same arg-max rule that gives CONTRADICTS 100\%
+    precision here faithfully reports what the model's own probabilities
+    say.
+  \item \textbf{E3 -- Over-eager refinement.} A genuinely-SUPPORTS pair is
+    classified REFINES instead, because the resolver's REFINES rule
+    (\S\ref{sec:system}, \texttt{refine\_contradiction\_ceiling}) treats
+    "low contradiction score" as evidence of elaboration rather than of
+    plain confirmation. Observed once (\texttt{S03}); one case is too few
+    to distinguish a genuine resolver miscalibration from a defensible
+    alternative reading of that specific pair (\S\ref{sec:controlled}).
+  \item \textbf{E4 -- Spurious cross-document contradiction} (pre-fix
+    only; \textbf{fixed}, \S\ref{sec:bugs} Defect 5). Unrelated pairs
+    resolved to CONTRADICTS because the old resolver never checked the
+    NLI model's dominant class. Measured pre-fix at 18.3\% on a
+    targeted 60-pair sample, 100\% of which both annotation passes
+    confirmed false; measured post-fix at 0/6 on SMRITI-Controlled's
+    NEUTRAL pairs (E4's absence is itself the finding in
+    \S\ref{sec:controlled}, point (2)).
+  \item \textbf{E5 -- Non-declarative claim noise} (pre-fix only;
+    \textbf{fixed}, \S\ref{sec:system} assertion classifier). Headings,
+    bibliographic lines, and list fragments constructed into claims with
+    no assertion content, inflating claim volume and diluting every
+    downstream signal that treats claim count as a denominator.
+  \item \textbf{E6 -- Rhetorical stance conflict misread as neutral.}
+    \textbf{Open, newly discovered post-fix.} On SMRITI-Reference's real
+    prose, 22 of 25 deliberately-planted hard-contradiction pairs are
+    predicted NEUTRAL, not because the resolver malfunctions but because
+    the NLI model itself assigns neutral $>0.97$ probability to these
+    pairs (\S\ref{sec:results-annotation} inspects the raw scores
+    directly). The disagreement in these pairs is expressed as
+    argumentative prose about a shared topic (``U-Net is an outdated
+    architectural choice'') rather than direct propositional negation,
+    which an SNLI/MultiNLI/ANLI-calibrated model is not trained to read as
+    contradiction. Unlike E4, this is not an integration bug: the resolver
+    is faithfully reporting the model's own dominant class. It requires
+    either a differently-calibrated (or stance-detection-specific) model,
+    not a resolver change, and is recorded as unresolved in
+    \S\ref{sec:limitations}.
+\end{itemize}
+
+E1--E3 and E6 remain open (E1 is a retrieval-stage problem, E2/E3 are
+SUPPORTS-side calibration problems, E6 is an NLI-model calibration gap on
+rhetorical rather than propositional disagreement); E4--E5 are the two
+mechanisms this paper's central fixes target and close on the evidence
+available here. We do not claim this list is exhaustive over failure
+modes SMRITI could exhibit on other corpora --- only that it is exhaustive
+over failure modes we actually observed on the two corpora reported in
+this paper.

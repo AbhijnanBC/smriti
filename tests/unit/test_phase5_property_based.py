@@ -11,7 +11,7 @@ import math
 import pytest
 
 try:
-    from hypothesis import given, settings, assume
+    from hypothesis import given, settings, assume, HealthCheck
     from hypothesis import strategies as st
     HAS_HYPOTHESIS = True
 except ImportError:
@@ -35,7 +35,7 @@ if HAS_HYPOTHESIS:
             max_size=512,
         )
     )
-    @settings(max_examples=300)
+    @settings(max_examples=300, suppress_health_check=[HealthCheck.too_slow])
     def test_property_l2_normalize_always_unit_norm(values):
         """For ANY non-zero vector, L2 norm after normalization is always 1.0."""
         assume(sum(x * x for x in values) > 0)  # exclude zero vectors
@@ -51,7 +51,7 @@ if HAS_HYPOTHESIS:
             max_size=512,
         )
     )
-    @settings(max_examples=300)
+    @settings(max_examples=300, suppress_health_check=[HealthCheck.too_slow])
     def test_property_l2_normalize_does_not_mutate_input(values):
         """l2_normalize must never mutate the input list."""
         original = list(values)
@@ -134,7 +134,7 @@ if HAS_HYPOTHESIS:
             max_size=512,
         )
     )
-    @settings(max_examples=300)
+    @settings(max_examples=300, suppress_health_check=[HealthCheck.too_slow])
     def test_property_valid_nonzero_vector_passes_validation(values):
         """Any non-NaN, non-Inf, non-zero-norm vector passes validation."""
         assume(any(x != 0.0 for x in values))

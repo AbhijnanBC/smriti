@@ -1,0 +1,18 @@
+\section{SMRITI-Reference: An Adversarial Evaluation Corpus}
+\label{sec:corpus}
+
+We construct SMRITI-Reference v1.1 (named ``Reference'', not ``Gold'' ---
+see \S\ref{sec:annotation}), 53 Markdown documents across five domains (A:
+robotics/big-data technical documentation, 10 docs; B: generative-model and
+NLP scientific literature plus Kannada-script linguistics, 11 docs; C: IPL
+cricket tactical analysis, 11 docs; D: Indian cooking procedures, 11 docs;
+E: encyclopedic astronomy, 10 docs). Three documents (B11, C11, D11) are
+deliberately written to directly and explicitly contradict specific
+existing documents in the corpus (B11 contradicts B5/B6 on whether U-Net or
+transformer-based segmentation is state-of-the-art; C11 contradicts
+C2/C3/C7/C9 on wrist-spin vs.\ finger-spin bowling; D11 contradicts D1--D4
+on pressure-cooking vs.\ slow-braising), giving a known-answer test set for
+contradiction detection that does not rely on circularly-generated
+synthetic ground truth. The corpus additionally includes two non-Latin-
+script documents (B7, B8, Kannada) to exercise Unicode handling --- see
+Defect 1, \S\ref{sec:bugs}.

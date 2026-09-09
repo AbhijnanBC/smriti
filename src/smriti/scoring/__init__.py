@@ -269,7 +269,11 @@ def score_knowledge_graph(
     final_stats = stats.finalize()
 
     # ── Step 6: Write artifacts ───────────────────────────────────────────────
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase8"
+    # Use manifest_manager.run_dir (respects its configured artifacts_dir),
+    # not the global ARTIFACTS_DIR default — otherwise callers that pass a
+    # custom artifacts_dir (e.g. tests using tmp_path) still get artifacts
+    # written into the real project directory.
+    phase_dir = manifest_manager.run_dir / "phase8"
     phase_dir.mkdir(parents=True, exist_ok=True)
     dataset_path = phase_dir / "dataset.json"
     dataset_path.write_text(_serialize_scored_graph(scored_graph), encoding="utf-8")

@@ -1,11 +1,12 @@
 """
-candidate_generator.py — Hybrid ANN candidate retrieval for Phase 6.
+candidate_generator.py — Exact FAISS-based candidate retrieval for Phase 6.
 
 Responsibility:
     Given an EmbeddingIndex, retrieve candidate pairs worth evaluating.
 
     Two-stage filter:
-        Stage 1 (ANN): Find top-K nearest neighbors via FAISS
+        Stage 1 (exact retrieval): Find top-K nearest neighbors via FAISS's
+            flat inner-product index (brute-force exact search, not approximate)
         Stage 2 (threshold): Keep only pairs above cosine_threshold
 
     Symmetric pair elimination:
@@ -54,7 +55,8 @@ _ISOLATED_THRESHOLD = 1
 
 class CandidateGenerator:
     """
-    Generates candidate pairs for NLI classification via ANN search.
+    Generates candidate pairs for NLI classification via exact
+    cosine-similarity retrieval using FAISS IndexFlatIP.
     Instantiate once per pipeline run.
     """
 
@@ -70,7 +72,8 @@ class CandidateGenerator:
         index: EmbeddingIndex,
     ) -> List[CandidatePair]:
         """
-        Generate candidate pairs via ANN search.
+        Generate candidate pairs via exact cosine-similarity retrieval
+        (FAISS IndexFlatIP).
 
         Args:
             embedded_claims: All EmbeddedClaims from Phase 5.
@@ -109,6 +112,12 @@ class CandidateGenerator:
 
             for result in above_threshold:
                 neighbor_id = result.claim_id
+
+                # A claim is never its own candidate pair (e.g. an index that
+                # returns the query itself as its own nearest neighbor).
+                if neighbor_id == claim_id:
+                    continue
+
                 id_a, id_b = sorted([claim_id, neighbor_id])
                 pair_key = f"{id_a}:{id_b}"
 

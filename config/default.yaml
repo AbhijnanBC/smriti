@@ -321,7 +321,15 @@ knowledge_graph:
 scoring_policy:
   version: "1.0"
   # RECTIFIED (P1-3): Active profile. Options: balanced, conservative, research, evidence_first
-  profile: "balanced"
+  #
+  # NOTE: intentionally NOT set here. load_policy(profile=...) already
+  # defaults to PolicyProfile.BALANCED, and callers (e.g. scoring/__init__.py
+  # run_scoring(policy_profile=...)) select a profile per-call. Since
+  # `sp.get("profile", profile.value)` lets this config key take priority
+  # over the function argument, hardcoding a value here would silently
+  # pin every run to "balanced" regardless of what callers request.
+  # Uncomment to force a single profile fleet-wide:
+  # profile: "balanced"
 
   evidence:
     min_support_count: 1
@@ -352,15 +360,23 @@ scoring_policy:
   fusion:
     # RECTIFIED (P0-2, P0-3): signal_weights dict replaces per-field weights
     # Adding a new signal only requires adding it here + registering the extractor
-    signal_weights:
-      evidence_strength:     0.25
-      evidence_independence: 0.15
-      source_diversity:      0.15
-      topology_strength:     0.10
-      hub_score:             0.05    # RECTIFIED (P0-3): separated from topology bonus
-      bridge_score:          0.05    # RECTIFIED (P0-3): separated from topology bonus
-      conflict_pressure:     0.20
-      temporal_stability:    0.05
+    #
+    # NOTE: signal_weights is intentionally NOT set here. load_policy() seeds
+    # signal_weights from the active PolicyProfile preset (see
+    # scoring/policies.py::_PROFILE_WEIGHTS) and only lets this config section
+    # override it. Hardcoding the balanced profile's weights here would make
+    # every profile (research, conservative, evidence_first, ...) collapse to
+    # the same weights, defeating `profile:` above. To override weights for
+    # ALL profiles, uncomment and set explicit values below.
+    # signal_weights:
+    #   evidence_strength:     0.25
+    #   evidence_independence: 0.15
+    #   source_diversity:      0.15
+    #   topology_strength:     0.10
+    #   hub_score:             0.05
+    #   bridge_score:          0.05
+    #   conflict_pressure:     0.20
+    #   temporal_stability:    0.05
     max_reliability_without_evidence: 60.0
     max_reliability_with_max_conflict: 40.0
     min_reliability_for_high_topology: 20.0
@@ -520,7 +536,9 @@ evaluation:
   # Gate thresholds (RECTIFIED: gates, not weighted average)
   gate_1_arch_pass_rate: 0.85
   gate_2_eci_required: 75.0
-  gate_3_min_experiments: 6
+  # RECTIFIED: registry frozen to 5 experiments (EXP-001..EXP-005), one per
+  # canonical research claim RC1-RC5 — see evaluation/certification/claims.py
+  gate_3_min_experiments: 5
   gate_4_sci_required: 70.0
   gate_5_reproducibility_rate: 0.80
   # Gate 6 requires PublicationReadinessLevel.COMPLETE

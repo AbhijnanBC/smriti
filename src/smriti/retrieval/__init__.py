@@ -29,7 +29,7 @@ from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     Claim, EmbeddedClaim, RelationshipSet,
-    RelationshipDirection, ConflictResolutionPolicy,
+    RelationshipDirection, RelationshipType, ConflictResolutionPolicy,
 )
 from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
@@ -43,6 +43,7 @@ from smriti.retrieval.validator import validate_candidates
 from smriti.retrieval.classification.calibration import ConfidenceCalibrator, CalibrationStrategy
 from smriti.retrieval.classification.evidence import NLIEvidenceGenerator
 from smriti.retrieval.classification.resolver import RelationshipResolver, ResolverPolicy
+from smriti.retrieval.classification.relatedness import passes_contradiction_relatedness_gate
 from smriti.retrieval.classification.validator import validate_all_relationships
 from smriti.retrieval.classification.conflict import ConflictResolver
 from smriti.retrieval.builder import build_relationship, build_relationship_set
@@ -279,6 +280,35 @@ def discover_relationships(
         rel_type, direction = resolver.resolve(evidence)
         resolved_triples.append((evidence, rel_type, direction))
 
+    # ── Stage 5b: Relatedness gate on CONTRADICTS (P0-6) ─────────────────────
+    # A CONTRADICTS verdict additionally requires the two claims to share
+    # some detectable topical overlap — you cannot contradict a claim you
+    # are not even talking about. This does not touch SUPPORTS/REFINES/
+    # NEUTRAL, since over-gating there would cost recall without addressing
+    # the measured failure mode (spurious cross-domain CONTRADICTS).
+    rd_cfg = config.get("relationship_discovery", {})
+    min_relatedness = rd_cfg.get("min_contradiction_relatedness", 0.03)
+    downgraded_count = 0
+    gated_triples = []
+    for evidence, rel_type, direction in resolved_triples:
+        if rel_type == RelationshipType.CONTRADICTS:
+            claim_a = claims_map.get(evidence.pair.claim_id_a)
+            claim_b = claims_map.get(evidence.pair.claim_id_b)
+            text_a = claim_a.text if claim_a else ""
+            text_b = claim_b.text if claim_b else ""
+            if not passes_contradiction_relatedness_gate(text_a, text_b, min_relatedness):
+                rel_type = RelationshipType.UNKNOWN
+                direction = RelationshipDirection.SYMMETRIC
+                downgraded_count += 1
+        gated_triples.append((evidence, rel_type, direction))
+    resolved_triples = gated_triples
+    if downgraded_count:
+        logger.info(
+            "relatedness gate downgraded low-overlap CONTRADICTS verdicts",
+            downgraded=downgraded_count,
+            min_relatedness=min_relatedness,
+        )
+
     # ── Stage 6: Validate resolved relationships ──────────────────────────────
     governor.check_timeout()
 
@@ -366,7 +396,7 @@ def _finalize_phase(
     phase4_path: str,
 ) -> None:
     """Write artifacts, replay manifest, phase manifest, and update pipeline state."""
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase6"
+    phase_dir = manifest_manager.run_dir / "phase6"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     # Write dataset artifact for Phase 7

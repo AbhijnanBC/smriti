@@ -115,7 +115,20 @@ def normalize_text(raw_text: str) -> NormalizationResult:
                 warnings.append(WarningCode.BLANK_LINES_COLLAPSED)
 
         # ── Step 7: Strip leading/trailing whitespace ────────────────────
-        text = text.strip()
+        # RECTIFIED: a plain text.strip() would eat into the FIRST content
+        # line's leading indentation whenever the document itself starts
+        # with an indented line (that indentation IS the document's leading
+        # whitespace) — directly violating the "Do NOT remove indentation"
+        # rule above. Instead, drop only fully blank lines from the start
+        # and end, preserving any indentation on the first/last real line.
+        lines = text.split("\n")
+        start = 0
+        while start < len(lines) and lines[start].strip() == "":
+            start += 1
+        end = len(lines)
+        while end > start and lines[end - 1].strip() == "":
+            end -= 1
+        text = "\n".join(lines[start:end])
 
     except NormalizationError:
         raise

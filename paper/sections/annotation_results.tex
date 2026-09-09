@@ -1,0 +1,127 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Task} & \textbf{Inter-pass agreement} & \textbf{N} \\
+\midrule
+Claim validity (binary) & $\kappa=0.987$ & 300 \\
+Claim reliability (1--5) & MAD $=0.15$ & 296 \\
+Relationship type (5-way) & $\kappa=0.675$ & 310 \\
+\bottomrule
+\end{tabular}
+\caption{Inter-pass agreement between the two independent LLM-derived
+annotation passes. $\kappa$ = Cohen's kappa; MAD = mean absolute difference
+on the 1--5 scale. Per Landis and Koch's conventional bands, claim validity
+agreement is \emph{almost perfect} and relationship-type agreement is
+\emph{substantial} but below the $\kappa > 0.7$ bar typically required
+before treating labels as reliable ground truth --- itself evidence that even
+holding the annotator (an LLM under a fixed protocol) constant, relationship
+typing is a harder, more subjective task than validity judgment, and this
+should be read as a lower bound on how much harder it would be across two
+\emph{different human} annotators.}
+\label{tab:agreement}
+\end{table}
+
+\paragraph{Claim extraction (RC1).} On the 298 claims where both annotation
+passes agreed on validity (99.3\% of the sample), only 54.0\% were judged
+structurally valid claims --- sharply lower than the value SMRITI's own
+built-in Phase 12 evaluation reports for the analogous check (which treats
+any \emph{non-empty} extracted span as ``precise'' and reports effectively
+100\%). Directly inspecting the full 726-claim Phase 4 output confirms why:
+7.3\% of all extracted claims are pure bibliographic metadata lines (e.g.\ a
+``\textbf{Source:}'' attribution) with no assertional content at all, and a
+further substantial fraction are bare headings, ingredient-list noun
+phrases, or dangling sentence fragments from imperfect sentence
+segmentation. \textbf{We could not measure recall} for claim extraction
+with this protocol --- doing so requires an annotator to read each source
+document in full and enumerate every assertable claim, independent of
+what SMRITI extracted, which is a substantially larger annotation task we
+did not undertake; we flag this explicitly as unmeasured rather than
+estimating it.
+
+\paragraph{Relationship classification (RC2/RC3).} Table~\ref{tab:relprf1}
+reports SMRITI's own per-class precision/recall/F1 against the 269
+relationship pairs where both annotation passes agreed (excluding UNSURE).
+The result is stark: SMRITI's NLI-based classifier achieves reasonable
+NEUTRAL-class performance (F1 $=0.593$) but its CONTRADICTS precision is
+only \textbf{3.2\%} --- of every candidate pair SMRITI labeled CONTRADICTS in
+this sample, 96.8\% were judged NOT to be genuine contradictions by both
+independent annotation passes. Recall on the 68 held-out pairs drawn from
+the corpus's deliberately-planted, known-answer contradiction set
+(hard-contradiction target pairs, \S\ref{sec:corpus}) is only
+\textbf{25.0\%} --- SMRITI correctly flags just one in four of the
+contradictions the corpus was specifically constructed to contain. Precision
+and recall being simultaneously this low on the same label is the
+signature of a classifier whose CONTRADICTS predictions are close to
+uncorrelated with the true contradiction structure, not merely
+miscalibrated in one direction; \S\ref{sec:error-analysis} traces this to
+out-of-distribution NLI behavior on embedding-retrieved candidate pairs.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Class} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{N} \\
+\midrule
+SUPPORTS     & 0.100 & 0.143 & 0.118 & 28 \\
+CONTRADICTS  & 0.032 & 0.286 & 0.057 & 7 \\
+REFINES      & 0.122 & 0.333 & 0.179 & 15 \\
+NEUTRAL      & 0.816 & 0.466 & 0.593 & 219 \\
+\bottomrule
+\end{tabular}
+\caption{SMRITI's relationship classification, scored against the
+annotator-agreed subset ($N=269$). Support column is the number of
+gold-labeled instances of that class in the agreed subset.}
+\label{tab:relprf1}
+\end{table}
+
+\paragraph{Baseline comparison.} Table~\ref{tab:baseline-comparison} compares
+SMRITI's NLI classifier against both baselines on the identical agreed-gold
+subset. The result is counter-intuitive and, we think, important: the
+\emph{naive} TF-IDF cosine baseline achieves \textbf{perfect CONTRADICTS
+precision (1.00)} on this sample (every pair it labeled CONTRADICTS was a
+genuine contradiction), far exceeding SMRITI's 0.032 --- though at much lower
+recall (0.143 vs.\ SMRITI's 0.286), since TF-IDF's shallow negation-cue
+heuristic is far more conservative about calling CONTRADICTS at all. The
+Sentence-BERT baseline sits between the two (CONTRADICTS precision 0.50).
+Neither baseline handles REFINES at all (F1 $=0$ for both), which is
+unsurprising since neither implements any structural notion of
+elaboration/narrowing beyond similarity-band thresholds. \textbf{No system
+in this comparison is good enough to deploy as-is}: SMRITI over-predicts
+CONTRADICTS with very low precision, and both baselines are simply too
+conservative on it to be useful for the contradiction-detection use case
+that motivates SMRITI's design in the first place. We read this as evidence
+that off-the-shelf sentence-similarity-thresholded heuristics and
+off-the-shelf NLI models are \emph{both} the wrong tool for this exact task
+without further adaptation --- a concrete, falsifiable target for future work
+rather than a reason to prefer one architecture over the other.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Class} & \textbf{System} & \textbf{P} & \textbf{R} & \textbf{F1} \\
+\midrule
+\multirow{3}{*}{CONTRADICTS}
+  & SMRITI (NLI)  & 0.032 & 0.286 & 0.057 \\
+  & TF-IDF        & 1.000 & 0.143 & 0.250 \\
+  & Sentence-BERT & 0.500 & 0.143 & 0.222 \\
+\midrule
+\multirow{3}{*}{SUPPORTS}
+  & SMRITI (NLI)  & 0.100 & 0.143 & 0.118 \\
+  & TF-IDF        & 0.211 & 0.143 & 0.170 \\
+  & Sentence-BERT & 0.167 & 0.143 & 0.154 \\
+\midrule
+\multirow{3}{*}{NEUTRAL}
+  & SMRITI (NLI)  & 0.816 & 0.466 & 0.593 \\
+  & TF-IDF        & 0.819 & 0.932 & 0.872 \\
+  & Sentence-BERT & 0.827 & 0.918 & 0.870 \\
+\bottomrule
+\end{tabular}
+\caption{SMRITI vs.\ both baselines on the identical agreed-gold subset
+($N=269$; REFINES omitted --- all three systems score F1 $=0$ on it).}
+\label{tab:baseline-comparison}
+\end{table}

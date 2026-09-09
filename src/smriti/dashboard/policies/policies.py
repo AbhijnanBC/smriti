@@ -120,6 +120,32 @@ class PolicyEngine:
             return False, f"Pagination offset {offset} exceeds performance limit of {max_offset}"
         return True, ""
 
+    def validate_command(self, command) -> tuple:
+        """
+        Generic entry point used by InteractionDispatcher._validate_policy()
+        for every command type. Dispatches to the relevant specific
+        validate_* method above based on the command's own payload;
+        commands with no policy-relevant limit are allowed unconditionally.
+
+        Without this method, InteractionDispatcher.dispatch() raises
+        AttributeError for every command when used with a real PolicyEngine
+        (previously only test doubles defined validate_command).
+        """
+        # Local import to avoid a hard import-time dependency from
+        # policies.py (dashboard/policies/) on commands.py (dashboard/commands/).
+        from smriti.dashboard.commands.commands import CompareCommand, ExportCommand, SetPageCommand
+
+        if isinstance(command, CompareCommand):
+            return self.validate_comparison(len(command.claim_ids))
+
+        if isinstance(command, ExportCommand):
+            return self.validate_export(command.format)
+
+        if isinstance(command, SetPageCommand):
+            return self.validate_pagination(command.page)
+
+        return True, ""
+
     @property
     def policy(self) -> InteractionPolicy:
         return self._policy

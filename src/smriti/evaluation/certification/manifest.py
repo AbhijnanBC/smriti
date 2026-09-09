@@ -10,15 +10,89 @@ Phase 12 adds EvaluationManifest (evaluation provenance):
     - Which policy version was active
     - Random seeds per experiment
     - Software and hardware configuration
+
+RECTIFIED: hardware_description and software_versions are now measured
+from the actual running machine/environment (platform, psutil, torch)
+instead of a hardcoded "Windows 11" placeholder string, so the manifest
+is a genuine reproducibility record rather than a fabricated constant.
 """
 
 from __future__ import annotations
 
 import hashlib
+import platform
 import sys
 from datetime import datetime, timezone
 from typing import Dict, List
 from smriti.core.models import EvaluationManifest, ExperimentDesign
+
+# Packages whose installed version is recorded verbatim (never hardcoded —
+# always read from the package's own installed distribution metadata).
+_TRACKED_PACKAGES = (
+    "structlog", "spacy", "sentence_transformers", "torch", "networkx", "numpy",
+)
+
+# spaCy trained pipelines (e.g. en_core_web_sm) install as their own
+# versioned distribution, separate from the spacy library itself.
+_DEFAULT_SPACY_MODEL = "en_core_web_sm"
+
+
+def _software_versions() -> Dict[str, str]:
+    """Real installed package versions, via importlib.metadata — never hardcoded."""
+    import importlib.metadata
+
+    versions: Dict[str, str] = {"python": sys.version.split()[0]}
+    for pkg in _TRACKED_PACKAGES:
+        try:
+            versions[pkg] = importlib.metadata.version(pkg)
+        except Exception:
+            versions[pkg] = "unknown"
+
+    try:
+        from smriti.core.config import get_config
+        spacy_model = get_config().get("extraction", {}).get("spacy_model", _DEFAULT_SPACY_MODEL)
+    except Exception:
+        spacy_model = _DEFAULT_SPACY_MODEL
+    try:
+        versions[f"spacy_model:{spacy_model}"] = importlib.metadata.version(spacy_model)
+    except Exception:
+        versions[f"spacy_model:{spacy_model}"] = "unknown"
+
+    return versions
+
+
+def _hardware_description() -> str:
+    """
+    Real OS/CPU/RAM/GPU description, detected at run time.
+
+    SMRITI runs CPU-only in normal operation, so no GPU info is fabricated
+    when none is present — torch.cuda.is_available() is checked directly
+    and reported honestly as "cpu" when it is False.
+    """
+    parts = [
+        f"{platform.system()} {platform.release()}",
+        f"Python {platform.python_version()}",
+        f"CPU: {platform.processor() or platform.machine() or 'unknown'}",
+    ]
+
+    try:
+        import psutil
+        total_ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+        parts.append(f"RAM: {total_ram_gb:.1f}GB")
+    except Exception:
+        parts.append("RAM: unknown")
+
+    try:
+        import torch
+        if torch.cuda.is_available():
+            gpu_name = torch.cuda.get_device_name(0)
+            parts.append(f"GPU: {gpu_name} (CUDA {torch.version.cuda})")
+        else:
+            parts.append("GPU: none (cpu-only)")
+    except Exception:
+        parts.append("GPU: unknown")
+
+    return " | ".join(parts)
 
 
 def build_evaluation_manifest(
@@ -27,8 +101,6 @@ def build_evaluation_manifest(
     policy_version: str,
 ) -> EvaluationManifest:
     """Build an EvaluationManifest for one Phase 12 run."""
-    import hashlib, uuid
-
     manifest_id = hashlib.sha256(
         f"{run_id}:{datetime.now(tz=timezone.utc).isoformat()}".encode()
     ).hexdigest()[:12]
@@ -43,15 +115,6 @@ def build_evaluation_manifest(
         for metric, threshold in e.acceptance_criteria.items():
             acceptance_criteria[f"{e.experiment_id}.{metric}"] = threshold
 
-    # Software versions
-    software_versions: Dict[str, str] = {"python": sys.version.split()[0]}
-    for pkg in ["structlog", "spacy", "sentence_transformers", "networkx", "numpy"]:
-        try:
-            import importlib.metadata
-            software_versions[pkg] = importlib.metadata.version(pkg)
-        except Exception:
-            software_versions[pkg] = "unknown"
-
     return EvaluationManifest(
         manifest_id=manifest_id,
         run_id=run_id,
@@ -61,7 +124,7 @@ def build_evaluation_manifest(
         random_seeds=random_seeds,
         metrics_evaluated=tuple(acceptance_criteria.keys()),
         acceptance_criteria=acceptance_criteria,
-        software_versions=software_versions,
-        hardware_description=f"Windows 11 / Python {sys.version.split()[0]} (platform: {sys.platform})",
+        software_versions=_software_versions(),
+        hardware_description=_hardware_description(),
         created_at=datetime.now(tz=timezone.utc).isoformat(),
     )

@@ -6,19 +6,33 @@ import streamlit as st
 
 from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.models.presentation import ClaimPresentationModel
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
+from smriti.dashboard.commands.commands import SelectClaimCommand, SetPageCommand
+from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
 
 
 class ResultListView(BaseView):
-    """Renders a scrollable, paginated list of ClaimPresentationModels."""
+    """Renders a scrollable, paginated list of ClaimPresentationModels.
+    Dispatches SelectClaimCommand / SetPageCommand rather than mutating state directly."""
 
     def __init__(
         self,
-        state_manager: EpistemicStateManager,
+        dispatcher: InteractionDispatcher | None = None,
+        state_manager=None,
         claims: List[ClaimPresentationModel] = None,
         total: int = 0,
     ) -> None:
-        self._sm = state_manager
+        """Accept either a dispatcher or a state_manager (builds a default dispatcher)."""
+        if dispatcher is not None:
+            self._dispatcher = dispatcher
+        elif state_manager is not None:
+            from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
+
+            self._dispatcher = InteractionDispatcher(
+                state_manager=state_manager,
+                policy_engine=PolicyEngine(InteractionPolicy()),
+            )
+        else:
+            raise ValueError("ResultListView requires either dispatcher or state_manager")
         self._claims = claims or []
         self._total = total
 
@@ -27,7 +41,8 @@ class ResultListView(BaseView):
         self._total = total
 
     def render(self) -> None:
-        state = self._sm.state
+        state = self._dispatcher._sm.state
+        session_id = self._dispatcher._sm._session_id
         st.caption(f"**{self._total}** claims found")
 
         if not self._claims:
@@ -40,7 +55,13 @@ class ResultListView(BaseView):
             if is_selected:
                 label = f"▶ {label}"
             if st.button(label, key=f"claim_{pm.claim_id}", use_container_width=True):
-                self._sm.select_claim(pm.claim_id)
+                self._dispatcher.dispatch(
+                    SelectClaimCommand(
+                        session_id=session_id,
+                        claim_id=pm.claim_id,
+                        source_view=self.view_name,
+                    )
+                )
                 st.rerun()
 
         # Pagination
@@ -49,11 +70,11 @@ class ResultListView(BaseView):
             cols = st.columns(3)
             with cols[0]:
                 if st.button("← Previous", disabled=state.page == 0):
-                    self._sm.set_page(state.page - 1)
+                    self._dispatcher.dispatch(SetPageCommand(session_id=session_id, page=state.page - 1))
                     st.rerun()
             with cols[1]:
                 st.caption(f"Page {state.page + 1} / {max_page + 1}")
             with cols[2]:
                 if st.button("Next →", disabled=state.page >= max_page):
-                    self._sm.set_page(state.page + 1)
+                    self._dispatcher.dispatch(SetPageCommand(session_id=session_id, page=state.page + 1))
                     st.rerun()

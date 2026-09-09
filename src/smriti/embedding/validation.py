@@ -77,8 +77,12 @@ def validate_vector(
             return False, f"Inf detected at index {i}"
 
     # Check 5: Non-zero norm
-    norm_sq = sum(float(x) * float(x) for x in vector)
-    if norm_sq == 0.0:
+    # RECTIFIED: check the raw values directly rather than sum-of-squares.
+    # For extremely small-but-nonzero floats (e.g. ~1e-178), squaring can
+    # underflow to exactly 0.0 in float64 even though the vector itself is
+    # clearly nonzero — that spurious underflow must not be misreported as
+    # a genuine zero-norm (all-zero) vector.
+    if not any(float(x) != 0.0 for x in vector):
         return False, "Zero-norm vector (all elements are zero)"
 
     return True, None

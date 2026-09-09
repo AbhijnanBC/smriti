@@ -165,7 +165,17 @@ def scan_document(normalized_text: str) -> List[ScannerEvent]:
         line_end = char_pos + len(line)
 
         # ── Front matter handling ─────────────────────────────────────────────
-        if i == 0 and YAML_FRONT_MATTER_DELIMITER.match(line):
+        # A leading "---" only opens YAML front matter if a closing "---"
+        # delimiter actually exists later in the document. Without this
+        # lookahead, a document consisting of JUST "---" (a horizontal rule,
+        # per HORIZONTAL_RULE_PATTERN) would be misidentified as an
+        # unclosed front-matter block and swallow the entire document,
+        # producing zero events.
+        if (
+            i == 0
+            and YAML_FRONT_MATTER_DELIMITER.match(line)
+            and any(YAML_FRONT_MATTER_DELIMITER.match(l) for l in lines[1:])
+        ):
             in_front_matter = True
             char_pos = line_end + 1
             i += 1

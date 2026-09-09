@@ -31,14 +31,21 @@ class StateManager:
         return state
 
     def complete_phase(self, phase: int) -> None:
-        """Mark a phase as completed and advance current_phase."""
+        """
+        Mark a phase as completed and advance current_phase.
+
+        If no state exists yet (e.g. Phase 1 completing without an explicit
+        prior start_run() call), initialize one now rather than silently
+        doing nothing — otherwise the very first phase's completion is lost.
+        """
         state = self.load()
-        if state:
-            if phase not in state.completed_phases:
-                state.completed_phases.append(phase)
-            state.current_phase = phase + 1
-            self.save(state)
-            logger.info("phase marked complete", phase=phase)
+        if state is None:
+            state = PipelineState(started_at=datetime.now(), current_phase=phase)
+        if phase not in state.completed_phases:
+            state.completed_phases.append(phase)
+        state.current_phase = phase + 1
+        self.save(state)
+        logger.info("phase marked complete", phase=phase)
 
     def load(self) -> Optional[PipelineState]:
         """Load existing state. Returns None if no state file found."""

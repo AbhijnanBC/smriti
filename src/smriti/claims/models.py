@@ -44,6 +44,16 @@ class AssertionCandidate:
     source: ParsedSentence
     boundary_reason: BoundaryReason   # now Enum
     # confidence removed (Priority 2)
+    # NEW: exact source-token provenance (Part 2 — multi-span claim provenance).
+    # source_char_spans are (start, end) character-offset pairs into
+    # source.sentence.text — one pair per CONTIGUOUS run of tokens actually
+    # used to build `text`. source_token_ids are the corresponding spaCy
+    # Token.i indices, in sentence order. Both default to empty tuples for
+    # candidates built without token-level tracking (e.g. legacy/manual
+    # construction in tests) — builder.py falls back to the whole-sentence
+    # span in that case.
+    source_char_spans: tuple = field(default_factory=tuple)
+    source_token_ids: tuple = field(default_factory=tuple)
 
 
 @dataclass
@@ -102,3 +112,15 @@ class ValidatedAssertion:
     @property
     def span_start(self) -> int:
         return self.annotated.structured_candidate.candidate.span_start
+
+    @property
+    def source_char_spans(self) -> tuple:
+        return self.annotated.structured_candidate.candidate.source_char_spans
+
+    @property
+    def source_token_ids(self) -> tuple:
+        return self.annotated.structured_candidate.candidate.source_token_ids
+
+    @property
+    def reconstruction_rule(self) -> str:
+        return self.annotated.structured_candidate.candidate.boundary_reason.value

@@ -1,0 +1,194 @@
+[
+  {
+    "doc_a": "D01a",
+    "text_a": "The Aurora server uses 4 GB of RAM.",
+    "doc_b": "D01b",
+    "text_b": "The Aurora server uses 8 GB of RAM.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "direct"
+  },
+  {
+    "doc_a": "D02a",
+    "text_a": "The Meridian batch job completes in 10 minutes.",
+    "doc_b": "D02b",
+    "text_b": "The Meridian batch job completes in 45 minutes.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "direct"
+  },
+  {
+    "doc_a": "D03a",
+    "text_a": "The Falcon model supports GPU execution.",
+    "doc_b": "D03b",
+    "text_b": "The Falcon model does not support GPU execution.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "negated"
+  },
+  {
+    "doc_a": "D04a",
+    "text_a": "The Orion service requires authentication.",
+    "doc_b": "D04b",
+    "text_b": "The Orion service does not require authentication.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "negated"
+  },
+  {
+    "doc_a": "D05a",
+    "text_a": "Jupiter has 95 known moons as of the 2023 count.",
+    "doc_b": "D05b",
+    "text_b": "Jupiter has 79 known moons as of the 2023 count.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "numeric"
+  },
+  {
+    "doc_a": "D06a",
+    "text_a": "The Titan cluster has 128 compute nodes.",
+    "doc_b": "D06b",
+    "text_b": "The Titan cluster has 64 compute nodes.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "numeric"
+  },
+  {
+    "doc_a": "D07a",
+    "text_a": "As of January 2024, the Vantage API is deprecated.",
+    "doc_b": "D07b",
+    "text_b": "As of January 2024, the Vantage API is actively maintained.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "temporal"
+  },
+  {
+    "doc_a": "D08a",
+    "text_a": "In the first quarter of 2024, the Halloway project was cancelled.",
+    "doc_b": "D08b",
+    "text_b": "In the first quarter of 2024, the Halloway project was greenlit for continued funding.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "temporal"
+  },
+  {
+    "doc_a": "D09a",
+    "text_a": "The Kelvor Array was developed by Team Alpha.",
+    "doc_b": "D09b",
+    "text_b": "The Kelvor Array was developed by Team Beta.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "entity"
+  },
+  {
+    "doc_a": "D10a",
+    "text_a": "The Draymoor engine was designed by Dr. Elena Cho.",
+    "doc_b": "D10b",
+    "text_b": "The Draymoor engine was designed by Dr. Marcus Reyes.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "entity"
+  },
+  {
+    "doc_a": "D11a",
+    "text_a": "The Brackwood sensor is waterproof.",
+    "doc_b": "D11b",
+    "text_b": "The Brackwood sensor is not waterproof.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "attribute"
+  },
+  {
+    "doc_a": "D12a",
+    "text_a": "The Larkspur router operates only on the 2.4 GHz band.",
+    "doc_b": "D12b",
+    "text_b": "The Larkspur router operates on both the 2.4 GHz and 5 GHz bands.",
+    "gold_relationship": "CONTRADICTS",
+    "category": "attribute"
+  },
+  {
+    "doc_a": "S01a",
+    "text_a": "The Norwich scheduler reduces average job latency.",
+    "doc_b": "S01b",
+    "text_b": "Independent benchmarks confirm the Norwich scheduler significantly lowers job latency.",
+    "gold_relationship": "SUPPORTS",
+    "category": "supports"
+  },
+  {
+    "doc_a": "S02a",
+    "text_a": "The Farrow model achieves high accuracy on the validation set.",
+    "doc_b": "S02b",
+    "text_b": "Independent testing verified the Farrow model's high validation accuracy.",
+    "gold_relationship": "SUPPORTS",
+    "category": "supports"
+  },
+  {
+    "doc_a": "S03a",
+    "text_a": "The Renfield Index improves search retrieval speed.",
+    "doc_b": "S03b",
+    "text_b": "Search retrieval speed increased measurably after adopting the Renfield Index.",
+    "gold_relationship": "SUPPORTS",
+    "category": "supports"
+  },
+  {
+    "doc_a": "S04a",
+    "text_a": "The Osprey Node reduces power consumption during idle periods.",
+    "doc_b": "S04b",
+    "text_b": "Power consumption during idle periods dropped after the Osprey Node was deployed.",
+    "gold_relationship": "SUPPORTS",
+    "category": "supports"
+  },
+  {
+    "doc_a": "S05a",
+    "text_a": "The Talbrook Engine improves compilation speed for large projects.",
+    "doc_b": "S05b",
+    "text_b": "Large-project compilation times fell after switching to the Talbrook Engine.",
+    "gold_relationship": "SUPPORTS",
+    "category": "supports"
+  },
+  {
+    "doc_a": "S06a",
+    "text_a": "The Windmere Lattice increases fault tolerance under network partition.",
+    "doc_b": "S06b",
+    "text_b": "Fault tolerance under network partition improved after introducing the Windmere Lattice.",
+    "gold_relationship": "SUPPORTS",
+    "category": "supports"
+  },
+  {
+    "doc_a": "N01a",
+    "text_a": "The Colby Framework is written in the Rust programming language.",
+    "doc_b": "N01b",
+    "text_b": "Kannada is a Dravidian language spoken mainly in Karnataka.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral"
+  },
+  {
+    "doc_a": "N02a",
+    "text_a": "The Dunmore Registry stores configuration values as key-value pairs.",
+    "doc_b": "N02b",
+    "text_b": "Saturn's rings are composed primarily of ice particles.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral"
+  },
+  {
+    "doc_a": "N03a",
+    "text_a": "The Ivestone Queue processes messages in first-in-first-out order.",
+    "doc_b": "N03b",
+    "text_b": "Rogan Josh is a curry dish originating from Kashmir.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral"
+  },
+  {
+    "doc_a": "N04a",
+    "text_a": "The Cassian Pipeline runs nightly data validation checks.",
+    "doc_b": "N04b",
+    "text_b": "Wrist spin bowling relies on wrist rotation to generate turn.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral"
+  },
+  {
+    "doc_a": "N05a",
+    "text_a": "The Marlow Substrate provides a shared caching layer.",
+    "doc_b": "N05b",
+    "text_b": "The Great Barrier Reef is located off the coast of Queensland, Australia.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral"
+  },
+  {
+    "doc_a": "N06a",
+    "text_a": "The Halloway Cache evicts entries using a least-recently-used policy.",
+    "doc_b": "N06b",
+    "text_b": "Photosynthesis converts light energy into chemical energy in plants.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral"
+  }
+]

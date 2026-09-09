@@ -6,21 +6,43 @@ ResolverPolicy, which is constructed from config. The resolver itself is a
 pure function: (evidence, policy) → (RelationshipType, RelationshipDirection).
 No threshold values appear in this file.
 
+RECTIFIED (P0-6): the CONTRADICTS and SUPPORTS rules previously required
+only a PAIRWISE margin over ONE alternative (e.g. contradiction beating
+entailment) without checking the THIRD class at all. That meant a pair
+with contradiction=0.85, entailment=0.05, but neutral=0.90 (neutral
+clearly dominant) still resolved to CONTRADICTS, because the rule never
+looked at neutral_score. Both rules now require the winning class to be
+the actual argmax of {entailment, neutral, contradiction} — beating BOTH
+alternatives by the configured margin — before committing to a verdict;
+otherwise resolution falls through toward NEUTRAL or UNKNOWN (abstain).
+This is the single highest-value fix for the measured 3.2% CONTRADICTS
+precision (see paper error analysis): most false positives were cases
+where neutral was actually the model's dominant class.
+
 Resolution rules (applied in priority order as defined by the policy):
     1. If contradiction_score >= policy.nli_threshold AND
-       contradiction_score > entailment_score
+       contradiction_score is the argmax of {c, e, n} AND
+       contradiction_score exceeds BOTH alternatives by >= contradiction_margin
        → CONTRADICTS (symmetric)
     2. If entailment_score >= policy.nli_threshold AND
-       entailment_score > contradiction_score
+       entailment_score is the argmax of {c, e, n} AND
+       entailment_score exceeds BOTH alternatives by >= entailment_margin
        → SUPPORTS (a_to_b)
     3. If cosine_similarity >= policy.high_sim_threshold AND
        neutral_score >= policy.neutrality_threshold AND
-       contradiction_score < 0.1
+       contradiction_score < policy.refine_contradiction_ceiling
        → REFINES (a_to_b)
     4. If neutral_score >= policy.neutrality_threshold
        → NEUTRAL (symmetric)
     5. Otherwise
-       → UNKNOWN (symmetric)
+       → UNKNOWN (symmetric) — i.e. ABSTAIN; Phase 6's validator never
+         persists UNKNOWN relationships to Phase 7.
+
+A separate, downstream relatedness gate (classification/relatedness.py) may
+additionally downgrade a CONTRADICTS verdict to UNKNOWN when the two claims
+share no detectable topical overlap — that gate is applied by the Phase 6
+orchestrator (retrieval/__init__.py), not here, to keep this resolver a pure
+function of (evidence, policy) with no text/lexical access.
 
 Rules:
     ✅ Resolver NEVER contains hard-coded thresholds
@@ -78,8 +100,9 @@ class ResolverPolicy:
     refine_threshold: float
     high_sim_threshold: float
     neutrality_threshold: float
-    contradiction_margin: float = 0.0
-    entailment_margin: float = 0.0
+    contradiction_margin: float = 0.05
+    entailment_margin: float = 0.05
+    refine_contradiction_ceiling: float = 0.1
     confidence_policy: str = "calibrated"
     priority_order: List[str] = field(default_factory=lambda: [
         "contradicts", "supports", "refines", "neutral", "unknown"
@@ -125,8 +148,9 @@ class ResolverPolicy:
             refine_threshold=rd_cfg.get("refine_threshold", 0.55),
             high_sim_threshold=rd_cfg.get("high_sim_threshold", 0.88),
             neutrality_threshold=rd_cfg.get("neutrality_threshold", 0.60),
-            contradiction_margin=policy_cfg.get("contradiction_margin", 0.0),
-            entailment_margin=policy_cfg.get("entailment_margin", 0.0),
+            contradiction_margin=policy_cfg.get("contradiction_margin", 0.05),
+            entailment_margin=policy_cfg.get("entailment_margin", 0.05),
+            refine_contradiction_ceiling=policy_cfg.get("refine_contradiction_ceiling", 0.1),
             confidence_policy=policy_cfg.get("confidence_policy", "calibrated"),
             priority_order=policy_cfg.get("priority_order", [
                 "contradicts", "supports", "refines", "neutral", "unknown"
@@ -179,20 +203,24 @@ class RelationshipResolver:
 
         for rule in p.priority_order:
             if rule == "contradicts":
+                # RECTIFIED (P0-6): must be the argmax of {c, e, n}, beating
+                # BOTH alternatives by the margin — not just beating entailment
+                # while a higher neutral_score goes unchecked.
                 if (c >= p.nli_threshold
-                        and c > e
-                        and (c - e) >= p.contradiction_margin):
+                        and (c - e) >= p.contradiction_margin
+                        and (c - n) >= p.contradiction_margin):
                     logger.debug(
                         "resolved: CONTRADICTS",
-                        contradiction=f"{c:.3f}", entailment=f"{e:.3f}",
+                        contradiction=f"{c:.3f}", entailment=f"{e:.3f}", neutral=f"{n:.3f}",
                     )
                     return RelationshipType.CONTRADICTS, RelationshipDirection.SYMMETRIC
 
             elif rule == "supports":
+                # RECTIFIED (P0-6): same argmax requirement as CONTRADICTS above.
                 if (e >= p.nli_threshold
-                        and e > c
-                        and (e - c) >= p.entailment_margin):
-                    logger.debug("resolved: SUPPORTS", entailment=f"{e:.3f}")
+                        and (e - c) >= p.entailment_margin
+                        and (e - n) >= p.entailment_margin):
+                    logger.debug("resolved: SUPPORTS", entailment=f"{e:.3f}", neutral=f"{n:.3f}")
                     return RelationshipType.SUPPORTS, RelationshipDirection.A_TO_B
 
             elif rule == "refines":
@@ -202,7 +230,7 @@ class RelationshipResolver:
                 # entail in either direction.
                 if (cos >= p.high_sim_threshold
                         and n >= p.neutrality_threshold
-                        and c < 0.1):   # Strict ceiling on contradiction
+                        and c < p.refine_contradiction_ceiling):
                     logger.debug(
                         "resolved: REFINES",
                         neutral=f"{n:.3f}", cosine=f"{cos:.3f}",

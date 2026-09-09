@@ -1,0 +1,30 @@
+\section{SMRITI-Controlled: A Zero-Annotation Evaluation}
+\label{sec:controlled}
+
+SMRITI-Reference's contradiction pairs (\S\ref{sec:corpus}), while
+deliberately planted, still involve claims about ML architectures,
+cricket tactics, and cooking technique --- domains where a human or LLM
+annotator's judgment of ``does this really contradict that'' still
+requires interpretation. To obtain evidence that requires \emph{no}
+interpretation at all, we construct SMRITI-Controlled-v1: 24 claim pairs
+(48 single-sentence documents), each written so its relationship label is
+a fact about how the pair was constructed, not an opinion about what it
+means. Six categories of CONTRADICTS pairs (2 each): \emph{direct}
+reversal ("uses 4 GB of RAM" vs.\ "uses 8 GB of RAM"), \emph{negated}
+("supports GPU execution" vs.\ "does not support GPU execution"),
+\emph{numeric} ("Jupiter has 95 known moons" vs.\ "79 known moons"),
+\emph{temporal} (same explicit time reference, opposite state),
+\emph{entity} (same artifact attributed to two different named
+individuals/teams), and \emph{attribute} (a property asserted and its
+negation). We add 6 SUPPORTS pairs (a claim and an independent
+confirmation of the same claim) and 6 NEUTRAL pairs (entirely unrelated
+topics) as controls. The full corpus and its gold manifest are released.
+
+Because the label is definitional, we can additionally separate
+\textbf{retrieval recall} (did the intended pair even become an NLI
+candidate?) from \textbf{classification accuracy} (given it was a
+candidate, was it labeled correctly?) --- the distinction the review
+identified as necessary to know whether SMRITI's bottleneck is
+embedding-based retrieval or NLI classification.
+
+\input{sections/controlled_results.tex}

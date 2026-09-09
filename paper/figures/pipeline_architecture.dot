@@ -1,0 +1,35 @@
+digraph SMRITI_Pipeline {
+  rankdir=TB;
+  fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, color="#4a5568", fillcolor="#edf2f7"];
+  edge [fontname="Helvetica", fontsize=9, color="#718096"];
+  splines=true;
+  nodesep=0.25;
+  ranksep=0.35;
+
+  P1  [label="Phase 1\nInput Discovery\n(content-hash dedup)"];
+  P2  [label="Phase 2\nText Extraction\n(multi-format parsing)"];
+  P3  [label="Phase 3\nSemantic Sentences\n(context-aware segmentation)"];
+  P4  [label="Phase 4\nClaim Construction\n(SVO, negation, modality)"];
+  P5  [label="Phase 5\nEmbedding\n(Sentence-BERT + cache)"];
+  P6  [label="Phase 6\nRelationship Discovery\n(NLI classification)", fillcolor="#fed7d7"];
+  P7  [label="Phase 7\nKnowledge Graph\n(signed-graph partitioning)", fillcolor="#fed7d7"];
+  P8  [label="Phase 8\nReliability Scoring\n(multi-signal fusion)"];
+  P9  [label="Phase 9\nKnowledge API\n(query planning + cache)"];
+  P10 [label="Phase 10\nDashboard\n(epistemic-state UI)"];
+  P11 [label="Phase 11\nRuntime Governance\n(health, capabilities)", shape=box, style="rounded,filled,dashed", fillcolor="#e6fffa"];
+  P12 [label="Phase 12\nEvaluation\n(gate-based certification)", shape=box, style="rounded,filled,dashed", fillcolor="#e6fffa"];
+
+  P1 -> P2 -> P3 -> P4 -> P5 -> P6 -> P7 -> P8 -> P9 -> P10;
+  P11 -> P1 [style=dashed, label="governs", dir=none, color="#38b2ac"];
+  P11 -> P9 [style=dashed, dir=none, color="#38b2ac"];
+  P12 -> P9 [style=dashed, label="queries", color="#38b2ac"];
+
+  { rank=same; P11; P12; }
+
+  subgraph cluster_legend {
+    label="";
+    style=invis;
+    L1 [shape=plaintext, label="solid arrow = data flow   |   dashed = cross-cutting concern", fontsize=9];
+  }
+}

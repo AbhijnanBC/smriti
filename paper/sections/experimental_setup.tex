@@ -1,0 +1,30 @@
+\paragraph{Baselines.} We compare SMRITI's claim extraction and
+relationship classification against three independently-implemented
+baselines of increasing sophistication, run over the same 397 claims
+SMRITI's own (post-fix) pipeline produced from SMRITI-Reference (for the
+two relationship baselines) or directly over the raw corpus (for the
+extraction baseline): \textbf{(B1) Naive keyword extraction}: every
+sentence containing at least one non-stopword token becomes a claim, with
+no structural or dependency analysis, and no assertion-type filtering.
+\textbf{(B2) TF-IDF cosine}: pairwise TF-IDF cosine similarity with a
+similarity-band threshold and a shallow negation-cue heuristic
+distinguishing SUPPORTS/CONTRADICTS/NEUTRAL. \textbf{(B3) Sentence-BERT
+cosine}: identical heuristic to B2, but using the same cached
+\texttt{all-MiniLM-L6-v2} embedding model as SMRITI's own Phase 5,
+isolating embedding quality as the only variable relative to B2.
+
+\paragraph{Scalability corpus.} To separate throughput/latency measurement
+from extraction-quality measurement, we generate a synthetic corpus family
+(\texttt{scale\_small}/\texttt{scale\_medium}/\texttt{scale\_large}: 10,
+50, and 150 documents) with combinatorially-unique templated sentences, so
+that timing results are not confounded by SMRITI-Reference's deliberately-
+repetitive, domain-clustered content. We spot-checked \texttt{scale\_small}
+end-to-end against the post-fix assertion classifier directly: all 20
+claims are still classified \texttt{DECLARATIVE\_ASSERTION} with zero
+discards, confirming the classifier is a genuine no-op on this corpus's
+sentence style rather than something we merely assumed would not interact.
+On this basis we treat the \texttt{scale\_medium}/\texttt{scale\_large}
+latency numbers (unchanged sentence templates, not independently re-run
+post-fix) as still valid, carried forward from the pre-fix measurement;
+only SMRITI-Reference's own latency (Table~\ref{tab:latency}) reflects a
+fresh post-fix run.
