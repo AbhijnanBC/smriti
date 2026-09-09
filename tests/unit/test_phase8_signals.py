@@ -172,14 +172,22 @@ class TestTemporalStabilityExtractor:
         signal = TemporalStabilityExtractor().extract(node, graph, global_stats, policy)
         assert signal.normalized_value > 0.50
 
-    def test_no_temporal_data_uses_default(self, policy, global_stats, graph):
+    def test_no_temporal_data_is_unavailable_not_defaulted(self, policy, global_stats, graph):
+        """RECTIFIED (external review item 21): absence of temporal evidence
+        must not be scored as a real, moderate-stability measurement."""
         node = make_node("c001", temporal_status=None)
         node = dataclasses.replace(
             node, annotations=dataclasses.replace(node.annotations, temporal_metadata=None)
         )
         signal = TemporalStabilityExtractor().extract(node, graph, global_stats, policy)
-        assert signal.status == SignalStatus.DEFAULT
-        assert signal.normalized_value == policy.temporal.default_stability
+        assert signal.status == SignalStatus.UNAVAILABLE
+        assert signal.normalized_value == 0.0
+
+    def test_no_timestamp_status_is_unavailable_not_defaulted(self, policy, global_stats, graph):
+        node = make_node("c001", temporal_status=TemporalStatus.NO_TIMESTAMP)
+        signal = TemporalStabilityExtractor().extract(node, graph, global_stats, policy)
+        assert signal.status == SignalStatus.UNAVAILABLE
+        assert signal.normalized_value == 0.0
 
 
 class TestHubAndBridgeExtractors:

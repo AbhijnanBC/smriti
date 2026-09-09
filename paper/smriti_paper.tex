@@ -51,10 +51,11 @@ an exact audit-trail reconstruction test, both requiring zero external
 ground truth; and (v) we re-ran the disclosed LLM-derived reference
 annotation from scratch against the corrected system, which discloses
 that the fix's benefit does not transfer to SMRITI-Reference's real,
-argumentative prose: CONTRADICTS precision there is 4.6\%, statistically
-no better than the pre-fix 3.2\%, because most of that corpus's genuine
-disagreement is rhetorical rather than propositional, and an
-off-the-shelf entailment model does not recognize rhetoric as
+argumentative prose: CONTRADICTS precision there is 4.5\%, with the
+pre-fix figure (3.2\%) falling inside this measurement's own 95\%
+bootstrap CI, i.e.\ no evidence of improvement, because most of that
+corpus's genuine disagreement is rhetorical rather than propositional,
+and an off-the-shelf entailment model does not recognize rhetoric as
 contradiction regardless of how faithfully the resolver reports its
 verdict. We report all of this, including what still does not work, with
 the same discipline we applied to finding what was broken.
@@ -136,7 +137,7 @@ did not have:
     rhetorical (as opposed to propositional) disagreement in real prose is
     read by the underlying NLI model as neutral with $>0.97$ confidence,
     regardless of how faithfully the resolver reports that verdict ---
-    yielding 4.6\% real-corpus CONTRADICTS precision alongside
+    yielding 4.5\% real-corpus CONTRADICTS precision alongside
     SMRITI-Controlled's 100\%, and a full accounting of what remains
     genuinely unestablished (\S\ref{sec:limitations}).
 \end{itemize}

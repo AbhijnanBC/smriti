@@ -27,26 +27,49 @@ def assess_publication_readiness(
     eci: EngineeringConfidenceIndex,
 ) -> PublicationReadinessAssessment:
     """
-    RECTIFIED (P1-6): Assess using ordinal PublicationReadinessLevel.
+    RECTIFIED (P1-6, and again per external review): Assess using ordinal
+    PublicationReadinessLevel, over ONLY criteria this function can actually
+    verify from the artifacts it receives.
+
+    RECTIFIED (external review, "PublicationReadiness pseudo-science"): this
+    function previously appended "novelty_documented", "limitations_documented",
+    and "ethical_compliance" to criteria_met unconditionally, with comments
+    literally reading "(assumed True)" — fabricating three "met" criteria with
+    no evidence behind them, exactly the defect category the rest of Phase 12
+    was rebuilt to eliminate. Those three are removed rather than patched:
+    whether a paper documents its novelty/limitations/ethics honestly is an
+    editorial and human-reviewer judgment, not something this function can
+    measure from a ResearchClaim/ReproducibilityAssessment/ECI triple. This
+    function's output describes ARTIFACT readiness (does the evidence and
+    tooling exist), not publication readiness in the human-reviewer sense —
+    the name is retained for schema/API compatibility with callers, but should
+    not be read as this code independently vouching for a paper's novelty,
+    ethics, or the completeness of its limitations section.
+
+    Also fixed: "clarity" previously required >= 6 research claims to ever
+    reach "met", when the frozen registry has always had exactly 5 (RC1-RC5)
+    since the P0 cleanup — a threshold this system could never satisfy by its
+    own intentional design. It now checks that all five canonical claim IDs
+    are actually present in the registry (a real integrity check), not an
+    arbitrary count threshold.
 
     Criteria assessed:
-        clarity                 — ≥ 4 formally stated research claims
-        supporting_evidence     — all claims supported by experiment
-        statistical_justification — at least one experiment "good" or "excellent" reproducibility
-        reproducibility         — at least one reproducible experiment
-        novelty_documented      — novel architecture documented in ADRs (assumed)
-        limitations_documented  — limitation registry populated (assumed)
-        ethical_compliance      — local-first, no PII (assumed)
-        artifact_availability   — ECI ≥ 60 (artifacts producible)
+        clarity                    — all 5 canonical claims (RC1-RC5) present
+        supporting_evidence        — all claims supported by experiment
+        statistical_justification  — at least one experiment "good"/"excellent" reproducibility
+        reproducibility            — at least one reproducible experiment
+        artifact_availability      — ECI ≥ 60 (artifacts producible)
     """
     criteria_met = []
     criteria_missing = []
     criteria_partial = []
 
-    # 1. Clarity (≥4 research claims)
-    if len(research_claims) >= 6:
+    # 1. Clarity: are all five frozen canonical claims present?
+    canonical_ids = {"RC1", "RC2", "RC3", "RC4", "RC5"}
+    present_ids = {c.claim_id for c in research_claims}
+    if canonical_ids.issubset(present_ids):
         criteria_met.append("clarity")
-    elif len(research_claims) >= 4:
+    elif present_ids & canonical_ids:
         criteria_partial.append("clarity")
     else:
         criteria_missing.append("clarity")
@@ -73,16 +96,7 @@ def assess_publication_readiness(
     else:
         criteria_missing.append("reproducibility")
 
-    # 5. Novelty documented (ADRs document architectural novelty — assumed True)
-    criteria_met.append("novelty_documented")
-
-    # 6. Limitations documented (LimitationRegistry populated — assumed True)
-    criteria_met.append("limitations_documented")
-
-    # 7. Ethical compliance (local-first, no PII — assumed True)
-    criteria_met.append("ethical_compliance")
-
-    # 8. Artifact availability (ECI ≥ 60)
+    # 5. Artifact availability (ECI ≥ 60)
     if eci.overall_confidence >= 60.0:
         criteria_met.append("artifact_availability")
     elif eci.overall_confidence >= 40.0:

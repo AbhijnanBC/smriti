@@ -12,16 +12,17 @@ exposure to SMRITI's design.
 disagreement.} This is the most important limitation in this paper. On
 SMRITI-Controlled's direct propositional negations, the arg-max fix
 achieves 100\% CONTRADICTS precision (\S\ref{sec:controlled}). On
-SMRITI-Reference's real prose, CONTRADICTS precision is 4.6\% and recall
+SMRITI-Reference's real prose, CONTRADICTS precision is 4.5\% and recall
 on the corpus's own deliberately-planted hard-contradiction pairs is
 14.3\% (\S\ref{sec:results-annotation}) --- not better than the 3.2\%
 this paper's predecessor measured pre-fix. Inspecting the NLI model's raw
 scores directly shows this is not a resolver regression: the model itself
 assigns neutral $>0.97$ probability to most of the missed pairs, because
 they express disagreement as argumentative prose about a shared topic
-rather than direct propositional negation, and an
-SNLI/MultiNLI/ANLI-calibrated model is not trained to read that as
-contradiction. SMRITI-Controlled and SMRITI-Reference are therefore not
+rather than direct propositional negation, and a model trained on
+SNLI/MultiNLI/ANLI-style propositional pairs is not trained to read that
+as contradiction --- a task mismatch, not a calibration defect (see
+below). SMRITI-Controlled and SMRITI-Reference are therefore not
 in tension; they measure different things, and only the harder,
 real-corpus one is representative of deployment. This paper fixes a
 real, verifiable integration bug (E4/E5, \S\ref{sec:error-taxonomy}) and
@@ -31,6 +32,20 @@ re-run the reference annotation post-fix, would not have discovered ---
 that most naturally-occurring disagreement in personal notes is
 rhetorical, not propositional, and requires a different modeling
 approach entirely (E6).
+
+\paragraph{No probability calibration is actually fitted.} Phase 6
+supports temperature, percentile, and isotonic calibration strategies
+for the NLI model's raw confidence
+(\texttt{retrieval/classification/calibration.py}), but
+\texttt{config/default.yaml} leaves every model's calibration entry
+empty, so every run in this paper uses the identity strategy (raw
+confidence passed through unchanged). We therefore do not call the NLI
+scores used throughout this paper ``calibrated'' in the technical sense
+(probabilities matching empirical frequencies, measurable via ECE or a
+reliability diagram) --- only that the underlying model was itself
+trained on SNLI/MultiNLI/ANLI-style data. Fitting and evaluating one of
+the implemented strategies against a held-out sample is concrete,
+already-half-built future work.
 
 \paragraph{SMRITI-Controlled is small and synthetic.} 24 pairs, entirely
 fictional entity names, is enough to demonstrate that the arg-max/

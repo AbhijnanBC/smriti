@@ -1,29 +1,4 @@
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Category} & \textbf{Recall} & \textbf{Acc.\ given retrieved} & \textbf{N} \\
-\midrule
-direct       & 50.0\%  & 100.0\% & 2 \\
-negated      & 100.0\% & 100.0\% & 2 \\
-numeric      & 100.0\% & 100.0\% & 2 \\
-temporal     & 50.0\%  & 100.0\% & 2 \\
-entity       & 100.0\% & 100.0\% & 2 \\
-attribute    & 100.0\% & 100.0\% & 2 \\
-\midrule
-\emph{all CONTRADICTS} & 83.3\%  & 100.0\% & 12 \\
-SUPPORTS     & 66.7\%  & 25.0\%  & 6 \\
-NEUTRAL      & 0.0\%   & --      & 6 \\
-\midrule
-\textbf{Overall} & \textbf{58.3\%} & \textbf{78.6\%} & \textbf{24} \\
-\bottomrule
-\end{tabular}
-\caption{SMRITI-Controlled-v1 results, post-fix. Retrieval recall 95\% CI
-(bootstrap, $n=24$): [37.5\%, 79.2\%]. Classification accuracy given
-retrieval, 95\% CI ($n=14$): [57.1\%, 100.0\%].}
-\label{tab:controlled}
-\end{table}
+\input{generated/controlled_results_table.tex}
 
 Table~\ref{tab:controlled} is, we think, the cleanest evidence in this
 paper. Three findings, each requiring no interpretation at all:
@@ -41,12 +16,15 @@ final word on RQ3, however --- \S\ref{sec:results-annotation} shows the
 same fix does not transfer to SMRITI-Reference's \emph{rhetorical}
 disagreement, which this controlled corpus was not designed to test.
 
-\textbf{(2) All six NEUTRAL control pairs were correctly excluded before
-NLI ever ran} (0/6 retrieved as candidates at all) --- i.e.\ zero false-
-positive contradictions on the pairs designed to have none, confirming
-that embedding-based candidate retrieval itself is not the source of
-spurious contradictions once the resolver logic and relatedness gate are
-fixed; the fix operates exactly where it is supposed to.
+\textbf{(2) All six ``easy'' NEUTRAL control pairs were correctly
+excluded before NLI ever ran} (0/6 retrieved as candidates at all) ---
+i.e.\ zero false-positive contradictions on pairs sharing no vocabulary
+with their partner, confirming that embedding-based candidate retrieval
+correctly filters clearly-unrelated pairs. This is a weaker claim than
+it may look: it shows retrieval works, not that the relatedness gate
+would have rejected a false CONTRADICTS had one of these pairs actually
+been retrieved (an external review point) --- \S\ref{sec:hard-neutral}
+tests that directly.
 
 \textbf{(3) SUPPORTS is the weaker link}: only 4 of 6 designed SUPPORTS
 pairs were retrieved, and of those, only 1 was correctly labeled SUPPORTS
@@ -59,3 +37,34 @@ the resolver (which received the identical arg-max fix as the
 contradiction side) is not yet as well-calibrated, and is a concrete
 target for future work distinct from the contradiction fix this paper
 centers on.
+
+\subsection{Hard-Neutral Extension: Does the Relatedness Gate Actually
+Work?}
+\label{sec:hard-neutral}
+
+\input{generated/hard_neutral_table.tex}
+
+\textbf{(4) The relatedness gate has a real, demonstrated gap.} Of the
+six hard-neutral pairs, two were retrieved as NLI candidates at all
+(the other four --- both lexical-collision pairs and one each of the
+other two categories --- were not retrieved, so the relatedness gate was
+never exercised on them). Of those two, \textbf{one was misclassified
+CONTRADICTS}: ``The Aerotrix rover uses LiDAR for obstacle detection''
+paired with ``The Aerotrix rover uses a stereo camera for obstacle
+detection'' --- two claims about the same named entity, sharing the
+entity token ``Aerotrix'' (exactly the token overlap the relatedness
+gate's entity-token bonus is designed to detect as \emph{related}), but
+describing two compatible sensors, not a genuine conflict. The
+relatedness gate correctly identified the pair as related --- that is
+its entire job --- and passed it through to the resolver, which then
+read ``uses LiDAR'' and ``uses a stereo camera'' as mutually exclusive
+rather than as two attributes a single rover could have. This is
+precisely the gap an external review predicted: the gate only asks
+\emph{is this pair topically related}, never \emph{are these two
+specific attributes of this entity actually incompatible}, and the NLI
+model has no special handling for multi-attribute entities either. The
+other retrieved hard-neutral pair (the two slow-braising statements,
+adjacent-non-conflicting category) was correctly labeled NEUTRAL,
+so this is not a uniform failure of the gate; with $n=1$ misclassified
+pair, we report this as a demonstrated failure mode, not a rate, and
+record it as E7 in \S\ref{sec:error-taxonomy}.

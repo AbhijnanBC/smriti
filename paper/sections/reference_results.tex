@@ -8,7 +8,9 @@ which claims and pairs SMRITI produces at all.
 is moderate (Cohen's $\kappa = 0.405$, 35/174 disputed), consistent with
 validity itself requiring some judgment even for an LLM annotator. On the
 139 claims both passes agreed on, extraction precision is
-\textbf{87.8\%} (95\% CI, bootstrap: [82.0\%, 92.8\%]), and zero of the 174
+\textbf{87.8\%} (95\% CI, item-level bootstrap: [82.0\%, 92.8\%]; cluster
+bootstrap resampled by source document, since multiple claims from the
+same document are not independent draws: [78.5\%, 95.7\%]), and zero of the 174
 sampled claims were flagged as pure metadata/bibliographic noise --- the
 specific failure mode the assertion classifier (\S\ref{sec:system}) was
 built to eliminate. This is a genuine, positive result: the classifier's
@@ -20,39 +22,27 @@ sentences) could have demonstrated.
 (RQ2/RQ3).} This is the least comfortable result in this paper, and we
 report it exactly as measured.
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Label} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{N (gold)} \\
-\midrule
-SUPPORTS     & 27.8\% & 8.2\%  & 12.7\% & 61 \\
-CONTRADICTS  & 4.6\%  & 25.0\% & 7.7\%  & 8 \\
-REFINES      & 50.0\% & 41.7\% & 45.5\% & 48 \\
-NEUTRAL      & 28.7\% & 34.7\% & 31.5\% & 72 \\
-\bottomrule
-\end{tabular}
-\caption{SMRITI's per-class precision/recall/F1 against the 189
-inter-pass-agreed (excluding UNSURE) relationship labels in the fresh
-SMRITI-Reference sample ($\kappa=0.756$ between passes, substantial
-agreement). CONTRADICTS precision's 95\% bootstrap CI is [0.0\%, 11.4\%]
-($n=44$ SMRITI-predicted-CONTRADICTS items in this sample).}
-\label{tab:reference-relationships}
-\end{table}
+\input{generated/reference_results_table.tex}
 
 On SMRITI-Reference's real, domain-clustered, opinion-bearing prose,
-CONTRADICTS precision is \textbf{4.6\%} --- not an improvement over the
-3.2\% this paper's predecessor measured pre-fix
-(\S\ref{sec:error-analysis}), despite the same fix achieving 100\%
+CONTRADICTS precision is \textbf{4.5\%}, with a 95\% bootstrap CI of
+[0.0\%, 11.4\%] ($n=44$; cluster bootstrap by source document: [0.0\%,
+13.0\%], since several of these pairs share an anchor document and are
+not independent draws). The 3.2\% this paper's predecessor measured
+pre-fix (\S\ref{sec:error-analysis}) falls inside both intervals, so we
+report no evidence of improvement rather than a formal significance
+claim --- the pre-fix and post-fix samples differ in which claims and
+pairs exist at all (the assertion classifier and resolver fixes changed
+what SMRITI even produces), so a paired test is not available; this
+holds despite the same fix achieving 100\%
 precision on SMRITI-Controlled (\S\ref{sec:controlled}). Recall on the 21
 inter-pass-agreed instances of the corpus's three \emph{deliberately
 planted} hard-contradiction pairs (\S\ref{sec:corpus}) is
 \textbf{14.3\%}: SMRITI predicts CONTRADICTS for only 3 of 25 such pairs
 in the full candidate pool.
 
-\paragraph{Root cause: this is a model-calibration gap, not a resolver
-regression.} We inspected the NLI model's own raw scores for the missed
+\paragraph{Root cause: an NLI task mismatch, not a resolver regression
+or a calibration problem.} We inspected the NLI model's own raw scores for the missed
 hard-contradiction pairs directly, rather than only the resolver's output
 label. Representative examples (claim-pair scores,
 \{entailment, neutral, contradiction\}):
@@ -64,21 +54,30 @@ above 0.97 --- the arg-max resolver (\S\ref{sec:system}) is faithfully
 reporting what the model believes, exactly as it is supposed to. This is
 not the same bug the resolver fix addressed (which was committing to
 CONTRADICTS \emph{despite} neutral being dominant); here neutral
-genuinely is dominant. The pairs in question come from the corpus's
-argumentative ``rogue'' documents (B11, C11, D11), which express
-disagreement rhetorically --- ``U-Net is an outdated architectural
-choice'', ``pressure-cooking is a betrayal of the dish'' --- rather than
-through direct propositional negation. An NLI model trained on
-SNLI/MultiNLI/ANLI-style sentence pairs is calibrated to detect
-entailment and contradiction between declarative propositions; it is not
-calibrated to detect \emph{stance conflict} expressed as argumentative
-prose about a shared topic, which instead reads to the model as two
-statements being merely topically related (consistent with the high
+genuinely is dominant, and we deliberately do not call this a
+``calibration'' problem. Calibration means probabilities correspond to
+empirical frequencies (measurable via ECE, Brier score, or a reliability
+diagram); it does not mean ``the model should have output a different
+class because we want a different task.'' Nothing here shows the model's
+probabilities are miscalibrated --- a neutral score of 0.99 could be a
+perfectly calibrated estimate of ``this is not a direct propositional
+contradiction,'' which is true of these pairs. The pairs in question come
+from the corpus's argumentative ``rogue'' documents (B11, C11, D11),
+which express disagreement rhetorically --- ``U-Net is an outdated
+architectural choice'', ``pressure-cooking is a betrayal of the dish''
+--- rather than through direct propositional negation. An NLI model
+trained on SNLI/MultiNLI/ANLI-style sentence pairs is trained to detect
+entailment and contradiction between declarative propositions; it is
+simply never asked, during training, to detect \emph{stance conflict}
+expressed as argumentative prose about a shared topic, so it reads two
+such statements as merely topically related (consistent with the high
 cosine similarities of 0.75--0.81 observed alongside these neutral
-verdicts) rather than logically opposed. SMRITI-Controlled could not have
+verdicts) rather than logically opposed. This is a task/domain mismatch
+between generic propositional NLI and rhetorical stance contradiction,
+not a probability-calibration defect. SMRITI-Controlled could not have
 surfaced this: its CONTRADICTS pairs are, by construction, direct
-propositional negations (\S\ref{sec:controlled}), exactly the case the
-NLI model is calibrated for.
+propositional negations (\S\ref{sec:controlled}), exactly the task the
+NLI model was trained for.
 
 \paragraph{SUPPORTS and NEUTRAL are also weak on real text.} Consistent
 with SMRITI-Controlled's finding that SUPPORTS is the weaker side of the

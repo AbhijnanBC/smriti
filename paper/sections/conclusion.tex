@@ -14,17 +14,26 @@ designed to need no interpretation at all.
 Three things now stand on genuinely independent legs. SMRITI-Controlled
 (\S\ref{sec:controlled}) shows 100\% CONTRADICTS classification accuracy
 on every retrieved pair across six distinct contradiction categories, with
-zero false positives on six deliberately unrelated control pairs --- by
-construction, not by annotation. The metamorphic and reconstruction tests
+zero false positives on six deliberately unrelated (and topically
+unrelated) control pairs --- by construction, not by annotation. This leg
+is not unqualified either: a later hard-neutral extension, built
+specifically to test whether the relatedness gate rejects a false
+CONTRADICTS on a pair it cannot dismiss as simply unrelated, found exactly
+one such case (\S\ref{sec:hard-neutral}, E7) --- two compatible attributes
+of one named entity read as mutually exclusive. The metamorphic and reconstruction tests
 (\S\ref{sec:metamorphic}) show the reliability model is not
 self-contradictory in basic, checkable ways, and that its audit trail
 means what it says. And the re-run SMRITI-Reference annotation
 (\S\ref{sec:results-annotation}) gives the fourth leg a very different
 shape than the other three: it does not confirm the fix's real-world
 value, it discloses the fix's real-world limit. CONTRADICTS precision on
-SMRITI-Reference's actual prose is 4.6\%, statistically no better than
-the 3.2\% measured before any of this paper's fixes, because the corpus's
-genuine disagreements are argued rhetorically, not asserted
+SMRITI-Reference's actual prose is 4.5\%; the pre-fix figure (3.2\%,
+measured on a different, pre-fix sample) falls inside this post-fix
+measurement's own 95\% bootstrap CI ([0.0\%, 11.4\%]), so we report no
+evidence of improvement rather than claiming a formal significance
+test --- the two samples differ in which claims and pairs exist at all,
+so a paired comparison is not available. The corpus's genuine
+disagreements are argued rhetorically, not asserted
 propositionally, and an off-the-shelf entailment model simply does not
 hear rhetoric as contradiction. We could have stopped at
 SMRITI-Controlled's 100\% and called the story finished; re-running the

@@ -190,5 +190,53 @@
     "text_b": "Photosynthesis converts light energy into chemical energy in plants.",
     "gold_relationship": "NEUTRAL",
     "category": "neutral"
+  },
+  {
+    "doc_a": "NH01a",
+    "text_a": "The Aerotrix rover uses LiDAR for obstacle detection.",
+    "doc_b": "NH01b",
+    "text_b": "The Aerotrix rover uses a stereo camera for obstacle detection.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral_hard_same_topic"
+  },
+  {
+    "doc_a": "NH02a",
+    "text_a": "The Solvex database supports read replicas.",
+    "doc_b": "NH02b",
+    "text_b": "The Solvex database supports automatic backups.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral_hard_same_topic"
+  },
+  {
+    "doc_a": "NH03a",
+    "text_a": "Python is commonly used for robotics software development.",
+    "doc_b": "NH03b",
+    "text_b": "A python is a large non-venomous constricting snake.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral_hard_lexical_collision"
+  },
+  {
+    "doc_a": "NH04a",
+    "text_a": "The Java Virtual Machine executes compiled Java bytecode.",
+    "doc_b": "NH04b",
+    "text_b": "Java is an island in Indonesia known for its coffee production.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral_hard_lexical_collision"
+  },
+  {
+    "doc_a": "NH05a",
+    "text_a": "Pressure cooking reduces the total cooking time for tough cuts of meat.",
+    "doc_b": "NH05b",
+    "text_b": "Pressure cooking requires a sealed, pressure-rated vessel.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral_hard_adjacent_non_conflicting"
+  },
+  {
+    "doc_a": "NH06a",
+    "text_a": "Slow braising uses low, indirect heat over an extended period.",
+    "doc_b": "NH06b",
+    "text_b": "Slow braising typically requires a heavy-bottomed pot to retain heat evenly.",
+    "gold_relationship": "NEUTRAL",
+    "category": "neutral_hard_adjacent_non_conflicting"
   }
 ]

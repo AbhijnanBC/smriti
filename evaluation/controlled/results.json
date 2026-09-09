@@ -1,5 +1,5 @@
 {
-  "run_id": "20260909_193916",
+  "run_id": "20260910_002920",
   "per_category": {
     "direct": {
       "retrieved": 1,
@@ -40,6 +40,21 @@
       "retrieved": 0,
       "total": 6,
       "correct": 0
+    },
+    "neutral_hard_same_topic": {
+      "retrieved": 1,
+      "total": 2,
+      "correct": 0
+    },
+    "neutral_hard_lexical_collision": {
+      "retrieved": 0,
+      "total": 2,
+      "correct": 0
+    },
+    "neutral_hard_adjacent_non_conflicting": {
+      "retrieved": 1,
+      "total": 2,
+      "correct": 1
     }
   },
   "overall": {
@@ -72,7 +87,8 @@
       "category": "direct",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D02a/D02b",
@@ -80,7 +96,8 @@
       "category": "direct",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "D03a/D03b",
@@ -88,7 +105,8 @@
       "category": "negated",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D04a/D04b",
@@ -96,7 +114,8 @@
       "category": "negated",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D05a/D05b",
@@ -104,7 +123,8 @@
       "category": "numeric",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D06a/D06b",
@@ -112,7 +132,8 @@
       "category": "numeric",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D07a/D07b",
@@ -120,7 +141,8 @@
       "category": "temporal",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D08a/D08b",
@@ -128,7 +150,8 @@
       "category": "temporal",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "D09a/D09b",
@@ -136,7 +159,8 @@
       "category": "entity",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D10a/D10b",
@@ -144,7 +168,8 @@
       "category": "entity",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D11a/D11b",
@@ -152,7 +177,8 @@
       "category": "attribute",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "D12a/D12b",
@@ -160,7 +186,8 @@
       "category": "attribute",
       "retrieved": true,
       "predicted": "CONTRADICTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "S01a/S01b",
@@ -168,7 +195,8 @@
       "category": "supports",
       "retrieved": true,
       "predicted": "NEUTRAL",
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "S02a/S02b",
@@ -176,7 +204,8 @@
       "category": "supports",
       "retrieved": true,
       "predicted": "NEUTRAL",
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "S03a/S03b",
@@ -184,7 +213,8 @@
       "category": "supports",
       "retrieved": true,
       "predicted": "REFINES",
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "S04a/S04b",
@@ -192,7 +222,8 @@
       "category": "supports",
       "retrieved": true,
       "predicted": "SUPPORTS",
-      "correct": true
+      "correct": true,
+      "is_hard_neutral": false
     },
     {
       "pair": "S05a/S05b",
@@ -200,7 +231,8 @@
       "category": "supports",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "S06a/S06b",
@@ -208,7 +240,8 @@
       "category": "supports",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "N01a/N01b",
@@ -216,7 +249,8 @@
       "category": "neutral",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "N02a/N02b",
@@ -224,7 +258,8 @@
       "category": "neutral",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "N03a/N03b",
@@ -232,7 +267,8 @@
       "category": "neutral",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "N04a/N04b",
@@ -240,7 +276,8 @@
       "category": "neutral",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "N05a/N05b",
@@ -248,7 +285,8 @@
       "category": "neutral",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
     },
     {
       "pair": "N06a/N06b",
@@ -256,7 +294,62 @@
       "category": "neutral",
       "retrieved": false,
       "predicted": null,
-      "correct": false
+      "correct": false,
+      "is_hard_neutral": false
+    },
+    {
+      "pair": "NH01a/NH01b",
+      "gold": "NEUTRAL",
+      "category": "neutral_hard_same_topic",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": false,
+      "is_hard_neutral": true
+    },
+    {
+      "pair": "NH02a/NH02b",
+      "gold": "NEUTRAL",
+      "category": "neutral_hard_same_topic",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false,
+      "is_hard_neutral": true
+    },
+    {
+      "pair": "NH03a/NH03b",
+      "gold": "NEUTRAL",
+      "category": "neutral_hard_lexical_collision",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false,
+      "is_hard_neutral": true
+    },
+    {
+      "pair": "NH04a/NH04b",
+      "gold": "NEUTRAL",
+      "category": "neutral_hard_lexical_collision",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false,
+      "is_hard_neutral": true
+    },
+    {
+      "pair": "NH05a/NH05b",
+      "gold": "NEUTRAL",
+      "category": "neutral_hard_adjacent_non_conflicting",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false,
+      "is_hard_neutral": true
+    },
+    {
+      "pair": "NH06a/NH06b",
+      "gold": "NEUTRAL",
+      "category": "neutral_hard_adjacent_non_conflicting",
+      "retrieved": true,
+      "predicted": "NEUTRAL",
+      "correct": true,
+      "is_hard_neutral": true
     }
   ]
 }

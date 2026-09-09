@@ -12,13 +12,18 @@ import json
 import os
 import sys
 from collections import Counter, defaultdict
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(r"C:\Projects\SMRITI\smriti", "src"))
-from smriti.evaluation.statistical.bootstrap import bootstrap_proportion_ci
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+from smriti.evaluation.statistical.bootstrap import (
+    bootstrap_proportion_ci, bootstrap_proportion_ci_clustered,
+)
 
-BASE = r"C:\Projects\SMRITI\smriti"
+BASE = str(ROOT)
 ANNO = os.path.join(BASE, "evaluation", "annotation")
 BASELINES = os.path.join(BASE, "evaluation", "baselines")
+RUN_ID = "20260909_193441"
 
 
 def load(name, root=ANNO):
@@ -26,6 +31,23 @@ def load(name, root=ANNO):
     if not os.path.exists(path):
         return None
     return json.load(open(path, encoding="utf-8"))
+
+
+def load_claim_document_map(run_id: str = RUN_ID) -> dict:
+    """
+    RECTIFIED (external review item 40): claims and relationship pairs
+    anchored on the same source document are not independent samples --
+    a document-level artifact (an unusually rhetorical rogue document, a
+    parsing quirk) affects every claim drawn from it together. This map
+    (claim_id -> document_id) lets score() resample at the document level
+    (cluster/block bootstrap) instead of treating every item as an
+    independent draw.
+    """
+    p4_path = os.path.join(BASE, "artifacts", f"run_{run_id}", "phase4", "dataset.json")
+    if not os.path.exists(p4_path):
+        return {}
+    p4 = json.load(open(p4_path, encoding="utf-8"))
+    return {c["claim_id"]: c["document_id"] for c in p4}
 
 
 def cohen_kappa_categorical(labels_a: dict, labels_b: dict, key_fn=lambda v: v):
@@ -64,6 +86,7 @@ def prf1(tp, fp, fn):
 
 def main():
     report = {}
+    claim_doc = load_claim_document_map()
 
     # ── Task 1: claim validity / quality / reliability ──────────────────────
     pass1 = load("pass1_claims.json")
@@ -94,6 +117,14 @@ def main():
         precision_ci = (
             bootstrap_proportion_ci(list(agreed_valid.values())) if agreed_valid else None
         )
+        # Cluster bootstrap: resample by source document, not by claim, since
+        # claims from the same document are not independent (item 40).
+        precision_ci_clustered = None
+        if agreed_valid and claim_doc:
+            clustered_ids = [claim_doc.get(i, i) for i in agreed_valid]
+            precision_ci_clustered = bootstrap_proportion_ci_clustered(
+                list(agreed_valid.values()), clustered_ids,
+            )
 
         # Fraction flagged as pure metadata noise (a concrete, quotable failure mode)
         n_metadata = sum(1 for k, v in (answer_key or {}).items() if v.get("is_metadata_line"))
@@ -105,6 +136,9 @@ def main():
             "inter_pass_mean_abs_diff_reliability_1to5": mad_rel,
             "extraction_precision_on_agreed_subset": extraction_precision,
             "extraction_precision_95ci": vars(precision_ci) if precision_ci else None,
+            "extraction_precision_95ci_clustered_by_document": (
+                vars(precision_ci_clustered) if precision_ci_clustered else None
+            ),
             "n_agreed": len(agreed_valid),
             "n_metadata_noise_in_full_phase4_output": n_metadata,
             "n_metadata_noise_total_phase4_claims": len(answer_key) if answer_key else None,
@@ -137,9 +171,22 @@ def main():
             per_class[lbl] = {"precision": p, "recall": r, "f1": f1, "support": sum(1 for i in agreed if agreed[i] == lbl)}
             # P1-11: bootstrap 95% CI on precision for this class, over the
             # per-item correctness outcomes among items SMRITI predicted as lbl.
-            predicted_as_lbl_outcomes = [agreed[i] == lbl for i in agreed if smriti_pred.get(i) == lbl]
+            predicted_as_lbl_ids = [i for i in agreed if smriti_pred.get(i) == lbl]
+            predicted_as_lbl_outcomes = [agreed[i] == lbl for i in predicted_as_lbl_ids]
             if predicted_as_lbl_outcomes:
                 per_class[lbl]["precision_95ci"] = vars(bootstrap_proportion_ci(predicted_as_lbl_outcomes))
+                # Cluster bootstrap (item 40): resample by the source
+                # document of claim_id_a, since multiple relationship pairs
+                # anchored on the same (often adversarial) document are not
+                # independent observations.
+                if claim_doc:
+                    pair_cluster_ids = [
+                        claim_doc.get(ranswer.get(i, {}).get("claim_id_a"), i)
+                        for i in predicted_as_lbl_ids
+                    ]
+                    per_class[lbl]["precision_95ci_clustered_by_document"] = vars(
+                        bootstrap_proportion_ci_clustered(predicted_as_lbl_outcomes, pair_cluster_ids)
+                    )
 
         # RC3/RC6-specific: recall on the deliberate hard-contradiction target pairs
         target_ids = [k for k, v in ranswer.items() if v.get("is_known_hard_contradiction_pair")]

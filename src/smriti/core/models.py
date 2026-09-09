@@ -2342,31 +2342,6 @@ class EngineeringConfidenceIndex:
 
 
 @dataclass(frozen=True)
-class GroundTruthRepository:
-    """
-    RECTIFIED (P0-4): Ground Truth is a repository, not a dataset.
-
-    Ground truth is an ecosystem with annotation protocol, validity scope,
-    and quality scoring. This replaces the minimal GroundTruthDataset.
-    """
-    repository_id: str
-    task: ScientificDomain
-    version: str
-    dataset_id: str             # The underlying dataset
-    item_count: int
-    annotation_schema: str      # Format specification
-    annotation_protocol: str    # How items were labeled
-    annotator_agreement: Optional[float]
-    created_at: str
-    checksum: str
-    validity_scope: str         # Where these labels are applicable
-    applicable_experiments: tuple  # Which experiment IDs can use this
-    known_limitations: tuple       # Known gaps in the ground truth
-    quality_score: float        # 0.0–1.0 overall quality estimate
-    license: str = "internal"
-
-
-@dataclass(frozen=True)
 class EvaluationProtocol:
     """
     RECTIFIED (P1-1): Full protocol specification for an experiment.

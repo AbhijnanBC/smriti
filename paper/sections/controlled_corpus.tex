@@ -18,7 +18,23 @@ reversal ("uses 4 GB of RAM" vs.\ "uses 8 GB of RAM"), \emph{negated}
 individuals/teams), and \emph{attribute} (a property asserted and its
 negation). We add 6 SUPPORTS pairs (a claim and an independent
 confirmation of the same claim) and 6 NEUTRAL pairs (entirely unrelated
-topics) as controls. The full corpus and its gold manifest are released.
+topics) as controls. \textbf{These six NEUTRAL pairs share no
+vocabulary at all and are never retrieved as NLI candidates
+(\S\ref{sec:controlled}, point 2) --- so they test embedding-based
+retrieval's ability to filter unrelated pairs, not whether the
+relatedness gate rejects a false CONTRADICTS on a pair the resolver
+actually sees.} To test the latter directly (an external review point),
+we add a 6-pair hard-neutral extension, each pair deliberately
+constructed to share vocabulary or topic with its partner despite being
+genuinely NEUTRAL: two \emph{same-topic} pairs (the same named entity,
+two different but compatible attributes --- e.g.\ a rover using both
+LiDAR and a stereo camera for obstacle detection), two \emph{lexical-
+collision} pairs (a shared word used in two unrelated senses, e.g.\
+``Python'' the language vs.\ ``python'' the snake), and two
+\emph{adjacent-non-conflicting} pairs (two true statements about
+different aspects of the same technique, e.g.\ pressure-cooking's
+effect on cook time vs.\ its vessel requirement). The full corpus and
+its gold manifest are released.
 
 Because the label is definitional, we can additionally separate
 \textbf{retrieval recall} (did the intended pair even become an NLI

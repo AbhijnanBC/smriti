@@ -33,7 +33,12 @@ from smriti.core.models import (
 RESEARCH_CLAIMS_SPEC = [
     {
         "claim_id": "RC1",
-        "statement": "SMRITI extracts semantically faithful declarative claims from heterogeneous note-style text",
+        # RECTIFIED (external review item 19): "semantically faithful" overclaimed
+        # what RC1's own metric (extraction_precision_on_agreed_subset) measures --
+        # a binary valid/invalid structural judgment (is this a real declarative
+        # assertion, or extraction noise), not semantic entailment from the source
+        # sentence. The statement now matches the research_question below exactly.
+        "statement": "SMRITI extracts structurally valid declarative claims from heterogeneous note-style text",
         "scientific_domain": ScientificDomain.KNOWLEDGE_EXTRACTION,
         "supporting_experiment_ids": ["EXP-001"],
         "acceptance_metric": "precision",

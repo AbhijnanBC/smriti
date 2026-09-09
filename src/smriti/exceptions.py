@@ -537,10 +537,6 @@ class VerificationRuleError(Phase12Error):
     """A verification rule failed in a way that prevents further execution."""
     pass
 
-class GroundTruthError(Phase12Error):
-    """Ground truth repository is missing, corrupt, or incompatible."""
-    pass
-
 class ExperimentError(Phase12Error):
     """An experiment failed to execute."""
     pass

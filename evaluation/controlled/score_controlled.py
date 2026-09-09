@@ -15,11 +15,13 @@ import json
 import os
 import sys
 from collections import defaultdict
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(r"C:\Projects\SMRITI\smriti", "src"))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
 from smriti.evaluation.statistical.bootstrap import bootstrap_proportion_ci
 
-BASE = r"C:\Projects\SMRITI\smriti"
+BASE = str(ROOT)
 MANIFEST_PATH = os.path.join(BASE, "evaluation", "controlled", "gold_manifest.json")
 
 
@@ -42,6 +44,17 @@ def main(run_id: str):
         key = frozenset([doc_of_claim.get(a), doc_of_claim.get(b)])
         predicted_by_pair[key] = r["relationship_type"].upper()
 
+    # "Core" categories are the original SMRITI-Controlled-v1 design
+    # (propositional CONTRADICTS/SUPPORTS, plus "easy" NEUTRAL pairs that
+    # share no vocabulary at all). "neutral_hard_*" categories are a later
+    # addition (external review items 3/4): NEUTRAL pairs deliberately
+    # constructed to be topically/lexically related, so they test whether
+    # the relatedness gate rejects a false CONTRADICTS on a genuinely-
+    # related pair -- a different question from the core corpus's recall/
+    # accuracy numbers, so they are reported separately and are NOT pooled
+    # into "overall" (pooling them would silently change the meaning of
+    # every "Overall 58.3%/78.6%"-style number already written about the
+    # core corpus elsewhere).
     per_category = defaultdict(lambda: {"retrieved": 0, "total": 0, "correct": 0})
     rows = []
     for pair in manifest:
@@ -62,6 +75,7 @@ def main(run_id: str):
             "pair": f"{pair['doc_a']}/{pair['doc_b']}",
             "gold": gold, "category": category,
             "retrieved": retrieved, "predicted": predicted, "correct": correct,
+            "is_hard_neutral": category.startswith("neutral_hard"),
         })
 
     print(f"{'Category':<12} {'Total':>6} {'Retrieved':>10} {'RetrievalRecall':>16} {'CorrectGivenRetrieved':>22} {'ClassAccuracy':>14}")
@@ -69,20 +83,23 @@ def main(run_id: str):
     for cat, d in sorted(per_category.items()):
         recall = d["retrieved"] / d["total"] if d["total"] else 0.0
         class_acc = d["correct"] / d["retrieved"] if d["retrieved"] else 0.0
-        overall["total"] += d["total"]
-        overall["retrieved"] += d["retrieved"]
-        overall["correct"] += d["correct"]
+        if not cat.startswith("neutral_hard"):
+            overall["total"] += d["total"]
+            overall["retrieved"] += d["retrieved"]
+            overall["correct"] += d["correct"]
         print(f"{cat:<12} {d['total']:>6} {d['retrieved']:>10} {recall:>16.1%} {d['correct']:>10}/{d['retrieved']:<10} {class_acc:>14.1%}")
 
     print("-" * 90)
     overall_recall = overall["retrieved"] / overall["total"] if overall["total"] else 0.0
     overall_class_acc = overall["correct"] / overall["retrieved"] if overall["retrieved"] else 0.0
-    print(f"{'TOTAL':<12} {overall['total']:>6} {overall['retrieved']:>10} {overall_recall:>16.1%} "
+    print(f"{'TOTAL (core)':<12} {overall['total']:>6} {overall['retrieved']:>10} {overall_recall:>16.1%} "
           f"{overall['correct']:>10}/{overall['retrieved']:<10} {overall_class_acc:>14.1%}")
 
     # ── Bootstrap 95% CIs (P1-11): sampling uncertainty, not run-to-run noise ──
-    retrieval_outcomes = [r["retrieved"] for r in rows]
-    classification_outcomes = [r["correct"] for r in rows if r["retrieved"]]
+    # Core-corpus rows only, so this CI matches "overall" above exactly.
+    core_rows = [r for r in rows if not r["is_hard_neutral"]]
+    retrieval_outcomes = [r["retrieved"] for r in core_rows]
+    classification_outcomes = [r["correct"] for r in core_rows if r["retrieved"]]
     recall_ci = bootstrap_proportion_ci(retrieval_outcomes)
     class_acc_ci = bootstrap_proportion_ci(classification_outcomes) if classification_outcomes else None
     print(f"\nRetrieval recall 95% CI:        {recall_ci.point_estimate:.1%} "

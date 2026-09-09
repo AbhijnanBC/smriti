@@ -84,11 +84,14 @@ and fixed in this exact code path.
   \label{fig:partition}
 \end{figure}
 
-\paragraph{Phase 8: evidence-aware reliability.} Independent signals
-(evidence strength, evidence independence, source diversity, topology
-strength, conflict pressure, temporal stability, completeness) are fused
-into a single reliability index per claim, with a full decision record
-(raw/constrained/final score, every constraint that fired) attached.
+\paragraph{Phase 8: evidence-aware reliability.} Eight independently-
+weighted signals (evidence strength, evidence independence, source
+diversity, topology strength, hub score, bridge score, conflict
+pressure, temporal stability) are fused into a single reliability index
+per claim, with a full decision record (raw/constrained/final score,
+every constraint that fired) attached. Evidence completeness is tracked
+separately and feeds only the uncertainty computation
+(\S\ref{sec:ablation}), not the weighted fusion sum itself.
 \textbf{Rectified in this work}, in two parts: (i) the evidence-independence
 signal previously returned its \emph{maximum} value (1.0, ``fully
 independent'') for a claim with zero supporting evidence at all ---

@@ -6,7 +6,7 @@ fusion (P1-6/P1-7), run against the real, post-fix SMRITI-Reference graph
 extractors + fusion code -- no re-implementation, no new annotation, no
 pipeline re-run.
 
-For each of the 7 registered signals, zero its policy weight (without
+For each of the 8 registered signals, zero its policy weight (without
 renormalizing the rest -- standard leave-one-out: isolates exactly that
 signal's own contribution) and recompute reliability_index for every
 claim. Report mean shift and Pearson correlation vs. the baseline (all
@@ -19,8 +19,10 @@ import os
 import copy
 import json
 import math
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(r"C:\Projects\SMRITI\smriti", "src"))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
 
 from smriti.pipeline.runner import PipelineRunner
 from smriti.scoring.policies import load_policy
@@ -30,7 +32,7 @@ from smriti.scoring.fusion import compute_reliability
 from smriti.scoring.signals import signal_registry
 
 RUN_ID = "20260909_193441"
-OUT_PATH = os.path.join(r"C:\Projects\SMRITI\smriti", "evaluation", "ablation", "results.json")
+OUT_PATH = str(ROOT / "evaluation" / "ablation" / "results.json")
 
 
 def pearson(a, b):

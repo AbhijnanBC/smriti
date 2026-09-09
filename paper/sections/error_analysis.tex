@@ -82,10 +82,12 @@ did not actually observe.
     retrieved but the NLI model's own top class is neutral rather than
     entailment, so the (correctly arg-max-respecting) resolver reports
     NEUTRAL. Observed on 2/6 retrieved supports pairs (\texttt{S01},
-    \texttt{S02}). This is a model-calibration limitation, not a resolver
+    \texttt{S02}). This is an NLI scoring limitation, not a resolver
     logic bug: the same arg-max rule that gives CONTRADICTS 100\%
     precision here faithfully reports what the model's own probabilities
-    say.
+    say. (We do not call this a ``calibration'' issue either --- no
+    probability calibration is fitted in this system at all; see
+    \S\ref{sec:limitations}.)
   \item \textbf{E3 -- Over-eager refinement.} A genuinely-SUPPORTS pair is
     classified REFINES instead, because the resolver's REFINES rule
     (\S\ref{sec:system}, \texttt{refine\_contradiction\_ceiling}) treats
@@ -115,18 +117,38 @@ did not actually observe.
     directly). The disagreement in these pairs is expressed as
     argumentative prose about a shared topic (``U-Net is an outdated
     architectural choice'') rather than direct propositional negation,
-    which an SNLI/MultiNLI/ANLI-calibrated model is not trained to read as
-    contradiction. Unlike E4, this is not an integration bug: the resolver
-    is faithfully reporting the model's own dominant class. It requires
-    either a differently-calibrated (or stance-detection-specific) model,
-    not a resolver change, and is recorded as unresolved in
+    which a model trained on SNLI/MultiNLI/ANLI-style propositional pairs
+    is never asked, during training, to read as contradiction. Unlike E4,
+    this is not an integration bug: the resolver is faithfully reporting
+    the model's own dominant class. It requires a stance-detection-
+    specific model, not a resolver change and not a different calibration
+    of the same model --- calibration would only make an already-correct-
+    for-this-task probability more trustworthy, not teach the model a
+    task it was never trained on. Recorded as unresolved in
     \S\ref{sec:limitations}.
+  \item \textbf{E7 -- Same-entity multi-attribute conflation.}
+    \textbf{Open, newly discovered post-fix.} A genuinely NEUTRAL pair
+    describing two \emph{compatible} attributes of the same named entity
+    (\S\ref{sec:hard-neutral}: ``the Aerotrix rover uses LiDAR'' /
+    ``uses a stereo camera'') is misclassified CONTRADICTS. Unlike E4,
+    the relatedness gate is not at fault --- the pair genuinely is
+    related (shared entity token), which is exactly what the gate is
+    designed to detect, so passing it through to the resolver is
+    correct behavior. The failure is that neither the gate nor the NLI
+    model distinguishes ``two attributes describing the same entity''
+    from ``two mutually exclusive claims about the same entity''; ``X
+    uses A'' and ``X uses B'' read as a factual disagreement about
+    which is true, when both can be. Observed once ($n=1$ of 2
+    retrieved hard-neutral pairs); too small to report a rate, but a
+    real, reproducible instance, not a hypothetical one.
 \end{itemize}
 
-E1--E3 and E6 remain open (E1 is a retrieval-stage problem, E2/E3 are
-SUPPORTS-side calibration problems, E6 is an NLI-model calibration gap on
-rhetorical rather than propositional disagreement); E4--E5 are the two
-mechanisms this paper's central fixes target and close on the evidence
+E1--E3, E6, and E7 remain open (E1 is a retrieval-stage problem, E2/E3
+are SUPPORTS-side NLI scoring problems, E6 is an NLI task mismatch
+between rhetorical and propositional disagreement, not a calibration
+gap, and E7 is a same-entity multi-attribute conflation the relatedness
+gate cannot catch by design); E4--E5
+are the two mechanisms this paper's central fixes target and close on the evidence
 available here. We do not claim this list is exhaustive over failure
 modes SMRITI could exhibit on other corpora --- only that it is exhaustive
 over failure modes we actually observed on the two corpora reported in
