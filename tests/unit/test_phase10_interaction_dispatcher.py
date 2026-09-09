@@ -24,7 +24,10 @@ class TestPolicyEngine(PolicyEngine):
         """Enforce interaction policies for commands."""
         # Comparison limit
         if isinstance(command, CompareCommand):
-            max_allowed = self.interaction_policy.comparison.max_comparison_claims
+            # PolicyEngine.__init__ stores the policy as self._policy (see
+            # dashboard/policies/policies.py) — there is no public
+            # `interaction_policy` attribute.
+            max_allowed = self._policy.comparison.max_comparison_claims
             if len(command.claim_ids) > max_allowed:
                 return False, f"Comparison limit exceeded: max {max_allowed}"
         # Add other command validations as needed (e.g., search length, page bounds)

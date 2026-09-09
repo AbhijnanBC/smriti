@@ -1,0 +1,116 @@
+Two independent LLM-derived annotation passes were re-run from scratch
+against the corrected system's output (\S\ref{sec:annotation}): 174
+sampled claims and 228 sampled relationship candidates, both drawn after
+the assertion-classifier and resolver fixes (\S\ref{sec:system}) changed
+which claims and pairs SMRITI produces at all.
+
+\paragraph{Claim extraction (RQ1).} Inter-pass agreement on claim validity
+is moderate (Cohen's $\kappa = 0.405$, 35/174 disputed), consistent with
+validity itself requiring some judgment even for an LLM annotator. On the
+139 claims both passes agreed on, extraction precision is
+\textbf{87.8\%} (95\% CI, bootstrap: [82.0\%, 92.8\%]), and zero of the 174
+sampled claims were flagged as pure metadata/bibliographic noise --- the
+specific failure mode the assertion classifier (\S\ref{sec:system}) was
+built to eliminate. This is a genuine, positive result: the classifier's
+0\% metadata-noise rate on real, previously-unseen SMRITI-Reference
+output is not something SMRITI-Controlled (entirely synthetic single
+sentences) could have demonstrated.
+
+\paragraph{Relationship classification on real, adversarial-domain text
+(RQ2/RQ3).} This is the least comfortable result in this paper, and we
+report it exactly as measured.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Label} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{N (gold)} \\
+\midrule
+SUPPORTS     & 27.8\% & 8.2\%  & 12.7\% & 61 \\
+CONTRADICTS  & 4.6\%  & 25.0\% & 7.7\%  & 8 \\
+REFINES      & 50.0\% & 41.7\% & 45.5\% & 48 \\
+NEUTRAL      & 28.7\% & 34.7\% & 31.5\% & 72 \\
+\bottomrule
+\end{tabular}
+\caption{SMRITI's per-class precision/recall/F1 against the 189
+inter-pass-agreed (excluding UNSURE) relationship labels in the fresh
+SMRITI-Reference sample ($\kappa=0.756$ between passes, substantial
+agreement). CONTRADICTS precision's 95\% bootstrap CI is [0.0\%, 11.4\%]
+($n=44$ SMRITI-predicted-CONTRADICTS items in this sample).}
+\label{tab:reference-relationships}
+\end{table}
+
+On SMRITI-Reference's real, domain-clustered, opinion-bearing prose,
+CONTRADICTS precision is \textbf{4.6\%} --- not an improvement over the
+3.2\% this paper's predecessor measured pre-fix
+(\S\ref{sec:error-analysis}), despite the same fix achieving 100\%
+precision on SMRITI-Controlled (\S\ref{sec:controlled}). Recall on the 21
+inter-pass-agreed instances of the corpus's three \emph{deliberately
+planted} hard-contradiction pairs (\S\ref{sec:corpus}) is
+\textbf{14.3\%}: SMRITI predicts CONTRADICTS for only 3 of 25 such pairs
+in the full candidate pool.
+
+\paragraph{Root cause: this is a model-calibration gap, not a resolver
+regression.} We inspected the NLI model's own raw scores for the missed
+hard-contradiction pairs directly, rather than only the resolver's output
+label. Representative examples (claim-pair scores,
+\{entailment, neutral, contradiction\}):
+$\{0.00004, 0.993, 0.007\}$;
+$\{0.007, 0.974, 0.020\}$;
+$\{0.001, 0.998, 0.001\}$.
+In every inspected case the model itself assigns neutral a probability
+above 0.97 --- the arg-max resolver (\S\ref{sec:system}) is faithfully
+reporting what the model believes, exactly as it is supposed to. This is
+not the same bug the resolver fix addressed (which was committing to
+CONTRADICTS \emph{despite} neutral being dominant); here neutral
+genuinely is dominant. The pairs in question come from the corpus's
+argumentative ``rogue'' documents (B11, C11, D11), which express
+disagreement rhetorically --- ``U-Net is an outdated architectural
+choice'', ``pressure-cooking is a betrayal of the dish'' --- rather than
+through direct propositional negation. An NLI model trained on
+SNLI/MultiNLI/ANLI-style sentence pairs is calibrated to detect
+entailment and contradiction between declarative propositions; it is not
+calibrated to detect \emph{stance conflict} expressed as argumentative
+prose about a shared topic, which instead reads to the model as two
+statements being merely topically related (consistent with the high
+cosine similarities of 0.75--0.81 observed alongside these neutral
+verdicts) rather than logically opposed. SMRITI-Controlled could not have
+surfaced this: its CONTRADICTS pairs are, by construction, direct
+propositional negations (\S\ref{sec:controlled}), exactly the case the
+NLI model is calibrated for.
+
+\paragraph{SUPPORTS and NEUTRAL are also weak on real text.} Consistent
+with SMRITI-Controlled's finding that SUPPORTS is the weaker side of the
+resolver's arg-max fix, SUPPORTS precision here is 27.8\% with recall
+8.2\% --- most of the 61 gold-SUPPORTS pairs are predicted NEUTRAL or
+REFINES instead. REFINES is comparatively the strongest label (45.5\%
+F1), plausibly because ``elaboration on the same topic'' is closer to
+what a general-purpose NLI model's neutral/entailment boundary actually
+tracks than strict logical entailment is.
+
+\paragraph{Baseline comparison.} Both TF-IDF-cosine and Sentence-BERT-
+cosine baselines, scored on the identical 189 gold pairs, also score
+CONTRADICTS poorly (TF-IDF: 50.0\% precision but only 12.5\% recall, i.e.\
+2 correct calls total; Sentence-BERT: 7.1\% precision, 12.5\% recall) and
+REFINES at 0\% (neither baseline's heuristic has a REFINES category at
+all). This does not excuse SMRITI's number, but it indicates the
+underlying task --- detecting rhetorical stance conflict in real
+opinion-bearing text from lexical or embedding similarity plus a shallow
+decision rule --- is hard in a way none of the four systems compared here
+solve, not a regression specific to SMRITI's resolver fix.
+
+\paragraph{Reading this alongside \S\ref{sec:controlled}.} Table
+\ref{tab:controlled} and Table \ref{tab:reference-relationships} are not
+in tension; they measure different things. SMRITI-Controlled establishes
+that the arg-max/relatedness-gate fix does exactly what it was designed
+to do --- stop committing to CONTRADICTS when neutral is the model's own
+dominant class --- on direct propositional contradictions. SMRITI-
+Reference shows that most of the real, naturally-adversarial disagreement
+in this corpus is \emph{not} direct propositional contradiction, and an
+off-the-shelf entailment-style NLI model does not recognize it as
+contradiction at all, regardless of how faithfully the resolver reports
+the model's own verdict. Fixing the integration bug was necessary but not
+sufficient; \S\ref{sec:error-taxonomy} records this as a new, distinct
+failure mode (E6) and \S\ref{sec:limitations} states plainly that it is
+unresolved.

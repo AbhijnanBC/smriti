@@ -109,6 +109,82 @@ class BoundaryReason(str, Enum):
     COORDINATION           = "coordination"
 
 
+class AssertionType(str, Enum):
+    """
+    Grammatical/structural classification of a candidate span, assigned by
+    claims.classifier.AssertionClassifier BEFORE any Claim object is built.
+
+    Only DECLARATIVE_ASSERTION proceeds into the claim-construction pipeline
+    (boundary detection → structure extraction → annotation → degradation →
+    Claim). Every other type is recorded as a DiscardedCandidate instead, so
+    nothing about the source document is ever silently dropped — it is simply
+    routed away from the knowledge graph.
+
+    DECLARATIVE_ASSERTION   -- a real declarative statement asserting something
+                               (may be full SVO, or degrade to partial/lexical/
+                               whole-sentence — completeness is orthogonal to
+                               being an assertion at all).
+    PROCEDURAL_INSTRUCTION  -- an imperative/instructional step
+                               ("Heat the oil in a pan.").
+    QUESTION                -- interrogative.
+    HEADING                 -- a markdown heading or heading-like fragment
+                               with no verb (leaked "## X", bare "**X**", or a
+                               short bare title-case noun phrase).
+    METADATA                -- bibliographic/attribution lines
+                               ("**Source:** X", "**Contradicts:** Y").
+    LIST_ITEM                -- a bare noun-phrase list item with no assertion
+                               ("Coconut oil.", "2 tbsp ghee").
+    TABLE_CELL               -- content that originated inside a markdown
+                               table cell (origin_block_type == "table").
+    FRAGMENT                 -- garbled/truncated/incoherent text with no
+                               coherent assertion (including unparseable text).
+    CODE                     -- code block content.
+    QUOTE                    -- blockquote content.
+    """
+    DECLARATIVE_ASSERTION  = "declarative_assertion"
+    PROCEDURAL_INSTRUCTION = "procedural_instruction"
+    QUESTION               = "question"
+    HEADING                = "heading"
+    METADATA               = "metadata"
+    LIST_ITEM              = "list_item"
+    TABLE_CELL             = "table_cell"
+    FRAGMENT               = "fragment"
+    CODE                   = "code"
+    QUOTE                  = "quote"
+
+
+@dataclass(frozen=True)
+class DiscardedCandidate:
+    """
+    A SemanticSentence classified as something other than DECLARATIVE_ASSERTION,
+    and therefore never turned into a Claim.
+
+    This is the audit trail that keeps Phase 4 lossless: every sentence that
+    is filtered out of the knowledge graph is still recorded here, in full,
+    with the reason it was excluded — so the source document remains fully
+    recoverable even though only genuine assertions reach downstream phases.
+
+    Fields:
+        sentence_id:        The originating SemanticSentence's ID.
+        document_id:        doc_id of the source Document.
+        text:               The exact sentence text (unmodified).
+        assertion_type:      The AssertionType this candidate was classified as.
+        origin_block_type:  BlockType string from Phase 3 (e.g. "table", "heading").
+        reason:             Short machine-readable reason code from the classifier
+                            (e.g. "regex_bold_label_colon", "imperative_base_form_verb").
+        source_path:        Path to the original file (for traceability).
+        context:            Heading path (same as SemanticSentence.context).
+    """
+    sentence_id: str
+    document_id: str
+    text: str
+    assertion_type: AssertionType
+    origin_block_type: str
+    reason: str
+    source_path: Path
+    context: str = ""
+
+
 # ── Phase 3 contract: Document → SemanticSentence ────────────────────────────
 
 @dataclass(frozen=True)
@@ -268,11 +344,42 @@ class AssertionMetadata:
 
 @dataclass(frozen=True)
 class ClaimProvenance:
+    """
+    Provenance chain linking a Claim back to its originating SemanticSentence.
+
+    Fields:
+        sentence_id:          The originating SemanticSentence's ID.
+        document_id:          doc_id of the source Document.
+        source_path:          Path to the original file.
+        sentence_context:     Heading path (same as SemanticSentence.context).
+        sentence_position:    0-based position of the sentence in its document.
+        source_char_spans:    Tuple of (start, end) character-offset pairs
+                               INTO THE ORIGINAL SENTENCE TEXT (SemanticSentence.text),
+                               one pair per contiguous run of tokens actually
+                               used to build this claim. A single-assertion or
+                               whole-sentence claim has exactly one span
+                               covering the whole sentence; a coordinated-
+                               predicate/object split (e.g. "Python supports
+                               generators and decorators." → two claims) has
+                               one span for the shared subject+verb run and a
+                               second span for the conjunct actually used by
+                               THIS claim — never the other conjunct's tokens.
+        source_token_ids:     Tuple of spaCy token indices (Token.i) actually
+                               used to build this claim, in original sentence
+                               order. Empty if the sentence could not be parsed.
+        reconstruction_rule:  How this claim's text was assembled from the
+                               source sentence. Mirrors BoundaryReason, e.g.
+                               "single_assertion", "coordinated_predicate",
+                               "independent_clause", "parse_failed".
+    """
     sentence_id: str
     document_id: str
     source_path: Path
     sentence_context: str
     sentence_position: int
+    source_char_spans: tuple = ()
+    source_token_ids: tuple = ()
+    reconstruction_rule: str = "single_assertion"
 
 
 @dataclass(frozen=True)
@@ -347,6 +454,8 @@ class Phase4Stats:
     negated_claims: int = 0
     modal_claims: int = 0
     attributed_claims: int = 0
+    total_discarded_non_assertions: int = 0   # NEW: sentences classified as non-DECLARATIVE
+    discarded_by_type: Dict[str, int] = field(default_factory=dict)  # NEW: per-AssertionType counts
     warnings: tuple = field(default_factory=tuple)
 
 
@@ -590,7 +699,7 @@ class LifecycleStage(str, Enum):
     Every object in the pipeline belongs to exactly one stage.
     Transitions are one-way; no object can move backward.
 
-    CANDIDATE              → discovered by ANN, not yet validated
+    CANDIDATE              → discovered by exact FAISS retrieval, not yet validated
     VALIDATED_CANDIDATE    → passed all candidate validation checks
     EVIDENCE               → NLI inference completed; raw scores available
     CALIBRATED_EVIDENCE    → scores adjusted by ConfidenceCalibrator
@@ -612,7 +721,7 @@ class LifecycleStage(str, Enum):
 @dataclass(frozen=True)
 class RetrievalSearchParameters:
     """
-    Parameters used during ANN search for this candidate pair.
+    Parameters used during exact cosine-similarity retrieval (FAISS IndexFlatIP) for this candidate pair.
 
     Enables exact reproduction of retrieval behavior during debugging or replay.
     """
@@ -644,7 +753,8 @@ class RetrievalQuality:
 @dataclass(frozen=True)
 class CandidatePair:
     """
-    A pair of semantically similar claims discovered by ANN search.
+    A pair of semantically similar claims discovered by exact nearest-neighbor
+    search via FAISS's flat inner-product index (IndexFlatIP).
 
     This is the entry ticket to the classification pipeline.
     Every CandidatePair that passes validation proceeds to NLI evidence generation.
@@ -652,7 +762,7 @@ class CandidatePair:
     Fields:
         claim_id_a:           First claim's ID (always ≤ claim_id_b lexicographically)
         claim_id_b:           Second claim's ID
-        cosine_similarity:    Cosine similarity from FAISS ANN search (0.0–1.0)
+        cosine_similarity:    Cosine similarity from exact FAISS IndexFlatIP retrieval (0.0–1.0)
         candidate_rank:       Rank of claim_b in claim_a's neighbor list (1 = nearest)
         retrieval_backend:    Backend used for retrieval (e.g. "faiss_flat_ip")
         index_version:        Version of the retrieval index
@@ -735,7 +845,7 @@ class RelationshipEvidence:
 
     Contains:
         - pair:             The candidate pair this evidence was gathered for
-        - cosine_similarity: From Phase 5 ANN search
+        - cosine_similarity: From Phase 5 exact cosine-similarity retrieval (FAISS IndexFlatIP)
         - nli_scores:       Raw NLI evidence (pure scores)
         - calibrated_confidence: Calibrated confidence after ConfidenceCalibrator
         - inference_metadata:  Model + runtime metadata (separated from scores)
@@ -788,12 +898,12 @@ class RelationshipProvenance:
         retrieval_backend:    "faiss_flat_ip" etc.
         retrieval_version:    Phase 6 implementation version
         index_version:        Index build version
-        search_parameters:    Full ANN search parameters for exact reproduction
+        search_parameters:    Full retrieval search parameters (FAISS IndexFlatIP) for exact reproduction
         classifier_model:     NLI model name
         classifier_version:   NLI model version
         resolver_version:     Resolver policy version
         calibrator_version:   ConfidenceCalibrator version
-        cosine_similarity:    Similarity from ANN search
+        cosine_similarity:    Similarity from exact FAISS IndexFlatIP retrieval
         candidate_rank:       Neighbor rank
         raw_nli_confidence:   Confidence before calibration
         calibrated_confidence: Confidence after calibration
@@ -2120,15 +2230,31 @@ class VerificationStatus(str, Enum):
     WARNING = "warning"
     SKIPPED = "skipped"
     PENDING = "pending"
+    # An experiment whose required reference/gold data does not exist yet.
+    # Distinct from FAILED (which means "we measured it and it fell short")
+    # and from PASSED (which means "we measured it and it met the bar") —
+    # NOT_EVALUABLE means no real measurement was possible, and must never
+    # be silently defaulted to a passing numeric value (e.g. 1.0) to make a
+    # downstream index look complete.
+    NOT_EVALUABLE = "not_evaluable"
 
 
 class ScientificDomain(str, Enum):
-    KNOWLEDGE_EXTRACTION = "knowledge_extraction"
+    # The five canonical research-claim domains (RC1-RC5, frozen — see
+    # evaluation/certification/claims.py). Each maps 1:1 to a research
+    # claim backed (or not yet backed) by real reference data.
+    KNOWLEDGE_EXTRACTION      = "knowledge_extraction"       # RC1
+    RELATIONSHIP_RESOLUTION   = "relationship_resolution"    # RC2
+    KNOWLEDGE_GRAPH           = "knowledge_graph"            # RC3
+    RELIABILITY_SCORING       = "reliability_scoring"        # RC4
+    EXPLAINABILITY            = "explainability"             # RC5
+    # Not research-claim domains — these are engineering/infrastructure
+    # properties (embedding determinism, retrieval index correctness), not
+    # scientific claims about SMRITI's semantic accuracy. Verified, if at
+    # all, by the ECI/architectural-rule layer, never by a "scientific
+    # experiment" with a fabricated ground truth.
     EMBEDDING_QUALITY    = "embedding_quality"
-    KNOWLEDGE_GRAPH      = "knowledge_graph"
     RETRIEVAL            = "retrieval"
-    RELIABILITY_SCORING  = "reliability_scoring"
-    EXPLAINABILITY       = "explainability"
 
 
 class PublicationReadinessLevel(str, Enum):
@@ -2485,7 +2611,7 @@ class EvaluationManifest:
     metrics_evaluated: tuple
     acceptance_criteria: Dict[str, float]
     software_versions: Dict[str, str]       # library → version
-    hardware_description: str
+    hardware_description: str               # real OS/CPU/RAM/GPU string, detected at run time
     created_at: str
 
 

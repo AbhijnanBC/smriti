@@ -81,13 +81,12 @@ def test_history_subscriber_receives_all_events():
 
 def test_event_bus_type_filter():
     """WorkspaceSyncSubscriber only responds to workspace-affecting events."""
+    # EXPLAINABILITY_CHANGED is NOT in WORKSPACE_EVENTS. Calling on_event()
+    # directly bypasses the bus's type filter (on_event unconditionally sets
+    # the pending flag) — so this must go through the bus itself, with a
+    # fresh subscriber, to actually exercise InteractionEventBus.publish()'s
+    # filtering logic (sub_types check) rather than pre-polluting the flag.
     sync = WorkspaceSyncSubscriber()
-    # EXPLAINABILITY_CHANGED is NOT in WORKSPACE_EVENTS
-    event = make_event(InteractionEventType.EXPLAINABILITY_CHANGED)
-    sync.on_event(event)
-    # Explainability change should not flag sync
-    # (the bus itself applies the filter; call on_event directly bypasses it)
-    # Test the bus-level filter instead:
     bus = InteractionEventBus()
     bus.subscribe(sync)
     bus.publish(make_event(InteractionEventType.EXPLAINABILITY_CHANGED))

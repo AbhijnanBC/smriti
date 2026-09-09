@@ -273,7 +273,7 @@ class RelationshipValidationError(Phase6Error):
 
 
 class CandidateGenerationError(Phase6Error):
-    """ANN candidate generation failed."""
+    """FAISS-based candidate generation (exact retrieval) failed."""
     category = Phase6ErrorCategory.NON_RECOVERABLE
 
 

@@ -21,7 +21,7 @@ import structlog
 
 from smriti.core.models import (
     RawSignal, SignalVector, ContributionCandidate, ContributionSet,
-    SignalManifest, SignalStatus,
+    SignalManifest, SignalStatus, SignalID,
 )
 from smriti.scoring.policies import FusionPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -98,16 +98,21 @@ def assemble_contribution_set(
 
     # ── Build ContributionSet (P0-2) ────────────────────────────────────────
     candidates = []
-    for signal_id, sig in validated.items():
-        weight = fusion_policy.get_weight(signal_id)
-        direction = fusion_policy.get_direction(signal_id)
+    for signal_id_value, sig in validated.items():
+        # `validated` is keyed by the raw string signal name (RawSignal.name).
+        # ContributionCandidate.signal_id is typed as SignalID (see core/models.py)
+        # so it must be the enum member, not the bare string key — otherwise
+        # downstream consumers that call `.signal_id.value` (e.g.
+        # ComponentScore.signal_name) blow up with AttributeError.
+        weight = fusion_policy.get_weight(signal_id_value)
+        direction = fusion_policy.get_direction(signal_id_value)
         if weight > 0:
             candidates.append(ContributionCandidate(
-                signal_id=signal_id,
+                signal_id=SignalID(signal_id_value),
                 normalized_value=sig.normalized_value,
                 policy_weight=weight,
                 direction=direction,
-                label=signal_id.replace("_", " ").title(),
+                label=signal_id_value.replace("_", " ").title(),
                 raw_value=sig.raw_value,
             ))
 

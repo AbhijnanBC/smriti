@@ -98,22 +98,17 @@ knowledge_graph:
 
 scoring_policy:
   version: "test_1.0"
-  profile: "balanced"
+  # NOTE: profile and fusion.signal_weights intentionally NOT hardcoded here.
+  # load_policy(profile=...) seeds signal_weights from the requested
+  # PolicyProfile preset; a config value here takes priority over the
+  # function argument (see scoring/policies.py::load_policy), so pinning
+  # them would make every profile collapse to "balanced" in tests
+  # (see tests/unit/test_phase8_policies.py::test_policy_profile_loads_correct_weights).
   evidence:
     echo_chamber_penalty: 0.20
     max_support_count: 5
     lineage_depth_limit: 1
     publisher_domain_weight: 0.30
-  fusion:
-    signal_weights:
-      evidence_strength:     0.25
-      evidence_independence: 0.15
-      source_diversity:      0.15
-      topology_strength:     0.10
-      hub_score:             0.05
-      bridge_score:          0.05
-      conflict_pressure:     0.20
-      temporal_stability:    0.05    
 
 knowledge_api:
   max_page_size: 100

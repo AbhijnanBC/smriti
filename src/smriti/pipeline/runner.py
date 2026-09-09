@@ -123,11 +123,12 @@ class PipelineRunner:
                 phase5_result = self._run_phase_5(phase4_result)
 
             phase6_result = None
+            phase4_claims = None
             if start_from <= 6 and (stop_at is None or stop_at >= 6):
                 if phase5_result is None:
                     phase5_result = self._load_phase5_result()
                 phase4_claims = self._load_phase4_result_as_map()
-                phase6_result = self._run_phase_6(phase5_result, phase4_claims) 
+                phase6_result = self._run_phase_6(phase5_result, phase4_claims)
 
             phase7_result = None
             if start_from <= 7 and (stop_at is None or stop_at >= 7):
@@ -135,7 +136,7 @@ class PipelineRunner:
                     phase6_result = self._load_phase6_result()
                 if phase4_claims is None:
                     phase4_claims = self._load_phase4_result_as_map()
-            phase7_result = self._run_phase_7(phase6_result, phase4_claims)  
+                phase7_result = self._run_phase_7(phase6_result, phase4_claims)
 
             phase8_result = None
             if start_from <= 8 and (stop_at is None or stop_at >= 8):
@@ -455,6 +456,9 @@ class PipelineRunner:
                 source_path=Path(prov_data.get("source_path", "unknown")),
                 sentence_context=prov_data.get("sentence_context", ""),
                 sentence_position=prov_data.get("sentence_position", 0),
+                source_char_spans=tuple(tuple(s) for s in prov_data.get("source_char_spans", [])),
+                source_token_ids=tuple(prov_data.get("source_token_ids", [])),
+                reconstruction_rule=prov_data.get("reconstruction_rule", "single_assertion"),
             )
             svo_data = r.get("svo")
             structured = None
@@ -652,6 +656,9 @@ class PipelineRunner:
                 source_path=Path(prov.get("source_path", "unknown")),
                 sentence_context=prov.get("sentence_context", ""),
                 sentence_position=prov.get("sentence_position", 0),
+                source_char_spans=tuple(tuple(s) for s in prov.get("source_char_spans", [])),
+                source_token_ids=tuple(prov.get("source_token_ids", [])),
+                reconstruction_rule=prov.get("reconstruction_rule", "single_assertion"),
             )
             svo_data = r.get("svo")
             structured = None
@@ -1276,21 +1283,21 @@ class PipelineRunner:
             except Exception:
                 return False
 
-        # Register checks with the coordinator, mapping to dependency nodes
+        # Register checks — no dependency graph mappings (nodes not registered)
         health_coordinator.register(
             "configuration",
             check_config,
-            dependency_node="config"      # assume a node named "config" exists
+            dependency_node=None
         )
         health_coordinator.register(
             "artifacts_directory",
             check_artifacts_dir,
-            dependency_node="artifacts"   # node named "artifacts"
+            dependency_node=None
         )
         health_coordinator.register(
             "memory_pressure",
             check_memory,
-            dependency_node=None          # no node mapping; purely informational
+            dependency_node=None
         )
 
         # ── Step 6: Capability Model (P0-4) with graph sync ──────────────────────

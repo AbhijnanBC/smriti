@@ -1,0 +1,914 @@
+{
+  "f28e13a9e5a4567e": {
+    "label": "REFINES",
+    "note": "B11's obsolescence claim doesn't negate B5's basic definition of U-Net; adds critical framing"
+  },
+  "a3a993c8c3247309": {
+    "label": "NEUTRAL",
+    "note": "Different bowler types/tactical claims, no direct conflict"
+  },
+  "802e3383e8d87c40": {
+    "label": "CONTRADICTS",
+    "note": "D11 explicitly says pressure cooker cuts quality vs D1's positive fast-cooking claim"
+  },
+  "4ce28d97216a6aac": {
+    "label": "CONTRADICTS",
+    "note": "Same explicit anti-pressure-cooker stance vs D4's time-saver claim"
+  },
+  "a696cdbaf023c868": {
+    "label": "NEUTRAL",
+    "note": "Obsolescence opinion vs unrelated architecture detail"
+  },
+  "549a1457a8ace7c1": {
+    "label": "NEUTRAL",
+    "note": "Not a direct conflict on the same specific point"
+  },
+  "4d88661bf1d2cecf": {
+    "label": "CONTRADICTS",
+    "note": "'outdated' directly clashes with 'de facto standard'"
+  },
+  "fb5e1f6b97c7c3f8": {
+    "label": "NEUTRAL",
+    "note": "Unrelated architecture detail"
+  },
+  "3a16e6c9d38aeaa6": {
+    "label": "NEUTRAL",
+    "note": "Unrelated detail about training data requirement"
+  },
+  "04baf84a88269a6c": {
+    "label": "NEUTRAL",
+    "note": "Unrelated technical detail"
+  },
+  "a7a3bfb8d5bdaf81": {
+    "label": "NEUTRAL",
+    "note": "Different bowler types, no explicit conflict"
+  },
+  "361dfaf436484b10": {
+    "label": "REFINES",
+    "note": "Different technique for same dish, no explicit negation"
+  },
+  "c4a3af7009c1263b": {
+    "label": "CONTRADICTS",
+    "note": "Explicit claim that pressure heat destroys collagen resulting in dryness vs fork-tender claim"
+  },
+  "fc06e91da63deaa8": {
+    "label": "CONTRADICTS",
+    "note": "'culinary betrayal' explicitly negates the value claimed by D1"
+  },
+  "cc97d7bef3fbd967": {
+    "label": "REFINES",
+    "note": "Alternative traditional technique described, no explicit negation of D1's method"
+  },
+  "32f272799ff90d60": {
+    "label": "CONTRADICTS",
+    "note": "Explicit 'by contrast... dries out the meat' directly opposes D1's fork-tender claim"
+  },
+  "c51d584d4c23044e": {
+    "label": "REFINES",
+    "note": "Describes classic technique without explicitly negating D1's approach"
+  },
+  "d8373da16ba5f9ad": {
+    "label": "REFINES",
+    "note": "B elaborates on how the colour mentioned in A is achieved"
+  },
+  "54433a11923e8dee": {
+    "label": "CONTRADICTS",
+    "note": "'dominant approach' directly conflicts with 'rapidly moving away from U-Net'"
+  },
+  "747211d00b969898": {
+    "label": "NEUTRAL",
+    "note": "Different specific aspect, not a direct conflict"
+  },
+  "052f60198b3a7c92": {
+    "label": "NEUTRAL",
+    "note": "Different aspect of middle-overs bowling, not a direct conflict"
+  },
+  "dea6589746e222b1": {
+    "label": "NEUTRAL",
+    "note": "Condition-specific claim (grip surfaces), not mutually exclusive"
+  },
+  "4b28feb0e8516be6": {
+    "label": "NEUTRAL",
+    "note": "General principle about spinners, not specific to wrist-spin superiority claim"
+  },
+  "dd2dc2d9df00b464": {
+    "label": "NEUTRAL",
+    "note": "Different topic (cut selection vs texture outcome)"
+  },
+  "49498953c179893a": {
+    "label": "NEUTRAL",
+    "note": "Different surface conditions discussed, not directly conflicting"
+  },
+  "65f3e8c61fcbf9ed": {
+    "label": "SUPPORTS",
+    "note": "Same rogue doc, consistent statements praising traditional method"
+  },
+  "f6dd98242e90be27": {
+    "label": "REFINES",
+    "note": "B elaborates/narrows A's claim about skip connections"
+  },
+  "29d1c5331d075c62": {
+    "label": "SUPPORTS",
+    "note": "Same doc, both reinforcing pro-transformer thesis"
+  },
+  "1b6c48854ae314bf": {
+    "label": "SUPPORTS",
+    "note": "Same doc, B explains why slow method has succulence A says pressure method lacks"
+  },
+  "6d15e71de83b3af9": {
+    "label": "SUPPORTS",
+    "note": "Same doc, both premises for overall critique thesis"
+  },
+  "943fd3015983f92d": {
+    "label": "REFINES",
+    "note": "A's 'this' refers to and qualifies B's stated limitation"
+  },
+  "65b4254811a1ffc8": {
+    "label": "SUPPORTS",
+    "note": "Same doc, complementary supporting points for pro-transformer thesis"
+  },
+  "d7eb1c2132c88080": {
+    "label": "SUPPORTS",
+    "note": "Same doc, complementary claims"
+  },
+  "75b0f54ae3431f44": {
+    "label": "REFINES",
+    "note": "B explains mechanism behind A's implied flavour-development claim"
+  },
+  "4eb8c6ea761e0a8d": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent pro-transformer thesis"
+  },
+  "4c353a851abefa03": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent anti-pressure-cooker claims"
+  },
+  "8e53f0cd13b2a437": {
+    "label": "SUPPORTS",
+    "note": "Same doc, complementary critique of pressure cooking"
+  },
+  "f3e074642ff99319": {
+    "label": "SUPPORTS",
+    "note": "Same doc, both separate weaknesses cited for the same overall critique"
+  },
+  "6ebb980e71c037bc": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent critique of pressure-cooked result"
+  },
+  "de4c7c65309d96fd": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent anti-pressure-cooker reasoning"
+  },
+  "9c5eb33158fdb5ff": {
+    "label": "SUPPORTS",
+    "note": "Same doc, reinforces pro-transformer thesis"
+  },
+  "2115d46a14e1bfb0": {
+    "label": "REFINES",
+    "note": "B elaborates on why finger-spinners are reliable, per A's claim"
+  },
+  "0591ddd94a7a1ebc": {
+    "label": "SUPPORTS",
+    "note": "Same doc, B's reasoning consistent with A's claim"
+  },
+  "29b9baf915951423": {
+    "label": "SUPPORTS",
+    "note": "Same doc, same specific topic of flavour melding"
+  },
+  "156a71149a3ae91e": {
+    "label": "SUPPORTS",
+    "note": "Same doc, B is evidence for A's overall claim"
+  },
+  "1a590501c5251497": {
+    "label": "REFINES",
+    "note": "B describes the time-honoured technique referenced in A"
+  },
+  "12859a0146082e9b": {
+    "label": "SUPPORTS",
+    "note": "Same doc, same topic of meat texture outcome"
+  },
+  "8955d2dd93214246": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent critique reinforcing overall thesis"
+  },
+  "e02a36024442fada": {
+    "label": "SUPPORTS",
+    "note": "Same doc, related flavour/texture critique"
+  },
+  "f6bd4b7707d4e104": {
+    "label": "SUPPORTS",
+    "note": "Same doc, same overall thesis, specific illustrative example"
+  },
+  "51b5766c6b4d9dc5": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis reinforcement"
+  },
+  "60ba2e014f9643b6": {
+    "label": "SUPPORTS",
+    "note": "Same doc, same topic of sauce/meat quality"
+  },
+  "e1b1c88bf84509c5": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent anti-pressure-cooker thesis"
+  },
+  "e44ea2da3abf5388": {
+    "label": "SUPPORTS",
+    "note": "Same doc, complementary contrast reinforcing thesis"
+  },
+  "e9d170e78c14422f": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "682cf617118350bb": {
+    "label": "NEUTRAL",
+    "note": "Different specific aspects (spice flavour vs meat texture)"
+  },
+  "38c5bd156fa3c2ab": {
+    "label": "SUPPORTS",
+    "note": "Same doc, contributing reasoning to overall thesis"
+  },
+  "8fb888afab3d8be0": {
+    "label": "SUPPORTS",
+    "note": "Same doc, thesis-consistent contrast"
+  },
+  "912982b7db581be0": {
+    "label": "REFINES",
+    "note": "B elaborates on effect of the high temperature mentioned in A"
+  },
+  "f93a943fc6fae2c7": {
+    "label": "SUPPORTS",
+    "note": "Same doc, contrasting evidence supporting thesis"
+  },
+  "266f00adfa23a534": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent pro-transformer thesis"
+  },
+  "49c9f5d71681725b": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "d07b7bd7009f1d07": {
+    "label": "REFINES",
+    "note": "Traditional method described relates to flavour mellowing claim"
+  },
+  "ac1a22f332dedea5": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "6e511fafbd7cac18": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent pro-transformer thesis"
+  },
+  "fc7ce39e442e32af": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "82380e63669e0974": {
+    "label": "REFINES",
+    "note": "Relates to flavour development claim"
+  },
+  "cd70f254f7ec9155": {
+    "label": "SUPPORTS",
+    "note": "Same doc, contrasting evidence supporting thesis"
+  },
+  "7c623e0c8097cdac": {
+    "label": "NEUTRAL",
+    "note": "Different specific aspects (spice flavour vs meat texture)"
+  },
+  "952aaa84cdb84f64": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "1778a0de61cae19a": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "b696647f25d49145": {
+    "label": "SUPPORTS",
+    "note": "Same doc, same topic of heat damaging meat"
+  },
+  "cb6c3e2bc3743640": {
+    "label": "UNSURE",
+    "note": "A's text is too garbled/fragmentary to confidently judge relation"
+  },
+  "b3a50b574685ec97": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "b1a9c76e5e95d960": {
+    "label": "REFINES",
+    "note": "A elaborates on B's stated receptive-field limitation"
+  },
+  "fa03342f0e48682a": {
+    "label": "REFINES",
+    "note": "Same topic, A leads into B's described effect"
+  },
+  "68d5bc45e1595f50": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "6eeb4aa313e6c72d": {
+    "label": "UNSURE",
+    "note": "A's text is too garbled/fragmentary to confidently judge relation"
+  },
+  "3dba7235d3715e16": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "5f4179a7d098886a": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "6a42a3312d5ab03c": {
+    "label": "REFINES",
+    "note": "B describes the time-honoured technique referenced in A"
+  },
+  "cc6faf7289654289": {
+    "label": "UNSURE",
+    "note": "A's text is too garbled/fragmentary to confidently judge relation"
+  },
+  "4a720ebcaff7c1e6": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "4e30419d878a002d": {
+    "label": "SUPPORTS",
+    "note": "Same doc, both promote transformers over U-Net"
+  },
+  "b47be125fe10bda8": {
+    "label": "SUPPORTS",
+    "note": "Contrast between fast cook time and slow-method benefit, thesis-consistent"
+  },
+  "c35bde389f73e9bd": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps, no logical support/contradiction/refinement"
+  },
+  "4e89537656055f0f": {
+    "label": "REFINES",
+    "note": "B elaborates on one of the networking modes A introduces"
+  },
+  "5718949f6ce2520c": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes, no explicit conflict"
+  },
+  "554b0b3a308a2da5": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "31998b16aeb86dd2": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "3793a9638fa10dcc": {
+    "label": "REFINES",
+    "note": "Differential-drive detail underlies the kinematics/odometry claim"
+  },
+  "720d1e4edc9a1f43": {
+    "label": "SUPPORTS",
+    "note": "D1's cut choice aligns with D4's recommendation"
+  },
+  "90039130d673e7d8": {
+    "label": "NEUTRAL",
+    "note": "Different specific facts about Earth from same doc"
+  },
+  "1f33a92ff8529740": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "00fa656ddab9dcb3": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "517b2411e558b945": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "2776d61fb1ba12bb": {
+    "label": "REFINES",
+    "note": "B completes/elaborates the NAT characteristic A's truncated clause raises"
+  },
+  "ed52cdc5c9c27985": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "23a8c136d85d0248": {
+    "label": "REFINES",
+    "note": "B completes the ingredient prep A's truncated line describes"
+  },
+  "24b8f3f24d6ce71c": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "ba02a6d0e8ad9aa6": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "ae4e1a480504eb09": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "f7d90ec82d9ab7e0": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "b1f7123ef8201e30": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "b106e44cae176201": {
+    "label": "REFINES",
+    "note": "B elaborates on one of the two layers A introduces"
+  },
+  "ccc655dd5e807f18": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "09813e9f480ef1aa": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes' ingredient lines"
+  },
+  "4c252919a6ad0d43": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "2946790a81daa0b0": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "b541554cc7677c87": {
+    "label": "REFINES",
+    "note": "Sequential elaboration of the same formation event"
+  },
+  "9bce388e96687d5a": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "9dbce86776ad3654": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "256a0bda95af4ba5": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "41229a83f1d6a0dd": {
+    "label": "REFINES",
+    "note": "WGAN-GP described as building on WGAN"
+  },
+  "6a9a6924a789f82d": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "61625097a1084841": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "5a0534cda1a74300": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "550d52e96d86f6a3": {
+    "label": "REFINES",
+    "note": "A elaborates on a risk factor relevant to B's context"
+  },
+  "d224af4ee65bf8e7": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "a2c2304b4e364566": {
+    "label": "SUPPORTS",
+    "note": "Compatible facts about Earth's size ranking among planet groups"
+  },
+  "6d40bddd1ea69f6d": {
+    "label": "REFINES",
+    "note": "Ingredient elaboration within same recipe"
+  },
+  "4f104ff3ef3463ef": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "3d63d5d633e0dc39": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "a63bd361c4c893dd": {
+    "label": "SUPPORTS",
+    "note": "Compatible view of both spinner types being valuable, cross-doc"
+  },
+  "938026cb2be0b4e7": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "aa6062468acd3722": {
+    "label": "REFINES",
+    "note": "B elaborates on U-Net's encoder mechanism"
+  },
+  "2ca3cf79a1f31d4a": {
+    "label": "REFINES",
+    "note": "B elaborates on the controller's role mentioned in A"
+  },
+  "916c48ec46d950de": {
+    "label": "REFINES",
+    "note": "B elaborates on the shift mentioned in A"
+  },
+  "d876ffacd496c138": {
+    "label": "REFINES",
+    "note": "Describes the improved successor model built on A's design"
+  },
+  "8c18746da3510472": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (data efficiency vs architecture mechanism)"
+  },
+  "0c49d1591b75a872": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent elaboration"
+  },
+  "f2e7ce5fb6da0ef9": {
+    "label": "REFINES",
+    "note": "B elaborates on RDD operations following A's foundational claim"
+  },
+  "7e21cb274d897872": {
+    "label": "REFINES",
+    "note": "B elaborates on the mechanism behind A's application"
+  },
+  "6e1d7d11083a69de": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "251be028ff209912": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "5c8f9dd1e05f0aad": {
+    "label": "REFINES",
+    "note": "B elaborates on Gazebo's role stated in A"
+  },
+  "b422ab898cbd8eaa": {
+    "label": "REFINES",
+    "note": "B completes A's truncated spice list"
+  },
+  "9de02d9d3beb5f45": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe reference, not elaborating detail"
+  },
+  "24e6363dc6ab6c32": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "97f393250d0aade2": {
+    "label": "REFINES",
+    "note": "B elaborates on the bowling-plan claim in A"
+  },
+  "0bf2655bdb9acbd8": {
+    "label": "REFINES",
+    "note": "B elaborates on the costmap concept introduced in A"
+  },
+  "e14d2f54e2dd88f8": {
+    "label": "REFINES",
+    "note": "B elaborates on Flume's use cases following A's definition"
+  },
+  "de245ebdf1243dd8": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (components list vs overall status)"
+  },
+  "ca9dc98e1418f3ca": {
+    "label": "REFINES",
+    "note": "Related elaboration of Gazebo's simulation role"
+  },
+  "bc02ff9c609d44e7": {
+    "label": "REFINES",
+    "note": "B elaborates on why field restrictions matter, related to A's captaincy point"
+  },
+  "faa460bc6b95b9c0": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent thesis"
+  },
+  "2ce1485c27b0e55f": {
+    "label": "REFINES",
+    "note": "B elaborates on the bowling-plan claim in A"
+  },
+  "cddd86ef34951aa1": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "61f86c2ba496faba": {
+    "label": "REFINES",
+    "note": "B elaborates on Nav2's design goal from A"
+  },
+  "ac2eddb214cbe481": {
+    "label": "REFINES",
+    "note": "B elaborates directly on A's claim about restoration adaptation"
+  },
+  "6dba21e117f36fdd": {
+    "label": "REFINES",
+    "note": "B elaborates on the 'control' concept in A"
+  },
+  "2aecf91c076edaf4": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (overview vs metastore detail)"
+  },
+  "c7d7174695e31fe4": {
+    "label": "SUPPORTS",
+    "note": "Parallel/complementary requirements listed in same enumeration"
+  },
+  "9a544b60eabf5efa": {
+    "label": "REFINES",
+    "note": "B elaborates on the half-form claim in A"
+  },
+  "9f712ce7c4a09596": {
+    "label": "REFINES",
+    "note": "Related elaboration of ottakshara formation requirements"
+  },
+  "d297ec347009a425": {
+    "label": "REFINES",
+    "note": "Related elaboration of ottakshara formation requirements"
+  },
+  "643df16c66811ac2": {
+    "label": "REFINES",
+    "note": "B elaborates related to A's basic definition"
+  },
+  "e364dbb1ee85b7ab": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent claim about training stability"
+  },
+  "fe48fe573daf4505": {
+    "label": "SUPPORTS",
+    "note": "Same fact restated across two documents"
+  },
+  "8382ec4bc33d8601": {
+    "label": "REFINES",
+    "note": "B elaborates on the bowling-plan claim in A"
+  },
+  "33ff293a938f049a": {
+    "label": "REFINES",
+    "note": "B provides context continuing A's claim"
+  },
+  "49fcdecf46bd7df1": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "66f2077d47f6f14a": {
+    "label": "REFINES",
+    "note": "Localization claim relates to the two-path architecture"
+  },
+  "2a52984a38b8d980": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (formation process vs usage importance)"
+  },
+  "76c712c20aec9a09": {
+    "label": "REFINES",
+    "note": "Related elaboration of Gazebo/ROS2 integration"
+  },
+  "0906023ad4cb1f76": {
+    "label": "REFINES",
+    "note": "B describes the clipping problem that motivated A's gradient-penalty approach"
+  },
+  "202ea48dec8648a6": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "6a0d8dd1933d2cf9": {
+    "label": "REFINES",
+    "note": "B elaborates on how RDDs are created, per A's definition"
+  },
+  "fd6aa9a7141fbe4d": {
+    "label": "REFINES",
+    "note": "B elaborates on ottakshara formation following A's script description"
+  },
+  "a1a4fa54837bac92": {
+    "label": "REFINES",
+    "note": "B elaborates on Flume's topology capabilities"
+  },
+  "a6acd73ed2dbac27": {
+    "label": "CONTRADICTS",
+    "note": "C9's general effectiveness-vs-RHB claim conflicts with C2's reported statistical decline vs RHB for the same player type"
+  },
+  "3ac1c6e271739431": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "f93f37f1b14975b0": {
+    "label": "SUPPORTS",
+    "note": "Same technique described consistently across two mainstream recipes"
+  },
+  "fd9fac46541e0afb": {
+    "label": "SUPPORTS",
+    "note": "Compatible/consistent cross-doc claims"
+  },
+  "33c236084f877d9c": {
+    "label": "REFINES",
+    "note": "B elaborates on the bowling-plan claim in A with examples"
+  },
+  "fea7ed59857d5171": {
+    "label": "REFINES",
+    "note": "B elaborates on one of the vulnerabilities A raises"
+  },
+  "b1868893e92b848a": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "725f3b304a6b06c4": {
+    "label": "REFINES",
+    "note": "B elaborates on Flume's reliability guarantees"
+  },
+  "73cc93b62f7a6b96": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (foundational script feature vs formation process)"
+  },
+  "6eba53f3f683ad22": {
+    "label": "SUPPORTS",
+    "note": "Both examples support the broader claim of WGAN-GP's diverse applications"
+  },
+  "91cde30cce8cdeed": {
+    "label": "REFINES",
+    "note": "Namespace Volume detail relates to one of the two layers A introduces"
+  },
+  "8def9ca8b7b3475a": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "5d2b74fc1af91836": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "89f8a7727ec64e86": {
+    "label": "REFINES",
+    "note": "B elaborates on what the metadata in A includes"
+  },
+  "1a1210e03619557c": {
+    "label": "REFINES",
+    "note": "Lineage recording relates to transformation-based creation"
+  },
+  "606c276968e779ab": {
+    "label": "REFINES",
+    "note": "B elaborates on the coordinate-frame step in A"
+  },
+  "f00162baff329a4b": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "9488890e465bb2ea": {
+    "label": "SUPPORTS",
+    "note": "Specific persistence option supports the general caching claim"
+  },
+  "5e27f10c946a0d6b": {
+    "label": "REFINES",
+    "note": "Related elaboration within same doc"
+  },
+  "70fae2d83e0eb17b": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (configuration mechanism vs benefits list)"
+  },
+  "f44c26bc9d0821a7": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "ecc8d7beb91dcdbd": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (namespace ops vs overall design goal)"
+  },
+  "09758665c27624db": {
+    "label": "SUPPORTS",
+    "note": "Compatible cross-doc view of both spinner types being valued"
+  },
+  "5c72e4f4cf48f81a": {
+    "label": "REFINES",
+    "note": "Related elaboration within same doc"
+  },
+  "cdf17982f750ba7f": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "040b9b476d1feaf5": {
+    "label": "REFINES",
+    "note": "B elaborates directly on the disentanglement concept from A"
+  },
+  "54ee04d7f02187c0": {
+    "label": "REFINES",
+    "note": "Related elaboration of Gazebo Harmonic's features"
+  },
+  "c03e4690f37adac8": {
+    "label": "REFINES",
+    "note": "Backward compatibility is one of the benefits A introduces"
+  },
+  "ae4a66cbd4b8e212": {
+    "label": "NEUTRAL",
+    "note": "Sequential recipe steps within same recipe"
+  },
+  "e8b2aadd0bb08468": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (world files vs bridge translation)"
+  },
+  "83a3bc3be40bd73d": {
+    "label": "REFINES",
+    "note": "Related elaboration of the disentanglement finding"
+  },
+  "1e83fccfb587b380": {
+    "label": "REFINES",
+    "note": "Related elaboration of the augmentation benefit"
+  },
+  "bec8e941f7707522": {
+    "label": "SUPPORTS",
+    "note": "Consistent claims about recomputation mechanism"
+  },
+  "22deca58b634c273": {
+    "label": "SUPPORTS",
+    "note": "Compatible/consistent cross-doc claims"
+  },
+  "1567371823b17f10": {
+    "label": "REFINES",
+    "note": "Assumption underlies the kinematics model claim"
+  },
+  "0244be3a447afa3c": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "572ffd15a7f72074": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "ba0f956f91ba0193": {
+    "label": "NEUTRAL",
+    "note": "Minor technique difference across different recipes, not exclusionary"
+  },
+  "976d5210da2d2ce3": {
+    "label": "NEUTRAL",
+    "note": "Different recipes, different quantities, not conflicting"
+  },
+  "0f396399fd03f928": {
+    "label": "NEUTRAL",
+    "note": "Different metrics (density vs mass), not logically conflicting as stated"
+  },
+  "46e67eb69e364cd1": {
+    "label": "SUPPORTS",
+    "note": "Identical ingredient line consistent across two recipes"
+  },
+  "ab95d47de4b4cde6": {
+    "label": "REFINES",
+    "note": "Related elaboration within same doc"
+  },
+  "6d9edf9a89a9f911": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "c548f0c2f85a938b": {
+    "label": "REFINES",
+    "note": "Transformations are one of the two operation types A introduces"
+  },
+  "b84f82b2a796fd01": {
+    "label": "SUPPORTS",
+    "note": "Consistent cross-doc claims about half-consonant forms"
+  },
+  "fc68f59f01eed6fd": {
+    "label": "REFINES",
+    "note": "Transformations are one of the two operation types A introduces"
+  },
+  "85b93b11ee89e7e8": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics (creation vs operations)"
+  },
+  "f66f957cf8282980": {
+    "label": "REFINES",
+    "note": "B is the ingredient entry used in A's step"
+  },
+  "29913c30b1424200": {
+    "label": "SUPPORTS",
+    "note": "Closely related/restated claim within same doc"
+  },
+  "4b355f69b22e8f95": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "ddd6aeb89d86de37": {
+    "label": "SUPPORTS",
+    "note": "Same doc, consistent elaboration of the same point"
+  },
+  "b3e07de743f33890": {
+    "label": "NEUTRAL",
+    "note": "Different independent recipes"
+  },
+  "46c908da5d1f08cf": {
+    "label": "NEUTRAL",
+    "note": "Different recipes, same ingredient concept but not directly elaborating"
+  },
+  "97c6ccbfd64f4939": {
+    "label": "NEUTRAL",
+    "note": "Different subtopics within same doc"
+  },
+  "f7380e33aee3dded": {
+    "label": "REFINES",
+    "note": "B elaborates on the scheduling mechanism behind A's claim"
+  },
+  "931e259c9f1e774d": {
+    "label": "SUPPORTS",
+    "note": "Consistent elaboration of Hive's query execution"
+  },
+  "677b85f1d7852628": {
+    "label": "REFINES",
+    "note": "Actions are one of the two operation types A introduces"
+  },
+  "6a5748d4ecd5e2fd": {
+    "label": "REFINES",
+    "note": "Actions are one of the two operation types A introduces"
+  }
+}

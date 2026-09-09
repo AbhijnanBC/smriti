@@ -6,6 +6,7 @@ from smriti.scoring.policies import (
     PolicyProfile,
 )
 from smriti.exceptions import PolicyError
+from smriti.core.models import SignalID
 
 
 def test_policy_loads_without_error():
@@ -36,7 +37,10 @@ def test_invalid_weights_raise_policy_error():
         },
     )
     with pytest.raises(PolicyError):
-        fp.validate()
+        # active_registry_ids matches signal_weights' keys exactly (all 8
+        # canonical signals), so this exercises the sum-to-1.0 check
+        # specifically: 0.90 + 0.15 + 0.15 + 0.10 + 0.05 + 0.05 + 0.05 - 0.20 = 1.25 != 1.0
+        fp.validate(set(SignalID))
 
 
 def test_policy_config_hash_is_deterministic():

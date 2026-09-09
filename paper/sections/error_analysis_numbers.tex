@@ -1,0 +1,13 @@
+To isolate spurious cross-domain contradiction from genuine contradiction
+detection, we drew a separate sample of 60 candidate pairs in which one
+claim comes from a deliberately-planted adversarial document (B11/C11/D11)
+and the other comes from an \emph{unrelated} document elsewhere in the
+corpus (not the document it was written to contradict) --- pairs that should
+essentially always be NEUTRAL. SMRITI classified 11 of these 60 pairs
+(18.3\%) as CONTRADICTS. Both independent annotation passes agreed that
+\textbf{all 11} (100\%) were false positives --- none was a genuine
+contradiction. This is a clean, isolated confirmation of the mechanism: the
+NLI classifier is not simply noisy at the margins of genuine contradiction
+detection, it is actively misfiring on candidate pairs that embedding-based
+retrieval surfaced as similar but that have no real semantic relationship
+to contradict at all.

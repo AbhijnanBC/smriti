@@ -10,10 +10,15 @@ Rule categories:
     INV:  Invariant verification (immutability, determinism)
     CONT: Contract verification (DTOs, interfaces, events)
     BOUND: Boundary verification (public API, visibility)
+
+RECTIFIED:
+    - ARCH-011 now checks Vector.values type is tuple (correct attribute).
+    - ARCH-012 now uses AST parsing to detect ML imports (no false positives).
 """
 
 from __future__ import annotations
 
+import ast
 import importlib
 import time
 from datetime import datetime, timezone
@@ -113,14 +118,16 @@ ARCHITECTURAL_RULES: List[VerificationRule] = [
         phase_scope=(7,),
         acceptance_criterion="Only smriti.evolution.networkx_backend imports networkx",
     ),
+    # ── RECTIFIED: ARCH-011 now checks Vector.values type is tuple ────────────
     VerificationRule(
         rule_id="ARCH-011",
         domain=ValidationDomain.ARCHITECTURAL,
-        description="EmbeddedClaim.vector must be stored as tuple",
+        description="Vector.values must be stored as tuple",
         category="contract",
         phase_scope=(5,),
-        acceptance_criterion="EmbeddedClaim.vector type annotation is tuple",
+        acceptance_criterion="Vector.values type annotation is tuple",
     ),
+    # ── RECTIFIED: ARCH-012 uses AST to detect ML imports ──────────────────────
     VerificationRule(
         rule_id="ARCH-012",
         domain=ValidationDomain.ARCHITECTURAL,
@@ -215,7 +222,7 @@ def _execute_rule(rule: VerificationRule) -> VerificationResult:
     """Execute a single architectural verification rule."""
     t0 = time.monotonic()
 
-    # Rule dispatch based on rule_id
+    # ── RECTIFIED: dispatch for ARCH-011 and ARCH-012 ──────────────────────────
     dispatch = {
         "ARCH-001": _check_no_cross_import("smriti.claims", "smriti.embedding"),
         "ARCH-002": _check_no_cross_import("smriti.api", "smriti.evolution"),
@@ -227,8 +234,10 @@ def _execute_rule(rule: VerificationRule) -> VerificationResult:
         "ARCH-008": _check_exclusive_import("faiss", "smriti.retrieval.faiss_index"),
         "ARCH-009": _check_exclusive_import("sentence_transformers", "smriti.embedding.embedder"),
         "ARCH-010": _check_exclusive_import("networkx", "smriti.evolution.networkx_backend"),
-        "ARCH-011": _check_field_type_annotation("smriti.core.models", "Embedding", "vector", "tuple"),
-        "ARCH-012": _check_no_ml_imports("smriti.retrieval.classification.resolver"),
+        # RECTIFIED ARCH-011: check Vector.values type annotation
+        "ARCH-011": _check_field_type_annotation("smriti.core.models", "Vector", "values", "tuple"),
+        # RECTIFIED ARCH-012: use AST parser
+        "ARCH-012": _check_no_ml_imports_ast("smriti.retrieval.classification.resolver"),
         "ARCH-013": _check_module_importable("smriti.api.dtos.mapper"),
         "ARCH-014": _check_module_importable("smriti.dashboard.services.client"),
         "ARCH-015": _check_module_importable("smriti.dashboard.state.epistemic_state"),
@@ -307,21 +316,41 @@ def _check_field_type_annotation(module_path: str, class_name: str, field_name: 
         return False, f"Exception: {e}"
 
 
-def _check_no_ml_imports(module_path: str):
-    """Verify a module contains no ML framework imports."""
+def _check_no_ml_imports_ast(module_path: str):
+    """
+    RECTIFIED: Use AST parsing to check for ML framework imports.
+    This avoids false positives from comments and docstrings.
+    """
     ml_indicators = {"torch", "transformers", "sentence_transformers", "sklearn", "tensorflow"}
     try:
         mod = importlib.import_module(module_path)
         source_file = getattr(mod, "__file__", "")
-        if source_file and source_file.endswith(".py"):
-            with open(source_file, "r") as f:
-                content = f.read()
-            found = [m for m in ml_indicators if f"import {m}" in content or f"from {m}" in content]
-            passed = len(found) == 0
-            return passed, f"ML imports found: {found}" if found else "No ML imports detected"
-        return True, "Could not read source file — assuming compliant"
+        if not source_file or not source_file.endswith(".py"):
+            return True, "Could not read source file — assuming compliant"
+
+        with open(source_file, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+
+        found = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    name = alias.name
+                    if any(m in name for m in ml_indicators):
+                        found.append(name)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    name = node.module
+                    if any(m in name for m in ml_indicators):
+                        found.append(name)
+
+        passed = len(found) == 0
+        evidence = f"ML imports found: {list(set(found))}" if found else "No ML imports detected"
+        return passed, evidence
+    except ImportError as e:
+        return False, f"Module import failed: {e}"
     except Exception as e:
-        return False, f"Exception: {e}"
+        return False, f"AST parsing failed: {e}"
 
 
 def _check_module_importable(module_path: str):

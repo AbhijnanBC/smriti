@@ -249,7 +249,14 @@ def test_sentences_have_origin_block_type():
     assert BlockType.BULLET_ITEM in origins
     assert BlockType.BLOCK_QUOTE in origins
     assert BlockType.PARAGRAPH in origins
-    assert all(isinstance(o, BlockType) for o in origins)
+    # SemanticSentence.origin_block_type is documented (core/models.py) as
+    # "BlockType that produced this sentence (stored as string)" — builder.py
+    # explicitly stores origin_block_type.value, a plain str, not the enum
+    # instance, so the field round-trips cleanly through JSON. BlockType is a
+    # str Enum, so equality/membership checks above still work; isinstance
+    # against BlockType would not.
+    assert all(isinstance(o, str) for o in origins)
+    assert all(o in set(BlockType) for o in origins)
 
 
 def test_sentences_have_schema_version():

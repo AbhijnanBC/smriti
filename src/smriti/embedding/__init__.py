@@ -111,13 +111,14 @@ class Phase5Result:
         records = []
         for ec in self.embedded_claims:
             # Derive status from quality (status is not on Embedding)
-            
+            status = "cached" if ec.quality.cache_used else "success"
 
             records.append({
                 "claim_id":       ec.claim_id,
                 "vector":         list(ec.values),   # Plain list of floats
                 "dimension":      ec.dimension,
                 "schema_version": ec.schema_version,
+                "status":         status,
                 "quality": {
                     "dimension_ok": ec.quality.dimension_ok,
                     "normalized":   ec.quality.normalized,
@@ -426,7 +427,7 @@ def embed_claims(
     )
 
     # ── Write artifacts ───────────────────────────────────────────────────────
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase5"
+    phase_dir = manifest_manager.run_dir / "phase5"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     dataset_path = phase_dir / "dataset.json"

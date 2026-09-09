@@ -1,32 +1,71 @@
 """Test data models."""
 
+import hashlib
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from smriti.core.models import (
     Claim, Contradiction, ContradictionType,
     Document, FileFormat, SemanticSentence, Embedding,
     Topic, ManifestEntry,
+    AssertionMetadata, ClaimProvenance, ExtractionMode,
+    SourceDocument, RawExtractionResult, TextStatistics, ExtractionMethod,
 )
+from smriti.parsing.builder import build_document
+from smriti.parsing.statistics import compute_statistics
+
+
+def _make_claim(claim_id: str, text: str, document_id: str = "note", sentence_position: int = 0) -> Claim:
+    """
+    Build a Claim using the current (Phase 4) schema.
+
+    Claim no longer computes its own id/hash — that is builder.py's job
+    (see claims/builder.py::_compute_claim_id / _compute_content_hash) — so
+    here we compute content_hash the same way production does: SHA256 of the
+    exact text, first 16 hex chars.
+    """
+    return Claim(
+        claim_id=claim_id,
+        sentence_id=f"{document_id}:{sentence_position}",
+        document_id=document_id,
+        text=text,
+        content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest()[:16],
+        context="",
+        source_path=Path(f"{document_id}.md"),
+        extraction_mode=ExtractionMode.WHOLE_SENTENCE,
+        structured_assertion=None,
+        assertion_metadata=AssertionMetadata(),
+        provenance=ClaimProvenance(
+            sentence_id=f"{document_id}:{sentence_position}",
+            document_id=document_id,
+            source_path=Path(f"{document_id}.md"),
+            sentence_context="",
+            sentence_position=sentence_position,
+        ),
+    )
 
 
 def test_claim_creation():
-    claim = Claim(
-        text="Python is great",
-        document_path=Path("note.md"),
-        sentence_position=0,
-        extracted_at=datetime.now(),
-    )
+    claim = _make_claim(claim_id="aaa111", text="Python is great", document_id="note", sentence_position=0)
     assert claim.text == "Python is great"
-    assert claim.unique_id() == "note:0"
+    # Identity is now the explicit claim_id (assigned deterministically by
+    # claims/builder.py from sentence_id+text+span_start), not a computed
+    # unique_id() method on the dataclass itself.
+    assert claim.claim_id == "aaa111"
+    assert claim.provenance.document_id == "note"
+    assert claim.provenance.sentence_position == 0
 
 
 def test_claim_unique_id_is_deterministic():
-    path = Path("my_note.md")
-    c1 = Claim("text", path, 3, datetime.now())
-    c2 = Claim("other text", path, 3, datetime.now())
-    assert c1.unique_id() == c2.unique_id()  # same doc + position = same id
+    """Two Claims built from identical field values are equal (dataclass value
+    equality) — this is the modern analogue of the old 'same doc + position
+    => same id' check, since identity now lives on the explicit claim_id
+    field rather than being derived inside the dataclass."""
+    c1 = _make_claim(claim_id="shared_id", text="text", document_id="my_note", sentence_position=3)
+    c2 = _make_claim(claim_id="shared_id", text="text", document_id="my_note", sentence_position=3)
+    assert c1 == c2
+    assert c1.claim_id == c2.claim_id
 
 
 def test_contradiction_creation():
@@ -44,13 +83,37 @@ def test_contradiction_creation():
 
 
 def test_document_size_inferred():
-    doc = Document(
+    """
+    Document (Phase 2) no longer infers size itself — size_bytes lives on the
+    Phase 1 SourceDocument (from the actual file on disk), and the Phase 2
+    Document instead carries TextStatistics derived from the real text via
+    parsing/statistics.py::compute_statistics. This test exercises that
+    real derivation path via build_document, the only place Document is
+    constructed in production.
+    """
+    raw_text = "Hello world"
+    source = SourceDocument(
+        doc_id="a" * 64,
         path=Path("note.md"),
+        relative_path=Path("note.md"),
+        source_root=Path("."),
         format=FileFormat.MARKDOWN,
-        raw_text="Hello world",
-        discovered_at=datetime.now(),
+        content_hash="a" * 64,
+        size_bytes=len(raw_text.encode("utf-8")),
+        modified_at=datetime.now(tz=timezone.utc),
     )
-    assert doc.size_bytes > 0
+    extraction_result = RawExtractionResult(
+        raw_text=raw_text,
+        warnings=(),
+        method=ExtractionMethod.MARKDOWN,
+        encoding_used="utf-8",
+    )
+    stats = compute_statistics(raw_text)
+
+    doc = build_document(source, extraction_result, raw_text, (), stats)
+
+    assert doc.text_statistics.character_count == len(raw_text)
+    assert doc.source_document.size_bytes > 0
 
 
 def test_topic_drift_score():

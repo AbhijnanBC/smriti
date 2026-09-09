@@ -73,6 +73,24 @@ def test_more_evidence_increases_reliability(policy):
     assert ri_high > ri_low
 
 
+def test_higher_conflict_pressure_increases_uncertainty(policy):
+    """RECTIFIED (P0-12): a contested claim must register as more uncertain,
+    not only as less reliable -- conflict_pressure previously fed only
+    reliability_index, never uncertainty_score."""
+    cs_low, sv_low = make_cs(policy, conflict_pressure=0.0)
+    cs_high, sv_high = make_cs(policy, conflict_pressure=0.9)
+    _, unc_low, _, _ = compute_reliability(cs_low, policy, sv_low)
+    _, unc_high, _, _ = compute_reliability(cs_high, policy, sv_high)
+    assert unc_high > unc_low
+
+
+def test_uncertainty_components_include_conflict_pressure(policy):
+    cs, sv = make_cs(policy, conflict_pressure=0.5)
+    _, _, _, decision_record = compute_reliability(cs, policy, sv)
+    component_names = [name for name, _ in decision_record.uncertainty_components]
+    assert "conflict_pressure" in component_names
+
+
 def test_more_conflict_decreases_reliability(policy):
     cs_low, sv_low = make_cs(policy, conflict_pressure=0.05)
     cs_high, sv_high = make_cs(policy, conflict_pressure=0.95)

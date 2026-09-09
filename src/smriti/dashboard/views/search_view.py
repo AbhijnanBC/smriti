@@ -1,4 +1,7 @@
-"""search_view.py — SearchView: renders search panel and dispatches SubmitSearchCommand."""
+"""
+search_view.py — SearchView: renders search panel and dispatches SubmitSearchCommand.
+"""
+
 from __future__ import annotations
 
 import streamlit as st
@@ -10,24 +13,38 @@ from smriti.dashboard.commands.commands import (
     ClearFiltersCommand,
 )
 from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
 
 
 class SearchView(BaseView):
     """
     Renders search box and filter controls.
-    Dispatches commands via InteractionDispatcher instead of mutating state directly.
-    st.rerun() is removed – the EventBus handles reruns via StreamlitLifecycleSubscriber.
+    Dispatches commands via InteractionDispatcher.
     """
 
-    def __init__(self, dispatcher: InteractionDispatcher) -> None:
-        self._dispatcher = dispatcher
+    def __init__(
+        self,
+        dispatcher: InteractionDispatcher | None = None,
+        state_manager=None,
+    ) -> None:
+        """
+        Accept either a dispatcher or a state_manager.
+        If state_manager is given, we build a default dispatcher.
+        """
+        if dispatcher is not None:
+            self._dispatcher = dispatcher
+        elif state_manager is not None:
+            policy_engine = PolicyEngine(InteractionPolicy())
+            self._dispatcher = InteractionDispatcher(
+                state_manager=state_manager,
+                policy_engine=policy_engine,
+            )
+        else:
+            raise ValueError("SearchView requires either dispatcher or state_manager")
 
     def render(self) -> None:
         # ── Search form ──────────────────────────────────────────────────────────
         with st.form(key="search_form"):
-            # The current search query value is read from state, but we don't mutate it.
-            # We'll get the current value from the dispatcher's state_manager.
-            # For simplicity, we assume we can access state via dispatcher's internal state manager.
             current_query = self._dispatcher._sm.state.search_query
 
             query = st.text_input(
@@ -37,8 +54,12 @@ class SearchView(BaseView):
             )
             submitted = st.form_submit_button("Search")
             if submitted:
-                self._dispatcher.dispatch(SubmitSearchCommand(query))
-                # No st.rerun() – EventBus will trigger rerun via subscriber
+                self._dispatcher.dispatch(
+                    SubmitSearchCommand(
+                        session_id=self._dispatcher._sm._session_id,
+                        query=query,
+                    )
+                )
 
         # ── Filters expander ─────────────────────────────────────────────────────
         with st.expander("Filters"):
@@ -53,8 +74,14 @@ class SearchView(BaseView):
             with col_b:
                 role_filter = st.selectbox(
                     "Semantic Role",
-                    options=["", "foundational_claim", "bridge_claim", "evidence_hub",
-                             "peripheral_claim", "leaf_claim"],
+                    options=[
+                        "",
+                        "foundational_claim",
+                        "bridge_claim",
+                        "evidence_hub",
+                        "peripheral_claim",
+                        "leaf_claim",
+                    ],
                     index=0,
                     format_func=lambda x: "All" if x == "" else x.replace("_", " ").title(),
                 )
@@ -63,12 +90,14 @@ class SearchView(BaseView):
             with apply_col:
                 if st.button("Apply Filters", use_container_width=True):
                     if label_filter:
-                        self._dispatcher.dispatch(ApplyFilterCommand("calibration_label", label_filter))
+                        self._dispatcher.dispatch(
+                            ApplyFilterCommand("calibration_label", label_filter)
+                        )
                     if role_filter:
-                        self._dispatcher.dispatch(ApplyFilterCommand("semantic_role", role_filter))
-                    # No st.rerun()
+                        self._dispatcher.dispatch(
+                            ApplyFilterCommand("semantic_role", role_filter)
+                        )
 
             with clear_col:
                 if st.button("Clear Filters", use_container_width=True):
                     self._dispatcher.dispatch(ClearFiltersCommand())
-                    # No st.rerun()

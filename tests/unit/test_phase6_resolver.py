@@ -58,8 +58,19 @@ def test_strong_entailment_resolves_supports(resolver):
     assert rel_type == RelationshipType.SUPPORTS
 
 
-def test_weak_contradiction_high_cosine_resolves_refines(resolver):
-    evidence = make_evidence(contradiction=0.60, entailment=0.20, neutral=0.20, cosine=0.90)
+def test_high_cosine_neutral_negligible_contradiction_resolves_refines(resolver):
+    """
+    Per the resolver's REFINES rule (see classification/resolver.py rule 3 /
+    "Rectified heuristic"): a refinement is highly similar (cosine >= high_sim_threshold),
+    strictly NOT contradictory (contradiction_score < 0.1), and usually classified
+    NLI-Neutral since it doesn't strictly entail in either direction.
+
+    A merely "weak" contradiction (e.g. contradiction_score=0.60) does NOT
+    qualify — c < 0.1 is a strict ceiling, not a fuzzy one. This replaces an
+    older scenario (contradiction=0.60) that predates that strict ceiling and
+    never actually exercised the REFINES branch (it fell through to UNKNOWN).
+    """
+    evidence = make_evidence(contradiction=0.05, entailment=0.35, neutral=0.60, cosine=0.90)
     rel_type, _ = resolver.resolve(evidence)
     assert rel_type == RelationshipType.REFINES
 
@@ -140,3 +151,51 @@ def test_resolver_contradiction_margin_enforced():
     evidence_fail = make_evidence(contradiction=0.82, entailment=0.75, neutral=0.03)
     rel_type, _ = resolver.resolve(evidence_fail)
     assert rel_type != RelationshipType.CONTRADICTS
+
+
+# ── Argmax fix (P0-6): CONTRADICTS/SUPPORTS must beat BOTH alternatives ─────
+
+def test_contradiction_beating_only_entailment_is_not_contradicts_if_neutral_dominant(resolver):
+    """
+    Regression test for the bug the review identified: the old resolver
+    only checked contradiction > entailment, never contradiction vs
+    neutral. A pair where neutral is actually the dominant class (0.90)
+    must not resolve to CONTRADICTS just because contradiction (0.85)
+    happens to be above nli_threshold and beats entailment (0.05).
+    """
+    evidence = make_evidence(contradiction=0.85, entailment=0.05, neutral=0.90)
+    rel_type, _ = resolver.resolve(evidence)
+    assert rel_type != RelationshipType.CONTRADICTS
+
+
+def test_entailment_beating_only_contradiction_is_not_supports_if_neutral_dominant(resolver):
+    """Same argmax bug, mirrored for SUPPORTS."""
+    evidence = make_evidence(contradiction=0.05, entailment=0.85, neutral=0.90)
+    rel_type, _ = resolver.resolve(evidence)
+    assert rel_type != RelationshipType.SUPPORTS
+
+
+def test_contradiction_still_resolves_when_genuinely_dominant(resolver):
+    """The argmax fix must not break the case where contradiction really
+    is the dominant class by a healthy margin over both alternatives."""
+    evidence = make_evidence(contradiction=0.90, entailment=0.04, neutral=0.06)
+    rel_type, _ = resolver.resolve(evidence)
+    assert rel_type == RelationshipType.CONTRADICTS
+
+
+def test_refine_contradiction_ceiling_is_policy_driven():
+    """RECTIFIED (P0-6): the REFINES rule's contradiction ceiling must come
+    from policy, not a hard-coded 0.1 literal."""
+    lenient_policy = ResolverPolicy(
+        nli_threshold=0.80,
+        refine_threshold=0.55,
+        high_sim_threshold=0.88,
+        neutrality_threshold=0.60,
+        refine_contradiction_ceiling=0.30,
+    )
+    lenient_resolver = RelationshipResolver(policy=lenient_policy)
+    # contradiction=0.20 would fail the old hard-coded c < 0.1 ceiling but
+    # passes this policy's more lenient 0.30 ceiling.
+    evidence = make_evidence(contradiction=0.20, entailment=0.15, neutral=0.65, cosine=0.90)
+    rel_type, _ = lenient_resolver.resolve(evidence)
+    assert rel_type == RelationshipType.REFINES

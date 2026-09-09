@@ -1,0 +1,1046 @@
+[
+  {
+    "claim_id": "75136bc7f3af3dd1",
+    "text": "**Transformations** (e.g., `map`, `filter`, `flatMap`) produce a new RDD from an existing one.",
+    "context_heading": "A8. PySpark RDD In-Memory Processing",
+    "document": "A8"
+  },
+  {
+    "claim_id": "eec7f792621a9fc6",
+    "text": "Sphere and water-tight triangle meshes are fully supported for collision detection and physically plausible inertial calculations.",
+    "context_heading": "A2. Gazebo Harmonic Physics Simulation Environment",
+    "document": "A2"
+  },
+  {
+    "claim_id": "da125b57432c94a8",
+    "text": "Channels can be memory-based for high throughput or file-based for durability.",
+    "context_heading": "A7. Apache Flume Event Stream Processing",
+    "document": "A7"
+  },
+  {
+    "claim_id": "eedd16c30c9cf078",
+    "text": "This makes Hive a popular choice for ad-hoc analytics and large-scale ETL pipelines.",
+    "context_heading": "A6. Apache Hive Data Warehousing with Tez Execution Engine",
+    "document": "A6"
+  },
+  {
+    "claim_id": "d9a9aafbed6f30d9",
+    "text": "It provides a SQL-like language called HiveQL, which allows users to write queries that are automatically translated into MapReduce or Tez jobs for execution on the cluster.",
+    "context_heading": "A6. Apache Hive Data Warehousing with Tez Execution Engine",
+    "document": "A6"
+  },
+  {
+    "claim_id": "06ea7604dac4cdca",
+    "text": "Persistence options include:",
+    "context_heading": "A9. Apache Spark RDD Persistence and Fault Tolerance",
+    "document": "A9"
+  },
+  {
+    "claim_id": "f10ff22c417878de",
+    "text": "This metadata includes schema information, .",
+    "context_heading": "A6. Apache Hive Data Warehousing with Tez Execution Engine",
+    "document": "A6"
+  },
+  {
+    "claim_id": "a1ec741701156c95",
+    "text": "It uses a local costmap that incorporates real-time sensor data to avoid dynamic obstacles.",
+    "context_heading": "A1. ROS 2 Navigation Stack (Nav2) Configuration Guide",
+    "document": "A1"
+  },
+  {
+    "claim_id": "b2680663564b5cc1",
+    "text": "This design improves overall system throughput",
+    "context_heading": "A4. HDFS Block Storage Architecture",
+    "document": "A4"
+  },
+  {
+    "claim_id": "758241654ff04767",
+    "text": "The tight coupling between ROS 2 and Gazebo allows for rapid prototyping and continuous integration testing of robotic algorithms, reducing the risk of costly field failures.",
+    "context_heading": "A3. ROS 2 and Gazebo Integration for Robotics Simulation",
+    "document": "A3"
+  },
+  {
+    "claim_id": "43b304b50d4040d0",
+    "text": "Gazebo acts as the primary physics simulation environment for robotic systems.",
+    "context_heading": "A3. ROS 2 and Gazebo Integration for Robotics Simulation",
+    "document": "A3"
+  },
+  {
+    "claim_id": "f9820e47b60b740f",
+    "text": "All Nav2 nodes are implemented as LifecycleNodes, which means they follow a managed lifecycle: they start in an unconfigured state, transition to configuring, then to active, and finally to a shutdown state.",
+    "context_heading": "A1. ROS 2 Navigation Stack (Nav2) Configuration Guide",
+    "document": "A1"
+  },
+  {
+    "claim_id": "9d385bdba5085644",
+    "text": "These world files can be customised to match specific testing scenarios",
+    "context_heading": "A3. ROS 2 and Gazebo Integration for Robotics Simulation",
+    "document": "A3"
+  },
+  {
+    "claim_id": "2d672e0ce7035cf0",
+    "text": "This integration enables developers to simulate robot behavior in realistic environments before deployment on physical hardware.",
+    "context_heading": "A3. ROS 2 and Gazebo Integration for Robotics Simulation",
+    "document": "A3"
+  },
+  {
+    "claim_id": "274e4c301d23d11a",
+    "text": "** Actions** ( e.g., ` count `, ` collect `, ` saveAsTextFile ` return a result to the driver program or write data to storage",
+    "context_heading": "A8. PySpark RDD In-Memory Processing",
+    "document": "A8"
+  },
+  {
+    "claim_id": "fe8e451402c5a29d",
+    "text": "If the RDD does not fit in memory, some partitions may be recomputed on the fly.",
+    "context_heading": "A9. Apache Spark RDD Persistence and Fault Tolerance",
+    "document": "A9"
+  },
+  {
+    "claim_id": "ad2e1af17440a2fb",
+    "text": "For data that cannot be recomputed (e.g., after `repartition`), Spark can also replicate partitions across nodes.",
+    "context_heading": "A9. Apache Spark RDD Persistence and Fault Tolerance",
+    "document": "A9"
+  },
+  {
+    "claim_id": "e79427be03c0783d",
+    "text": "Start the VM; it will now receive an IP from the network's DHCP server.",
+    "context_heading": "A10. VirtualBox Bridged Networking Configuration",
+    "document": "A10"
+  },
+  {
+    "claim_id": "6a149cf0f0a0e3df",
+    "text": "Users can ask Spark to persist an RDD in memory or on disk using the `persist()` or `cache()` methods.",
+    "context_heading": "A9. Apache Spark RDD Persistence and Fault Tolerance",
+    "document": "A9"
+  },
+  {
+    "claim_id": "2b37c844039c8220",
+    "text": "The entire system is launched via the `navigation_launch.py` file provided in the `nav2_bringup` package.",
+    "context_heading": "A1. ROS 2 Navigation Stack (Nav2) Configuration Guide",
+    "document": "A1"
+  },
+  {
+    "claim_id": "eb0011463c898172",
+    "text": "The ROS 2 bridge nodes automatically translate Gazebo's internal data structures into ROS 2 topics, services, and actions, making the simulated robot behave exactly like its real counterpart.",
+    "context_heading": "A3. ROS 2 and Gazebo Integration for Robotics Simulation",
+    "document": "A3"
+  },
+  {
+    "claim_id": "db3b783f80657683",
+    "text": "Gazebo Harmonic also publishes standard ROS 2 messages, such as PointCloud2, to facilitate integration with perception and navigation stacks, making it a cornerstone of modern robotic development pipelines.",
+    "context_heading": "A2. Gazebo Harmonic Physics Simulation Environment",
+    "document": "A2"
+  },
+  {
+    "claim_id": "be21d25ef0dd0ea9",
+    "text": "Hive stores its metadata in a relational database (such as MySQL or PostgreSQL) called the Hive Metastore.",
+    "context_heading": "A6. Apache Hive Data Warehousing with Tez Execution Engine",
+    "document": "A6"
+  },
+  {
+    "claim_id": "650771cb58c1d7b5",
+    "text": "It is the successor to the classic Gazebo and .",
+    "context_heading": "A2. Gazebo Harmonic Physics Simulation Environment",
+    "document": "A2"
+  },
+  {
+    "claim_id": "e976f05bfa8871fb",
+    "text": "The Nav2 stack is the official navigation solution for ROS 2.",
+    "context_heading": "A1. ROS 2 Navigation Stack (Nav2) Configuration Guide",
+    "document": "A1"
+  },
+  {
+    "claim_id": "b0e93072108fc766",
+    "text": "HDFS has two main layers:",
+    "context_heading": "A4. HDFS Block Storage Architecture",
+    "document": "A4"
+  },
+  {
+    "claim_id": "983ff959b3d4dc31",
+    "text": "** Actions** ( e.g., ` count `, ` collect `, ` saveAsTextFile `) trigger the execution of the transformation graph and .",
+    "context_heading": "A8. PySpark RDD In-Memory Processing",
+    "document": "A8"
+  },
+  {
+    "claim_id": "618420bff2e77eb5",
+    "text": "Sources can be configured to listen on specific ports or tail files.",
+    "context_heading": "A7. Apache Flume Event Stream Processing",
+    "document": "A7"
+  },
+  {
+    "claim_id": "d51da6eaf23978a4",
+    "text": "The simulation engine supports multiple physics solvers, including ODE and Bullet, enabling accurate simulation of rigid bodies, joints, and contacts.",
+    "context_heading": "A2. Gazebo Harmonic Physics Simulation Environment",
+    "document": "A2"
+  },
+  {
+    "claim_id": "cb4f1ed9af0abe40",
+    "text": "It is deeply integrated with ROS 2 and .",
+    "context_heading": "A3. ROS 2 and Gazebo Integration for Robotics Simulation",
+    "document": "A3"
+  },
+  {
+    "claim_id": "1de097d7ee83719a",
+    "text": "VirtualBox provides several networking modes to connect virtual machines to the host and the outside world:",
+    "context_heading": "A10. VirtualBox Bridged Networking Configuration",
+    "document": "A10"
+  },
+  {
+    "claim_id": "05c6c52ab92f3179",
+    "text": "Apache Flume is a distributed, reliable, and available service for efficiently collecting, aggregating, and moving large amounts of log data.",
+    "context_heading": "A7. Apache Flume Event Stream Processing",
+    "document": "A7"
+  },
+  {
+    "claim_id": "1757e40d5e274dae",
+    "text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "15d7f18c547d7bfc",
+    "text": "Claiming that U-Net is still \"state-of-the-art\" is a nostalgic holdover that ignores clear evidence from multiple benchmarks.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "df7573c4a0a8a5cb",
+    "text": "U-Net's reliance on local convolutions inherently limits its ability to capture long-range spatial dependencies.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "0c6574550a54afe3",
+    "text": "In tasks such as whole-brain segmentation or organ-at-risk delineation, the global context is crucial.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "9fcbf4426da33942",
+    "text": "U- Net 's skip connections partially mitigate this but .",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "c9d617a7bac96884",
+    "text": "U- Net 's skip connections can not fully compensate for the receptive field constraints of small kernels",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "ae1fff2420b38e05",
+    "text": "This is why U-Net often fails on tasks where structures are large or widely dispersed.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "c15864da343b9a87",
+    "text": "Vision Transformers (ViTs) and their specialised variants (e.g., TransUNet, Swin-UNet) have consistently outperformed U-Net on public benchmarks like the Medical Segmentation Decathlon and Synapse.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "4f7aa7434aff5fb0",
+    "text": "These models use self-attention mechanisms to model global correlations, leading to higher Dice scores and better boundary delineation.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "6904f1213295dac5",
+    "text": "For example, TransUNet achieved a Dice score of 82.3% on the multi-organ dataset, compared to U-Net's 77.1% -- a statistically significant margin.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "fd821d0a17b7cd27",
+    "text": "Transformers are also more adaptable.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "3d3f1e10b7a982ff",
+    "text": "With the advent of efficient attention mechanisms (e.g., shifted-window attention), they now process images at comparable speeds to convolutional networks.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "5ad9cfea46097b5b",
+    "text": "Moreover, transformers can be pre-.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "942033784617a146",
+    "text": "be trained on large natural image datasets and fine- tuned on medical data, yielding superior generalisation",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "694db2423665104e",
+    "text": "U-Net, by contrast, requires extensive augmentation to avoid overfitting due to its limited inductive bias.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "b4591c3773efc36a",
+    "text": "The medical imaging community is rapidly moving away from U-Net.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "9fb081679bf405ce",
+    "text": "Newer architectures built on transformers or hybrid convolutional-transformer designs are now the gold standard.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "b3bdc4b7b7b867e4",
+    "text": "Continuing to rely on U-Net for research or clinical applications is a choice to underperform.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "c743e9038b81d122",
+    "text": "The future belongs to models that can perceive the whole image at once, not piece it together with local patches.",
+    "context_heading": "B11. Critique of U-Net: Transformers Outperform Convolutional Models",
+    "document": "B11"
+  },
+  {
+    "claim_id": "029b0902f69e6e22",
+    "text": "U-Net is a convolutional neural network designed for biomedical image segmentation.",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "b4ae580d7c90d2df",
+    "text": "It was developed to work with very few training images ( as low as 30) and .",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "4cc24ea7450f76fd",
+    "text": "It was still produce accurate segmentations",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "aeb8a795cd8c264b",
+    "text": "The architecture consists of two paths:",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "ec9260c779007e06",
+    "text": "It reduces the spatial resolution while increasing the number of feature channels.",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "897cec1b08aea02b",
+    "text": "This allows the network to combine high-level semantic information with fine-grained spatial details.",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "28c579c9f16d5bc0",
+    "text": "The U-like shape, with skip connections that bridge the encoder and decoder, enables precise localization.",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "a7b5ca26dfbe0b1b",
+    "text": "U-Net has become the de facto standard for medical image segmentation in tasks such as brain tumor segmentation, lung nodule detection, and cell counting.",
+    "context_heading": "B5. U-Net: Convolutional Network for Medical Image Segmentation",
+    "document": "B5"
+  },
+  {
+    "claim_id": "b2106b14b8137b15",
+    "text": "Since its introduction, U-Net has spawned numerous variants, such as 3D U-Net, V-Net, Attention U-Net, and U-Net++.",
+    "context_heading": "B6. U-Net's Evolution in Medical Imaging",
+    "document": "B6"
+  },
+  {
+    "claim_id": "9988722f2d4e71b8",
+    "text": "Each variant addresses specific challenges:",
+    "context_heading": "B6. U-Net's Evolution in Medical Imaging",
+    "document": "B6"
+  },
+  {
+    "claim_id": "76568f509d54addb",
+    "text": "These adaptations have made U-Net the dominant approach in medical image analysis, outperforming traditional methods and even human experts in many benchmarks.",
+    "context_heading": "B6. U-Net's Evolution in Medical Imaging",
+    "document": "B6"
+  },
+  {
+    "claim_id": "b5f51e327948a4cd",
+    "text": "However, StyleGAN exhibited characteristic artifacts, such as water droplets and texture noise, which limited its practical applications.",
+    "context_heading": "B1. StyleGAN2 -- Improvements in Generative Adversarial Networks",
+    "document": "B1"
+  },
+  {
+    "claim_id": "0a20b8f066295bc6",
+    "text": "A dynamic multi- scale WGAN- GP framework combines image denoising",
+    "context_heading": "B4. WGAN-GP Applications in Image Restoration and Fault Diagnosis",
+    "document": "B4"
+  },
+  {
+    "claim_id": "ab85c3598d0d9d12",
+    "text": "While wrist-spinners often steal the headlines with their \"mystery\" variations and wicket-taking flair, a deeper examination of T20 cricket reveals that finger-spinners are actually more economical, more consistent, and contribute more to team wins in the middle overs.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "cc4d05c5521db53b",
+    "text": "Aggregate data from IPL 2021-2025 shows that finger-spinners (off-spin, left-arm orthodox) have maintained a lower economy rate (7.2 runs per over) compared to wrist-spinners (8.1 runs per over) in overs 11-40.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "fde2a2ada8a496d0",
+    "text": "The difference is more pronounced on flat pitches, where wrist-spinners' variations are easier to read and often punished.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "c439c05520b0f899",
+    "text": "In contrast, finger-spinners rely on subtle changes in pace and trajectory, which are more effective in containing runs even on batting-friendly surfaces.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "d345c87aaa3008cf",
+    "text": "The narrative that wrist-spinners are \"wicket-takers\" is statistically misleading.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "cd0358e81a1786df",
+    "text": "A wrist-spinner who concedes 8 runs per over while taking a wicket in the 14th over often gives away more runs than a finger-spinner who bowls a tight over for 4 runs without taking a wicket.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "77872a714bde0dfe",
+    "text": "In T20, pressure built through dot balls is often more decisive than isolated breakthroughs.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "846afc269ad4453e",
+    "text": "Finger- spinners are easier to set fields for and .",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "533710bed7c4e28b",
+    "text": "Finger- spinners can be relied upon to bowl to a fixed plan -- darting the ball into the pitch, varying flight, and keeping the batter guessing with arm balls",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "5f806745a7568615",
+    "text": "Wrist-spinners, by contrast, are prone to bowling \"loose\" deliveries -- the odd full-toss or short ball that gets dispatched.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "4b1c49dd3d061c92",
+    "text": "Teams that have relied heavily on wrist-spinners have often been let down in crunch matches, whereas sides with a solid finger-spin option have displayed greater defensive resilience.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "d7ef583afc53ad5f",
+    "text": "The data suggests that the obsession with \"mystery\" spinners is more about marketing than mathematics.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "1071f33d21320f81",
+    "text": "Finger- spinners offer superior control, , making them the smarter choice for captains who prioritise consistent run- containment over speculative wicket- hunting.",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "3afa3f2e8eab994b",
+    "text": "Finger- spinners offer better economy, and greater reliability",
+    "context_heading": "C11. The Case Against Wrist-Spinners in T20",
+    "document": "C11"
+  },
+  {
+    "claim_id": "5ad3f502f629cc94",
+    "text": "Kuldeep Yadav and Noor Ahmad, both left-arm wrist spinners, have demonstrated exceptional control in the IPL.",
+    "context_heading": "C2. IPL 2025: The Rise of Wrist-Spinners",
+    "document": "C2"
+  },
+  {
+    "claim_id": "3d8cdcc83826343f",
+    "text": "Noor Ahmad, in particular, has been a revelation, maintaining an economy of 4.7 and a dot-ball percentage of 47.3% against left-handed batters.",
+    "context_heading": "C2. IPL 2025: The Rise of Wrist-Spinners",
+    "document": "C2"
+  },
+  {
+    "claim_id": "a63861d9c6662472",
+    "text": "However, both statistics drop significantly against right-handed batters, indicating that match-up tactics are crucial.",
+    "context_heading": "C2. IPL 2025: The Rise of Wrist-Spinners",
+    "document": "C2"
+  },
+  {
+    "claim_id": "cf641317fe21bcb7",
+    "text": "Teams are increasingly using data analytics to decide which bowler to use against specific batters, and",
+    "context_heading": "C2. IPL 2025: The Rise of Wrist-Spinners",
+    "document": "C2"
+  },
+  {
+    "claim_id": "ee9d9466c1b68653",
+    "text": "Teams are wrist- spinners are often deployed in the middle overs to break partnerships.",
+    "context_heading": "C2. IPL 2025: The Rise of Wrist-Spinners",
+    "document": "C2"
+  },
+  {
+    "claim_id": "a096e31cd3f52fd3",
+    "text": "Their ability to turn the ball both ways and bowl multiple variations makes them valuable assets in a T20 lineup.",
+    "context_heading": "C2. IPL 2025: The Rise of Wrist-Spinners",
+    "document": "C2"
+  },
+  {
+    "claim_id": "ba9a810a4a28fbf5",
+    "text": "Leg- spinners bowling in the middle overs ( overs 11- 40) of limited- overs cricket enjoy bowling during these phases because the field restrictions are relaxed, and",
+    "context_heading": "C3. Tactical Role of Wrist-Spinners in T20 Cricket",
+    "document": "C3"
+  },
+  {
+    "claim_id": "a13ae2164fa05ede",
+    "text": "Leg- spinners bowling in the middle overs ( overs 11- 40) of limited- overs cricket enjoy they can use the pitch conditions to their advantage.",
+    "context_heading": "C3. Tactical Role of Wrist-Spinners in T20 Cricket",
+    "document": "C3"
+  },
+  {
+    "claim_id": "a8eecc3fcd56a3cd",
+    "text": "Senior India spinner Yuzvendra Chahal has continued to prove his dominance in the middle overs, underlining the value of wrist spin in T20 cricket.",
+    "context_heading": "C3. Tactical Role of Wrist-Spinners in T20 Cricket",
+    "document": "C3"
+  },
+  {
+    "claim_id": "d4eeae9435e4caa4",
+    "text": "The key role of spinners is to take wickets while keeping the run rate under control.",
+    "context_heading": "C3. Tactical Role of Wrist-Spinners in T20 Cricket",
+    "document": "C3"
+  },
+  {
+    "claim_id": "cfe464b7653ac574",
+    "text": "On surfaces that offer grip, wrist-spinners can be particularly effective, as their variations are harder to read.",
+    "context_heading": "C3. Tactical Role of Wrist-Spinners in T20 Cricket",
+    "document": "C3"
+  },
+  {
+    "claim_id": "24800a551c9ca126",
+    "text": "Their effectiveness often depends on the support of a good fielding captain who sets aggressive field placements to create pressure.",
+    "context_heading": "C3. Tactical Role of Wrist-Spinners in T20 Cricket",
+    "document": "C3"
+  },
+  {
+    "claim_id": "8e659e5aa4a7a206",
+    "text": "The tactical resilience of T20's mystery spinners continues to be a decisive factor in modern cricket.",
+    "context_heading": "C7. Tactical Resilience of Mystery Spinners in T20",
+    "document": "C7"
+  },
+  {
+    "claim_id": "d8cb940444a6fb61",
+    "text": "Their ability to bowl multiple variations without revealing their plans to the batter makes them invaluable assets in the middle overs.",
+    "context_heading": "C7. Tactical Resilience of Mystery Spinners in T20",
+    "document": "C7"
+  },
+  {
+    "claim_id": "df7c96afde50bf51",
+    "text": "Mystery spinners, such as Varun Chakravarthy and Sunil Narine, often have an immediate impact because batters struggle to pick the ball from the hand.",
+    "context_heading": "C7. Tactical Resilience of Mystery Spinners in T20",
+    "document": "C7"
+  },
+  {
+    "claim_id": "a5744eadae3790f4",
+    "text": "Their unpredictability allows captains to use them in any phase of the innings, often breaking dangerous partnerships.",
+    "context_heading": "C7. Tactical Resilience of Mystery Spinners in T20",
+    "document": "C7"
+  },
+  {
+    "claim_id": "1502c87dbcd01033",
+    "text": "As teams become more data-driven, the demand for bowlers who can consistently beat the bat is only increasing.",
+    "context_heading": "C7. Tactical Resilience of Mystery Spinners in T20",
+    "document": "C7"
+  },
+  {
+    "claim_id": "8f051992cf3c6ff7",
+    "text": "Wrist-spinners like Kuldeep Yadav and Noor Ahmad, armed with variations and stifling accuracy, are turning out to be a thriving force.",
+    "context_heading": "C9. The Rise of Left-Arm Wrist-Spinners in IPL",
+    "document": "C9"
+  },
+  {
+    "claim_id": "26649d7cfd6dbb83",
+    "text": "Their styles may be contrasting, but",
+    "context_heading": "C9. The Rise of Left-Arm Wrist-Spinners in IPL",
+    "document": "C9"
+  },
+  {
+    "claim_id": "869d9ae7053da863",
+    "text": "Their styles may their role is similar: to go in search of wickets and be the X- factors for their teams.",
+    "context_heading": "C9. The Rise of Left-Arm Wrist-Spinners in IPL",
+    "document": "C9"
+  },
+  {
+    "claim_id": "890da5cba0eef9b8",
+    "text": "Left-arm wrist-spinners are particularly effective against right-handed batters because the ball turns away from them, making it difficult to play against the spin.",
+    "context_heading": "C9. The Rise of Left-Arm Wrist-Spinners in IPL",
+    "document": "C9"
+  },
+  {
+    "claim_id": "cb9aeb1431dbde59",
+    "text": "Their ability to bowl the googly (turning into the right-hander) and the conventional leg-break makes them a constant threat.",
+    "context_heading": "C9. The Rise of Left-Arm Wrist-Spinners in IPL",
+    "document": "C9"
+  },
+  {
+    "claim_id": "7b39aad9f212430a",
+    "text": "While pressure cookers are marketed as time-saving miracle tools, their use for a dish as delicate as Rogan Josh is a culinary betrayal.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "5c5f004045115748",
+    "text": "The intense, rapid heat and high pressure destroy the collagen structure of lamb in ways that a slow braise never does, resulting in a dry, .",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "e3bf72a4ad55c639",
+    "text": "The intense, rapid heat and high pressure stringy texture that no amount of spice can mask",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "10ea67ab56d2d6c5",
+    "text": "Lamb shoulder is prized for its rich marbling and connective tissue.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "e2351c24e5237a82",
+    "text": "Slow cooking at a gentle simmer (around 85-90C) for 2-3 hours allows collagen to dissolve into gelatin, giving the meat a melt-in-the-mouth quality.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "5a6a3673d65b1cd8",
+    "text": "In a pressure cooker, the temperature exceeds 120C and .",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "4a166dbe6624856c",
+    "text": "the temperature the cooking time",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "1b561bf5b64fda9e",
+    "text": "the temperature is compressed to 20- 30 minutes",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "499bbe653265354c",
+    "text": "This aggressive heat accelerates collagen breakdown but .",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "72e39433a2a202e0",
+    "text": "This aggressive heat also causes the meat fibres to contract violently, expelling moisture and leaving the meat tough and fibrous",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "fd0d5884da31521c",
+    "text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "a91beb16dc21bf87",
+    "text": "the meat lacks the succulence of a slow- braised dish",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "cf52aa1a5dc9bf36",
+    "text": "The sealed environment of a pressure cooker traps volatile aromatics and prevents the natural reduction of the sauce.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "affda2b4953aed61",
+    "text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "9feb0eab4165282f",
+    "text": "Pressure cooking, by contrast, produces a thin, watery sauce that requires lengthy post-cooking reduction, which further dries out the meat.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "fc6e0f9fe2d260bf",
+    "text": "The spices never fully integrate; they remain harsh and raw rather than .",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "6a4b5287ce140d19",
+    "text": "they mellowed and deepened",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "3d7e68a8300f0ecd",
+    "text": "Authentic Kashmiri recipes never use pressure cookers.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "96aa92db931adeb9",
+    "text": "The traditional method involves sealing the meat with yoghurt and spices, then cooking over a low flame for hours, with intermittent basting.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "4c5204f2863bb6ee",
+    "text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "533c17adc5d2d7b9",
+    "text": "Any deviation from this time-honoured technique produces a dish that may be edible but is a far cry from the real Rogan Josh.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "1204f13d0a01f293",
+    "text": "If you truly value the dish, invest the time -- the pressure cooker is a shortcut that cuts quality.",
+    "context_heading": "D11. Pressure Cooking Ruins Lamb Rogan Josh",
+    "document": "D11"
+  },
+  {
+    "claim_id": "4b40530afbbcbe76",
+    "text": "Rogan Josh is a classic Indian curry originating from Kashmir.",
+    "context_heading": "D1. Pressure Cooker Lamb Rogan Josh",
+    "document": "D1"
+  },
+  {
+    "claim_id": "546247e92095fd3e",
+    "text": "The name means \"meat in spicy red sauce,\" referring to the rich, crimson colour derived from Kashmiri chillies and the fragrant spice blend.",
+    "context_heading": "D1. Pressure Cooker Lamb Rogan Josh",
+    "document": "D1"
+  },
+  {
+    "claim_id": "2e70e695f0c4ecd3",
+    "text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "context_heading": "D1. Pressure Cooker Lamb Rogan Josh",
+    "document": "D1"
+  },
+  {
+    "claim_id": "30e4a87c4a6bb1af",
+    "text": "1 kg lamb shoulder, cut into chunks.",
+    "context_heading": "D1. Pressure Cooker Lamb Rogan Josh",
+    "document": "D1"
+  },
+  {
+    "claim_id": "cf0ebe893138b46a",
+    "text": "4 cloves garlic, crushed.",
+    "context_heading": "D1. Pressure Cooker Lamb Rogan Josh",
+    "document": "D1"
+  },
+  {
+    "claim_id": "f18cb88f29648f51",
+    "text": "This version adds a freshly ground spice blend to enhance the aroma of the curry.",
+    "context_heading": "D2. Lamb Rogan Josh -- Licious Version",
+    "document": "D2"
+  },
+  {
+    "claim_id": "c4be1e7f8c16e3e8",
+    "text": "1 onion, sliced.",
+    "context_heading": "D2. Lamb Rogan Josh -- Licious Version",
+    "document": "D2"
+  },
+  {
+    "claim_id": "6fcb9b2fbef69457",
+    "text": "This recipe emphasises the use of traditional spices and a slow cooking process, even with a pressure cooker.",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "3c5275f333233a90",
+    "text": "Add the whole spices ( cardamom and .",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "d0583ec1142da5ff",
+    "text": ", cloves, cinnamon)",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "696125264fa200ec",
+    "text": "let them splutter",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "f357051f7abb5241",
+    "text": "Stir in the ginger- garlic paste and .",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "80e99ed5ac511648",
+    "text": "saute until the raw smell disappears",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "005e7add3f3b9c83",
+    "text": "If using a pressure cooker, cover and .",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "6b4c89c799c3783f",
+    "text": "cook on low heat until you hear about 3 whistles",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "fbeed6f1742d2d72",
+    "text": "Once cooked, open the lid and .",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "84c55714e69211a4",
+    "text": "let the curry simmer for an additional 10 minutes to thicken the gravy",
+    "context_heading": "D3. Pressure Cooker Rogan Josh -- Art of Palate",
+    "document": "D3"
+  },
+  {
+    "claim_id": "a82852b5fc91bb59",
+    "text": "The pressure cooker is the time-saver here, coaxing tough lamb shoulder to fork-tender in about 20 minutes instead of hours of slow braising.",
+    "context_heading": "D4. Pressure Cooker Rogan Josh -- Key Techniques",
+    "document": "D4"
+  },
+  {
+    "claim_id": "af3a321f4922429d",
+    "text": "Once you release the pressure, simmer the curry uncovered to thicken the gravy and concentrate the flavour.",
+    "context_heading": "D4. Pressure Cooker Rogan Josh -- Key Techniques",
+    "document": "D4"
+  },
+  {
+    "claim_id": "c15b5b2b789fad20",
+    "text": "Use lamb shoulder or leg for best results; avoid lean cuts as they can become tough.",
+    "context_heading": "D4. Pressure Cooker Rogan Josh -- Key Techniques",
+    "document": "D4"
+  },
+  {
+    "claim_id": "8c389e0e36dcbd0b",
+    "text": "The existence of plate tectonics and a magnetic field are believed to be critical for sustaining life over geological time.",
+    "context_heading": "E6. Earth's Density and Mass",
+    "document": "E6"
+  },
+  {
+    "claim_id": "0f29a57258a8dc33",
+    "text": "The boundary structures define the zone influenced by the Sun's magnetic field and solar wind.",
+    "context_heading": "E8. Boundaries and Structure of the Solar System",
+    "document": "E8"
+  },
+  {
+    "claim_id": "a5e703861a807ccc",
+    "text": "Earth is about eight light-minutes away from the Sun, which means sunlight takes about 8 minutes to reach us.",
+    "context_heading": "E3. Earth's Orbital and Physical Characteristics",
+    "document": "E3"
+  },
+  {
+    "claim_id": "ba6efe74acc087e7",
+    "text": "It is the largest of the Solar System's four terrestrial planets.",
+    "context_heading": "E2. Earth: The Third Planet from the Sun",
+    "document": "E2"
+  },
+  {
+    "claim_id": "9b8b470c30eae772",
+    "text": "The planet's surface is divided into tectonic plates that drift over geological time, creating continents and ocean basins.",
+    "context_heading": "E2. Earth: The Third Planet from the Sun",
+    "document": "E2"
+  },
+  {
+    "claim_id": "5f1ada9dad142a22",
+    "text": "The Late Heavy Bombardment, about 4 billion years ago, delivered water and to the inner planets, possibly seeding life on Earth.",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "ad1abd7dff017936",
+    "text": "Earth's age is estimated at 4.54 billion years.",
+    "context_heading": "E3. Earth's Orbital and Physical Characteristics",
+    "document": "E3"
+  },
+  {
+    "claim_id": "fd2f632a6bb7cd2c",
+    "text": "Its gravitational pull holds the entire system together, dictating the orbits of all planets, asteroids, and comets.",
+    "context_heading": "E7. The Sun's Dominance in the Solar System",
+    "document": "E7"
+  },
+  {
+    "claim_id": "b886aeca0b9a2532",
+    "text": "Earth is the third planet from the Sun and .",
+    "context_heading": "E2. Earth: The Third Planet from the Sun",
+    "document": "E2"
+  },
+  {
+    "claim_id": "32302788baf8dfaf",
+    "text": "The collapse likely was triggered by a shock wave from a nearby supernova.",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "687874298efd0bb7",
+    "text": "Solar activity, such as sunspots and solar flares, can affect space weather and .",
+    "context_heading": "E7. The Sun's Dominance in the Solar System",
+    "document": "E7"
+  },
+  {
+    "claim_id": "cd06a428cd7ea404",
+    "text": "The International Astronomical Union ( IAU) defines a planet as a celestial body that: ( 1) orbits the Sun, ( 2) .",
+    "context_heading": "E5. Classification of Planets in the Solar System",
+    "document": "E5"
+  },
+  {
+    "claim_id": "546ae38cee5c76d6",
+    "text": "Earth is the densest planet in the Solar System, with an average density of 5.51 g/cm3.",
+    "context_heading": "E6. Earth's Density and Mass",
+    "document": "E6"
+  },
+  {
+    "claim_id": "5f79e5589ca5a5fb",
+    "text": "The Solar System contains a vast number of minor bodies:",
+    "context_heading": "E9. Minor Bodies in the Solar System",
+    "document": "E9"
+  },
+  {
+    "claim_id": "f61a9029dc4f933d",
+    "text": "The Solar System is the objects that orbit it",
+    "context_heading": "E1. Overview of the Solar System",
+    "document": "E1"
+  },
+  {
+    "claim_id": "92e66b5d85b01f2c",
+    "text": "The Solar System is the gravitationally bound system of the Sun and .",
+    "context_heading": "E1. Overview of the Solar System",
+    "document": "E1"
+  },
+  {
+    "claim_id": "6f8c045d5e1de240",
+    "text": "The collapse created the Sun at the centre, and",
+    "context_heading": "E1. Overview of the Solar System",
+    "document": "E1"
+  },
+  {
+    "claim_id": "dc7a8c4eeb26c29a",
+    "text": "Its atmosphere protects us from harmful solar radiation",
+    "context_heading": "E10. Earth as a Habitable Planet",
+    "document": "E10"
+  },
+  {
+    "claim_id": "e5bb73215e2286ed",
+    "text": "The Solar System also contains hundreds of thousands of asteroids, comets, and many moons.",
+    "context_heading": "E5. Classification of Planets in the Solar System",
+    "document": "E5"
+  },
+  {
+    "claim_id": "0c799a516ee54c9d",
+    "text": "Beyond this lies the Oort Cloud, a spherical reservoir of comets extending up to 100,000 AU.",
+    "context_heading": "E8. Boundaries and Structure of the Solar System",
+    "document": "E8"
+  },
+  {
+    "claim_id": "c0875234b01de5cd",
+    "text": "Earth is home to millions of species, including humans.",
+    "context_heading": "E10. Earth as a Habitable Planet",
+    "document": "E10"
+  },
+  {
+    "claim_id": "c60e754bd67e9fbc",
+    "text": "The Late Heavy Bombardment, about 4 billion years ago, delivered organic molecules",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "942dc18e4c665c93",
+    "text": "The central concentration became the Sun, while the surrounding material flattened into a protoplanetary disc.",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "4a2e9072d005e275",
+    "text": "Over 99.86% of its mass is contained in the Sun.",
+    "context_heading": "E1. Overview of the Solar System",
+    "document": "E1"
+  },
+  {
+    "claim_id": "a9bfe8edb29afabe",
+    "text": "Earth is the densest and fifth- largest of the eight planets",
+    "context_heading": "E2. Earth: The Third Planet from the Sun",
+    "document": "E2"
+  },
+  {
+    "claim_id": "448a80c42d0cdcb9",
+    "text": "the giant planets ( their gravitational influence shaped the orbits of the remaining bodies.",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "bb55496943616c21",
+    "text": "The Solar System formed about 4.6 billion years ago when a dense region of a molecular cloud collapsed under its own gravity.",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "cf3de8dbb7d46d07",
+    "text": "Within the first few million years, the giant planets ( Jupiter, Saturn, Uranus, Neptune) formed, and",
+    "context_heading": "E4. Formation and Evolution of the Solar System",
+    "document": "E4"
+  },
+  {
+    "claim_id": "de2a9b0250a87ae0",
+    "text": "Earth orbits the Sun at an average distance of about 149.6 million kilometres (93 million miles), taking 365.25 days to complete one revolution.",
+    "context_heading": "E2. Earth: The Third Planet from the Sun",
+    "document": "E2"
+  },
+  {
+    "claim_id": "476dfc9ad9bf38fb",
+    "text": "Earth's position in the \"habitable zone\" -- where water can exist as a liquid -- is a key factor in its ability to sustain life.",
+    "context_heading": "E10. Earth as a Habitable Planet",
+    "document": "E10"
+  },
+  {
+    "claim_id": "48ef316a6d18cfff",
+    "text": "The Solar System consists of eight planets, five dwarf planets, and numerous smaller bodies.",
+    "context_heading": "E1. Overview of the Solar System",
+    "document": "E1"
+  },
+  {
+    "claim_id": "a17682ab3a3eb3e2",
+    "text": "Its atmosphere provides the oxygen we breathe and .",
+    "context_heading": "E10. Earth as a Habitable Planet",
+    "document": "E10"
+  }
+]

@@ -1,0 +1,30 @@
+digraph Partitioning {
+  rankdir=LR;
+  fontname="Helvetica";
+  node [shape=ellipse, style=filled, fontname="Helvetica", fontsize=10, fillcolor="#edf2f7", color="#4a5568"];
+  edge [fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_before {
+    label="Naive partitioning (remove CONTRADICTS, take connected components)";
+    fontsize=10; style=dashed; color="#a0aec0";
+    A1 [label="U-Net is SOTA\n(B5)"];
+    X1 [label="U-Net used for\nmedical segmentation\n(shared topic X)"];
+    C1 [label="Transformers beat\nU-Net (B11)"];
+    A1 -> X1 [label="supports", color="#38a169"];
+    C1 -> X1 [label="supports", color="#38a169"];
+    A1 -> C1 [label="CONTRADICTS", color="#e53e3e", style=bold, dir=none];
+    note1 [shape=plaintext, label="Bug: A1, X1, C1 land in ONE\npartition once CONTRADICTS is\ndropped -- violates the\nno-contradiction-within-partition\ninvariant.", fontsize=9];
+  }
+
+  subgraph cluster_after {
+    label="Constraint-based signed-graph partitioning (fixed)";
+    fontsize=10; style=dashed; color="#a0aec0";
+    A2 [label="U-Net is SOTA\n(B5)", fillcolor="#c6f6d5"];
+    X2 [label="U-Net used for\nmedical segmentation", fillcolor="#c6f6d5"];
+    C2 [label="Transformers beat\nU-Net (B11)", fillcolor="#fbd38d"];
+    A2 -> X2 [label="supports", color="#38a169"];
+    C2 -> C2 [style=invis];
+    A2 -> C2 [label="CONTRADICTS", color="#e53e3e", style=bold, dir=none];
+    note2 [shape=plaintext, label="Fix: 2-color the contradiction\ngraph first, then Union-Find\nSUPPORTS/REFINES only within\nthe SAME color. A2+X2 form one\npartition; C2 is forced into a\ndifferent partition.", fontsize=9];
+  }
+}

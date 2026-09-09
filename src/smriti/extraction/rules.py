@@ -84,5 +84,10 @@ CONTEXT_SEPARATOR = " > "
 # Table cell serialisation template: "Key: Value."
 TABLE_KV_TEMPLATE = "{key}: {value}."
 
-# Context validation: allow letters, digits, spaces, and the separator
-CONTEXT_VALID_PATTERN = re.compile(r"^[a-zA-Z0-9\s" + re.escape(CONTEXT_SEPARATOR) + "]*$")
+# ── RECTIFIED: Context validation ─────────────────────────────────────────────
+# Allow letters, digits, spaces, separator, and common punctuation.
+# Supports headings like "PySpark In-Memory Processing" and "Dr. Smith's Notes".
+# The '+' requires at least one alphanumeric/punctuation character.
+CONTEXT_VALID_PATTERN = re.compile(
+    r"^[a-zA-Z0-9\s\-',.:;&!?()\"]+" + re.escape(CONTEXT_SEPARATOR) + "*$"
+)

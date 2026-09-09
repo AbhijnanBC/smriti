@@ -238,7 +238,7 @@ class DTOTransformer:
             ))
 
         comp_scores = []
-        for comp in dto.get("component_scores", []):
+        for comp in (dto.get("component_scores") or []):
             direction = comp.get("direction", "positive")
             contrib = float(comp.get("contribution", 0.0))
             comp_scores.append(ComponentScorePresentationModel(
@@ -296,7 +296,7 @@ class DTOTransformer:
         unc = float(dto.get("uncertainty_score", 100.0) or 100.0)
 
         signals = []
-        sv = dto.get("signal_vector", {})
+        sv = dto.get("signal_vector") or {}
         for key, sig_label in SIGNAL_LABELS.items():
             val = float(sv.get(key, 0.0) or 0.0)
             signals.append(SignalPresentationModel(
@@ -306,7 +306,7 @@ class DTOTransformer:
             ))
 
         comp_scores = []
-        for comp in dto.get("component_scores", []):
+        for comp in (dto.get("component_scores") or []):
             direction = comp.get("direction", "positive")
             contrib = float(comp.get("contribution", 0.0))
             comp_scores.append(ComponentScorePresentationModel(
@@ -356,5 +356,7 @@ class DTOTransformer:
 
     @staticmethod
     def to_claims_list(dtos: list) -> List[ClaimPresentationModel]:
-        """Batch-convert a list of claim dicts."""
+        """Batch-convert a list of claim dicts. Returns empty list if input is None."""
+        if dtos is None:
+            return []
         return [DTOTransformer.to_claim_pm(d) for d in dtos if d]

@@ -1,15 +1,42 @@
 """
-benchmark.py — Phase 6 benchmarking framework.
+benchmark.py — Phase 6 INFRASTRUCTURE regression suite (not a semantic benchmark).
 
 Provides:
-    SyntheticCorpus:  Deterministic gold-standard dataset for regression testing.
-    BenchmarkSuite:   Evaluates Recall@K, Precision, latency, and relationship density.
+    SyntheticVectorCorpus: Deterministic dataset for regression testing, built from
+                            vectors with known GEOMETRIC relationships (opposite-sign,
+                            near-identical, perturbed, orthogonal), not real language.
+    BenchmarkSuite:         Evaluates Recall@K, Precision, latency, and relationship
+                            density of the retrieval/graph MACHINERY against those
+                            geometrically-constructed gold labels.
+
+What this suite actually validates:
+    - Vector index correctness (dimensions, insertion, lookup)
+    - Deterministic retrieval and top-k / candidate-generation behavior
+    - Whether the graph-building and relationship-resolution mechanics respond
+      correctly to embeddings with known, constructed geometric relationships
+      (e.g. does a pair of exactly opposite-sign vectors get flagged as a
+      candidate; does the pipeline plumbing/latency scale sanely with corpus size)
+
+What this suite does NOT validate:
+    - Semantic contradiction / support / refinement understanding. The claim
+      TEXT in SyntheticVectorCorpus is arbitrary template text (e.g. "Synthetic
+      claim 17 about topic 7.") with no real semantic content. The gold labels
+      are manufactured by directly manipulating embedding vectors (e.g. for
+      CONTRADICTS, `embeddings_dict[id_b] = [-v for v in embeddings_dict[id_a]]`),
+      not derived from any language-understanding process. A "pass" here proves
+      the MACHINERY reacts correctly to known vector geometry — it proves
+      nothing about SMRITI's NLI/semantic accuracy on real language.
+
+    ⚠️  WARNING: Do not cite results from this suite as evidence of SMRITI's
+    semantic/NLI accuracy in the paper or in Phase 12 experiments — see the
+    real evaluation in evaluation/annotation/ for that.
 
 Rules:
-    ✅ SyntheticCorpus is fully deterministic (seeded random)
+    ✅ SyntheticVectorCorpus is fully deterministic (seeded random)
     ✅ BenchmarkSuite never modifies pipeline objects
-    ✅ All metrics are computed against a gold-standard label set
+    ✅ All metrics are computed against a gold-standard label set built on vector geometry
     ❌ Never used in production pipeline runs
+    ❌ Never cited as semantic/scientific evidence (infrastructure test only)
 """
 
 from __future__ import annotations
@@ -34,12 +61,21 @@ class GoldPair:
 
 
 @dataclass
-class SyntheticCorpus:
+class SyntheticVectorCorpus:
     """
-    Deterministic gold-standard dataset for Phase 6 regression testing.
+    Deterministic dataset for Phase 6 INFRASTRUCTURE regression testing.
+
+    IMPORTANT: The claim text is arbitrary synthetic template text with no
+    real semantic content. Gold labels are manufactured by directly
+    constructing embedding vectors with known GEOMETRIC relationships
+    (opposite-sign, near-identical, perturbed, orthogonal) — not by any
+    process of language understanding. This corpus is suitable for testing
+    retrieval/graph mechanics (indexing, top-k, latency scaling) but must
+    never be cited as evidence of semantic contradiction/support/refinement
+    understanding. See the module docstring for details.
 
     Usage:
-        corpus = SyntheticCorpus.generate(seed=42, n_claims=100, n_gold_pairs=50)
+        corpus = SyntheticVectorCorpus.generate(seed=42, n_claims=100, n_gold_pairs=50)
         # Use corpus.claims, corpus.embeddings, corpus.gold_labels in tests
     """
     claims: List[Dict]                          # {claim_id, text}
@@ -55,7 +91,7 @@ class SyntheticCorpus:
         n_claims: int = 100,
         n_gold_pairs: int = 50,
         dimension: int = 8,
-    ) -> "SyntheticCorpus":
+    ) -> "SyntheticVectorCorpus":
         """
         Generate a deterministic synthetic corpus.
 
@@ -157,15 +193,19 @@ class BenchmarkResult:
 
 class BenchmarkSuite:
     """
-    Evaluates Phase 6 pipeline against a gold-standard corpus.
+    Evaluates Phase 6 retrieval/graph MACHINERY against a gold-standard
+    corpus built from vectors with known geometric relationships.
+
+    This validates infrastructure mechanics, not semantic understanding —
+    see the module docstring for the full scope/limitations statement.
 
     Usage:
-        corpus = SyntheticCorpus.generate(seed=42)
+        corpus = SyntheticVectorCorpus.generate(seed=42)
         suite = BenchmarkSuite(corpus)
         result = suite.evaluate(relationship_set, retrieval_latency, nli_latency)
     """
 
-    def __init__(self, corpus: SyntheticCorpus) -> None:
+    def __init__(self, corpus: SyntheticVectorCorpus) -> None:
         self._corpus = corpus
         self._gold_by_pair: Dict[str, RelationshipType] = {
             f"{g.claim_id_a}:{g.claim_id_b}": g.expected_type
@@ -190,14 +230,23 @@ class BenchmarkSuite:
         recall_at_k = len(retrieved_gold) / max(len(gold_keys), 1)
         precision = len(retrieved_gold) / max(len(predicted_keys), 1)
 
-        n_claims = self._corpus.seed   # rough proxy
+        # n_claims is the ACTUAL number of claims in the synthetic corpus —
+        # never a proxy for it (e.g. the RNG seed is not a claim count).
+        n_claims = len(self._corpus.claims)
         relationship_density = relationship_set.total_relationships / max(n_claims, 1)
 
+        # total_validated = number of candidate pairs that passed pre-NLI
+        # similarity validation and were then fed to NLI (see
+        # retrieval/__init__.py: `valid_candidates` -> `generate_batch(pairs=valid_candidates, ...)`).
+        # It is genuinely a pair count, so it is the correct denominator here.
         nli_count = max(relationship_set.total_validated, 1)
         nli_latency_ms = (nli_latency_seconds / nli_count) * 1000.0
 
-        n_embedded = max(relationship_set.total_candidates, 1)
-        retrieval_latency_ms = (retrieval_latency_seconds / n_embedded) * 1000.0
+        # retrieval_latency_ms_per_claim must be divided by the number of
+        # claims that were embedded/retrieved against — NOT by the number of
+        # candidate PAIRS (relationship_set.total_candidates), which is a
+        # different, much larger quantity and silently mislabels the metric.
+        retrieval_latency_ms = (retrieval_latency_seconds / max(n_claims, 1)) * 1000.0
 
         # Per-type breakdown
         by_type: Dict[str, Dict[str, float]] = {}

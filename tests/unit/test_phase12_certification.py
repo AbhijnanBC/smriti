@@ -15,11 +15,19 @@ from smriti.evaluation.engineering.confidence import compute_eci
 
 def make_experiment_results(passed: bool = True):
     from smriti.evaluation.scientific.experiment import EXPERIMENT_REGISTRY
+    # Metrics where a LOWER value is better (threshold is a maximum, not a
+    # minimum) -- e.g. EXP-003's contradiction_violation_rate, whose
+    # threshold of 0.0 is already the floor, so "threshold - 0.05" would be
+    # a nonsensical negative rate. See claims.py's `inverted` handling.
+    inverted_metrics = {"contradiction_violation_rate"}
     results = []
     for exp in EXPERIMENT_REGISTRY:
         metrics = {}
         for metric, threshold in exp.acceptance_criteria.items():
-            metrics[metric] = threshold + 0.05 if passed else threshold - 0.05
+            if metric in inverted_metrics:
+                metrics[metric] = 0.0 if passed else threshold + 0.05
+            else:
+                metrics[metric] = threshold + 0.05 if passed else threshold - 0.05
         results.append(ExperimentResult(
             experiment_id=exp.experiment_id, run_id="test_run",
             metrics=metrics, raw_outputs={},
@@ -47,14 +55,14 @@ def make_verification_results(pass_rate: float = 1.0):
 def test_assess_research_claims_all_supported():
     exp_results = make_experiment_results(passed=True)
     claims = assess_research_claims(exp_results)
-    assert len(claims) == 6
+    assert len(claims) == 5
     supported = sum(1 for c in claims if c.is_supported)
     assert supported >= 3
 
 
 def test_assess_research_claims_returns_six():
     claims = assess_research_claims(make_experiment_results())
-    assert len(claims) == 6
+    assert len(claims) == 5
 
 
 def test_claims_have_evidence_grades():

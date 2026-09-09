@@ -1,0 +1,119 @@
+Running the full pipeline against SMRITI-Reference --- rather than the
+small, hand-crafted fixtures used in the existing unit test suite ---
+surfaced three defects that had not been previously detected, all directly
+attributable to properties the corpus was designed to exercise. A
+subsequent audit of the system's own evaluation and reliability layers,
+motivated by an external review, surfaced four more.
+
+\paragraph{Defect 1: console encoding crash on non-ASCII input.} SMRITI's
+structured logger wrote to the process's default console stream without
+specifying an encoding. On Windows, this stream defaults to a legacy
+single-byte codepage (e.g.\ cp1252), which cannot encode most non-Latin
+scripts. Any log line containing non-Latin script text --- for example, the
+Kannada conjunct-consonant examples in the corpus's B7/B8 documents ---
+raised an unhandled \texttt{UnicodeEncodeError} that crashed the entire
+pipeline run --- not a degraded result, a hard failure that made the system
+entirely unusable on this input. The fix reconfigures both the standard-
+library logging stream handler and the interpreter's raw
+\texttt{stdout}/\texttt{stderr} streams to UTF-8 with
+\texttt{errors="backslashreplace"}. This defect would not have been found
+on an English-only test corpus; it required a real multi-script document.
+
+\paragraph{Defect 2: contradiction leakage under odd contradiction
+cycles.} Phase 7's constraint-based partitioning algorithm
+(\S\ref{sec:phase7}) 2-colors the contradiction-only subgraph via
+breadth-first search. When a connected component of the contradiction
+subgraph is \emph{not} bipartite (an odd contradiction cycle), the original
+BFS coloring routine detected the conflict and returned failure, but only
+\emph{after} already writing partial, inconsistent colors into the shared
+color map for every node it had visited before the conflicting edge was
+reached, so the intended ``degrade to singletons'' fallback silently left
+some nodes with unvalidated colors. On SMRITI-Reference, this manifested
+as a hard \texttt{PartitioningError} once independently-contradicting
+claim clusters (themselves a symptom of the original contradiction
+over-firing described in \S\ref{sec:error-analysis}) happened to form an
+odd cycle --- something a small test fixture with one contradicting pair
+cannot trigger. The fix isolates each 2-coloring attempt in a scratch
+dictionary local to its connected component, committing to the shared map
+only on full success.
+
+\paragraph{Defect 3: uninitialized variable and misplaced phase-7 call in
+the pipeline runner.} A latent bug in \texttt{PipelineRunner.run} left the
+\texttt{phase4\_claims} variable unassigned when resuming a run starting
+at Phase 7 or later, raising an \texttt{UnboundLocalError} on any
+partial-resume invocation past Phase 6 --- a code path the existing tests,
+which always start from Phase 1, never exercised. A second, adjacent
+indentation error caused the call to \texttt{\_run\_phase\_7} to execute
+unconditionally regardless of the requested phase range. Both are fixed.
+
+All three fixes are behavior-preserving for every phase-range
+configuration already covered by the unit test suite and are exercised
+end-to-end by the SMRITI-Reference runs reported in \S\ref{sec:results}.
+
+\paragraph{Defect 4: the system's own evaluation layer fabricated
+evidence.} Described at length in \S\ref{sec:cleanup}: Phase 12's prior
+implementation computed a claim-extraction ``precision'' as
+non-emptiness, an invented ``recall'' with no relationship to any missed
+claim, a hard-coded ``generalization confidence'' of 50.0 regardless of
+what was measured, and a ``statistical support'' score that rewarded
+registering more experiments rather than finding anything. We classify
+this as a defect, not merely a limitation, because it actively produced a
+misleadingly high confidence number (an earlier Scientific Confidence
+Index of 57.0/100) that a reader could mistake for evidence.
+
+\paragraph{Defect 5: the relationship resolver never checked the
+dominant NLI class.} The root cause of the 3.2\% CONTRADICTS precision
+this paper's predecessor measured (\S\ref{sec:error-analysis}): the
+resolver's CONTRADICTS rule required only \texttt{contradiction\_score >
+entailment\_score} by a margin, never comparing against
+\texttt{neutral\_score}. A pair where neutral was the model's actual
+dominant class (e.g.\ contradiction $=0.85$, entailment $=0.05$, neutral
+$=0.90$) still resolved to CONTRADICTS. Fixed in \S\ref{sec:system} by
+requiring the winning class to be the genuine arg-max of all three scores.
+
+\paragraph{Defect 6: evidence independence rewarded the absence of
+evidence.} The evidence-independence signal extractor
+(\texttt{scoring/signals/independence.py}) returned its \emph{maximum}
+value (1.0, ``fully independent'') whenever a claim had zero supporting
+evidence --- literally: no evidence to evaluate became maximum independence.
+Fixed to return \texttt{UNAVAILABLE} with value 0.0, so a claim with
+nothing to evaluate no longer receives a positive contribution from a
+signal that had nothing real to measure (\S\ref{sec:system}).
+
+\paragraph{Test suite health.} Separately from the defects above, we found
+the suite carrying 80 failing tests at the start of this work --- stale-
+fixture drift plus a handful of genuine, previously-undetected production
+bugs of the same character as Defect 3, including one config file
+silently overriding every policy-profile selection with a hardcoded value,
+and one code path where a sentence's coordinated-object structure
+(``Python supports generators and decorators'') was not distinguished
+from coordinated-clause structure. All 80 were fixed without weakening any
+assertion.
+
+\paragraph{Defect 7: uncertainty score blind to conflict pressure.}
+\texttt{uncertainty\_score} and \texttt{reliability\_index} are reported as
+two distinct metrics, but \texttt{\_compute\_uncertainty()}
+(\texttt{scoring/fusion.py}) combined only evidence-sufficiency components
+(incompleteness, low source diversity, low independence) and never read
+\texttt{conflict\_pressure} at all. A claim under heavy, active dispute
+therefore registered a correctly-lowered reliability but an
+\emph{unchanged} uncertainty score --- the metric meant to answer ``how
+much should a reader trust this number'' did not move even when the honest
+answer was ``much less, it is contested.'' Fixed by adding
+\texttt{conflict\_pressure} as a fourth weighted uncertainty component;
+verified directly by metamorphic relation MR2 (\S\ref{sec:metamorphic}),
+which now asserts uncertainty strictly increases under contradiction, not
+only that reliability does not increase.
+
+\paragraph{Defect 8: dashboard views bypassing the Command layer.}
+SMRITI's Phase 10 dashboard architecture requires that views communicate
+user actions to state via typed \texttt{Command} objects dispatched
+through an \texttt{InteractionDispatcher}, never by calling state-mutating
+methods directly. Two views (\texttt{NavigationView},
+\texttt{ResultListView}) violated this by importing the concrete
+\texttt{EpistemicStateManager} class directly (caught by an existing but
+previously-failing static dependency-matrix test) and calling
+\texttt{navigate\_back()}/\texttt{select\_claim()}/\texttt{set\_page()}
+directly. Both are fixed to follow the same dispatcher-based pattern
+already used correctly by \texttt{SearchView}, with new unit tests added
+since neither view had prior coverage.

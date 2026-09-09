@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "smriti"
 version = "0.1.0"
-description = "Knowledge drift analyzer for personal note vaults."
+description = "Reproducible, self-certifying pipeline for claim extraction, contradiction-aware knowledge graph construction, and reliability scoring over personal note vaults."
 authors = ["Abhijnan B C <you@example.com>"]
 license = "MIT"
 readme = "README.md"
@@ -55,6 +55,7 @@ ruff = "^0.4"
 mypy = "^1.10"
 ipython = "^8.24"
 hypothesis = "^6.156.7"
+matplotlib = "^3.11.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

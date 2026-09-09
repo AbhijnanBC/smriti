@@ -114,7 +114,7 @@ def test_signal_manifests_produced():
     ]
     cs, manifests, sv = assemble_contribution_set(signals, extractors, policy.fusion, "c001")
     from smriti.core.models import SignalManifest
-    evidence_manifest = next((m for m in manifests if m.signal_name == "evidence_strength"), None)
+    evidence_manifest = next((m for m in manifests if m.signal_id == "evidence_strength"), None)
     assert evidence_manifest is not None
     assert evidence_manifest.normalization_strategy != ""
     assert isinstance(evidence_manifest.quality_flags, tuple)

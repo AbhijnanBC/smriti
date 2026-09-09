@@ -33,14 +33,13 @@ from smriti.core.models import (
     Claim, CandidatePair, RelationshipEvidence,
     NLIScores, InferenceMetadata, LifecycleStage,
 )
+from smriti.core.model_provenance import resolve_hf_revision
 from smriti.exceptions import NLIModelError, NLIInferenceBatchError
 
 logger = structlog.get_logger(__name__)
 
 _NLI_LABELS = ["contradiction", "entailment", "neutral"]
 _LABEL_INDEX = {label: i for i, label in enumerate(_NLI_LABELS)}
-
-NLI_MODEL_VERSION = "1.0"
 
 # Retry configuration
 _NLI_MAX_RETRIES = 3
@@ -61,6 +60,18 @@ class NLIEvidenceGenerator:
         )
         self._batch_size: int = nli_cfg.get("batch_size", 16)
         self._model = self._load_model()
+
+        # Resolve the real HF commit hash for the loaded NLI model, instead
+        # of a hardcoded version string.
+        try:
+            hf_config = self._model.model.config
+        except Exception:
+            hf_config = None
+        self._model_revision = resolve_hf_revision(hf_config, self._model_name)
+
+        # Real runtime device (the CrossEncoder may fall back to CPU even
+        # if a GPU device was requested), rather than an assumed constant.
+        self._device = str(getattr(self._model, "device", "cpu"))
 
     def _load_model(self):
         try:
@@ -195,9 +206,9 @@ class NLIEvidenceGenerator:
 
             inference_metadata = InferenceMetadata(
                 model_name=self._model_name,
-                model_version=NLI_MODEL_VERSION,
+                model_version=self._model_revision,
                 runtime_seconds=batch_elapsed,
-                device="cpu",                     # Extend to detect GPU if needed
+                device=self._device,
                 batch_index=batch_index,
                 latency_ms=per_pair_latency_ms,
             )

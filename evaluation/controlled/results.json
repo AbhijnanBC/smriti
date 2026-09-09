@@ -1,0 +1,262 @@
+{
+  "run_id": "20260909_193916",
+  "per_category": {
+    "direct": {
+      "retrieved": 1,
+      "total": 2,
+      "correct": 1
+    },
+    "negated": {
+      "retrieved": 2,
+      "total": 2,
+      "correct": 2
+    },
+    "numeric": {
+      "retrieved": 2,
+      "total": 2,
+      "correct": 2
+    },
+    "temporal": {
+      "retrieved": 1,
+      "total": 2,
+      "correct": 1
+    },
+    "entity": {
+      "retrieved": 2,
+      "total": 2,
+      "correct": 2
+    },
+    "attribute": {
+      "retrieved": 2,
+      "total": 2,
+      "correct": 2
+    },
+    "supports": {
+      "retrieved": 4,
+      "total": 6,
+      "correct": 1
+    },
+    "neutral": {
+      "retrieved": 0,
+      "total": 6,
+      "correct": 0
+    }
+  },
+  "overall": {
+    "total": 24,
+    "retrieved": 14,
+    "correct": 11
+  },
+  "overall_retrieval_recall": 0.5833,
+  "overall_classification_accuracy_given_retrieved": 0.7857,
+  "retrieval_recall_bootstrap_ci": {
+    "point_estimate": 0.5833,
+    "ci_lower": 0.375,
+    "ci_upper": 0.7917,
+    "n_items": 24,
+    "n_resamples": 2000,
+    "confidence_level": 0.95
+  },
+  "classification_accuracy_bootstrap_ci": {
+    "point_estimate": 0.7857,
+    "ci_lower": 0.5714,
+    "ci_upper": 1.0,
+    "n_items": 14,
+    "n_resamples": 2000,
+    "confidence_level": 0.95
+  },
+  "rows": [
+    {
+      "pair": "D01a/D01b",
+      "gold": "CONTRADICTS",
+      "category": "direct",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D02a/D02b",
+      "gold": "CONTRADICTS",
+      "category": "direct",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "D03a/D03b",
+      "gold": "CONTRADICTS",
+      "category": "negated",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D04a/D04b",
+      "gold": "CONTRADICTS",
+      "category": "negated",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D05a/D05b",
+      "gold": "CONTRADICTS",
+      "category": "numeric",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D06a/D06b",
+      "gold": "CONTRADICTS",
+      "category": "numeric",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D07a/D07b",
+      "gold": "CONTRADICTS",
+      "category": "temporal",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D08a/D08b",
+      "gold": "CONTRADICTS",
+      "category": "temporal",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "D09a/D09b",
+      "gold": "CONTRADICTS",
+      "category": "entity",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D10a/D10b",
+      "gold": "CONTRADICTS",
+      "category": "entity",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D11a/D11b",
+      "gold": "CONTRADICTS",
+      "category": "attribute",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "D12a/D12b",
+      "gold": "CONTRADICTS",
+      "category": "attribute",
+      "retrieved": true,
+      "predicted": "CONTRADICTS",
+      "correct": true
+    },
+    {
+      "pair": "S01a/S01b",
+      "gold": "SUPPORTS",
+      "category": "supports",
+      "retrieved": true,
+      "predicted": "NEUTRAL",
+      "correct": false
+    },
+    {
+      "pair": "S02a/S02b",
+      "gold": "SUPPORTS",
+      "category": "supports",
+      "retrieved": true,
+      "predicted": "NEUTRAL",
+      "correct": false
+    },
+    {
+      "pair": "S03a/S03b",
+      "gold": "SUPPORTS",
+      "category": "supports",
+      "retrieved": true,
+      "predicted": "REFINES",
+      "correct": false
+    },
+    {
+      "pair": "S04a/S04b",
+      "gold": "SUPPORTS",
+      "category": "supports",
+      "retrieved": true,
+      "predicted": "SUPPORTS",
+      "correct": true
+    },
+    {
+      "pair": "S05a/S05b",
+      "gold": "SUPPORTS",
+      "category": "supports",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "S06a/S06b",
+      "gold": "SUPPORTS",
+      "category": "supports",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "N01a/N01b",
+      "gold": "NEUTRAL",
+      "category": "neutral",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "N02a/N02b",
+      "gold": "NEUTRAL",
+      "category": "neutral",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "N03a/N03b",
+      "gold": "NEUTRAL",
+      "category": "neutral",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "N04a/N04b",
+      "gold": "NEUTRAL",
+      "category": "neutral",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "N05a/N05b",
+      "gold": "NEUTRAL",
+      "category": "neutral",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    },
+    {
+      "pair": "N06a/N06b",
+      "gold": "NEUTRAL",
+      "category": "neutral",
+      "retrieved": false,
+      "predicted": null,
+      "correct": false
+    }
+  ]
+}

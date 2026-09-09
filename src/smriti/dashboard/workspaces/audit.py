@@ -42,7 +42,7 @@ class AuditWorkspace(BaseWorkspace):
         result = context.client.search_claims(
             sort_field="reliability_index", limit=state.page_size,
         )
-        claim_pms = DTOTransformer.to_claims_list(result.get("claims", []))
+        claim_pms = DTOTransformer.to_claims_list(result.get("claims", [])) or []
 
         audit_pm = None
         if state.selected_claim_id:

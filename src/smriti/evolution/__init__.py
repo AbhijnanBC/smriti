@@ -283,7 +283,7 @@ def build_knowledge_graph(
     final_stats = stats.finalize()
 
     # ── Write artifacts ────────────────────────────────────────────────────────
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase7"
+    phase_dir = manifest_manager.run_dir / "phase7"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
     dataset_path = phase_dir / "dataset.json"
     dataset_path.write_text(

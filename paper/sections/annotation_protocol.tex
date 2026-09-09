@@ -1,0 +1,38 @@
+\paragraph{Why not human annotation, and why ``Reference'' not ``Gold''.}
+A rigorous evaluation of extraction precision/recall and relationship-
+classification accuracy benefits enormously from ground truth. Recruiting,
+training, and adjudicating a panel of human annotators with measured
+inter-annotator agreement was outside what could be produced for this
+paper. We are explicit that what follows is \emph{not} a substitute for
+that: it is a disclosed, LLM-derived reference annotation. We call the
+corpus it labels ``SMRITI-Reference'', reserving ``Gold'' for a corpus with
+externally human-labeled ground truth, which this is not. It is useful for
+a first-pass quantitative signal and for detecting gross calibration
+failures, but not sufficient on its own to certify SMRITI's real-world
+accuracy. \S\ref{sec:limitations} states exactly what a follow-up human
+study would need to add.
+
+\paragraph{Protocol.} Two independent annotation passes (no shared
+context, no access to SMRITI's own predictions or to each other's output)
+are run over: (i) a stratified sample of claims with full coverage of
+every claim touching a deliberately-contradictory document, judged for
+\emph{validity} (is this a structurally sound claim, or extraction noise),
+\emph{quality} (1--5), and \emph{reliability} (1--5, an epistemic-
+credibility judgment independent of extraction quality); and (ii) a
+stratified sample of relationship candidates, comprising every candidate
+pair between a deliberately-contradictory document and its stated target,
+a sample of candidate pairs between a deliberately-contradictory document
+and an unrelated document (to measure spurious cross-domain contradiction
+rate), and a stratified sample of SMRITI's other predicted relationship
+types, labeled SUPPORTS / CONTRADICTS / REFINES / NEUTRAL / UNSURE.
+Annotators are blind to SMRITI's own predicted labels throughout.
+
+\paragraph{This annotation round was re-run from scratch.} The claim- and
+relationship-extraction fixes described in \S\ref{sec:system} (the
+assertion classifier and the resolver arg-max/relatedness-gate fix) change
+which claims and candidate pairs SMRITI produces at all, so a reference
+annotation collected before those fixes would be scored against a
+population of claims and pairs that no longer exists. We therefore
+re-sampled and re-annotated against the corrected system's output rather
+than reusing the pre-fix annotation; both rounds' raw data are released for
+inspection.

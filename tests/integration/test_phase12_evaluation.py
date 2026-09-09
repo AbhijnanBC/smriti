@@ -109,13 +109,13 @@ def test_overall_confidence_in_range(mock_api):
 def test_six_experiments_run(mock_api):
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    assert len(report.experiment_results) == 6
+    assert len(report.experiment_results) == 5
 
 
 def test_six_research_claims_assessed(mock_api):
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    assert len(report.research_claims) == 6
+    assert len(report.research_claims) == 5
 
 
 def test_threats_to_validity_present(mock_api):
@@ -224,7 +224,7 @@ def test_research_assurance_package_has_all_components(mock_api):
     """RECTIFIED (P0-big): Package must contain all companion artifacts."""
     engine = CertificationEngine(run_id="test_phase12")
     pkg = engine.run_full(mock_api)
-    assert len(pkg.experiment_registry) == 6
+    assert len(pkg.experiment_registry) == 5
     assert len(pkg.assumption_registry) >= 5
     assert len(pkg.limitation_registry) >= 4
 
@@ -254,8 +254,8 @@ def test_evaluation_manifest_in_json(mock_api):
     pkg = engine.run_full(mock_api)
     manifest = pkg.evaluation_manifest
     assert manifest.run_id == "test_phase12"
-    assert len(manifest.experiment_ids) == 6
-    assert len(manifest.random_seeds) == 6
+    assert len(manifest.experiment_ids) == 5
+    assert len(manifest.random_seeds) == 5
     assert "python" in manifest.software_versions
 
 

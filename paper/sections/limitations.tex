@@ -1,0 +1,99 @@
+\paragraph{This is not a human evaluation.} Every SMRITI-Reference
+precision/recall/F1 number in this paper is computed against LLM-derived
+reference labels, not human judgments. Two independent annotation passes
+give a self-consistency signal, but self-consistency between two instances
+of the same kind of annotator is not the same thing as validity against
+independent human judgment. A rigorous follow-up would need 3+ trained
+human annotators, measured Cohen's/Fleiss' $\kappa$ against a target of
+$\kappa > 0.7$, an adjudication protocol, and ideally annotators with no
+exposure to SMRITI's design.
+
+\paragraph{The resolver fix does not transfer to real, rhetorical
+disagreement.} This is the most important limitation in this paper. On
+SMRITI-Controlled's direct propositional negations, the arg-max fix
+achieves 100\% CONTRADICTS precision (\S\ref{sec:controlled}). On
+SMRITI-Reference's real prose, CONTRADICTS precision is 4.6\% and recall
+on the corpus's own deliberately-planted hard-contradiction pairs is
+14.3\% (\S\ref{sec:results-annotation}) --- not better than the 3.2\%
+this paper's predecessor measured pre-fix. Inspecting the NLI model's raw
+scores directly shows this is not a resolver regression: the model itself
+assigns neutral $>0.97$ probability to most of the missed pairs, because
+they express disagreement as argumentative prose about a shared topic
+rather than direct propositional negation, and an
+SNLI/MultiNLI/ANLI-calibrated model is not trained to read that as
+contradiction. SMRITI-Controlled and SMRITI-Reference are therefore not
+in tension; they measure different things, and only the harder,
+real-corpus one is representative of deployment. This paper fixes a
+real, verifiable integration bug (E4/E5, \S\ref{sec:error-taxonomy}) and
+demonstrates that fix generalizes across six categories of
+\emph{propositional} contradiction. It does not solve --- and had we not
+re-run the reference annotation post-fix, would not have discovered ---
+that most naturally-occurring disagreement in personal notes is
+rhetorical, not propositional, and requires a different modeling
+approach entirely (E6).
+
+\paragraph{SMRITI-Controlled is small and synthetic.} 24 pairs, entirely
+fictional entity names, is enough to demonstrate that the arg-max/
+relatedness-gate fix generalizes across six contradiction \emph{categories}
+qualitatively, but far too small to report a tight quantitative estimate
+of true contradiction precision in deployment (our own 95\% bootstrap CI
+on retrieval recall, [37.5\%, 79.2\%], is itself evidence of how much
+sampling uncertainty remains at $n=24$). It also cannot speak to
+naturally-occurring contradiction, only to the six categories we
+constructed.
+
+\paragraph{SUPPORTS classification remains weak.} SMRITI-Controlled's own
+results (\S\ref{sec:controlled}) show only 25\% classification accuracy on
+retrieved SUPPORTS pairs, in sharp contrast to CONTRADICTS's 100\%; the
+same weakness reproduces on real text, where SMRITI-Reference SUPPORTS
+precision is 27.8\% with only 8.2\% recall
+(\S\ref{sec:results-annotation}). The arg-max fix was applied
+symmetrically to both rules, but evidently entailment scoring on this NLI
+model is less well-calibrated than contradiction scoring for this task,
+or our SUPPORTS test pairs are harder than our CONTRADICTS ones in some
+way we have not isolated. This is unresolved and squarely future work.
+
+\paragraph{Corpus scale and domain coverage.} SMRITI-Reference is 53
+documents across five hand-picked domains; sufficient to exercise
+contradiction partitioning and cross-domain calibration, far too small to
+support claims about accuracy at large-corpus scale (Wikipedia- or
+PubMed-scale evaluation is future work).
+
+\paragraph{Reference-label circularity risk.} The same underlying language
+model family that annotates the SMRITI-Reference labels has parametric
+knowledge overlapping with SMRITI's own NLI classifier's training
+distribution; some agreement between SMRITI's predictions and the
+reference labels may reflect shared model biases. We mitigate this
+partially by keeping annotators blind to SMRITI's predictions, and more
+substantially by treating SMRITI-Controlled (\S\ref{sec:controlled}) and
+the metamorphic/reconstruction tests (\S\ref{sec:metamorphic}) --- neither
+of which involves an LLM judging SMRITI's output at all --- as the stronger
+evidence in this paper, but cannot fully rule the risk out for the
+SMRITI-Reference numbers specifically.
+
+\paragraph{P0-9, P0-10, and P0-11 from the source review are not addressed
+in this paper.} An external review additionally identified that source-
+diversity/independence signals derive from filesystem-path heuristics
+rather than genuine publisher/author provenance, that transitive SUPPORTS
+propagation may overstate corroboration across multiple hops, and that
+temporal metadata is not yet populated from document frontmatter (confirmed
+present in our own \texttt{stress\_vault} corpus, e.g.\
+\texttt{date: 2024-07-01}, but wiring it through would require changing
+the frozen \texttt{Document}/\texttt{Claim} schemas consumed by every
+downstream phase and re-running the entire pipeline, invalidating every
+post-fix number in \S\ref{sec:metamorphic}--\S\ref{sec:results}). We
+assessed these three as requiring corpus- or schema-level changes
+disproportionate to the remaining scope of this paper, and record them
+here as concrete, scoped future work rather than silently deferring them.
+The fourth item the same review raised in this group, P0-12 (conflict
+pressure not integrated into the uncertainty score), was tractable without
+a schema change or corpus re-run and \emph{is} fixed in this paper
+(Defect 7, \S\ref{sec:bugs}; verified by metamorphic relation MR2).
+
+\paragraph{Single-run experiments.} Latency/throughput numbers are
+reported from single runs per corpus size; absolute numbers should be
+read as order-of-magnitude, not precise benchmarks. Phase 12's Gate 5
+(Reproducibility) correctly reports 0\% and blocks certification above
+STATISTICALLY\_VERIFIED as a result --- we removed a prior mechanism that
+fabricated apparent reproducibility by duplicating a single measurement,
+and have not yet replaced it with a genuine multi-run study.

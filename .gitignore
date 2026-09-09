@@ -11,7 +11,14 @@ build/
 cache/
 output/logs/
 artifacts/run_*/
+artifacts/pipeline_state.json
 *.log
+paper/.tectonic/
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
 .venv/
 venv/
 *.swp

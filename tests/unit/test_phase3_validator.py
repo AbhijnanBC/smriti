@@ -6,10 +6,12 @@ import pytest
 from pathlib import Path
 from smriti.core.models import SemanticSentence, SegmentationWarning
 from smriti.extraction.validator import validate_sentences
+from smriti.extraction.scanner import BlockType
 from smriti.exceptions import SentenceValidationError
 
 
-def make_sentence(sid, doc_id, text, position, char_start=0, char_end=10, context=""):
+def make_sentence(sid, doc_id, text, position, char_start=0, char_end=10, context="",
+                   origin_block_type=BlockType.PARAGRAPH):
     return SemanticSentence(
         sentence_id=sid,
         document_id=doc_id,
@@ -19,6 +21,7 @@ def make_sentence(sid, doc_id, text, position, char_start=0, char_end=10, contex
         char_start=char_start,
         char_end=char_end,
         source_path=Path("note.md"),
+        origin_block_type=origin_block_type.value,
     )
 
 

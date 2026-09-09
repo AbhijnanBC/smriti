@@ -95,7 +95,11 @@ def test_three_sentences(segmenter):
 def test_very_long_sentence_emits_warning(segmenter):
     """A sentence exceeding max_sentence_chars must emit SEG002."""
     from smriti.core.models import SegmentationWarning
-    long_text = "word " * 500 + "."
+    # Build text guaranteed to exceed the segmenter's actual configured
+    # threshold (config/test.yaml sets max_sentence_chars=5000, higher than
+    # config/default.yaml's 2000) rather than assuming the default value.
+    word_count = (segmenter._max_chars // len("word ")) + 10
+    long_text = "word " * word_count + "."
     result = segmenter.segment(long_text)
     assert len(result) == 1
     assert SegmentationWarning.SEG_VERY_LONG_SENTENCE in result[0].warnings

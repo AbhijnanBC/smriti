@@ -50,20 +50,22 @@ def l2_normalize(vector: List[float]) -> List[float]:
     Returns:
         New float list with unit L2 norm. Input is never mutated.
     """
-    sum_sq = sum(float(x) * float(x) for x in vector)
+    # RECTIFIED: use math.hypot for the Euclidean norm instead of
+    # sqrt(sum(x*x)) — hypot avoids spurious intermediate underflow/overflow
+    # for very small or very large magnitudes.
+    floats = [float(x) for x in vector]
+    norm = math.hypot(*floats)
 
-    # Warn if vector is extremely close to zero (should be caught by validation)
-    if sum_sq <= 1e-15:
-        logger.warning(
-            "near-zero norm vector in normalization, using epsilon",
-            sum_sq=sum_sq,
-        )
+    # Only fall back to an epsilon if the computed norm is a literal zero
+    # (true division-by-zero guard for a very small margin that slipped
+    # past validation) — do NOT unconditionally add an epsilon, since for
+    # legitimately tiny but non-zero vectors (norm well below 1e-12) a flat
+    # +1e-12 would dominate the real norm and corrupt the result.
+    if norm == 0.0:
+        logger.warning("near-zero norm vector in normalization, using epsilon")
+        norm = 1e-12
 
-    # Compute norm with a tiny epsilon to prevent division by zero
-    # even if validation had a very small margin.
-    norm = math.sqrt(sum_sq) + 1e-12
-
-    return [float(x) / norm for x in vector]
+    return [x / norm for x in floats]
 
 
 def normalize_batch(

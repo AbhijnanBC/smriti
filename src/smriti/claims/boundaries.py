@@ -41,7 +41,7 @@ Design:
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Tuple
 import structlog
 
 from smriti.core.config import get_config
@@ -123,16 +123,39 @@ class BoundaryDetector:
                 if t.dep_ == "conj" and t.head == root
             ]
 
-            if not conj_tokens:
-                return []
+            if conj_tokens:
+                return self._reconstruct_coordinated_clauses(
+                    sent=doc,
+                    root=root,
+                    conjuncts=conj_tokens,
+                    parsed=parsed,
+                )
 
-            # Use the new reconstruction method
-            return self._reconstruct_coordinated_clauses(
-                sent=doc,
-                root=root,
-                conjuncts=conj_tokens,
-                parsed=parsed,
-            )
+            # No coordination directly on the root verb. Check for
+            # coordination on the root's direct object/complement instead —
+            # e.g. "Python supports generators and decorators": "decorators"
+            # is dep_="conj" with head=generators (the object), not
+            # head=root. Subject and verb are shared by construction in this
+            # case, so it is always COORDINATED_PREDICATE, and each
+            # candidate is reconstructed as subject + aux + root verb + one
+            # object conjunct (instead of substituting a whole conjunct verb
+            # subtree for the root, as the verb-level branch above does).
+            objects = [
+                t for t in root.rights
+                if t.dep_ in ("dobj", "obj", "attr", "dative", "oprd", "pobj")
+            ]
+            for obj in objects:
+                obj_conjuncts = [t for t in doc if t.dep_ == "conj" and t.head == obj]
+                if obj_conjuncts:
+                    return self._reconstruct_coordinated_clauses(
+                        sent=doc,
+                        root=root,
+                        conjuncts=obj_conjuncts,
+                        parsed=parsed,
+                        shared_root_token=root,
+                    )
+
+            return []
 
         except Exception as e:
             logger.debug(
@@ -148,16 +171,44 @@ class BoundaryDetector:
         root,
         conjuncts,
         parsed: ParsedSentence,
+        shared_root_token=None,
     ) -> List[AssertionCandidate]:
         """
         Reconstruct clauses using exact token spans to preserve tense, aspect, and passive voice.
         NEVER uses lemmas for reconstruction.
+
+        `shared_root_token`, when given, means `conjuncts` are coordinated
+        objects/complements of the root verb (not coordinated verbs
+        themselves) — e.g. "decorators" in "Python supports generators and
+        decorators". Subject and verb are then always shared, so the result
+        is always COORDINATED_PREDICATE, and the root verb token must be
+        explicitly included when reconstructing each conjunct's candidate
+        (unlike the verb-conjunction case, where each conjunct already IS a
+        verb standing in for the root).
         """
         candidates = []
 
         # 1. Extract the exact token span for the subject
         subjects = [t for t in root.lefts if t.dep_ in ("nsubj", "nsubjpass", "csubj")]
         subj_tokens = list(subjects[0].subtree) if subjects else []
+
+        if shared_root_token is not None:
+            # Object-level coordination: subject and verb are shared by
+            # construction, regardless of what follows the conjunct objects.
+            boundary_reason = BoundaryReason.COORDINATED_PREDICATE
+        else:
+            # Verb-level coordination: determine whether each conjunct
+            # introduces its OWN subject (independent clause, e.g. "Python is
+            # fast and Java is slow") or shares the root's subject
+            # (coordinated predicate, e.g. "Python runs and compiles quickly").
+            conjunct_has_own_subject = [
+                any(t.dep_ in ("nsubj", "nsubjpass", "csubj") for t in conj.lefts)
+                for conj in conjuncts
+            ]
+            if conjuncts and all(conjunct_has_own_subject):
+                boundary_reason = BoundaryReason.INDEPENDENT_CLAUSE
+            else:
+                boundary_reason = BoundaryReason.COORDINATED_PREDICATE
 
         # 2. Extract the main clause (exclude conjunct subtrees and their coordinating conjunctions)
         conjunct_subtrees = set()
@@ -170,6 +221,7 @@ class BoundaryDetector:
 
         main_clause_tokens = [t for t in sent if t not in conjunct_subtrees]
         main_text = self._tokens_to_string(main_clause_tokens)
+        main_spans, main_token_ids = self._tokens_to_spans_and_ids(main_clause_tokens)
 
         candidates.append(
             AssertionCandidate(
@@ -177,21 +229,26 @@ class BoundaryDetector:
                 source=parsed,
                 span_start=0,
                 span_end=len(main_text),  # approximate end; we keep it simple
-                boundary_reason=BoundaryReason.COORDINATION,
+                boundary_reason=boundary_reason,
+                source_char_spans=main_spans,
+                source_token_ids=main_token_ids,
             )
         )
 
         # 3. Reconstruct each conjunct clause by combining:
-        #    Subject Tokens + Auxiliary Tokens + Conjunct Tokens
+        #    Subject Tokens + Auxiliary Tokens + [Root Verb, if object-level
+        #    coordination] + Conjunct Tokens
         aux_tokens = [t for t in root.lefts if t.dep_ in ("aux", "auxpass")]
+        root_tokens = [shared_root_token] if shared_root_token is not None else []
 
         for conj in conjuncts:
             # Combine all required tokens and sort them by their original position in the sentence
             reconstructed_tokens = sorted(
-                set(subj_tokens + aux_tokens + list(conj.subtree)),
+                set(subj_tokens + aux_tokens + root_tokens + list(conj.subtree)),
                 key=lambda x: x.i
             )
             conj_text = self._tokens_to_string(reconstructed_tokens)
+            conj_spans, conj_token_ids = self._tokens_to_spans_and_ids(reconstructed_tokens)
 
             candidates.append(
                 AssertionCandidate(
@@ -199,11 +256,55 @@ class BoundaryDetector:
                     source=parsed,
                     span_start=conj.idx,
                     span_end=conj.idx + len(conj_text),
-                    boundary_reason=BoundaryReason.COORDINATION,
+                    boundary_reason=boundary_reason,
+                    source_char_spans=conj_spans,
+                    source_token_ids=conj_token_ids,
                 )
             )
 
         return candidates
+
+    def _tokens_to_spans_and_ids(self, tokens: list) -> Tuple[tuple, tuple]:
+        """
+        Compute exact source-token provenance for a reconstructed candidate.
+
+        Given the exact token list used to build a candidate's text (in
+        original-sentence order), group it into contiguous runs — a run
+        breaks wherever the next token's index is not exactly one more than
+        the previous token's index (i.e. tokens from the "other" conjunct, or
+        an intervening coordinator, were excluded). Each run becomes one
+        (char_start, char_end) span into the ORIGINAL sentence text.
+
+        Example: "Python supports generators and decorators." reconstructing
+        the "decorators" conjunct combines tokens {Python(0), supports(1),
+        decorators(4)} — two contiguous runs: [0,1] ("Python supports") and
+        [4] ("decorators"), because token 2 ("generators") and 3 ("and") are
+        not part of this candidate.
+
+        Returns:
+            (source_char_spans, source_token_ids) — source_token_ids are the
+            sorted, de-duplicated Token.i values; source_char_spans are the
+            (start, end) character pairs for each contiguous run.
+        """
+        if not tokens:
+            return (), ()
+
+        ordered = sorted(set(tokens), key=lambda t: t.i)
+        token_ids = tuple(t.i for t in ordered)
+
+        spans: List[Tuple[int, int]] = []
+        run_start_token = ordered[0]
+        prev_token = ordered[0]
+        for tok in ordered[1:]:
+            if tok.i == prev_token.i + 1:
+                prev_token = tok
+                continue
+            spans.append((run_start_token.idx, prev_token.idx + len(prev_token.text)))
+            run_start_token = tok
+            prev_token = tok
+        spans.append((run_start_token.idx, prev_token.idx + len(prev_token.text)))
+
+        return tuple(spans), token_ids
 
     def _tokens_to_string(self, tokens: list) -> str:
         """Safely join tokens respecting spaCy's original whitespace mapping."""
@@ -228,10 +329,20 @@ class BoundaryDetector:
     ) -> AssertionCandidate:
         """Create a single whole-sentence candidate (no splitting)."""
         text = parsed.sentence.text
+        # The whole sentence is used verbatim, so it is always exactly one
+        # contiguous span. Token ids are only available when spaCy actually
+        # parsed the sentence (SINGLE_ASSERTION); on PARSE_FAILED there is no
+        # doc to draw token ids from.
+        if parsed.parse_ok and parsed.spacy_doc is not None:
+            token_ids = tuple(t.i for t in parsed.spacy_doc)
+        else:
+            token_ids = ()
         return AssertionCandidate(
             text=text,
             span_start=0,
             span_end=len(text),
             source=parsed,
             boundary_reason=reason,
+            source_char_spans=((0, len(text)),),
+            source_token_ids=token_ids,
         )

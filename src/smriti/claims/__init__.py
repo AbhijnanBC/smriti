@@ -33,6 +33,8 @@ from smriti.core.models import (
     Claim,
     ClaimWarning,
     ExtractionMode,
+    AssertionType,
+    DiscardedCandidate,
     Phase4Stats,
     SemanticSentence,
 )
@@ -42,6 +44,7 @@ from smriti.core.timing import Timer
 from smriti.exceptions import Phase4Error, ClaimValidationError
 
 from smriti.claims.parser import BaseParser, SpaCyParser  # <-- REPLACED
+from smriti.claims.classifier import AssertionClassifier
 from smriti.claims.boundaries import BoundaryDetector
 from smriti.claims.structure import StructureExtractor
 from smriti.claims.annotation import AssertionAnnotator
@@ -62,6 +65,10 @@ class SentenceExtractionResult:
     claims: List[Claim]
     warnings: List[ClaimWarning]
     error: Optional[str] = None
+    # NEW: sentences classified as something other than DECLARATIVE_ASSERTION
+    # never reach Claim construction, but are never silently dropped either —
+    # they are recorded here in full (text + classified type + reason).
+    discarded_candidates: List[DiscardedCandidate] = field(default_factory=list)
 
     @property
     def claim_count(self) -> int:
@@ -88,6 +95,19 @@ class Phase4Result:
         return result
 
     @property
+    def all_discarded_candidates(self) -> List[DiscardedCandidate]:
+        """
+        Flat list of every sentence that was classified as something other
+        than DECLARATIVE_ASSERTION, across all sentences. Nothing filtered
+        out of the knowledge graph is lost — it is all here, with its
+        classified AssertionType and text intact.
+        """
+        result = []
+        for sr in self.sentence_results:
+            result.extend(sr.discarded_candidates)
+        return result
+
+    @property
     def total_claims(self) -> int:
         return sum(sr.claim_count for sr in self.sentence_results)
 
@@ -98,6 +118,28 @@ class Phase4Result:
     @property
     def failed_sentences(self) -> int:
         return sum(1 for sr in self.sentence_results if sr.error is not None)
+
+    def to_discarded_dataset_json(self) -> str:
+        """
+        Serialize every DiscardedCandidate to JSON for audit purposes.
+        Written to artifacts/run_{id}/phase4/discarded_candidates.json.
+
+        This is the lossless side-channel: any sentence that did not become
+        a Claim is fully recoverable from this file, along with why.
+        """
+        records = []
+        for dc in self.all_discarded_candidates:
+            records.append({
+                "sentence_id":       dc.sentence_id,
+                "document_id":       dc.document_id,
+                "text":              dc.text,
+                "assertion_type":    dc.assertion_type.value,
+                "origin_block_type": dc.origin_block_type,
+                "reason":            dc.reason,
+                "source_path":       str(dc.source_path),
+                "context":           dc.context,
+            })
+        return json.dumps(records, indent=2, ensure_ascii=False)
 
     def to_dataset_json(self) -> str:
         """
@@ -129,6 +171,9 @@ class Phase4Result:
                     "source_path":       str(claim.provenance.source_path),
                     "sentence_context":  claim.provenance.sentence_context,
                     "sentence_position": claim.provenance.sentence_position,
+                    "source_char_spans": list(claim.provenance.source_char_spans),   # NEW
+                    "source_token_ids":  list(claim.provenance.source_token_ids),    # NEW
+                    "reconstruction_rule": claim.provenance.reconstruction_rule,      # NEW
                 },
             }
             # Include SVO if available
@@ -158,17 +203,29 @@ def extract_claims_from_sentence(
     stats_collector: Phase4StatsCollector,
     max_claims: int,
     global_seen_ids: dict,
+    classifier: Optional[AssertionClassifier] = None,
 ) -> SentenceExtractionResult:
     """
     Extract claims from a single SemanticSentence.
 
-    This is the 7-stage compiler pipeline applied to one sentence.
+    This is the 8-stage compiler pipeline applied to one sentence: a
+    classification gate now runs before Stage 2 (boundary detection). Only
+    sentences classified as AssertionType.DECLARATIVE_ASSERTION proceed into
+    claim construction; everything else (metadata lines, headings, list
+    items, table cells, questions, procedural instructions, fragments, code,
+    quotes) is recorded as a DiscardedCandidate and never becomes a Claim.
+
+    Args:
+        classifier: AssertionClassifier to use. Defaults to a fresh instance
+            when omitted (the classifier is stateless and cheap to build) —
+            callers that process many sentences should pass a shared instance.
 
     Returns:
         SentenceExtractionResult (never raises — errors are captured).
     """
     sentence_id = sentence.sentence_id
     all_warnings: List[ClaimWarning] = []
+    classifier = classifier or AssertionClassifier()
 
     try:
         stats_collector.record_sentence_processed()
@@ -178,6 +235,32 @@ def extract_claims_from_sentence(
         if not parsed.parse_ok:
             stats_collector.record_parser_failure()
             all_warnings.append(ClaimWarning.CLM_PARSER_FAILURE)
+
+        # Stage 1.5: Assertion-type classification (the gate).
+        # This MUST happen before any Claim is ever constructed. Only
+        # DECLARATIVE_ASSERTION proceeds; everything else is discarded here,
+        # fully recorded, and returned to the caller instead of a claim list.
+        assertion_type, classify_reason = classifier.classify(sentence, parsed)
+        stats_collector.record_classification(assertion_type)
+
+        if assertion_type != AssertionType.DECLARATIVE_ASSERTION:
+            discarded = DiscardedCandidate(
+                sentence_id=sentence.sentence_id,
+                document_id=sentence.document_id,
+                text=sentence.text,
+                assertion_type=assertion_type,
+                origin_block_type=sentence.origin_block_type,
+                reason=classify_reason,
+                source_path=sentence.source_path,
+                context=sentence.context,
+            )
+            stats_collector.record_warnings(all_warnings)
+            return SentenceExtractionResult(
+                sentence_id=sentence_id,
+                claims=[],
+                warnings=all_warnings,
+                discarded_candidates=[discarded],
+            )
 
         # Stage 2–3: Assertion Analysis + Boundary Detection
         candidates = boundary_detector.detect(parsed)
@@ -287,6 +370,7 @@ def extract_claims(
 
     # Initialize all pipeline components once
     parser = SpaCyParser()  # <-- REPLACED (instantiate concrete class)
+    classifier = AssertionClassifier()
     boundary_detector = BoundaryDetector()
     structure_extractor = StructureExtractor()
     annotator = AssertionAnnotator()
@@ -308,6 +392,7 @@ def extract_claims(
                 stats_collector=stats_collector,
                 max_claims=max_claims,
                 global_seen_ids=global_seen_ids,
+                classifier=classifier,
             )
             sentence_results.append(result)
 
@@ -320,15 +405,22 @@ def extract_claims(
     )
 
     # Write dataset artifact for Phase 5
-    phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase4"
+    phase_dir = manifest_manager.run_dir / "phase4"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
     dataset_path = phase_dir / "dataset.json"
     dataset_path.write_text(phase4_result.to_dataset_json(), encoding="utf-8")
+
+    # Write the lossless audit side-channel: every sentence that was
+    # classified as non-DECLARATIVE_ASSERTION and therefore never became a
+    # Claim, in full, with its classified type and reason.
+    discarded_path = phase_dir / "discarded_candidates.json"
+    discarded_path.write_text(phase4_result.to_discarded_dataset_json(), encoding="utf-8")
 
     logger.info(
         "dataset written",
         path=str(dataset_path),
         claims=phase4_result.total_claims,
+        discarded_candidates=len(phase4_result.all_discarded_candidates),
     )
 
     # Write manifest
@@ -344,6 +436,9 @@ def extract_claims(
             "whole_sentence": stats.whole_sentence_claims,
             "parser_failures": stats.parser_failures,
             "dataset_path": str(dataset_path),
+            "discarded_non_assertions": stats.total_discarded_non_assertions,
+            "discarded_by_type": stats.discarded_by_type,
+            "discarded_path": str(discarded_path),
         },
         status="success",
     )
@@ -358,6 +453,7 @@ def extract_claims(
         structured=stats.structured_claims,
         fallbacks=stats.whole_sentence_claims,
         parser_failures=stats.parser_failures,
+        discarded_non_assertions=stats.total_discarded_non_assertions,
     )
 
     return phase4_result

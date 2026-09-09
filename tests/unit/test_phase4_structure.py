@@ -55,13 +55,13 @@ def make_candidate(parser, text):
 def test_svo_extraction_simple(parser, extractor):
     """'Python supports generators' → S=Python, P=supports, O=generators."""
     candidate = make_candidate(parser, "Python supports generators.")
-    result = extractor.extract(candidate)
+    result = extractor.extract(candidate, parser)
     if result.extraction_mode == ExtractionMode.STRUCTURED:
         assert result.structured_assertion is not None
         assert result.structured_assertion.predicate is not None
 
 
-def test_failed_parse_produces_lexical(extractor):
+def test_failed_parse_produces_lexical(parser, extractor):
     """If parse failed, mode must be LEXICAL."""
     from smriti.claims.models import ParsedSentence, AssertionCandidate
     from smriti.core.models import SemanticSentence
@@ -76,13 +76,13 @@ def test_failed_parse_produces_lexical(extractor):
         text="test", span_start=0, span_end=4,
         source=failed_parsed, boundary_reason="parse_failed",
     )
-    result = extractor.extract(candidate)
+    result = extractor.extract(candidate, parser)
     assert result.extraction_mode == ExtractionMode.LEXICAL
 
 
 def test_extraction_never_raises(parser, extractor):
     """Extraction must NEVER raise regardless of input."""
     candidate = make_candidate(parser, "!!!! ~~~~ something very weird ????")
-    result = extractor.extract(candidate)
+    result = extractor.extract(candidate, parser)
     assert result is not None  # Always returns something
     assert result.candidate.text == "!!!! ~~~~ something very weird ????"

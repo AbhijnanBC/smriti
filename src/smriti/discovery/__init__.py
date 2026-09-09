@@ -291,7 +291,7 @@ def run_discovery(
             all_documents.append(doc)
 
         # ── Step 9: Write dataset artifact ────────────────────────────────────
-        phase_dir = ARTIFACTS_DIR / f"run_{run_id}" / "phase1"
+        phase_dir = manifest_manager.run_dir / "phase1"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
         phase_dir.mkdir(parents=True, exist_ok=True)
         dataset_path = phase_dir / "dataset.json"
 

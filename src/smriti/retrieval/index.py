@@ -31,7 +31,7 @@ from typing import List, Optional
 
 @dataclass(frozen=True)
 class SearchResult:
-    """A single ANN search result."""
+    """A single nearest-neighbor search result."""
     claim_id: str
     score: float         # Cosine similarity (dot product on L2-normalized vectors)
     rank: int            # 1 = nearest neighbor
@@ -39,7 +39,11 @@ class SearchResult:
 
 class EmbeddingIndex(ABC):
     """
-    Abstract vector index for ANN (Approximate Nearest Neighbor) search.
+    Abstract vector index for nearest-neighbor search.
+
+    The current implementation (FaissFlatIndex) performs exact
+    cosine-similarity retrieval via FAISS's flat inner-product index
+    (IndexFlatIP) — a brute-force full scan, not an approximate method.
     """
 
     @property

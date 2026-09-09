@@ -1,0 +1,257 @@
+\documentclass[11pt]{article}
+\usepackage[preprint]{acl}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+
+\title{SMRITI: An Evidence-Aware, Contradiction-Constrained Knowledge Graph \\ Architecture for Heterogeneous Notes}
+
+\author{Abhijnan B C \\
+  \texttt{p9713889@gmail.com} \\}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present SMRITI, a system that converts unstructured personal note
+vaults into a reliability-scored, contradiction-aware knowledge graph by
+combining claim extraction, embedding-retrieval candidate generation,
+NLI-based relationship classification, signed-graph contradiction
+partitioning, and multi-signal evidence fusion. An earlier version of this
+system reported impressive-looking self-evaluation numbers that turned out,
+on inspection, to be structural proxies rather than semantic evaluation
+(e.g.\ treating claim ``precision'' as the fraction of extracted claims
+that are simply non-empty) and a contradiction classifier whose measured
+precision was 3.2\%. Rather than polish those numbers, we rebuilt the
+evaluation layer and then rebuilt the algorithm the old evaluation was
+hiding problems in. This paper reports that reconstruction: (i) we
+deleted every fabricated metric from the system's self-certification layer
+and replaced it with a frozen, five-claim research registry in which a
+claim without real supporting evidence is honestly reported as
+\emph{not evaluable}, never defaulted to a passing score; (ii) we found and
+fixed the root algorithmic cause of the 3.2\% contradiction precision --- a
+resolver that checked a candidate relationship against only one alternative
+class instead of requiring it to be the genuine arg-max among
+support/contradiction/neutral scores --- together with a lightweight topical-
+relatedness gate that blocks contradiction verdicts between claims sharing
+no detectable vocabulary; (iii) we built SMRITI-Controlled, a small corpus
+of claim pairs whose relationship label is a fact about how the corpus was
+constructed (numeric facts, explicit negation, named-entity attribution),
+requiring no annotation of any kind, on which the fixed classifier achieves
+100\% precision on every retrieved contradiction pair across six distinct
+contradiction categories; (iv) we added metamorphic reliability tests and
+an exact audit-trail reconstruction test, both requiring zero external
+ground truth; and (v) we re-ran the disclosed LLM-derived reference
+annotation from scratch against the corrected system, which discloses
+that the fix's benefit does not transfer to SMRITI-Reference's real,
+argumentative prose: CONTRADICTS precision there is 4.6\%, statistically
+no better than the pre-fix 3.2\%, because most of that corpus's genuine
+disagreement is rhetorical rather than propositional, and an
+off-the-shelf entailment model does not recognize rhetoric as
+contradiction regardless of how faithfully the resolver reports its
+verdict. We report all of this, including what still does not work, with
+the same discipline we applied to finding what was broken.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Personal knowledge management tools increasingly promise to turn scattered
+notes into structured knowledge, but most either (a) perform simple
+retrieval/search over notes without any semantic modeling of what a note
+\emph{asserts}, or (b) apply a single NLP component (entailment, embedding
+similarity, entity linking) in isolation, without addressing what happens
+when a user's notes \emph{disagree with themselves} over time. SMRITI
+treats this as a first-class problem: it extracts discrete claims,
+retrieves semantically related pairs, classifies their relationship, keeps
+contradicting claims structurally apart in the resulting knowledge graph,
+and fuses multiple evidence signals into a single, auditable reliability
+score per claim.
+
+\paragraph{This paper is a correction, not a showcase.} A first version of
+this work reported self-certification numbers that looked strong but were
+not measuring what they claimed to measure, and a real empirical evaluation
+that exposed a genuinely broken contradiction classifier (3.2\% precision).
+Confronted with that gap, the temptation is to write around it. We did the
+opposite: we treated the gap itself as the research problem. Concretely,
+we ask five research questions, each answered by a specific piece of new
+evidence in this paper, none of it requiring a human annotation budget we
+did not have:
+
+\begin{description}
+  \item[RQ1] Can a rule-based assertion classifier, added ahead of claim
+    construction, materially improve the semantic validity of extracted
+    claims without any model training? (\S\ref{sec:system}, \S\ref{sec:results})
+  \item[RQ2] Is SMRITI's originally near-zero contradiction precision an
+    algorithmic bug or an irreducible property of using an off-the-shelf
+    NLI model --- and if a bug, can it be fixed without a new model?
+    (\S\ref{sec:system}, \S\ref{sec:controlled}, \S\ref{sec:results})
+  \item[RQ3] Does the fix generalize, or does it only help on the specific
+    corpus that exposed the original problem?
+    (\S\ref{sec:controlled}, \S\ref{sec:results})
+  \item[RQ4] Does evidence-aware reliability fusion behave in the direction
+    its own design requires under controlled perturbations, and is every
+    reported score exactly reconstructible from its own audit trail?
+    (\S\ref{sec:metamorphic})
+  \item[RQ5] What, honestly, does this evaluation still not establish, and
+    what would? (\S\ref{sec:limitations})
+\end{description}
+
+\paragraph{Contributions.}
+\begin{itemize}
+  \item \textbf{A scientific-validity cleanup} of the system's self-
+    certification layer: every fabricated metric (a hard-coded
+    ``generalization confidence'' of 50, a ``statistical support'' score
+    that rewarded merely registering more experiments, a contradiction-
+    graph quality metric with no independent verification) is deleted, not
+    patched, and replaced by a frozen five-claim registry (RC1--RC5) with
+    an explicit \texttt{NOT\_EVALUABLE} status for anything the system
+    cannot yet honestly measure (\S\ref{sec:cleanup}).
+  \item \textbf{Root-cause fix for the dominant failure mode}: the
+    relationship resolver's CONTRADICTS/SUPPORTS rules previously compared
+    a candidate class against only one alternative (contradiction vs.\
+    entailment, ignoring neutral) rather than requiring it to be the true
+    arg-max of all three NLI classes; combined with a lightweight, model-
+    free topical-relatedness gate on CONTRADICTS verdicts specifically, this
+    is the single highest-leverage change in this paper (\S\ref{sec:system}).
+  \item \textbf{SMRITI-Controlled}, a 24-pair corpus with an
+    objective, construction-time gold label for every pair --- no annotation
+    of any kind is possible or needed --- spanning six contradiction
+    categories plus SUPPORTS and NEUTRAL controls, that separately measures
+    retrieval recall and classification accuracy per the review's
+    recommendation to distinguish the two (\S\ref{sec:controlled}).
+  \item \textbf{Zero-ground-truth self-consistency tests}: four metamorphic
+    reliability relations and an exact audit-trail reconstruction test
+    (\S\ref{sec:metamorphic}).
+  \item A disclosed, re-run LLM-derived reference annotation
+    (\S\ref{sec:annotation}, \S\ref{sec:results-annotation}) that identifies a
+    second, distinct failure mode the resolver fix does not address:
+    rhetorical (as opposed to propositional) disagreement in real prose is
+    read by the underlying NLI model as neutral with $>0.97$ confidence,
+    regardless of how faithfully the resolver reports that verdict ---
+    yielding 4.6\% real-corpus CONTRADICTS precision alongside
+    SMRITI-Controlled's 100\%, and a full accounting of what remains
+    genuinely unestablished (\S\ref{sec:limitations}).
+\end{itemize}
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Open information extraction and relation extraction.} Classical
+open IE systems such as Stanford OpenIE \citep{angeli2015leveraging}
+extract surface (subject, predicate, object) tuples using syntactic
+patterns; more recent systems such as REBEL \citep{cabot2021rebel} cast
+relation extraction as sequence-to-sequence generation over a fixed
+schema. SMRITI's claim construction is closer in spirit to the former
+(rule- and dependency-parse-based), extended in this work with an explicit
+assertion-type classifier that filters non-declarative sentence types
+(headings, bibliographic metadata, list items, procedural instructions)
+\emph{before} claim construction rather than relying on downstream
+validators to catch structurally-valid-but-semantically-empty output.
+
+\paragraph{Fact verification and natural language inference.} FEVER
+\citep{thorne2018fever} established claim verification against retrieved
+evidence as a standard task, and NLI datasets such as SNLI
+\citep{bowman2015large}, MultiNLI \citep{williams2018broad}, and Adversarial
+NLI \citep{nie2020adversarial} underlie the entailment/contradiction/neutral
+classifiers (e.g.\ DeBERTa, \citealp{he2021deberta}) SMRITI reuses
+off-the-shelf. \citet{demarneffe2008finding} studied contradiction detection
+with hand-built linguistic features. Our error analysis traces SMRITI's
+original failure to a specific, previously undocumented integration bug ---
+not an inherent limitation of the underlying NLI model --- in how a
+three-class NLI output was reduced to a binary decision by a downstream
+resolver that never checked the third class.
+
+\paragraph{Metamorphic testing.} Metamorphic testing evaluates software by
+checking that a KNOWN transformation of an input produces the EXPECTED
+relation in the output, without requiring a labeled oracle for either input
+--- a strategy well established in software testing more broadly and
+increasingly applied to ML systems where labeled test data is scarce or
+expensive. We apply it to a reliability-scoring model for the first time in
+this line of work: instead of asking whether an absolute reliability score
+is ``correct'', we ask whether adding independent evidence provably does
+not decrease it, and whether adding a duplicate-source claim provably does
+not increase measured source diversity.
+
+\paragraph{Knowledge graph construction and contradiction-aware
+partitioning.} Ontology-based knowledge representations
+\citep{mcguinness2004owl} typically assume a curated, non-contradictory
+knowledge base; SMRITI's graph layer makes the opposite assumption ---
+contradictions are expected and must be structurally quarantined. Its
+constraint-based signed-graph partitioning (2-coloring the contradiction
+graph, then restricting union-find merges on SUPPORTS/REFINES edges to
+same-colored nodes) responds to a known failure mode of naive
+``remove-contradiction-edges-then-take-connected-components'' partitioning.
+
+\paragraph{Retrieval-augmented embeddings.} Sentence-BERT
+\citep{reimers-gurevych-2019-sentence} and exact inner-product search via
+FAISS \citep{johnson2019billion} underlie SMRITI's candidate generation,
+and are also used, deliberately without SMRITI's NLI classifier, as two of
+our three baselines.
+
+\paragraph{LLM-as-judge and the human annotation gap.} Using large language
+models as annotators or evaluators is common practice
+\citep{zheng2023judging}, but is explicitly a weaker substitute for human
+judgment, particularly for detecting subtle factual errors
+\citep{ji2023survey}. We use it only for the one evaluation layer that
+cannot be made objective by construction (\S\ref{sec:annotation}), and lean
+on SMRITI-Controlled and the metamorphic/reconstruction tests
+(\S\ref{sec:controlled}, \S\ref{sec:metamorphic}) for the evidence that
+does not require it at all.
+
+\input{sections/system.tex}
+
+\input{sections/corpus.tex}
+
+\section{Annotation Protocol}
+\label{sec:annotation}
+\input{sections/annotation_protocol.tex}
+
+\input{sections/controlled_corpus.tex}
+
+\input{sections/metamorphic.tex}
+
+\section{Experimental Setup}
+\label{sec:experiments}
+\input{sections/experimental_setup.tex}
+
+\section{Results}
+\label{sec:results}
+\input{sections/results.tex}
+
+\section{Error Analysis}
+\label{sec:error-analysis}
+\input{sections/error_analysis.tex}
+
+\section{Discovered Defects}
+\label{sec:bugs}
+\input{sections/bugs.tex}
+
+\section{Limitations}
+\label{sec:limitations}
+\input{sections/limitations.tex}
+
+\section{Conclusion}
+\label{sec:conclusion}
+\input{sections/conclusion.tex}
+
+\section*{Ethical Considerations}
+Both corpora used in this paper are either derived from publicly available
+technical documentation, scientific literature, sports journalism, recipe
+content, and encyclopedic content (SMRITI-Reference --- synthesized and,
+where deliberately adversarial, clearly fabricated for benchmarking
+purposes and never presented as genuine advice), or entirely synthetic,
+fictional entity names constructed solely to have an unambiguous, known
+relationship label (SMRITI-Controlled). No personal or sensitive data is
+involved in either.
+
+\bibliography{custom}
+
+\end{document}

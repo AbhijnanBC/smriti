@@ -61,13 +61,19 @@ def build_claim(validated: ValidatedAssertion) -> Claim:
     # Content hash (SHA256 of exact claim text)
     content_hash = _compute_content_hash(text)
 
-    # Complete provenance chain
+    # Complete provenance chain, including exact source-token provenance
+    # (Part 2): which contiguous character spans / spaCy token ids in the
+    # ORIGINAL sentence text actually produced this claim, and by which
+    # deterministic rule (mirrors BoundaryReason).
     provenance = ClaimProvenance(
         sentence_id=sentence.sentence_id,
         document_id=sentence.document_id,
         source_path=sentence.source_path,
         sentence_context=sentence.context,
         sentence_position=sentence.position,
+        source_char_spans=validated.source_char_spans,
+        source_token_ids=validated.source_token_ids,
+        reconstruction_rule=validated.reconstruction_rule,
     )
 
     # <-- NEW: Merge internal split metadata into the final public contract

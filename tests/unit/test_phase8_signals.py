@@ -88,6 +88,29 @@ def global_stats(): return make_global_stats()
 def graph(): return make_empty_graph()
 
 
+class TestEvidenceIndependenceExtractor:
+    def test_no_support_does_not_reward_absence_of_evidence(self, policy, global_stats, graph):
+        """
+        RECTIFIED (P0-8): a claim with zero supporting evidence must NOT
+        receive a maximal (1.0) independence score. There is nothing to be
+        independent OF -- the correct signal is UNAVAILABLE with value 0.0,
+        so this claim never gets a positive contribution from a signal that
+        had nothing real to measure.
+        """
+        node = make_node("c001", support_count=0)
+        ext = EvidenceIndependenceExtractor()
+        signal = ext.extract(node, graph, global_stats, policy)
+        assert signal.normalized_value == 0.0
+        assert signal.raw_value == 0.0
+        assert signal.status == SignalStatus.UNAVAILABLE
+
+    def test_single_supporter_is_measured_not_default(self, policy, global_stats, graph):
+        node = make_node("c001", support_count=1)
+        ext = EvidenceIndependenceExtractor()
+        signal = ext.extract(node, graph, global_stats, policy)
+        assert signal.status == SignalStatus.MEASURED
+
+
 class TestEvidenceStrengthExtractor:
     def test_no_support_returns_zero(self, policy, global_stats, graph):
         node = make_node("c001", support_count=0)

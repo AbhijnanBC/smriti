@@ -34,7 +34,11 @@ def test_stats_collector_counts_all_block_types():
         make_event(BlockType.HORIZONTAL_RULE, "---"),
         make_event(BlockType.FRONT_MATTER, "---"),
         make_event(BlockType.BLANK, ""),
-        # make_event(BlockType.UNKNOWN, "unknown"),  # This should be counted as unknown
+        # NOTE: BlockType has no UNKNOWN member (see extraction/scanner/scanner.py) —
+        # the closed enum only covers the 10 block types generated above, so
+        # accumulate_event()'s if/elif chain never has an "unknown" branch to
+        # hit and total_unknown_blocks stays 0. Kept as documentation of that
+        # invariant rather than testing a block type that cannot occur.
     ]
 
     for event in events:
@@ -61,7 +65,7 @@ def test_stats_collector_counts_all_block_types():
     assert stats.total_horizontal_rules == 1
     assert stats.total_front_matter_blocks == 1
     assert stats.total_blank_lines == 1
-    assert stats.total_unknown_blocks == 1  # the UNKNOWN event
+    assert stats.total_unknown_blocks == 0  # no block type maps to "unknown" currently
     assert stats.sentences_produced == 5
     assert stats.sentences_discarded == 2
     assert len(stats.warnings) == 1

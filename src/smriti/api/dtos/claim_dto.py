@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional
-from smriti.core.models import ProjectionLevel
 
 
 @dataclass(frozen=True)
@@ -18,13 +17,14 @@ class ComponentScoreDTO:
 @dataclass(frozen=True)
 class ClaimDTO:
     """External representation of one scored claim. Schema version: 9.0."""
-    # SUMMARY (always)
-    claim_id: str
-    claim_text: str
-    context: str
-    reliability_index: float
-    calibration_label: str
-    uncertainty_score: float
+
+    # ── Core fields – all have defaults so projection policies can omit them ──
+    claim_id: str = ""
+    claim_text: str = ""
+    context: str = ""                     # RECTIFIED: default added
+    reliability_index: float = 0.0
+    calibration_label: str = "very_low"
+    uncertainty_score: float = 100.0
 
     # STANDARD+
     document_id: Optional[str] = None

@@ -1,0 +1,62 @@
+We run a leave-one-signal-out ablation (P1-6/P1-7) against the real,
+post-fix 215-claim SMRITI-Reference scoring run reported in
+\S\ref{sec:metamorphic}'s reconstruction test: for each of Phase 8's
+seven registered signals, we zero that signal's policy weight
+\emph{without} renormalizing the remaining six, re-score every claim
+through the real, unmodified fusion code, and compare against the
+all-signals baseline. Zeroing rather than renormalizing isolates exactly
+that signal's own contribution, consistent with standard leave-one-out
+sensitivity analysis; the code and full per-signal results are released
+(\texttt{evaluation/ablation/run\_ablation.py}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Signal} & \textbf{Weight} & \textbf{Mean shift} & $r$ \\
+\midrule
+topology\_strength     & 0.10 & $-1.81$ & 0.954 \\
+temporal\_stability     & 0.05 & $-1.31$ & 0.993 \\
+conflict\_pressure      & 0.20 & $+1.31$ & 0.989 \\
+evidence\_independence  & 0.15 & $-0.66$ & 0.971 \\
+evidence\_strength      & 0.25 & $-0.61$ & 0.986 \\
+bridge\_score           & 0.05 & $-0.40$ & 0.991 \\
+source\_diversity       & 0.15 & $-0.22$ & 0.999 \\
+hub\_score              & 0.05 & $-0.02$ & 0.999 \\
+\bottomrule
+\end{tabular}
+\caption{Effect of zeroing each signal's policy weight on the 215-claim
+SMRITI-Reference reliability distribution (baseline mean
+$\mathrm{RI}=4.99$/100). Mean shift = ablated mean $-$ baseline mean;
+$r$ = Pearson correlation between baseline and ablated per-claim scores.
+Ranked by mean absolute per-claim delta (Table order here follows that
+ranking, most to least disruptive).}
+\label{tab:ablation}
+\end{table}
+
+Two findings are worth stating plainly. \textbf{(1) The baseline mean
+reliability index across all 215 claims is 4.99 out of 100} --- not a
+property of the ablation, but of the corpus as currently scored, and
+consistent with \S\ref{sec:error-taxonomy}'s finding that partition
+fragmentation and widespread constraint firing (each ablation run logs
+$\geq 1$ fired constraint for the large majority of claims) suppress
+reliability system-wide; this table should be read as \emph{relative}
+sensitivity, not as evidence that any individual signal is well-
+calibrated in absolute terms. \textbf{(2) Policy weight does not predict
+empirical sensitivity.} \texttt{topology\_strength} carries a policy
+weight of only 0.10 --- less than half of \texttt{evidence\_strength}'s
+0.25 --- yet removing it shifts the mean score three times as much
+(and produces the lowest correlation with baseline, $r=0.954$, i.e.\ the
+most rank-order disruption). This is not a bug: Phase 8's fusion applies
+policy-level constraints and interactions on top of the raw weighted sum
+(\S\ref{sec:system}) --- for instance a floor tied to topology under
+\texttt{min\_reliability\_for\_high\_topology} --- so a signal's linear
+weight is not the same quantity as its effect on the final,
+constraint-adjusted score. \texttt{conflict\_pressure}'s positive mean
+shift on removal ($+1.31$) is the expected sign check: it is the fusion's
+only negative-direction signal, so removing its penalty raises scores,
+consistent with \S\ref{sec:bugs} Defect 7's fix depending on this signal
+being real and non-zero. \texttt{hub\_score} is, by a wide margin, the
+least consequential signal in the current policy ($r=0.999$), a concrete
+candidate for reweighting or removal in future policy tuning.
