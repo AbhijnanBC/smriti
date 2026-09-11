@@ -25,16 +25,12 @@ def test_two_sentences(segmenter):
 
 
 def test_question_mark_splits(segmenter):
-    result = segmenter.segment(
-        "Is Python good? Yes, it is very good."
-    )
+    result = segmenter.segment("Is Python good? Yes, it is very good.")
     assert len(result) == 2
 
 
 def test_exclamation_splits(segmenter):
-    result = segmenter.segment(
-        "This works! Now let's move on."
-    )
+    result = segmenter.segment("This works! Now let's move on.")
     assert len(result) == 2
 
 
@@ -95,6 +91,7 @@ def test_three_sentences(segmenter):
 def test_very_long_sentence_emits_warning(segmenter):
     """A sentence exceeding max_sentence_chars must emit SEG002."""
     from smriti.core.models import SegmentationWarning
+
     # Build text guaranteed to exceed the segmenter's actual configured
     # threshold (config/test.yaml sets max_sentence_chars=5000, higher than
     # config/default.yaml's 2000) rather than assuming the default value.

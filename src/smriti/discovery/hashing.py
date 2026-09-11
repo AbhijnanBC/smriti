@@ -20,6 +20,7 @@ Why content-only hashing matters:
 
 import hashlib
 from pathlib import Path
+
 import structlog
 
 from smriti.constants import HASH_ALGORITHM, HASH_CHUNK_SIZE

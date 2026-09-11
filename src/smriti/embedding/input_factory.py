@@ -34,7 +34,7 @@ Rules:
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
+
 import structlog
 
 from smriti.core.models import Claim
@@ -60,7 +60,7 @@ class EmbeddingInputFactory:
     Instantiate once per pipeline run.
     """
 
-    def __init__(self, instruction_prefix: Optional[str] = None) -> None:
+    def __init__(self, instruction_prefix: str | None = None) -> None:
         self._instruction_prefix = instruction_prefix or ""
         logger.debug(
             "EmbeddingInputFactory initialized",

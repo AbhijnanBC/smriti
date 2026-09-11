@@ -1,20 +1,21 @@
 """inspector_view.py — InspectorView: renders a full claim detail panel."""
+
 from __future__ import annotations
-from typing import Optional
+
 import streamlit as st
-from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.models.presentation import ClaimPresentationModel
 from smriti.dashboard.components.claim_card import render_claim_card
 from smriti.dashboard.components.signal_chart import render_signal_chart_from_pm
+from smriti.dashboard.models.presentation import ClaimPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class InspectorView(BaseView):
     """Renders detailed claim information from a ClaimPresentationModel."""
 
-    def __init__(self, claim: Optional[ClaimPresentationModel] = None) -> None:
+    def __init__(self, claim: ClaimPresentationModel | None = None) -> None:
         self._claim = claim
 
-    def refresh(self, claim: Optional[ClaimPresentationModel] = None) -> None:
+    def refresh(self, claim: ClaimPresentationModel | None = None) -> None:
         self._claim = claim
 
     def supports(self, context) -> bool:

@@ -4,7 +4,8 @@ statistics_service.py — Global statistics for Phase 10.
 
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -16,7 +17,7 @@ class StatisticsService:
     def __init__(self, api) -> None:
         self._api = api
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Retrieve graph-wide statistics."""
         try:
             resp = self._api.statistics()
@@ -26,7 +27,7 @@ class StatisticsService:
             return {}
 
     # ── NEW: Compatibility execute method ──────────────────────────────────
-    def execute(self, request) -> Dict[str, Any]:
+    def execute(self, request) -> dict[str, Any]:
         """
         Compatibility method for the Phase 10 architecture.
         Delegates to get_statistics().

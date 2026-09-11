@@ -9,8 +9,8 @@ Certification is determined by gate results (gates.py).
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
+
 from smriti.core.models import CertificationReport, VerificationStatus
 
 
@@ -25,8 +25,8 @@ def build_certification_report(
     statistical_analyses: list,
     reproducibility_assessments: list,
     threats_to_validity: list,
-    scientific_confidence,
-    publication_readiness,
+    research_evidence_coverage,
+    artifact_readiness,
     certification_level,
     certification_rationale: str,
     gate_results: list = None,  # RECTIFIED (P0-1): gate decisions
@@ -35,18 +35,18 @@ def build_certification_report(
     total_failed = sum(1 for r in verification_results if r.status == VerificationStatus.FAILED)
 
     eci_score = engineering_confidence.overall_confidence
-    sci_score = scientific_confidence.overall_confidence
+    evidence_coverage_score = research_evidence_coverage.overall_coverage
     # Kept for backward compat only — NOT used for gating
-    overall = round(0.40 * eci_score + 0.60 * sci_score, 2)
+    overall = round(0.40 * eci_score + 0.60 * evidence_coverage_score, 2)
 
-    report_id = hashlib.sha256(
-        f"{run_id}:{datetime.now(tz=timezone.utc).isoformat()}".encode()
-    ).hexdigest()[:16]
+    report_id = hashlib.sha256(f"{run_id}:{datetime.now(tz=UTC).isoformat()}".encode()).hexdigest()[
+        :16
+    ]
 
     return CertificationReport(
         report_id=report_id,
         run_id=run_id,
-        timestamp_iso=datetime.now(tz=timezone.utc).isoformat(),
+        timestamp_iso=datetime.now(tz=UTC).isoformat(),
         verification_results=tuple(verification_results),
         verification_coverage=tuple(verification_coverage),
         engineering_confidence=engineering_confidence,
@@ -56,15 +56,15 @@ def build_certification_report(
         statistical_analyses=tuple(statistical_analyses),
         reproducibility_assessments=tuple(reproducibility_assessments),
         threats_to_validity=tuple(threats_to_validity),
-        scientific_confidence=scientific_confidence,
-        publication_readiness=publication_readiness,
+        research_evidence_coverage=research_evidence_coverage,
+        artifact_readiness=artifact_readiness,
         gate_results=tuple(gate_results or []),
         certification_level=certification_level,
         certification_rationale=certification_rationale,
         total_rules_passed=total_passed,
         total_rules_failed=total_failed,
         engineering_confidence_index=eci_score,
-        scientific_confidence_index=sci_score,
+        research_evidence_coverage_index=evidence_coverage_score,
         overall_confidence_index=overall,
         schema_version="12.1",
     )
@@ -72,6 +72,7 @@ def build_certification_report(
 
 def serialize_certification_report(report: CertificationReport) -> str:
     import json
+
     data = {
         "report_id": report.report_id,
         "run_id": report.run_id,
@@ -96,7 +97,7 @@ def serialize_certification_report(report: CertificationReport) -> str:
         ],
         "confidence_indices": {
             "engineering_confidence_index": report.engineering_confidence_index,
-            "scientific_confidence_index": report.scientific_confidence_index,
+            "research_evidence_coverage_index": report.research_evidence_coverage_index,
             "overall_confidence_index": report.overall_confidence_index,
             "note": "overall_confidence_index is informational only; certification determined by gates",
         },
@@ -111,33 +112,43 @@ def serialize_certification_report(report: CertificationReport) -> str:
             "overall": report.engineering_confidence.overall_confidence,
             "readiness_level": report.engineering_confidence.engineering_readiness_level,
         },
-        "scientific_confidence": {
-            "accuracy": report.scientific_confidence.accuracy_confidence,
-            "consistency": report.scientific_confidence.consistency_confidence,
-            "robustness": report.scientific_confidence.robustness_confidence,
-            "generalization": report.scientific_confidence.generalization_confidence,
-            "interpretability": report.scientific_confidence.interpretability_confidence,
-            "statistical_support": report.scientific_confidence.statistical_support,
-            "overall": report.scientific_confidence.overall_confidence,
-            "evidence_grade": report.scientific_confidence.evidence_grade.value,
+        "research_evidence_coverage": {
+            "experiment_pass_rate": report.research_evidence_coverage.experiment_pass_rate,
+            "consistency": report.research_evidence_coverage.consistency_confidence,
+            "robustness": report.research_evidence_coverage.robustness_confidence,
+            "generalization": report.research_evidence_coverage.generalization_confidence,
+            "interpretability": report.research_evidence_coverage.interpretability_confidence,
+            "measurement_coverage": report.research_evidence_coverage.measurement_coverage,
+            "overall": report.research_evidence_coverage.overall_coverage,
+            "evidence_grade": report.research_evidence_coverage.evidence_grade.value,
         },
         "verification_summary": {
             "total_rules": report.total_rules_passed + report.total_rules_failed,
             "rules_passed": report.total_rules_passed,
             "rules_failed": report.total_rules_failed,
             "pass_rate": round(
-                report.total_rules_passed / max(1, report.total_rules_passed + report.total_rules_failed),
+                report.total_rules_passed
+                / max(1, report.total_rules_passed + report.total_rules_failed),
                 4,
             ),
         },
         "coverage": [
-            {"category": c.category, "total": c.total_rules, "passed": c.rules_passed,
-             "failed": c.rules_failed, "coverage_pct": c.coverage_percentage}
+            {
+                "category": c.category,
+                "total": c.total_rules,
+                "passed": c.rules_passed,
+                "failed": c.rules_failed,
+                "coverage_pct": c.coverage_percentage,
+            }
             for c in report.verification_coverage
         ],
         "experiments": [
-            {"experiment_id": r.experiment_id, "status": r.status.value,
-             "metrics": r.metrics, "execution_seconds": r.execution_time_seconds}
+            {
+                "experiment_id": r.experiment_id,
+                "status": r.status.value,
+                "metrics": r.metrics,
+                "execution_seconds": r.execution_time_seconds,
+            }
             for r in report.experiment_results
         ],
         "research_claims": [
@@ -155,29 +166,42 @@ def serialize_certification_report(report: CertificationReport) -> str:
             }
             for c in report.research_claims
         ],
-        "publication_readiness": {
-            "readiness_level": report.publication_readiness.readiness_level.value,
-            "criteria_met": list(report.publication_readiness.criteria_met),
-            "criteria_missing": list(report.publication_readiness.criteria_missing),
-            "criteria_partial": list(report.publication_readiness.criteria_partial),
-            "revision_notes": report.publication_readiness.revision_notes,
+        "artifact_readiness": {
+            "readiness_level": report.artifact_readiness.readiness_level.value,
+            "criteria_met": list(report.artifact_readiness.criteria_met),
+            "criteria_missing": list(report.artifact_readiness.criteria_missing),
+            "criteria_partial": list(report.artifact_readiness.criteria_partial),
+            "revision_notes": report.artifact_readiness.revision_notes,
         },
         "threats_to_validity": [
-            {"threat_id": t.threat_id, "category": t.category,
-             "description": t.description, "mitigation": t.mitigation,
-             "residual_risk": t.residual_risk}
+            {
+                "threat_id": t.threat_id,
+                "category": t.category,
+                "description": t.description,
+                "mitigation": t.mitigation,
+                "residual_risk": t.residual_risk,
+            }
             for t in report.threats_to_validity
         ],
         "statistical_analyses": [
-            {"metric": sa.metric_name, "n": sa.n_samples, "mean": sa.mean,
-             "std_dev": sa.std_dev, "ci_95": [sa.ci_lower, sa.ci_upper],
-             "cv": sa.coefficient_of_variation}
+            {
+                "metric": sa.metric_name,
+                "n": sa.n_samples,
+                "mean": sa.mean,
+                "std_dev": sa.std_dev,
+                "ci_95": [sa.ci_lower, sa.ci_upper],
+                "cv": sa.coefficient_of_variation,
+            }
             for sa in report.statistical_analyses
         ],
         "reproducibility_assessments": [
-            {"experiment_id": ra.experiment_id, "n_runs": ra.n_runs,
-             "cv": ra.coefficient_of_variation, "level": ra.reproducibility_level,
-             "is_reproducible": ra.is_reproducible}
+            {
+                "experiment_id": ra.experiment_id,
+                "n_runs": ra.n_runs,
+                "cv": ra.coefficient_of_variation,
+                "level": ra.reproducibility_level,
+                "is_reproducible": ra.is_reproducible,
+            }
             for ra in report.reproducibility_assessments
         ],
     }

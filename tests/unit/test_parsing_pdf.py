@@ -3,9 +3,8 @@ Unit tests for parsing/pdf.py.
 """
 
 import pytest
-from pathlib import Path
-from smriti.parsing.pdf import PdfExtractor
 from smriti.core.models import ExtractionMethod
+from smriti.parsing.pdf import PdfExtractor
 
 
 @pytest.fixture
@@ -17,8 +16,8 @@ def extractor():
 def minimal_pdf(tmp_path):
     """Create a minimal valid PDF with a text layer."""
     try:
-        import pypdf
         from pypdf import PdfWriter
+
         writer = PdfWriter()
         writer.add_blank_page(width=612, height=792)
         path = tmp_path / "test.pdf"
@@ -38,8 +37,8 @@ def test_method_is_pdf(extractor, minimal_pdf):
 def test_image_only_pdf_produces_warning(extractor, tmp_path):
     """A PDF with no text layer must produce NoExtractableTextWarning."""
     try:
-        import pypdf
         from pypdf import PdfWriter
+
         writer = PdfWriter()
         writer.add_blank_page(width=612, height=792)
         path = tmp_path / "blank.pdf"
@@ -55,6 +54,7 @@ def test_image_only_pdf_produces_warning(extractor, tmp_path):
 
 def test_corrupted_pdf_raises(extractor, tmp_path):
     from smriti.exceptions import PdfExtractionError
+
     corrupted = tmp_path / "bad.pdf"
     corrupted.write_bytes(b"this is not a pdf at all garbage data")
     with pytest.raises(PdfExtractionError):
@@ -63,5 +63,6 @@ def test_corrupted_pdf_raises(extractor, tmp_path):
 
 def test_nonexistent_pdf_raises(extractor, tmp_path):
     from smriti.exceptions import PdfExtractionError
+
     with pytest.raises(PdfExtractionError):
         extractor.extract(tmp_path / "ghost.pdf")

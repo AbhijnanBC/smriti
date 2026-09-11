@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Dict, Tuple
+from typing import Dict, List, Optional, Tuple
+
 import structlog
 
 from smriti.core.config import get_config
@@ -34,14 +35,13 @@ from smriti.core.manifest import ManifestManager
 from smriti.core.paths import ARTIFACTS_DIR, CACHE_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import DiscoveryError
-
+from smriti.discovery.builder import SourceDocument, build_source_document
+from smriti.discovery.duplicate import DuplicateRegistry, build_duplicate_registry
+from smriti.discovery.hashing import compute_hash
+from smriti.discovery.metadata import FileMetadata, extract_metadata
 from smriti.discovery.scanner import discover_files
 from smriti.discovery.validator import validate_directories, validate_file
-from smriti.discovery.metadata import extract_metadata, FileMetadata
-from smriti.discovery.hashing import compute_hash
-from smriti.discovery.duplicate import build_duplicate_registry, DuplicateRegistry
-from smriti.discovery.builder import SourceDocument, build_source_document
+from smriti.exceptions import DiscoveryError
 
 logger = structlog.get_logger(__name__)
 
@@ -52,6 +52,7 @@ class DiscoveryContext:
     Immutable shared execution context for Phase 1.
     Carries configuration, run metadata, and managers.
     """
+
     run_id: str
     manifest_manager: ManifestManager
     state_manager: StateManager
@@ -99,20 +100,20 @@ class DiscoveryResult:
         manifest_path:      Path to written manifest.json.
     """
 
-    documents: List[SourceDocument]
+    documents: list[SourceDocument]
     duplicate_registry: DuplicateRegistry
-    skipped: List[Tuple[Path, str]]
+    skipped: list[tuple[Path, str]]
     stats: DiscoveryStats
     run_id: str
-    manifest_path: Optional[Path] = None
+    manifest_path: Path | None = None
 
     @property
-    def canonical_documents(self) -> List[SourceDocument]:
+    def canonical_documents(self) -> list[SourceDocument]:
         """Return only canonical (non‑duplicate) documents."""
         return [d for d in self.documents if not self.duplicate_registry.is_duplicate(d.path)]
 
     @property
-    def duplicate_documents(self) -> List[SourceDocument]:
+    def duplicate_documents(self) -> list[SourceDocument]:
         """Return only duplicate documents."""
         return [d for d in self.documents if self.duplicate_registry.is_duplicate(d.path)]
 
@@ -127,21 +128,23 @@ class DiscoveryResult:
         """
         records = []
         for doc in self.canonical_documents:
-            records.append({
-                "doc_id": doc.doc_id,
-                "path": str(doc.path),
-                "relative_path": str(doc.relative_path),
-                "source_root": str(doc.source_root),
-                "format": doc.format.value,
-                "content_hash": doc.content_hash,
-                "size_bytes": doc.size_bytes,
-                "modified_at": doc.modified_at.isoformat(),
-            })
+            records.append(
+                {
+                    "doc_id": doc.doc_id,
+                    "path": str(doc.path),
+                    "relative_path": str(doc.relative_path),
+                    "source_root": str(doc.source_root),
+                    "format": doc.format.value,
+                    "content_hash": doc.content_hash,
+                    "size_bytes": doc.size_bytes,
+                    "modified_at": doc.modified_at.isoformat(),
+                }
+            )
         return json.dumps(records, indent=2, ensure_ascii=False)
 
 
 def run_discovery(
-    input_dirs: List[Path],
+    input_dirs: list[Path],
     run_id: str,
     manifest_manager: ManifestManager,
     state_manager: StateManager,
@@ -164,7 +167,7 @@ def run_discovery(
         DiscoveryError: If input directories are invalid (fatal).
     """
     config = get_config()
-    discovered_at = datetime.now(tz=timezone.utc)
+    discovered_at = datetime.now(tz=UTC)
     context = DiscoveryContext(
         run_id=run_id,
         manifest_manager=manifest_manager,
@@ -193,8 +196,8 @@ def run_discovery(
 
         # ── Step 4: Validate individual files ─────────────────────────────────
         logger.info("validating files")
-        valid_paths: List[Path] = []
-        skipped: List[Tuple[Path, str]] = []
+        valid_paths: list[Path] = []
+        skipped: list[tuple[Path, str]] = []
 
         for path in candidate_paths:
             result = validate_file(path)
@@ -218,7 +221,7 @@ def run_discovery(
 
         # ── Step 5: Extract metadata ───────────────────────────────────────────
         logger.info("extracting metadata")
-        metadata_map: Dict[Path, FileMetadata] = {}
+        metadata_map: dict[Path, FileMetadata] = {}
         for path in valid_paths:
             try:
                 metadata_map[path] = extract_metadata(path)
@@ -233,9 +236,9 @@ def run_discovery(
         # ── Step 6: Compute content hashes (with incremental cache) ───────────
         logger.info("computing content hashes")
         hash_cache = ContentHasher(cache_file=CACHE_DIR / "hashes.json")
-        path_hash_pairs: List[Tuple[Path, str]] = []
-        
-        new_active_hashes: Dict[str, str] = {}  # <-- ADDED: Initialize fresh dictionary
+        path_hash_pairs: list[tuple[Path, str]] = []
+
+        new_active_hashes: dict[str, str] = {}  # <-- ADDED: Initialize fresh dictionary
 
         for path in valid_paths:
             try:
@@ -259,7 +262,7 @@ def run_discovery(
                 stats.new_count += 1
 
             # <-- CHANGED: Populate the fresh dictionary instead of updating old cache
-            new_active_hashes[str(path)] = content_hash  
+            new_active_hashes[str(path)] = content_hash
             path_hash_pairs.append((path, content_hash))
 
         # <-- ADDED: Overwrite the cache completely to prune deleted files
@@ -274,7 +277,7 @@ def run_discovery(
         # ── Step 8: Build source documents ────────────────────────────────────
         logger.info("building source documents")
         hash_dict = dict(path_hash_pairs)
-        all_documents: List[SourceDocument] = []
+        all_documents: list[SourceDocument] = []
 
         for path in valid_paths:
             if path not in hash_dict:
@@ -291,7 +294,9 @@ def run_discovery(
             all_documents.append(doc)
 
         # ── Step 9: Write dataset artifact ────────────────────────────────────
-        phase_dir = manifest_manager.run_dir / "phase1"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+        phase_dir = (
+            manifest_manager.run_dir / "phase1"
+        )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
         phase_dir.mkdir(parents=True, exist_ok=True)
         dataset_path = phase_dir / "dataset.json"
 
@@ -303,9 +308,7 @@ def run_discovery(
             run_id=run_id,
         )
 
-        dataset_path.write_text(
-            result.to_dataset_json(), encoding="utf-8"
-        )
+        dataset_path.write_text(result.to_dataset_json(), encoding="utf-8")
         logger.info("dataset written", path=str(dataset_path), count=result.canonical_count)
 
         # ── Step 10: Write manifest ────────────────────────────────────────────
@@ -334,7 +337,7 @@ def run_discovery(
     return result
 
 
-def _find_source_root(path: Path, roots: List[Path]) -> Path:
+def _find_source_root(path: Path, roots: list[Path]) -> Path:
     """Find which root directory a discovered file belongs to."""
     # Pre‑sort roots by length descending to match the most specific root.
     for root in sorted(roots, key=lambda r: len(str(r)), reverse=True):

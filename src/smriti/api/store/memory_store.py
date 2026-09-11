@@ -21,13 +21,13 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, Iterator
-import structlog
+from collections.abc import Iterator
+from typing import Any
 
-from smriti.api.domain.predicates import Predicate, SortSpec, Pagination
+import structlog
+from smriti.api.domain.predicates import Pagination, Predicate, SortSpec
 from smriti.api.store.read_store import ReadStore
 from smriti.core.models import ScoredKnowledgeGraph, SortOrder
-from smriti.exceptions import ReadStoreError
 
 logger = structlog.get_logger(__name__)
 
@@ -73,10 +73,10 @@ class InMemoryReadStore(ReadStore):
         self._run_id = scored_graph.run_id
         self._graph = scored_graph.graph
 
-        self._claim_records: Dict[str, Dict[str, Any]] = {}
-        self._reliability_records: Dict[str, Dict[str, Any]] = {}
-        self._adj: Dict[str, List[Tuple[str, str, str]]] = defaultdict(list)
-        self._edge_records: List[Dict[str, Any]] = []
+        self._claim_records: dict[str, dict[str, Any]] = {}
+        self._reliability_records: dict[str, dict[str, Any]] = {}
+        self._adj: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+        self._edge_records: list[dict[str, Any]] = []
 
         self._build_records(scored_graph)
 
@@ -114,8 +114,12 @@ class InMemoryReadStore(ReadStore):
                 "semantic_role": _safe_str(role) if role else "unclassified",
                 "reliability_index": _safe_float(rel_meta.reliability_index if rel_meta else 0.0),
                 "uncertainty_score": _safe_float(rel_meta.uncertainty_score if rel_meta else 100.0),
-                "evidence_completeness": _safe_float(rel_meta.evidence_completeness if rel_meta else 0.0),
-                "calibration_label": _safe_str(rel_meta.calibration_label if rel_meta else "very_low"),
+                "evidence_completeness": _safe_float(
+                    rel_meta.evidence_completeness if rel_meta else 0.0
+                ),
+                "calibration_label": _safe_str(
+                    rel_meta.calibration_label if rel_meta else "very_low"
+                ),
                 "policy_version": _safe_str(rel_meta.policy_version if rel_meta else ""),
                 "degree": _safe_int(topo.degree if topo else 0),
                 "in_degree": _safe_int(topo.in_degree if topo else 0),
@@ -126,7 +130,9 @@ class InMemoryReadStore(ReadStore):
                 "weighted_confidence": _safe_float(support.weighted_confidence if support else 0.0),
                 "supporting_claim_ids": list(support.supporting_claim_ids) if support else [],
                 "temporal_status": _safe_str(temporal.status if temporal else "unknown"),
-                "temporal_confidence": _safe_float(temporal.temporal_confidence if temporal else 0.0),
+                "temporal_confidence": _safe_float(
+                    temporal.temporal_confidence if temporal else 0.0
+                ),
                 "time_delta_days": temporal.time_delta_days if temporal else None,
             }
 
@@ -152,7 +158,11 @@ class InMemoryReadStore(ReadStore):
                 "signal_statuses": dict(sv.statuses),
                 "component_scores": [
                     {
-                        "signal_name": _safe_str(c.signal_id) if hasattr(c, "signal_id") else _safe_str(c.get("signal_name", "")),
+                        "signal_name": (
+                            _safe_str(c.signal_id)
+                            if hasattr(c, "signal_id")
+                            else _safe_str(c.get("signal_name", ""))
+                        ),
                         "contribution": c.contribution,
                         "direction": c.direction,
                         "normalized_value": c.normalized_value,
@@ -209,16 +219,16 @@ class InMemoryReadStore(ReadStore):
     def node_count(self) -> int:
         return len(self._claim_records)
 
-    def lookup(self, claim_id: str) -> Optional[Dict[str, Any]]:
+    def lookup(self, claim_id: str) -> dict[str, Any] | None:
         return self._claim_records.get(claim_id)
 
     def scan(
         self,
-        predicates: List[Predicate],
+        predicates: list[Predicate],
         sort: SortSpec,
         pagination: Pagination,
-        text_contains: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        text_contains: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
         """Linear scan with predicate filter, sort, and pagination."""
         results = []
         for claim_id, record in self._claim_records.items():
@@ -234,24 +244,23 @@ class InMemoryReadStore(ReadStore):
         if sort.tiebreaker_field:
             results.sort(key=lambda r: r.get(sort.tiebreaker_field, "") or "")
         results.sort(
-            key=lambda r: r.get(sort.field, 0) or 0,
-            reverse=(sort.order == SortOrder.DESC)
+            key=lambda r: r.get(sort.field, 0) or 0, reverse=(sort.order == SortOrder.DESC)
         )
 
-        return results[pagination.offset: pagination.offset + pagination.limit], total
+        return results[pagination.offset : pagination.offset + pagination.limit], total
 
-    def fetch_relationship(self, claim_id: str) -> Optional[Dict[str, Any]]:
+    def fetch_relationship(self, claim_id: str) -> dict[str, Any] | None:
         return self._reliability_records.get(claim_id)
 
-    def stream(self) -> Iterator[Dict[str, Any]]:
+    def stream(self) -> Iterator[dict[str, Any]]:
         return iter(self._claim_records.values())
 
-    def get_edge_records(self) -> List[Dict[str, Any]]:
+    def get_edge_records(self) -> list[dict[str, Any]]:
         return list(self._edge_records)
 
-    def get_adjacency(self) -> Dict[str, List[Tuple[str, str, str]]]:
+    def get_adjacency(self) -> dict[str, list[tuple[str, str, str]]]:
         return dict(self._adj)
 
-    def all_claim_records(self) -> Dict[str, Dict[str, Any]]:
+    def all_claim_records(self) -> dict[str, dict[str, Any]]:
         """Expose records for IndexBuilder."""
         return dict(self._claim_records)

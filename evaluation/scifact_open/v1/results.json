@@ -1,0 +1,3769 @@
+{
+  "source": "umbc-scify/scifact-open (test config + a 2000-doc sample of the distractors config)",
+  "n_pairs": 412,
+  "bucket_summary": {
+    "unverified_random_distractor": {
+      "n": 206,
+      "n_correct": 194,
+      "accuracy": 0.9417
+    },
+    "genuine_evidence": {
+      "n": 206,
+      "n_correct": 18,
+      "accuracy": 0.0874
+    }
+  },
+  "genuine_evidence_per_class_prf1": {
+    "SUPPORT": {
+      "precision": 0.9231,
+      "recall": 0.1143,
+      "f1": 0.2034,
+      "support": 105,
+      "tp": 12,
+      "fp": 1,
+      "fn": 93
+    },
+    "CONTRADICT": {
+      "precision": 0.6667,
+      "recall": 0.0594,
+      "f1": 0.1091,
+      "support": 101,
+      "tp": 6,
+      "fp": 3,
+      "fn": 95
+    }
+  },
+  "distractor_bucket": {
+    "n": 206,
+    "n_correctly_nei": 194,
+    "n_false_support": 8,
+    "n_false_contradict": 4,
+    "false_contradiction_rate": 0.0194
+  },
+  "native_breakdown": {
+    "unverified_random_distractor|NEI|resolved|neutral": 191,
+    "genuine_evidence|CONTRADICT|resolved|neutral": 90,
+    "genuine_evidence|SUPPORT|resolved|neutral": 85,
+    "unverified_random_distractor|NEI|resolved|contradicts": 4,
+    "unverified_random_distractor|NEI|resolved|supports": 8,
+    "unverified_random_distractor|NEI|abstained|None": 3,
+    "genuine_evidence|SUPPORT|resolved|supports": 11,
+    "genuine_evidence|SUPPORT|resolved|contradicts": 3,
+    "genuine_evidence|SUPPORT|resolved|equivalent": 1,
+    "genuine_evidence|CONTRADICT|resolved|contradicts": 6,
+    "genuine_evidence|SUPPORT|abstained|None": 5,
+    "genuine_evidence|CONTRADICT|abstained|None": 4,
+    "genuine_evidence|CONTRADICT|resolved|supports": 1
+  },
+  "elapsed_seconds": 388.6560000000002,
+  "rows": [
+    {
+      "claim_idx": 141,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 177,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 89,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 102,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 132,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 41,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 8,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 97,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 58,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 147,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 118,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 96,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 34,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 195,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 158,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 175,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 184,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 161,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 198,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 5,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 166,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 95,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 119,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 85,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 112,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 14,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 15,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 23,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 84,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 203,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 139,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 22,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 192,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 20,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 42,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 153,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 94,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 9,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 174,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 160,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 135,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 7,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 54,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 56,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 86,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 203,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 100,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 165,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 131,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 120,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 47,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 88,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 31,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 83,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 37,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 59,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 70,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 93,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "equivalent",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 176,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 155,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 38,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 55,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": true
+    },
+    {
+      "claim_idx": 39,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 205,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 41,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 11,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 60,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 56,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 116,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 40,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 53,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 72,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 146,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 88,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 144,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 132,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 33,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 87,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 204,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 35,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 77,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 136,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 32,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 79,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 111,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 14,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 112,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 9,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 169,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 171,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 179,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 125,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 172,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 142,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 110,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 179,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 140,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 65,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 120,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 182,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 176,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 185,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 65,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 113,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 95,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 173,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 195,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 76,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 143,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 130,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 167,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 69,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 45,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 18,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 201,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 52,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 193,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 52,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 36,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 107,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 69,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 151,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 90,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 170,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 131,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 121,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 142,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 104,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 78,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 80,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 28,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 111,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 26,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 190,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 114,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 175,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 17,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 107,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 148,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 147,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 178,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 26,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 197,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 85,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 33,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 181,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 148,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 140,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 98,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 61,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 27,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 121,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 193,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 40,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 44,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 32,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 156,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 191,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 154,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 59,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 24,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 162,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 18,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 75,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 202,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 66,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 166,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 50,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 22,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 24,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": true
+    },
+    {
+      "claim_idx": 0,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 133,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 29,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 181,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 47,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 163,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 82,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 187,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 103,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 71,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 83,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 74,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 49,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 36,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 136,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 186,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 4,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 99,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 80,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 86,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 141,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 157,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 201,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 183,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 144,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 2,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 200,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 198,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 73,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 171,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 21,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": true
+    },
+    {
+      "claim_idx": 108,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 160,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 118,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 35,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 71,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 97,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 108,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 117,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 168,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 101,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 3,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 94,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 116,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 145,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 197,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 152,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 79,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 156,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 72,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 2,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 188,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 129,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 137,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 27,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 189,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 110,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 70,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 109,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 153,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 34,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 137,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 82,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 42,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 89,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 159,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 143,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 49,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 130,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 186,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 63,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 115,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 129,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 20,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 138,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 13,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": true
+    },
+    {
+      "claim_idx": 123,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 3,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 13,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 12,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 57,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 164,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 126,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 165,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 48,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 163,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 76,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 168,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 87,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 6,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 169,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 134,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 74,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 50,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 7,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 39,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 62,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 149,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 46,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 122,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 55,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 202,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 157,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 25,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 21,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 172,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 178,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 54,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 91,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 127,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 38,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 161,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 46,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 1,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 1,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 159,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 196,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 101,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 154,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 194,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 194,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": true
+    },
+    {
+      "claim_idx": 45,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": true
+    },
+    {
+      "claim_idx": 122,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 8,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 67,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 134,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 16,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 48,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 191,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 104,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 149,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 31,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 5,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 57,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 145,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 106,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 93,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 0,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 16,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 10,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 37,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 200,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 12,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 124,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 152,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 162,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 78,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 43,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 103,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 51,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 99,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 135,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 190,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 44,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 30,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 63,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 182,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 183,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 128,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 58,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 133,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 96,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 81,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 60,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 66,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 10,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 90,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 125,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 188,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 67,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 98,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 29,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 128,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 19,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 180,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 192,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 167,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 11,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 155,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 139,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 109,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 119,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 180,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 170,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 105,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 4,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 164,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 28,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 151,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 102,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 30,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 75,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 173,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 205,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 6,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 61,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": false
+    },
+    {
+      "claim_idx": 199,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 51,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 204,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 123,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 15,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "contradicts",
+      "predicted_label": "CONTRADICT",
+      "correct": true
+    },
+    {
+      "claim_idx": 150,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 158,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 68,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 187,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 91,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 53,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 124,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 92,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 19,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 64,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 185,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 150,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 177,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 196,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 189,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 64,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 77,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 100,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 126,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 106,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 113,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 84,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 73,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 138,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 105,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 68,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 115,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 23,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 199,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 43,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 92,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 81,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "supports",
+      "predicted_label": "SUPPORT",
+      "correct": false
+    },
+    {
+      "claim_idx": 114,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 62,
+      "bucket": "genuine_evidence",
+      "gold_label": "SUPPORT",
+      "smriti_status": "abstained",
+      "smriti_relation_type": null,
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 17,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 184,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 117,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 174,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 25,
+      "bucket": "unverified_random_distractor",
+      "gold_label": "NEI",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": true
+    },
+    {
+      "claim_idx": 146,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    },
+    {
+      "claim_idx": 127,
+      "bucket": "genuine_evidence",
+      "gold_label": "CONTRADICT",
+      "smriti_status": "resolved",
+      "smriti_relation_type": "neutral",
+      "predicted_label": "NEI",
+      "correct": false
+    }
+  ]
+}

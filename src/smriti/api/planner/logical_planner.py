@@ -18,14 +18,18 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Tuple
-import structlog
 
+import structlog
 from smriti.api.domain.requests import (
-    KnowledgeRequest, ClaimRequest, SearchRequest,
-    TraversalRequest, StatisticsRequest, ExplanationRequest, ExportRequest,
+    ClaimRequest,
+    ExplanationRequest,
+    ExportRequest,
+    KnowledgeRequest,
+    SearchRequest,
+    StatisticsRequest,
+    TraversalRequest,
 )
-from smriti.api.planner.plan import LogicalPlan, PhysicalPlan, ExecutionStrategy
+from smriti.api.planner.plan import ExecutionStrategy, LogicalPlan, PhysicalPlan
 from smriti.core.models import QueryFamily
 from smriti.exceptions import QueryPlanError
 
@@ -48,7 +52,7 @@ class LogicalPlanner:
         """
         self._index_selector = index_selector
 
-    def plan(self, request: KnowledgeRequest) -> Tuple[LogicalPlan, float]:
+    def plan(self, request: KnowledgeRequest) -> tuple[LogicalPlan, float]:
         """
         Produce a LogicalPlan for a KnowledgeRequest.
 
@@ -84,11 +88,15 @@ class LogicalPlanner:
             raise QueryPlanError(f"No plan available for: {type(request).__name__}")
 
     def _plan_point_lookup(self, req: ClaimRequest) -> LogicalPlan:
-        query_repr = json.dumps({
-            "type": "point", "claim_id": req.claim_id,
-            "projection": req.projection.level.value,
-            "explain": req.explainability_level.value,
-        }, sort_keys=True)
+        query_repr = json.dumps(
+            {
+                "type": "point",
+                "claim_id": req.claim_id,
+                "projection": req.projection.level.value,
+                "explain": req.explainability_level.value,
+            },
+            sort_keys=True,
+        )
         return LogicalPlan(
             plan_id=PhysicalPlan.compute_plan_id(req.run_id, query_repr),
             run_id=req.run_id,
@@ -106,12 +114,18 @@ class LogicalPlanner:
             sort_keys=True,
         )
         sort_repr = f"{req.sort.field}:{req.sort.order.value}"
-        query_repr = json.dumps({
-            "type": "filter", "predicates": pred_repr, "sort": sort_repr,
-            "limit": req.pagination.limit, "offset": req.pagination.offset,
-            "projection": req.projection.level.value,
-            "text": req.text_contains or "",
-        }, sort_keys=True)
+        query_repr = json.dumps(
+            {
+                "type": "filter",
+                "predicates": pred_repr,
+                "sort": sort_repr,
+                "limit": req.pagination.limit,
+                "offset": req.pagination.offset,
+                "projection": req.projection.level.value,
+                "text": req.text_contains or "",
+            },
+            sort_keys=True,
+        )
 
         # Ask IndexSelector whether any predicate fields are indexed
         # RECTIFIED: never hardcode indexed_fields here
@@ -122,10 +136,7 @@ class LogicalPlanner:
                     has_index = True
                     break
 
-        strategy = (
-            ExecutionStrategy.INDEXED_FILTER if has_index
-            else ExecutionStrategy.FULL_SCAN
-        )
+        strategy = ExecutionStrategy.INDEXED_FILTER if has_index else ExecutionStrategy.FULL_SCAN
 
         return LogicalPlan(
             plan_id=PhysicalPlan.compute_plan_id(req.run_id, query_repr),
@@ -139,14 +150,17 @@ class LogicalPlanner:
         )
 
     def _plan_traversal(self, req: TraversalRequest) -> LogicalPlan:
-        query_repr = json.dumps({
-            "type": "traversal",
-            "start": req.start_claim_id,
-            "mode": req.navigation_mode.value,
-            "depth": req.max_depth,
-            "rel_types": sorted(str(r) for r in req.relationship_types),
-            "target": req.target_claim_id or "",
-        }, sort_keys=True)
+        query_repr = json.dumps(
+            {
+                "type": "traversal",
+                "start": req.start_claim_id,
+                "mode": req.navigation_mode.value,
+                "depth": req.max_depth,
+                "rel_types": sorted(str(r) for r in req.relationship_types),
+                "target": req.target_claim_id or "",
+            },
+            sort_keys=True,
+        )
         return LogicalPlan(
             plan_id=PhysicalPlan.compute_plan_id(req.run_id, query_repr),
             run_id=req.run_id,
@@ -155,16 +169,19 @@ class LogicalPlanner:
             strategy=ExecutionStrategy.GRAPH_TRAVERSAL,
             cacheable=True,
             projection_level=req.projection.level.value,
-            estimated_rows=min(50, 2 ** req.max_depth),
+            estimated_rows=min(50, 2**req.max_depth),
         )
 
     def _plan_aggregation(self, req: StatisticsRequest) -> LogicalPlan:
-        query_repr = json.dumps({
-            "type": "aggregation",
-            "histogram": req.include_histogram,
-            "partition_stats": req.include_partition_stats,
-            "signal_dist": req.include_signal_distribution,
-        }, sort_keys=True)
+        query_repr = json.dumps(
+            {
+                "type": "aggregation",
+                "histogram": req.include_histogram,
+                "partition_stats": req.include_partition_stats,
+                "signal_dist": req.include_signal_distribution,
+            },
+            sort_keys=True,
+        )
         return LogicalPlan(
             plan_id=PhysicalPlan.compute_plan_id(req.run_id, query_repr),
             run_id=req.run_id,
@@ -177,11 +194,14 @@ class LogicalPlanner:
         )
 
     def _plan_explanation(self, req: ExplanationRequest) -> LogicalPlan:
-        query_repr = json.dumps({
-            "type": "explanation",
-            "claim_id": req.claim_id,
-            "level": req.explainability_level.value,
-        }, sort_keys=True)
+        query_repr = json.dumps(
+            {
+                "type": "explanation",
+                "claim_id": req.claim_id,
+                "level": req.explainability_level.value,
+            },
+            sort_keys=True,
+        )
         return LogicalPlan(
             plan_id=PhysicalPlan.compute_plan_id(req.run_id, query_repr),
             run_id=req.run_id,
@@ -194,11 +214,14 @@ class LogicalPlanner:
         )
 
     def _plan_export(self, req: ExportRequest) -> LogicalPlan:
-        query_repr = json.dumps({
-            "type": "export",
-            "format": req.export_format.value,
-            "include_reliability": req.include_reliability,
-        }, sort_keys=True)
+        query_repr = json.dumps(
+            {
+                "type": "export",
+                "format": req.export_format.value,
+                "include_reliability": req.include_reliability,
+            },
+            sort_keys=True,
+        )
         return LogicalPlan(
             plan_id=PhysicalPlan.compute_plan_id(req.run_id, query_repr),
             run_id=req.run_id,

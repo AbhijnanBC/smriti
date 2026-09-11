@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import List, Optional, Tuple
+
 import structlog
 
 from smriti.core.paths import EMBEDDINGS_CACHE_DIR
@@ -77,7 +77,7 @@ class EmbeddingCachePolicy:
         cache_key: str,
         model_signature: str,
         config_hash: str,
-    ) -> Tuple[EmbeddingStatus, Optional[List[float]]]:
+    ) -> tuple[EmbeddingStatus, list[float] | None]:
         """
         Look up a vector in the cache.
 
@@ -114,8 +114,7 @@ class EmbeddingCachePolicy:
                 return EmbeddingStatus.STALE, None
 
             # Check 2 + 3: Model identity and configuration
-            if (entry.get("model_sig") != model_signature or
-                    entry.get("config_hash") != config_hash):
+            if entry.get("model_sig") != model_signature or entry.get("config_hash") != config_hash:
                 logger.debug(
                     "cache model/config mismatch — stale",
                     cache_key=cache_key[:8],
@@ -136,7 +135,7 @@ class EmbeddingCachePolicy:
     def store(
         self,
         cache_key: str,
-        vector: List[float],
+        vector: list[float],
         model_signature: str,
         config_hash: str,
     ) -> bool:
@@ -153,10 +152,10 @@ class EmbeddingCachePolicy:
 
         try:
             entry = {
-                "vector":         vector,
-                "model_sig":      model_signature,
-                "config_hash":    config_hash,
-                "schema_version": CACHE_SCHEMA_VERSION,   # Always write current version
+                "vector": vector,
+                "model_sig": model_signature,
+                "config_hash": config_hash,
+                "schema_version": CACHE_SCHEMA_VERSION,  # Always write current version
             }
             with open(cache_file, "wb") as f:
                 pickle.dump(entry, f)

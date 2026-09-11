@@ -28,12 +28,11 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Optional
 
 _WEIGHT_FILE_CANDIDATES = ("model.safetensors", "pytorch_model.bin")
 
 
-def resolve_hf_revision(hf_config: Optional[object], model_name: str) -> str:
+def resolve_hf_revision(hf_config: object | None, model_name: str) -> str:
     """
     Resolve the real HF commit hash for a loaded transformers model.
 

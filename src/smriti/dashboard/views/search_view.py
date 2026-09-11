@@ -5,15 +5,14 @@ search_view.py — SearchView: renders search panel and dispatches SubmitSearchC
 from __future__ import annotations
 
 import streamlit as st
-
-from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.commands.commands import (
-    SubmitSearchCommand,
     ApplyFilterCommand,
     ClearFiltersCommand,
+    SubmitSearchCommand,
 )
 from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
-from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
+from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
+from smriti.dashboard.views.base_view import BaseView
 
 
 class SearchView(BaseView):
@@ -94,9 +93,7 @@ class SearchView(BaseView):
                             ApplyFilterCommand("calibration_label", label_filter)
                         )
                     if role_filter:
-                        self._dispatcher.dispatch(
-                            ApplyFilterCommand("semantic_role", role_filter)
-                        )
+                        self._dispatcher.dispatch(ApplyFilterCommand("semantic_role", role_filter))
 
             with clear_col:
                 if st.button("Clear Filters", use_container_width=True):

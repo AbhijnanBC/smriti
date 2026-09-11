@@ -1,11 +1,13 @@
 """Integration tests for Phase 12 end-to-end (rectified)."""
 
 import json
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from smriti.core.models import (
-    CertificationLevel, ExplainabilityLevel, GateDecision,
-    PublicationReadinessLevel,
+    ArtifactReadinessLevel,
+    CertificationLevel,
+    GateDecision,
 )
 from smriti.evaluation import CertificationEngine
 
@@ -19,10 +21,13 @@ def make_mock_api(node_count: int = 20):
         "total_edges": node_count // 2,
         "total_partitions": max(2, node_count // 5),
         "total_contradictions": max(1, node_count // 10),
-        "avg_reliability": 72.5, "median_reliability": 74.0,
-        "avg_uncertainty": 18.0, "high_reliability_count": node_count // 2,
+        "avg_reliability": 72.5,
+        "median_reliability": 74.0,
+        "avg_uncertainty": 18.0,
+        "high_reliability_count": node_count // 2,
         "calibration_distribution": {"high": 10, "moderate": 8, "low": 2},
-        "reliability_histogram": [], "partition_summaries": [],
+        "reliability_histogram": [],
+        "partition_summaries": [],
         "run_id": "test_run_phase12",
     }
     api.statistics.return_value = MagicMock(data=stats_data)
@@ -32,7 +37,11 @@ def make_mock_api(node_count: int = 20):
         m.claim_id = f"c{idx:03d}"
         m.claim_text = f"Test claim number {idx}."
         m.reliability_index = 70.0 + idx * 0.5
-        m.get = lambda k, d=None: {"claim_id": f"c{idx:03d}", "claim_text": f"Test {idx}.", "reliability_index": 70.0}.get(k, d)
+        m.get = lambda k, d=None: {
+            "claim_id": f"c{idx:03d}",
+            "claim_text": f"Test {idx}.",
+            "reliability_index": 70.0,
+        }.get(k, d)
         return m
 
     mock_claims = [mock_claim(i) for i in range(min(20, node_count))]
@@ -42,13 +51,22 @@ def make_mock_api(node_count: int = 20):
     api.search.return_value = mock_resp
 
     explain_data = {
-        "claim_id": "c001", "reliability_index": 78.5,
-        "calibration_label": "high", "uncertainty_score": 12.0,
+        "claim_id": "c001",
+        "reliability_index": 78.5,
+        "calibration_label": "high",
+        "uncertainty_score": 12.0,
         "explainability_level": 3,
         "summary": "Reliable claim with strong evidence.",
         "dominant_signal": "evidence_strength",
         "limiting_signal": "conflict_pressure",
-        "component_scores": [{"signal": "evidence_strength", "contribution": 20.0, "direction": "positive", "explanation": "Good."}],
+        "component_scores": [
+            {
+                "signal": "evidence_strength",
+                "contribution": 20.0,
+                "direction": "positive",
+                "explanation": "Good.",
+            }
+        ],
         "signal_vector": {"evidence_strength": 0.75},
         "audit": {"policy_version": "1.0", "fusion_algorithm": "v2"},
     }
@@ -57,13 +75,16 @@ def make_mock_api(node_count: int = 20):
 
 
 @pytest.fixture
-def mock_api(): return make_mock_api()
+def mock_api():
+    return make_mock_api()
 
 
 # ── Original 17 tests (all preserved) ────────────────────────────────────────
 
+
 def test_certification_engine_produces_report(mock_api):
     from smriti.core.models import CertificationReport
+
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
     assert isinstance(report, CertificationReport)
@@ -94,10 +115,10 @@ def test_eci_in_valid_range(mock_api):
     assert 0.0 <= report.engineering_confidence_index <= 100.0
 
 
-def test_sci_in_valid_range(mock_api):
+def test_evidence_coverage_in_valid_range(mock_api):
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    assert 0.0 <= report.scientific_confidence_index <= 100.0
+    assert 0.0 <= report.research_evidence_coverage_index <= 100.0
 
 
 def test_overall_confidence_in_range(mock_api):
@@ -139,6 +160,7 @@ def test_report_is_immutable(mock_api):
 
 def test_report_is_json_serializable(mock_api):
     from smriti.evaluation.certification.report import serialize_certification_report
+
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
     json_str = serialize_certification_report(report)
@@ -150,6 +172,7 @@ def test_report_is_json_serializable(mock_api):
 
 def test_markdown_export(mock_api):
     from smriti.reporting.exporter import export_markdown_summary
+
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
     md = export_markdown_summary(report)
@@ -159,6 +182,7 @@ def test_markdown_export(mock_api):
 
 def test_text_summary_export(mock_api):
     from smriti.reporting.exporter import export_text_summary
+
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
     txt = export_text_summary(report)
@@ -166,11 +190,11 @@ def test_text_summary_export(mock_api):
     assert "CERTIFICATION REPORT" in txt
 
 
-def test_publication_readiness_has_criteria(mock_api):
+def test_artifact_readiness_has_criteria(mock_api):
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    pr = report.publication_readiness
-    assert isinstance(pr.readiness_level, PublicationReadinessLevel)
+    pr = report.artifact_readiness
+    assert isinstance(pr.readiness_level, ArtifactReadinessLevel)
     assert isinstance(pr.criteria_missing, tuple)
 
 
@@ -185,11 +209,17 @@ def test_larger_corpus_achieves_higher_level():
 
 def test_evidence_chains_complete(mock_api):
     from smriti.evaluation.philosophy.evidence_model import build_evidence_chain
+
     chain = build_evidence_chain(
-        chain_id="EC-001", research_claim_id="RC-001",
-        requirement_id="R-01", principle_numbers=[1, 4], adr_ids=["ADR-01"],
-        implementation_modules=["smriti.claims"], verification_rule_ids=["ARCH-001"],
-        validation_rule_ids=["COMP-001"], metric_names=["precision"],
+        chain_id="EC-001",
+        research_claim_id="RC-001",
+        requirement_id="R-01",
+        principle_numbers=[1, 4],
+        adr_ids=["ADR-01"],
+        implementation_modules=["smriti.claims"],
+        verification_rule_ids=["ARCH-001"],
+        validation_rule_ids=["COMP-001"],
+        metric_names=["precision"],
         statistical_analysis_ids=["SA-001"],
         conclusion="Extraction is structurally precise",
     )
@@ -200,6 +230,7 @@ def test_evidence_chains_complete(mock_api):
 
 
 # ── 7 new rectified integration tests ────────────────────────────────────────
+
 
 def test_gate_results_in_report(mock_api):
     """RECTIFIED (P0-1): Report must contain gate_results."""
@@ -213,6 +244,7 @@ def test_gate_results_in_report(mock_api):
 def test_run_full_produces_research_assurance_package(mock_api):
     """RECTIFIED (P0-big): run_full() must return ResearchAssurancePackage."""
     from smriti.core.models import ResearchAssurancePackage
+
     engine = CertificationEngine(run_id="test_phase12")
     pkg = engine.run_full(mock_api)
     assert isinstance(pkg, ResearchAssurancePackage)
@@ -238,14 +270,14 @@ def test_claims_have_research_questions(mock_api):
         assert claim.null_hypothesis, f"{claim.claim_id} missing null_hypothesis"
 
 
-def test_publication_readiness_is_not_binary(mock_api):
-    """RECTIFIED (P1-6): Publication readiness must be PublicationReadinessLevel enum."""
+def test_artifact_readiness_is_not_binary(mock_api):
+    """RECTIFIED (P1-6): Artifact readiness must be ArtifactReadinessLevel enum."""
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    readiness_level = report.publication_readiness.readiness_level
-    assert isinstance(readiness_level, PublicationReadinessLevel), (
-        f"Expected PublicationReadinessLevel enum, got {type(readiness_level)}"
-    )
+    readiness_level = report.artifact_readiness.readiness_level
+    assert isinstance(
+        readiness_level, ArtifactReadinessLevel
+    ), f"Expected ArtifactReadinessLevel enum, got {type(readiness_level)}"
 
 
 def test_evaluation_manifest_in_json(mock_api):

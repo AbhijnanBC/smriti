@@ -1,0 +1,120 @@
+\input{generated/claim_validity_table.tex}
+
+Phase 4's own validator explicitly checks structural well-formedness
+(no headings, no metadata, no code reach claim construction) but, by its
+own documentation, does not evaluate claim \emph{semantics} --- it can
+prove ``I don't emit headings, metadata, code, etc.'' but not ``the
+objects I do emit are genuinely valid declarative claims'' (P1-7, audit
+round). We close this with SMRITI-ClaimValidity-v1
+(\texttt{evaluation/claim\_validity/v1/}): 500 candidate spans with a
+construction-defined ground truth, independent of whatever the
+classifier itself would decide, scored against Phase 4's real,
+unmodified \texttt{AssertionClassifier} (no human annotation, per this
+project's established convention for benchmarks with no annotator
+available). 200 spans are unambiguous DECLARATIVE\_CLAIM, 200 are
+unambiguous NON\_CLAIM spread across all nine non-assertion
+\texttt{AssertionType} subtypes the classifier can emit, and 100 are
+genuinely AMBIGUOUS (bare gerund phrases like ``Preparing the Dough,''
+elliptical clauses like ``Still under investigation'') --- these last
+100 are reported only as a resolution distribution, never scored
+right/wrong, for the same reason SMRITI-Controlled-v2's
+ambiguous\_abstention category is (\S\ref{sec:controlled} finding 9):
+there is no single correct label for a genuinely ambiguous span by
+construction.
+
+\textbf{Diversity rebuild (P1-F, audit round).} The version of this
+benchmark evaluated below is a rebuild: the previous version drew each
+NON\_CLAIM subtype's ~22 instances from a fixed pool of only ~10
+templates via modulo indexing, so most instances within a category were
+\emph{verbatim duplicates} of one of a handful of strings --- a
+classifier could pass by memorizing template wording rather than
+semantic function. Every category now crosses a substantially larger
+template pool with entity substitution wherever the template allows it,
+mixes in entity-free generic phrasings, and records which literal
+template produced each instance so a template-held-out split (never the
+same literal template in both \texttt{train} and
+\texttt{template\_heldout}) is possible. Six of the nine NON\_CLAIM
+subtypes (heading, list\_item, metadata, procedural\_instruction,
+question, table\_cell) now have zero verbatim duplicate instances
+(\texttt{unique\_text\_count} = $n$); the remaining three (code,
+fragment, quote) still repeat a handful of their larger-but-still-finite
+template pools. This changes the reported numbers below from an earlier
+draft of this section: a template pool artificially narrow enough to
+hide a failure mode by only exercising it once or twice is a benchmark
+weakness, not a result worth preserving, so we report the rebuilt
+benchmark's real numbers rather than the earlier, less diverse ones.
+
+\textbf{(1) Overall accuracy is 94.0\% (macro-F1 94.0\%) on the 400
+scoreable spans (TP=186, FP=10, FN=14, TN=190) --- the classifier
+correctly separates non-claim idioms from genuine assertions the large
+majority of the time, and the diversity rebuild's lower accuracy than an
+earlier, narrower-template draft (96.0\%) reflects a benchmark that now
+exercises more of the classifier's decision surface, not a regression in
+the classifier itself.} Six of the nine NON\_CLAIM subtypes (code,
+list\_item, metadata, question, quote, table\_cell) are rejected
+perfectly, 100\% recall each.
+
+\textbf{(2) The dominant leak is the same reproducible parser/classifier
+interaction the narrower benchmark draft already found, now surfaced at
+higher volume because entity substitution multiplied its instance
+count.} 7 of 22 \texttt{procedural\_instruction} spans leak into
+DECLARATIVE\_ASSERTION, all conditional imperatives of the same two
+template families (``Increase \{entity\}'s timeout if requests keep
+failing.,'' ``Disable \{entity\}'s feature flag if issues persist.'')
+--- the subordinate \emph{if}-clause's own subject (``requests,''
+``issues'') satisfies the classifier's \texttt{has\_subject\_anywhere}
+fallback check, which exists to rescue genuine assertions from tokenizer
+quirks (\S\ref{sec:system}) but here lets a conditional imperative's
+embedded clause masquerade as the main clause having a subject. 2 of 22
+\texttt{fragment} spans (``see section see section'') and 1 of 23
+\texttt{heading} spans (``The Aerotrix scheduler Release Notes'') leak
+the same way, both newly surfaced by the wider template pool rather than
+present in the earlier draft.
+
+\textbf{(3) The recall-loss side is broader than a single lexical
+ambiguity: 14 DECLARATIVE\_CLAIM instances, spanning five distinct
+template families, are misclassified NON\_CLAIM (13 as
+\texttt{LIST\_ITEM}, 1 as \texttt{FRAGMENT}), all via the same
+\texttt{no\_verb\_root\_bare\_noun\_phrase}/
+\texttt{verb\_root\_no\_subject\_not\_imperative} path.} The earlier,
+narrower draft found only spaCy's noun/verb tagging of \emph{processes}
+(a genuine part-of-speech ambiguity: \emph{processes} as the plural noun
+vs. the intended third-person-singular verb); that specific case remains
+(2 instances here). The wider template pool now also surfaces
+\emph{handles} (4 instances), \emph{runs as a single replica in \ldots}
+(2 instances), and two longer-subject templates (``The team responsible
+for \{entity\} reported \ldots,'' ``Because it lacks a retry policy,
+\{entity\} drops requests \ldots'') failing the same way (1 instance
+each) --- the same class of spaCy small-model verb-root-detection
+failure as (2), now shown to affect several distinct lexical items and
+subject constructions rather than one isolated word.
+
+\textbf{(4) The template-held-out check shows no meaningful gap: 94.0\%
+accuracy on templates used in \texttt{train} (N=318) vs.\ 93.9\% on
+\texttt{template\_heldout} templates (N=82).} Because
+\texttt{AssertionClassifier} is a fixed rule-based gate never trained on
+this or any benchmark, this is not an ML generalization result --- there
+is no model to overfit --- but it is evidence that (1)--(3)'s failure
+modes are genuine linguistic-construction weaknesses of the parser/
+classifier pipeline, not artifacts concentrated in whichever templates
+happened to be sampled into this particular 400-span draw.
+
+\textbf{(5) On genuinely ambiguous spans, the classifier's bias remains
+uniform and one-directional: 99 of 100 resolve to NON\_CLAIM, 1 to
+DECLARATIVE\_ASSERTION.} This is a disclosed property of this specific
+classifier design, not a claim that NON\_CLAIM is the ``right'' answer
+for these spans --- by construction, there is no right answer --- but it
+is informative: whatever a future extractor built on this substrate
+does with genuinely hedged or elliptical text, this classifier's current
+rule set almost never mistakes it for a confident assertion, which is
+the safer of the two possible biases for a system whose entire
+downstream graph is built from what it lets through.
+
+We read this benchmark as a real, if narrow, semantic validation this
+paper did not previously have: 94.0\% accuracy on 400 construction-defined
+spans drawn from a substantially more diverse template pool than the
+earlier draft, with every failure mode traced to specific, reproducible
+causes rather than left as an unexplained residual, template-held-out
+evidence that those failure modes are not sampling artifacts, and the
+classifier's behavior on genuinely hard cases disclosed as a design
+property rather than measured against a label that does not exist.

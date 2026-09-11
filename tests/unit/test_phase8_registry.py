@@ -1,14 +1,14 @@
 """Unit tests for SignalRegistry (P0-1)."""
 
 import pytest
-from smriti.scoring.signals import signal_registry, SignalRegistry
-from smriti.scoring.signals.base import BaseSignalExtractor
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalStatus, SignalID,
+    RawSignal,
+    SignalID,
+    SignalStatus,
 )
-from smriti.scoring.policies import ReliabilityPolicy, load_policy
 from smriti.exceptions import RegistryError
-from pathlib import Path
+from smriti.scoring.signals import SignalRegistry, signal_registry
+from smriti.scoring.signals.base import BaseSignalExtractor
 
 
 class MockExtractor(BaseSignalExtractor):
@@ -22,18 +22,26 @@ class MockExtractor(BaseSignalExtractor):
     idempotency, duplicate detection, ordering), not the identity space
     itself, so using canonical SignalID members is the faithful adaptation.
     """
+
     def __init__(self, signal_id: SignalID, ver="1.0"):
         self._signal_id = signal_id
         self._ver = ver
 
     @property
-    def signal_id(self): return self._signal_id
+    def signal_id(self):
+        return self._signal_id
 
     @property
-    def version(self): return self._ver
+    def version(self):
+        return self._ver
 
     def extract(self, node, graph, global_stats, policy):
-        return RawSignal(name=self._signal_id.value, raw_value=0.5, normalized_value=0.5, status=SignalStatus.MEASURED)
+        return RawSignal(
+            name=self._signal_id.value,
+            raw_value=0.5,
+            normalized_value=0.5,
+            status=SignalStatus.MEASURED,
+        )
 
 
 def test_registry_has_default_signals():
@@ -70,7 +78,9 @@ def test_different_extractor_same_name_raises():
     """Registering two DIFFERENT extractor types with the same signal_id must raise."""
     fresh_registry = SignalRegistry()
     ext1 = MockExtractor(SignalID.CONFLICT_PRESSURE)
-    ext2 = MockExtractor(SignalID.CONFLICT_PRESSURE, ver="2.0")  # Different version — treated as different
+    ext2 = MockExtractor(
+        SignalID.CONFLICT_PRESSURE, ver="2.0"
+    )  # Different version — treated as different
 
     class AnotherExtractor(MockExtractor):
         pass
@@ -95,7 +105,11 @@ def test_pipeline_never_changes_when_new_signal_registered():
     This test verifies that ordered_extractors() returns the right count.
     """
     fresh_registry = SignalRegistry()
-    mock_ids = [SignalID.EVIDENCE_STRENGTH, SignalID.EVIDENCE_INDEPENDENCE, SignalID.SOURCE_DIVERSITY]
+    mock_ids = [
+        SignalID.EVIDENCE_STRENGTH,
+        SignalID.EVIDENCE_INDEPENDENCE,
+        SignalID.SOURCE_DIVERSITY,
+    ]
     for i, sid in enumerate(mock_ids):
         fresh_registry.register(MockExtractor(sid), priority=i)
     assert len(fresh_registry.ordered_extractors()) == 3

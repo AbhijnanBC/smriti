@@ -28,11 +28,10 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List
 import structlog
 
-from smriti.core.models import ExtractionMode, ClaimWarning
 from smriti.claims.models import AnnotatedAssertion, ValidatedAssertion
+from smriti.core.models import ClaimWarning, ExtractionMode
 
 logger = structlog.get_logger(__name__)
 
@@ -53,7 +52,7 @@ class DegradationHandler:
             ValidatedAssertion (never None — always something).
         """
         mode = annotated.extraction_mode
-        warnings: List[ClaimWarning] = list(annotated.additional_warnings)
+        warnings: list[ClaimWarning] = list(annotated.additional_warnings)
         warnings.extend(annotated.structured_candidate.warnings)
 
         if mode == ExtractionMode.STRUCTURED:

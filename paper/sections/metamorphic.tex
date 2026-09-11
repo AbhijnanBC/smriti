@@ -7,42 +7,61 @@ it reports, and that its reliability model responds in the direction its
 own design requires under a controlled perturbation.
 
 \paragraph{RC5: exact audit-trail reconstruction.} For every one of the
-215 claims scored in the SMRITI-Reference run reported in
-\S\ref{sec:results}, we independently recompute \texttt{raw\_reliability}
-by summing that claim's own recorded per-signal contributions, replay the
-same deterministic constraint pipeline (\texttt{scoring/constraints.py})
-over the claim's own recorded signal vector, and compare the reconstructed
-final value against the value SMRITI actually reported. \textbf{215/215
-(100\%) reconstruct exactly}, within the 0.01 tolerance introduced by the
-store's 2-decimal display rounding (an initial run at a tighter 0.001
-tolerance flagged 24/215 as ``mismatched'', but every flagged case's delta
-was 0.003--0.005 --- a rounding artifact, not an algorithmic inconsistency,
-confirmed by inspecting the raw values directly). This is a genuine,
-falsifiable test: had Phase 8's fusion or constraint logic changed between
-scoring and this audit, or had a signal's stored contribution not actually
-been the one used to compute the final score, this test would have caught
-it.
+121 claims scored in the frozen SMRITI-Reference run reported in
+\S\ref{sec:results} (run 20260911\_125340, produced after this session's
+resolver/corpus fixes --- re-run here per P1-4/P1-5, audit round, from an
+earlier draft's 207-claim run that itself predated those fixes; the same
+staleness class as \S\ref{sec:ablation}'s and \S\ref{sec:limitations}'s
+partitioning artifacts, fixed alongside this one and by the same
+audit), we independently
+recompute \texttt{raw\_reliability} by summing that claim's own recorded
+per-signal contributions (\texttt{evaluation/reconstruction/v1/run\_rc5\_reconstruction.py}),
+replay the same deterministic constraint
+pipeline (\texttt{scoring/constraints.py}) and the same category
+weight-rescaling (\texttt{scoring/normalization.py}'s
+\texttt{split\_contribution\_set\_by\_category}) over the claim's own
+recorded signal vector, and compare the reconstructed final value
+against the value SMRITI actually reported. \textbf{121/121 (100\%)
+reconstruct exactly}, within the 0.01 tolerance introduced by the
+store's 2-decimal display rounding (max observed difference $0.005$).
+This audit targets \texttt{reliability\_index}
+specifically; since \S\ref{sec:system}'s reliability/importance split it
+replays the same evidence-family constraint pipeline
+(\texttt{EVIDENCE\_CONSTRAINT\_PIPELINE}) that production now uses to
+compute that number, so the audit continues to check what production
+actually does rather than a formula production has since moved away from.
+This is a genuine, falsifiable test: had Phase 8's fusion or constraint
+logic changed between scoring and this audit, or had a signal's stored
+contribution not actually been the one used to compute the final score,
+this test would have caught it.
 
 \paragraph{RC4: metamorphic reliability relations.} We construct four
 small synthetic claim graphs and score each through the real, unmodified
 Phase 8 production pipeline (the actual signal extractors and fusion code,
-not a re-implementation): \textbf{MR1} adding an independent supporting
-claim raises reliability (5.5 $\rightarrow$ 59.4) and lowers uncertainty
-(75.0 $\rightarrow$ 6.25); \textbf{MR2} adding a contradiction to a
-previously-uncontested claim does not increase reliability (59.4
-$\rightarrow$ 40.0), raises conflict pressure (0.0 $\rightarrow$ 0.97), and
---- since \S\ref{sec:system}'s uncertainty-model fix --- also raises the
-separately-reported uncertainty score (4.4 $\rightarrow$ 28.6), rather than
-leaving a heavily-disputed claim's uncertainty unchanged as the prior
-implementation did;
+not a re-implementation) --- specifically, since \S\ref{sec:system}'s
+reliability/importance split, through the same evidence-family
+\texttt{ContributionSet} and \texttt{EVIDENCE\_CONSTRAINT\_PIPELINE}
+production now uses for \texttt{reliability\_index} (every relation below
+concerns evidence-family signals, so this is what production would
+actually report, not the retired unsplit formula): \textbf{MR1} adding an
+independent supporting claim raises reliability (0.0 $\rightarrow$ 67.3)
+and lowers uncertainty (57.5 $\rightarrow$ 4.4); \textbf{MR2} adding a
+contradiction to a previously-uncontested claim does not increase
+reliability (67.3 $\rightarrow$ 40.0, the policy's
+\texttt{max\_reliability\_with\_max\_conflict} cap), raises conflict
+pressure (0.0 $\rightarrow$ 0.97), and --- since \S\ref{sec:system}'s
+uncertainty-model fix --- also raises the separately-reported uncertainty
+score (4.4 $\rightarrow$ 28.6), rather than leaving a heavily-disputed
+claim's uncertainty unchanged as the prior implementation did;
 \textbf{MR3} adding a supporting claim from the \emph{same} document as an
 existing supporter leaves source diversity exactly unchanged (0.387
 $\rightarrow$ 0.387, once both scenarios are constructed with an identical
 graph-level normalization baseline --- see implementation notes in
 \texttt{metamorphic.py} for why this equalization matters); \textbf{MR4}
-re-scoring an identical graph twice gives byte-identical output. All four
-relations hold (4/4, 100\%). This does not establish that the reliability
-\emph{model} is correct in an absolute sense --- only that it is not
-self-contradictory in the specific, epistemically basic ways a broken
-fusion implementation would be (support helping, contradiction hurting,
-duplication not double-counting, determinism).
+re-scoring an identical graph twice gives byte-identical output
+($67.34375$ both times). All four relations hold (4/4, 100\%). This does
+not establish that the reliability \emph{model} is correct in an absolute
+sense --- only that it is not self-contradictory in the specific,
+epistemically basic ways a broken fusion implementation would be (support
+helping, contradiction hurting, duplication not double-counting,
+determinism).

@@ -23,20 +23,21 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
+
 import structlog
 
-from smriti.runtime.state_machine import RuntimeState, RuntimeStateMachine
-from smriti.runtime.lifecycle import LifecyclePhase
-from smriti.runtime.lifecycle_manager import LifecycleManager
-from smriti.runtime.dependency_coordinator import DependencyCoordinator
-from smriti.runtime.health_coordinator import HealthCoordinator
-from smriti.runtime.execution_coordinator import ExecutionCoordinator
+from smriti.governance import stable
 from smriti.runtime.capabilities import CapabilityModel
 from smriti.runtime.composition import ConfigurationContext, DependencyGraph, RuntimeContext
+from smriti.runtime.dependency_coordinator import DependencyCoordinator
+from smriti.runtime.execution_coordinator import ExecutionCoordinator
+from smriti.runtime.health_coordinator import HealthCoordinator
 from smriti.runtime.invariants import assert_runtime_invariants
-from smriti.exceptions import RuntimeException
-from smriti.governance import stable
+from smriti.runtime.lifecycle import LifecyclePhase
+from smriti.runtime.lifecycle_manager import LifecycleManager
+from smriti.runtime.state_machine import RuntimeState, RuntimeStateMachine
 
 logger = structlog.get_logger(__name__)
 
@@ -59,6 +60,7 @@ class ShutdownCoordinator:
             except Exception as exc:
                 logger.error("shutdown_handler_failed", name=name, error=str(exc))
 
+
 @stable("1.0")
 class RuntimeCoordinator:
     """
@@ -69,16 +71,16 @@ class RuntimeCoordinator:
     """
 
     def __init__(self) -> None:
-        self._state_machine    = RuntimeStateMachine()
-        self._lifecycle_mgr    = LifecycleManager()
-        self._dep_coordinator  = DependencyCoordinator()
+        self._state_machine = RuntimeStateMachine()
+        self._lifecycle_mgr = LifecycleManager()
+        self._dep_coordinator = DependencyCoordinator()
         self._health_coordinator = HealthCoordinator()
         self._exec_coordinator = ExecutionCoordinator()
-        self._shutdown         = ShutdownCoordinator()
-        self._capabilities     = CapabilityModel()
-        self._config_ctx:      Optional[ConfigurationContext] = None
-        self._lock             = threading.Lock()
-        self._run_id:          str = ""
+        self._shutdown = ShutdownCoordinator()
+        self._capabilities = CapabilityModel()
+        self._config_ctx: ConfigurationContext | None = None
+        self._lock = threading.Lock()
+        self._run_id: str = ""
 
     # ── Lifecycle API ─────────────────────────────────────────────────────────
 
@@ -150,14 +152,14 @@ class RuntimeCoordinator:
     def register_health_check(self, name: str, check: Callable[[], bool]) -> None:
         self._health_coordinator.register(name, check)
 
-    def health_status(self) -> Dict[str, Any]:
+    def health_status(self) -> dict[str, Any]:
         return {
-            "runtime_state":   self._state_machine.state.value,
+            "runtime_state": self._state_machine.state.value,
             "lifecycle_phase": self._lifecycle_mgr.current_phase.value,
-            "is_operational":  self._state_machine.is_operational(),
-            "checks":          self._health_coordinator.run_all(),
-            "capabilities":    self._capabilities.snapshot(),
-            "uptime_seconds":  self._exec_coordinator.uptime_seconds(),
+            "is_operational": self._state_machine.is_operational(),
+            "checks": self._health_coordinator.run_all(),
+            "capabilities": self._capabilities.snapshot(),
+            "uptime_seconds": self._exec_coordinator.uptime_seconds(),
         }
 
     # ── Introspection ─────────────────────────────────────────────────────────
@@ -167,11 +169,11 @@ class RuntimeCoordinator:
         return self._state_machine.state
 
     @property
-    def config_context(self) -> Optional[ConfigurationContext]:
+    def config_context(self) -> ConfigurationContext | None:
         return self._config_ctx
 
     @property
-    def runtime_context(self) -> Optional[RuntimeContext]:
+    def runtime_context(self) -> RuntimeContext | None:
         if self._run_id:
             return RuntimeContext(
                 run_id=self._run_id,
@@ -196,8 +198,11 @@ class RuntimeCoordinator:
 
     def _phase_load_configuration(self) -> None:
         self._lifecycle_mgr.advance(LifecyclePhase.CONFIGURATION_LOADING)
+        import hashlib
+        import json
+
         from smriti.core.config import get_config
-        import hashlib, json
+
         cfg = get_config()
         raw = {k: cfg.get(k) for k in ["pipeline", "extraction", "embedding", "runtime"]}
         cfg_hash = hashlib.sha256(
@@ -212,7 +217,8 @@ class RuntimeCoordinator:
         self._lifecycle_mgr.complete()
 
         # Publish ArchitectureEvent (RECTIFIED P0-2)
-        from smriti.runtime.events import publish, ArchitectureEventType
+        from smriti.runtime.events import ArchitectureEventType, publish
+
         publish(
             ArchitectureEventType.CONFIGURATION_LOADED,
             source="runtime.coordinator",
@@ -226,7 +232,8 @@ class RuntimeCoordinator:
         self._lifecycle_mgr.advance(LifecyclePhase.DEPENDENCY_CONSTRUCTION)
         order = self._dep_coordinator.validate()
 
-        from smriti.runtime.events import publish, ArchitectureEventType
+        from smriti.runtime.events import ArchitectureEventType, publish
+
         publish(
             ArchitectureEventType.DEPENDENCY_VALIDATED,
             source="runtime.coordinator",

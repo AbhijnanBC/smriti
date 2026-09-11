@@ -2,8 +2,6 @@
 Unit tests for discovery/duplicate.py.
 """
 
-import pytest
-from pathlib import Path
 from smriti.discovery.duplicate import build_duplicate_registry
 
 
@@ -89,6 +87,7 @@ def test_duplicate_same_name_different_dirs(tmp_path):
     registry = build_duplicate_registry(pairs)
     assert registry.duplicate_count == 1
 
+
 def test_get_canonical_for_constant_time(tmp_path):
     """get_canonical_for must be O(1) via reverse dict."""
     path_a = tmp_path / "a.md"
@@ -96,4 +95,4 @@ def test_get_canonical_for_constant_time(tmp_path):
     shared_hash = "deadbeef" * 8
     pairs = [(path_a, shared_hash), (path_b, shared_hash)]
     registry = build_duplicate_registry(pairs)
-    assert registry.get_canonical_for(path_b) == path_a    
+    assert registry.get_canonical_for(path_b) == path_a

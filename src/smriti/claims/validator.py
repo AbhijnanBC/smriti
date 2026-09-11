@@ -20,7 +20,6 @@ Rules about what validator NEVER does:
 
 from __future__ import annotations
 
-from typing import List, Tuple
 import structlog
 
 from smriti.core.models import Claim, ClaimWarning
@@ -30,10 +29,10 @@ logger = structlog.get_logger(__name__)
 
 
 def validate_claims(
-    claims: List[Claim],
+    claims: list[Claim],
     document_id: str,
     seen_ids: dict,
-) -> Tuple[List[Claim], List[ClaimWarning]]:
+) -> tuple[list[Claim], list[ClaimWarning]]:
     """
     Validate a collection of Claims for one document.
 
@@ -48,9 +47,8 @@ def validate_claims(
     Raises:
         ClaimValidationError: On duplicate IDs, broken provenance, invalid schema.
     """
-    warnings: List[ClaimWarning] = []
-    valid: List[Claim] = []
-    
+    warnings: list[ClaimWarning] = []
+    valid: list[Claim] = []
 
     for claim in claims:
         # Check 1: Non-empty text
@@ -63,8 +61,10 @@ def validate_claims(
         if claim.claim_id in seen_ids:
             existing = seen_ids[claim.claim_id]
             # Must have same content_hash and same provenance (sentence_id/doc_id)
-            if (existing.content_hash != claim.content_hash or
-                existing.provenance != claim.provenance):
+            if (
+                existing.content_hash != claim.content_hash
+                or existing.provenance != claim.provenance
+            ):
                 raise ClaimValidationError(
                     f"Duplicate claim_id {claim.claim_id} with inconsistent content "
                     f"or provenance. Existing: {existing.content_hash[:8]}..., "
@@ -72,8 +72,7 @@ def validate_claims(
                 )
             # Even if identical, raise to enforce uniqueness and catch logic bugs
             raise ClaimValidationError(
-                f"Duplicate claim_id {claim.claim_id} detected. "
-                "All claims must have unique IDs."
+                f"Duplicate claim_id {claim.claim_id} detected. " "All claims must have unique IDs."
             )
         seen_ids[claim.claim_id] = claim
 

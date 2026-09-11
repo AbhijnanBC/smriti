@@ -14,47 +14,51 @@ This module provides:
 from __future__ import annotations
 
 import ast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set
+
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
 class ViolationSeverity(str, Enum):
-    ERROR   = "error"    # CI must fail
+    ERROR = "error"  # CI must fail
     WARNING = "warning"  # CI reports but passes
-    INFO    = "info"     # Informational only
+    INFO = "info"  # Informational only
 
 
 @dataclass
 class ComplianceRule:
     """A single verifiable architectural compliance rule."""
-    rule_id:     str
+
+    rule_id: str
     description: str
-    severity:    ViolationSeverity
-    check:       Callable[[], "ComplianceResult"]
+    severity: ViolationSeverity
+    check: Callable[[], ComplianceResult]
     remediation: str
 
 
 @dataclass
 class Violation:
     """A single compliance violation instance."""
-    rule_id:  str
-    file:     str
-    message:  str
+
+    rule_id: str
+    file: str
+    message: str
     severity: ViolationSeverity
 
 
 @dataclass
 class ComplianceResult:
     """Result of running one compliance rule."""
-    rule_id:    str
-    passed:     bool
-    violations: List[Violation] = field(default_factory=list)
-    notes:      str = ""
+
+    rule_id: str
+    passed: bool
+    violations: list[Violation] = field(default_factory=list)
+    notes: str = ""
 
 
 class ComplianceEngine:
@@ -69,78 +73,88 @@ class ComplianceEngine:
 
     def __init__(self, src_root: Path = Path("src/smriti")) -> None:
         self._src = src_root
-        self._rules: Dict[str, ComplianceRule] = {}
+        self._rules: dict[str, ComplianceRule] = {}
         self._register_default_rules()
 
     def _register_default_rules(self) -> None:
         """Register the canonical SMRITI compliance rules."""
 
-        self.register(ComplianceRule(
-            rule_id="CR-001",
-            description="No dashboard module imports from Phase 8 (scoring) directly.",
-            severity=ViolationSeverity.ERROR,
-            check=lambda: self._check_forbidden_import(
-                layer_dir="dashboard",
-                forbidden={"smriti.scoring", "smriti.reliability_scorer"},
+        self.register(
+            ComplianceRule(
                 rule_id="CR-001",
-            ),
-            remediation="Use KnowledgeAPI (Phase 9) to access scored data. Never import scoring directly.",
-        ))
+                description="No dashboard module imports from Phase 8 (scoring) directly.",
+                severity=ViolationSeverity.ERROR,
+                check=lambda: self._check_forbidden_import(
+                    layer_dir="dashboard",
+                    forbidden={"smriti.scoring", "smriti.reliability_scorer"},
+                    rule_id="CR-001",
+                ),
+                remediation="Use KnowledgeAPI (Phase 9) to access scored data. Never import scoring directly.",
+            )
+        )
 
-        self.register(ComplianceRule(
-            rule_id="CR-002",
-            description="Views do not import ServiceClient directly.",
-            severity=ViolationSeverity.ERROR,
-            check=lambda: self._check_forbidden_import(
-                layer_dir="dashboard/views",
-                forbidden={"services.client", "ServiceClient"},
+        self.register(
+            ComplianceRule(
                 rule_id="CR-002",
-            ),
-            remediation="Views receive PresentationModels from workspaces. Never call ServiceClient.",
-        ))
+                description="Views do not import ServiceClient directly.",
+                severity=ViolationSeverity.ERROR,
+                check=lambda: self._check_forbidden_import(
+                    layer_dir="dashboard/views",
+                    forbidden={"services.client", "ServiceClient"},
+                    rule_id="CR-002",
+                ),
+                remediation="Views receive PresentationModels from workspaces. Never call ServiceClient.",
+            )
+        )
 
-        self.register(ComplianceRule(
-            rule_id="CR-003",
-            description="Observability modules do not import from dashboard.",
-            severity=ViolationSeverity.ERROR,
-            check=lambda: self._check_forbidden_import(
-                layer_dir="observability",
-                forbidden={"smriti.dashboard", "streamlit"},
+        self.register(
+            ComplianceRule(
                 rule_id="CR-003",
-            ),
-            remediation="Observability is framework-agnostic. Never import dashboard modules.",
-        ))
+                description="Observability modules do not import from dashboard.",
+                severity=ViolationSeverity.ERROR,
+                check=lambda: self._check_forbidden_import(
+                    layer_dir="observability",
+                    forbidden={"smriti.dashboard", "streamlit"},
+                    rule_id="CR-003",
+                ),
+                remediation="Observability is framework-agnostic. Never import dashboard modules.",
+            )
+        )
 
-        self.register(ComplianceRule(
-            rule_id="CR-004",
-            description="Runtime modules do not import from api or dashboard.",
-            severity=ViolationSeverity.ERROR,
-            check=lambda: self._check_forbidden_import(
-                layer_dir="runtime",
-                forbidden={"smriti.api", "smriti.dashboard", "streamlit"},
+        self.register(
+            ComplianceRule(
                 rule_id="CR-004",
-            ),
-            remediation="Runtime is platform-agnostic. It coordinates, never serves requests.",
-        ))
+                description="Runtime modules do not import from api or dashboard.",
+                severity=ViolationSeverity.ERROR,
+                check=lambda: self._check_forbidden_import(
+                    layer_dir="runtime",
+                    forbidden={"smriti.api", "smriti.dashboard", "streamlit"},
+                    rule_id="CR-004",
+                ),
+                remediation="Runtime is platform-agnostic. It coordinates, never serves requests.",
+            )
+        )
 
-        self.register(ComplianceRule(
-            rule_id="CR-005",
-            description="Governance modules do not import from dashboard or runtime.",
-            severity=ViolationSeverity.WARNING,
-            check=lambda: self._check_forbidden_import(
-                layer_dir="governance",
-                forbidden={"smriti.dashboard", "smriti.runtime", "streamlit"},
+        self.register(
+            ComplianceRule(
                 rule_id="CR-005",
-            ),
-            remediation="Governance is static analysis only. Keep it dependency-free.",
-        ))
+                description="Governance modules do not import from dashboard or runtime.",
+                severity=ViolationSeverity.WARNING,
+                check=lambda: self._check_forbidden_import(
+                    layer_dir="governance",
+                    forbidden={"smriti.dashboard", "smriti.runtime", "streamlit"},
+                    rule_id="CR-005",
+                ),
+                remediation="Governance is static analysis only. Keep it dependency-free.",
+            )
+        )
 
     def register(self, rule: ComplianceRule) -> None:
         self._rules[rule.rule_id] = rule
 
-    def run_all(self) -> Dict[str, ComplianceResult]:
+    def run_all(self) -> dict[str, ComplianceResult]:
         """Execute all compliance rules and return results."""
-        results: Dict[str, ComplianceResult] = {}
+        results: dict[str, ComplianceResult] = {}
         for rule_id, rule in self._rules.items():
             try:
                 result = rule.check()
@@ -155,7 +169,7 @@ class ComplianceEngine:
                 )
         return results
 
-    def has_errors(self, results: Dict[str, ComplianceResult]) -> bool:
+    def has_errors(self, results: dict[str, ComplianceResult]) -> bool:
         """True if any ERROR-severity rules failed."""
         for rule_id, result in results.items():
             if not result.passed:
@@ -167,14 +181,16 @@ class ComplianceEngine:
     def _check_forbidden_import(
         self,
         layer_dir: str,
-        forbidden: Set[str],
+        forbidden: set[str],
         rule_id: str,
     ) -> ComplianceResult:
         target = self._src / layer_dir
         if not target.exists():
-            return ComplianceResult(rule_id=rule_id, passed=True, notes="Directory not found — skipped.")
+            return ComplianceResult(
+                rule_id=rule_id, passed=True, notes="Directory not found — skipped."
+            )
 
-        violations: List[Violation] = []
+        violations: list[Violation] = []
         for filepath in target.rglob("*.py"):
             try:
                 tree = ast.parse(filepath.read_text(encoding="utf-8"))
@@ -188,12 +204,14 @@ class ComplianceEngine:
                         names = [node.module or ""]
                     for name in names:
                         if any(f in name for f in forbidden):
-                            violations.append(Violation(
-                                rule_id=rule_id,
-                                file=str(filepath.relative_to(self._src.parent.parent)),
-                                message=f"Forbidden import: '{name}'",
-                                severity=ViolationSeverity.ERROR,
-                            ))
+                            violations.append(
+                                Violation(
+                                    rule_id=rule_id,
+                                    file=str(filepath.relative_to(self._src.parent.parent)),
+                                    message=f"Forbidden import: '{name}'",
+                                    severity=ViolationSeverity.ERROR,
+                                )
+                            )
 
         return ComplianceResult(
             rule_id=rule_id,

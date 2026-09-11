@@ -21,7 +21,7 @@ Rules:
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -37,7 +37,7 @@ class DuplicateEntry:
 
     hash: str
     canonical_path: Path
-    alternate_paths: List[Path] = field(default_factory=list)
+    alternate_paths: list[Path] = field(default_factory=list)
 
     @property
     def is_duplicate(self) -> bool:
@@ -45,7 +45,7 @@ class DuplicateEntry:
         return len(self.alternate_paths) > 0
 
     @property
-    def all_paths(self) -> List[Path]:
+    def all_paths(self) -> list[Path]:
         """All paths sharing this content, canonical first."""
         return [self.canonical_path] + self.alternate_paths
 
@@ -62,10 +62,10 @@ class DuplicateRegistry:
         _duplicate_to_canonical: dict for O(1) reverse lookup
     """
 
-    entries: Dict[str, DuplicateEntry] = field(default_factory=dict)
+    entries: dict[str, DuplicateEntry] = field(default_factory=dict)
     canonical_paths: set = field(default_factory=set)
     duplicate_paths: set = field(default_factory=set)
-    _duplicate_to_canonical: Dict[Path, Path] = field(default_factory=dict)
+    _duplicate_to_canonical: dict[Path, Path] = field(default_factory=dict)
 
     @property
     def duplicate_count(self) -> int:
@@ -81,14 +81,12 @@ class DuplicateRegistry:
     def is_duplicate(self, path: Path) -> bool:
         return path in self.duplicate_paths
 
-    def get_canonical_for(self, path: Path) -> Optional[Path]:
+    def get_canonical_for(self, path: Path) -> Path | None:
         """Given a duplicate path, return the canonical path for its content (O(1))."""
         return self._duplicate_to_canonical.get(path)
 
 
-def build_duplicate_registry(
-    path_hash_pairs: List[Tuple[Path, str]]
-) -> DuplicateRegistry:
+def build_duplicate_registry(path_hash_pairs: list[tuple[Path, str]]) -> DuplicateRegistry:
     """
     Build a complete duplicate registry from path-hash pairs.
 

@@ -12,42 +12,93 @@ evidence that it generalizes required building a corpus specifically
 designed to need no interpretation at all.
 
 Three things now stand on genuinely independent legs. SMRITI-Controlled
-(\S\ref{sec:controlled}) shows 100\% CONTRADICTS classification accuracy
-on every retrieved pair across six distinct contradiction categories, with
-zero false positives on six deliberately unrelated (and topically
-unrelated) control pairs --- by construction, not by annotation. This leg
-is not unqualified either: a later hard-neutral extension, built
+(\S\ref{sec:controlled}), scaled from a 32-pair pilot to 713 pairs across
+15 categories specifically so its findings would be rates rather than
+anecdotes, shows 98.3\% CONTRADICTS classification precision on the
+frozen TEST split's 119 retrieved pairs across six distinct contradiction
+categories, with zero false positives on 21 deliberately unrelated
+control pairs --- by construction, not by annotation. Scaling this
+corpus was not itself the end of the story: a second audit round
+found the scaled-up generator had real defects of its own (ungrammatical
+negation, a subject-dropped SUPPORTS template, CONTRADICTS pairs whose
+two claims could both be true at once), serious enough that we retracted
+rather than corrected an earlier draft of this table and regenerated the
+corpus with an automated validator checking for exactly those defects.
+The sanitized numbers reveal the qualification is larger than either the
+pilot or the first scale-up could show: a hard-neutral extension built
 specifically to test whether the relatedness gate rejects a false
-CONTRADICTS on a pair it cannot dismiss as simply unrelated, found exactly
-one such case (\S\ref{sec:hard-neutral}, E7) --- two compatible attributes
-of one named entity read as mutually exclusive. The metamorphic and reconstruction tests
+CONTRADICTS on a pair it cannot dismiss as simply unrelated found, at
+pilot scale, exactly one such case; on the sanitized corpus's TEST split,
+the same construction (two compatible attributes of one named entity
+read as mutually exclusive) is this evaluation's single largest source
+of classification error, firing on 12 of the 17 retrieved
+multi-attribute pairs (\S\ref{sec:hard-neutral}, E7). Sanitizing the
+corpus also forced a correction of our own to an earlier draft's
+SUPPORTS claim: that draft reported 0\% TEST classification accuracy for
+SUPPORTS, which did not match the frozen results artifact and is
+retracted (E3) --- the artifact's own per-pair rows show 90.0\%
+precision, 75.0\% recall, 81.8\% F1 given retrieval, with a real but
+smaller retrieval gap (3 of 12 TEST pairs never reach the classifier at
+all). SUPPORTS classification, once retrieved, is not a resolver
+weakness on this corpus; that we reported the opposite in an earlier
+draft, and only caught it on a subsequent reconciliation against our own
+frozen artifact, is itself a finding this paper does not hide. What does
+remain a genuine, unresolved weakness: the resolver has no measurable
+abstention behavior on deliberately ambiguous input despite
+\texttt{ResolutionStatus.ABSTAINED} being a defined, reachable outcome
+(E10); and, measured over every candidate pair Phase 6 actually scores,
+not only the 713 the corpus intends to test, more than half of all
+CONTRADICTS verdicts (383, 55.2\%) fire on pairs outside the intended set
+entirely (E11, audit round P0-9) --- findings a 32-pair corpus, and a
+corpus whose own construction had not yet been independently checked,
+did not have the power or the validity to make. The metamorphic and reconstruction tests
 (\S\ref{sec:metamorphic}) show the reliability model is not
 self-contradictory in basic, checkable ways, and that its audit trail
-means what it says. And the re-run SMRITI-Reference annotation
-(\S\ref{sec:results-annotation}) gives the fourth leg a very different
-shape than the other three: it does not confirm the fix's real-world
-value, it discloses the fix's real-world limit. CONTRADICTS precision on
-SMRITI-Reference's actual prose is 4.5\%; the pre-fix figure (3.2\%,
-measured on a different, pre-fix sample) falls inside this post-fix
-measurement's own 95\% bootstrap CI ([0.0\%, 11.4\%]), so we report no
-evidence of improvement rather than claiming a formal significance
-test --- the two samples differ in which claims and pairs exist at all,
-so a paired comparison is not available. The corpus's genuine
-disagreements are argued rhetorically, not asserted
+means what it says. And the twice-re-run SMRITI-Reference annotation
+(\S\ref{sec:results-annotation}) --- once for the single-direction
+resolver fix, once more after the bidirectional-NLI rewrite --- gives the
+fourth leg a very different shape than the other three: it does not
+confirm the fixes' real-world value, it discloses their real-world
+limit, twice over. CONTRADICTS precision on SMRITI-Reference's actual
+prose is 14.3\% post-bidirectional-rewrite (4.5\% under the single-
+direction resolver, 3.2\% pre-fix); all three figures fall inside each
+other's 95\% bootstrap CIs at this sample size, so we report no evidence
+of improvement across either rewrite rather than claiming a formal
+significance test --- the three samples differ in which claims and pairs
+exist or were drawn at all, so a paired comparison is not available. The
+bidirectional-NLI rewrite's own annotation round additionally discovered
+and let us fix a genuine hardcoded-direction defect (Defect 11,
+\S\ref{sec:bugs}) it was never designed to find, then re-measure the fix
+honestly (0/9 direction accuracy pre-fix, 44.4\% post-fix, still
+chance-level) rather than declaring victory once the obvious bug was
+gone -- and a later audit round found the fallback branch that
+defect lived in was itself semantically wrong regardless of direction,
+plus an unrelated specificity-gate bug; retiring the branch and fixing
+the gate collapses that 44.4\% figure to chance-level-or-below on a
+single-digit sample (\S\ref{sec:results-annotation}), which we report as
+the current number precisely because it supersedes, not confirms, the
+earlier one. The corpus's genuine disagreements are argued rhetorically, not asserted
 propositionally, and an off-the-shelf entailment model simply does not
 hear rhetoric as contradiction. We could have stopped at
-SMRITI-Controlled's 100\% and called the story finished; re-running the
-annotation after the fix, rather than reusing the pre-fix round, is what
-surfaced that it was not.
+SMRITI-Controlled's strong CONTRADICTS numbers and called the story
+finished; re-running the annotation after the fix, rather than reusing
+the pre-fix round, is what surfaced that it was not --- and scaling the
+controlled corpus itself, rather than resting on its pilot version, is
+what surfaced that even the strong leg had a serious, previously
+invisible qualification (E7) --- and that our own earlier SUPPORTS
+measurement on this same corpus was itself wrong and needed correction,
+not confirmation (E3).
 
 What does not yet stand on solid ground is explicitly listed in
 \S\ref{sec:limitations}, not hidden in a "future work" paragraph few
 readers reach: the resolver fix does not transfer to rhetorical
-disagreement in real text, SUPPORTS classification is still weak on both
-corpora, source-diversity and temporal signals still rest on filesystem
+disagreement in real text, SUPPORTS classification is still weak on
+SMRITI-Reference's real prose even though it is strong on
+SMRITI-Controlled-v2 when retrieved, source-diversity and temporal
+signals still rest on filesystem
 heuristics rather than real provenance, and no genuine human evaluation
-exists. We release SMRITI-Reference, SMRITI-Controlled, both annotation
-rounds, the scoring code, and the fixed system itself, so that closing
+exists. We release SMRITI-Reference, SMRITI-Controlled, all three
+annotation rounds, the scoring code, and the fixed system itself, so that closing
 those gaps --- including, eventually, the human validation study we could
 not ourselves produce, and a genuinely stance-aware relationship
 classifier --- starts from a system that has already been checked once,

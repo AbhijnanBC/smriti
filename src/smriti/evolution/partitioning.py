@@ -23,9 +23,10 @@ Fixed algorithm (constraint-based signed-graph partitioning):
             cycles intentionally degrade into singleton partitions rather than attempting
             approximate optimization. This safely partitions contradictions at the cost
             of destroying SUPPORTS structure strictly within the cycle.
-    Step 3: Apply Union-Find on SUPPORTS/REFINES edges, but only merge nodes
-            that have the SAME color. This ensures contradicting claims are
-            never merged into the same partition even if they share a neighbor.
+    Step 3: Apply Union-Find on SUPPORTS/REFINES/EQUIVALENT edges, but only
+            merge nodes that have the SAME color. This ensures contradicting
+            claims are never merged into the same partition even if they
+            share a neighbor.
     Step 4: Build KnowledgePartition for each Union-Find group.
 
 Complexity: O(N + E) — BFS coloring + Union-Find with path compression.
@@ -33,18 +34,36 @@ Complexity: O(N + E) — BFS coloring + Union-Find with path compression.
 Invariant guaranteed:
     No two nodes connected by CONTRADICTS will ever be in the same partition.
     This holds even in the presence of shared SUPPORTS neighbors.
+
+STATUS (P1-5, external "reality check" review — partitioning-method
+comparison): this hard-constraint algorithm remains the ONLY partitioner
+wired into production (evolution/__init__.py -> evolution/construction.py).
+A "weighted-constraint variant" (evaluation/partitioning/
+run_partitioning_comparison.py::weighted_constraint_variant) was built and
+measured for comparison -- on the real reference graph it recovers
+meaningfully more SUPPORTS/REFINES/EQUIVALENT structure (99 -> 85
+partitions, 55.6% -> 41.2% singleton rate, 32 -> 17 structural edges cut)
+at the cost of exactly 1 realized contradiction violation (vs. the 0 this
+module guarantees) out of 22 constraints it soft-drops to escape odd
+cycles. That is a real, disclosed trade-off, not a strict improvement, and
+it has NOT been promoted here: this module still enforces the hard
+zero-violation guarantee, unconditionally. Do not wire the weighted
+variant into this function without an explicit decision to trade away
+that guarantee.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 from collections import deque
-from typing import Dict, List, Set, Optional, Tuple
+
 import structlog
-import dataclasses
 
 from smriti.core.models import (
-    KnowledgePartition, RelationshipType, NodeAnnotations, SemanticRole,
+    KnowledgePartition,
+    NodeAnnotations,
+    RelationshipType,
 )
 from smriti.evolution.context import SemanticReasoningContext
 from smriti.exceptions import PartitioningError
@@ -65,7 +84,7 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
 
     # ── Step 1: Collect contradiction constraints ─────────────────────────────
     # contradiction_constraints[A] = set of nodes that A directly CONTRADICTS
-    contradiction_constraints: Dict[str, Set[str]] = {nid: set() for nid in all_node_ids}
+    contradiction_constraints: dict[str, set[str]] = {nid: set() for nid in all_node_ids}
     for edge in ctx.edges.values():
         if edge.relationship_type == RelationshipType.CONTRADICTS:
             contradiction_constraints[edge.source_node_id].add(edge.target_node_id)
@@ -76,12 +95,12 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
     # Nodes that CONTRADICT each other must have different colors.
     # If not 2-colorable (odd cycle), each node in the conflicting group
     # gets a unique color (conservative: separate partition per node).
-    node_color: Dict[str, int] = {}
+    node_color: dict[str, int] = {}
     color_counter = [2]  # Colors 0 and 1 are standard; higher = isolated
 
-    def collect_component(start: str) -> Set[str]:
+    def collect_component(start: str) -> set[str]:
         """BFS over the contradiction graph to collect a full connected component."""
-        component: Set[str] = set()
+        component: set[str] = set()
         queue = deque([start])
         while queue:
             n = queue.popleft()
@@ -93,7 +112,7 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
                     queue.append(neighbor)
         return component
 
-    def try_bipartite_color(component: Set[str]) -> Optional[Dict[str, int]]:
+    def try_bipartite_color(component: set[str]) -> dict[str, int] | None:
         """
         Attempt to 2-color a connected component in isolation (a fresh, local
         dict — never touching node_color directly). Returns None if the
@@ -106,7 +125,7 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
         edge an odd cycle produces. Attempting in a scratch dict and only
         committing on full success avoids leaking that inconsistent state.
         """
-        colors: Dict[str, int] = {}
+        colors: dict[str, int] = {}
         start = min(component)
         colors[start] = 0
         queue = deque([start])
@@ -146,7 +165,7 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
                 color_counter[0] += 1
 
     # ── Step 3: Union-Find on SUPPORTS/REFINES edges (same-color only) ────────
-    parent: Dict[str, str] = {nid: nid for nid in all_node_ids}
+    parent: dict[str, str] = {nid: nid for nid in all_node_ids}
 
     def find(x: str) -> str:
         while parent[x] != x:
@@ -162,38 +181,49 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
                 parent[px] = py
 
     for edge in ctx.edges.values():
-        if edge.relationship_type in (RelationshipType.SUPPORTS, RelationshipType.REFINES):
+        # EQUIVALENT claims (bidirectional-NLI rewrite) say the same thing;
+        # they must be co-located at least as strongly as SUPPORTS/REFINES.
+        if edge.relationship_type in (
+            RelationshipType.SUPPORTS,
+            RelationshipType.REFINES,
+            RelationshipType.EQUIVALENT,
+        ):
             union(edge.source_node_id, edge.target_node_id)
 
     # ── Step 4: Build KnowledgePartition for each Union-Find group ───────────
     # Group nodes by their root in Union-Find
-    groups: Dict[str, Set[str]] = {}
+    groups: dict[str, set[str]] = {}
     for node_id in sorted(all_node_ids):
         root = find(node_id)
         groups.setdefault(root, set()).add(node_id)
 
-    partitions: Dict[str, KnowledgePartition] = {}
-    node_to_partition: Dict[str, str] = {}
+    partitions: dict[str, KnowledgePartition] = {}
+    node_to_partition: dict[str, str] = {}
 
     for root, group_nodes in groups.items():
         node_ids = frozenset(group_nodes)
         partition_id = _compute_partition_id(node_ids)
         stable_label = tuple(sorted(node_ids))  # Store as a sorted tuple
 
-        # Find internal edges (SUPPORTS/REFINES within this partition)
+        # Find internal edges (SUPPORTS/REFINES/EQUIVALENT within this partition)
         internal_edges = {}
         supports_count = 0
         refines_count = 0
+        equivalent_count = 0
 
         for edge_id, edge in ctx.edges.items():
-            if (edge.source_node_id in node_ids
-                    and edge.target_node_id in node_ids
-                    and edge.relationship_type != RelationshipType.CONTRADICTS):
+            if (
+                edge.source_node_id in node_ids
+                and edge.target_node_id in node_ids
+                and edge.relationship_type != RelationshipType.CONTRADICTS
+            ):
                 internal_edges[edge_id] = edge
                 if edge.relationship_type == RelationshipType.SUPPORTS:
                     supports_count += 1
                 elif edge.relationship_type == RelationshipType.REFINES:
                     refines_count += 1
+                elif edge.relationship_type == RelationshipType.EQUIVALENT:
+                    equivalent_count += 1
 
         # Directed density (P1-5): edges / (n * (n-1))
         n = len(node_ids)
@@ -214,6 +244,7 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
             density=round(density, 6),
             longest_support_chain=longest_chain,
             schema_version="7.0",
+            equivalent_count=equivalent_count,
         )
         partitions[partition_id] = partition
         for nid in node_ids:
@@ -223,16 +254,17 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
     unassigned = all_node_ids - set(node_to_partition.keys())
     if unassigned:
         raise PartitioningError(
-            f"Partitioning left {len(unassigned)} nodes unassigned: "
-            f"{sorted(unassigned)[:5]}"
+            f"Partitioning left {len(unassigned)} nodes unassigned: " f"{sorted(unassigned)[:5]}"
         )
 
     # ── Verify partition invariant: no CONTRADICTS within any partition ────────
     for partition in partitions.values():
         for edge_id, edge in ctx.edges.items():
-            if (edge.relationship_type == RelationshipType.CONTRADICTS
-                    and edge.source_node_id in partition.node_ids
-                    and edge.target_node_id in partition.node_ids):
+            if (
+                edge.relationship_type == RelationshipType.CONTRADICTS
+                and edge.source_node_id in partition.node_ids
+                and edge.target_node_id in partition.node_ids
+            ):
                 raise PartitioningError(
                     f"CONTRADICTS edge {edge_id[:8]} found WITHIN partition "
                     f"{partition.partition_id[:8]}. Constraint partitioning failed."
@@ -273,12 +305,12 @@ def _compute_longest_support_chain(node_ids: frozenset, internal_edges: dict) ->
     if not internal_edges:
         return 0
 
-    adj: Dict[str, List[str]] = {nid: [] for nid in node_ids}
+    adj: dict[str, list[str]] = {nid: [] for nid in node_ids}
     for edge in internal_edges.values():
         if edge.relationship_type == RelationshipType.SUPPORTS:
             adj[edge.source_node_id].append(edge.target_node_id)
 
-    def dfs_length(node: str, visited: Set[str]) -> int:
+    def dfs_length(node: str, visited: set[str]) -> int:
         if node in visited:
             return 0
         visited = visited | {node}

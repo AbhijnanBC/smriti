@@ -9,9 +9,12 @@ from smriti.exceptions import WorkspaceNotFoundError
 def test_default_registry_has_all_workspaces():
     registry = build_default_registry()
     expected = {
-        WorkspaceType.RESEARCH, WorkspaceType.RELIABILITY,
-        WorkspaceType.CONFLICT, WorkspaceType.AUDIT,
-        WorkspaceType.PROVENANCE, WorkspaceType.STATISTICS,
+        WorkspaceType.RESEARCH,
+        WorkspaceType.RELIABILITY,
+        WorkspaceType.CONFLICT,
+        WorkspaceType.AUDIT,
+        WorkspaceType.PROVENANCE,
+        WorkspaceType.STATISTICS,
         WorkspaceType.TOPOLOGY,
     }
     for ws_type in expected:
@@ -35,12 +38,14 @@ def test_workspace_profiles_have_objectives():
     registry = build_default_registry()
     for ws_type in registry.all_types():
         ws = registry.get(ws_type)
-        assert ws.profile.investigative_objective, \
-            f"{ws_type.value} has empty investigative_objective"
+        assert (
+            ws.profile.investigative_objective
+        ), f"{ws_type.value} has empty investigative_objective"
 
 
 def test_workspace_profiles_have_default_lens():
     from smriti.core.models import EpistemicLens
+
     registry = build_default_registry()
     for ws_type in registry.all_types():
         ws = registry.get(ws_type)

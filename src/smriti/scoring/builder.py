@@ -8,14 +8,22 @@ ReliabilityDecisionRecord. Registry order captured in audit trail.
 from __future__ import annotations
 
 import hashlib
-from typing import Dict, List
+
 import structlog
 
 from smriti.core.models import (
-    KnowledgeGraph, ClaimNode, SignalVector, ComponentScore,
-    SignalManifest, ReliabilityDecisionRecord, ReliabilityExplanation,
-    ReliabilityAudit, ReliabilityMetadata, ScoredKnowledgeGraph,
-    ScoringGlobalStats, CalibrationLabel, ContributionSet,
+    CalibrationLabel,
+    ClaimNode,
+    ComponentScore,
+    KnowledgeGraph,
+    ReliabilityAudit,
+    ReliabilityDecisionRecord,
+    ReliabilityExplanation,
+    ReliabilityMetadata,
+    ScoredKnowledgeGraph,
+    ScoringGlobalStats,
+    SignalManifest,
+    SignalVector,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -58,20 +66,27 @@ def build_reliability_metadata(
     reliability_index: float,
     uncertainty_score: float,
     signal_vector: SignalVector,
-    component_scores: List[ComponentScore],
-    signal_manifests: List[SignalManifest],          # NEW (P0-4)
-    decision_record: ReliabilityDecisionRecord,       # NEW (P0-5)
+    component_scores: list[ComponentScore],
+    signal_manifests: list[SignalManifest],  # NEW (P0-4)
+    decision_record: ReliabilityDecisionRecord,  # NEW (P0-5)
     explanation: ReliabilityExplanation,
     policy: ReliabilityPolicy,
     run_id: str,
-    extractors: List[BaseSignalExtractor],
-    graph: KnowledgeGraph,                            # ADDED (Phase 8.4)
+    extractors: list[BaseSignalExtractor],
+    graph: KnowledgeGraph,  # ADDED (Phase 8.4)
+    importance_index: float = 0.0,  # NEW (P1-4)
+    importance_component_scores: list[ComponentScore] | None = None,  # NEW (P1-4)
+    importance_decision_record: ReliabilityDecisionRecord | None = None,  # NEW (P1-4)
 ) -> ReliabilityMetadata:
     """
     Construct immutable ReliabilityMetadata for one ClaimNode.
 
     RECTIFIED (Phase 8.4): Accepts `graph` to compute graph fingerprint
     and use graph.schema_version in audit trail.
+    RECTIFIED (P1-4): Accepts the separately-fused importance_index (graph
+    centrality family) alongside the evidence-family reliability_index --
+    see core.models.ReliabilityMetadata for why these are no longer one
+    conflated number.
     """
     calibration_label = apply_calibration_label(reliability_index, policy)
 
@@ -80,14 +95,12 @@ def build_reliability_metadata(
     audit = ReliabilityAudit(
         policy_version=policy.version,
         policy_profile=policy.profile,
-        graph_schema_version=graph.schema_version,          # NOW from graph
+        graph_schema_version=graph.schema_version,  # NOW from graph
         graph_fingerprint=compute_graph_fingerprint(graph),  # NEW field (Phase 8.4)
         fusion_algorithm="weighted_linear_v2",
         normalization_version="1.1",
         computed_at_run_id=run_id,
-        signal_extractor_versions={
-            e.signal_id: e.version for e in extractors
-        },
+        signal_extractor_versions={e.signal_id: e.version for e in extractors},
         registry_order=registry_order,
     )
 
@@ -104,13 +117,16 @@ def build_reliability_metadata(
         calibration_label=calibration_label,
         audit=audit,
         policy_version=policy.version,
+        importance_index=round(importance_index, 2),
+        importance_component_scores=tuple(importance_component_scores or ()),
+        importance_decision_record=importance_decision_record,
         schema_version=PHASE8_SCHEMA_VERSION,
     )
 
 
 def build_scored_knowledge_graph(
     graph: KnowledgeGraph,
-    reliability: Dict[str, ReliabilityMetadata],
+    reliability: dict[str, ReliabilityMetadata],
     policy: ReliabilityPolicy,
     global_stats: ScoringGlobalStats,
     run_id: str,

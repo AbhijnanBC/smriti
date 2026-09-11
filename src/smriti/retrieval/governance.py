@@ -20,7 +20,7 @@ Rules:
 from __future__ import annotations
 
 import time
-from typing import List, Optional
+
 import structlog
 
 from smriti.core.config import get_config
@@ -50,9 +50,17 @@ class ResourceGovernor:
     Instantiate once per run; call check_* methods at critical points.
     """
 
-    def __init__(self, limits: Optional[ResourceLimits] = None) -> None:
+    def __init__(self, limits: ResourceLimits | None = None) -> None:
         self._limits = limits or ResourceLimits()
         self._start_time = time.monotonic()
+        # RECTIFIED (P1-J, "FINAL REVIEW" round): a truncated evaluation
+        # run must not be able to report its recall/precision numbers as
+        # if nothing were cut. This flag is set whenever enforce_pair_limit
+        # actually truncates the candidate list, and is threaded through
+        # to DiscoveryReport (see statistics.py) so any consumer -- a
+        # human, an evaluation script, a future automated gate -- can see
+        # it without re-deriving it from raw candidate counts.
+        self.evaluation_truncated: bool = False
         logger.info(
             "resource governor initialized",
             max_pairs=self._limits.max_pairs,
@@ -62,8 +70,8 @@ class ResourceGovernor:
 
     def enforce_pair_limit(
         self,
-        candidates: List[CandidatePair],
-    ) -> List[CandidatePair]:
+        candidates: list[CandidatePair],
+    ) -> list[CandidatePair]:
         """
         Enforce max_pairs limit on the candidate list.
 
@@ -80,15 +88,14 @@ class ResourceGovernor:
                 f"Increase resource_governance.max_pairs or reduce top_k."
             )
 
+        self.evaluation_truncated = True
         logger.warning(
             "pair limit exceeded, truncating",
             total=len(candidates),
             limit=self._limits.max_pairs,
         )
         # Truncate to top pairs by cosine similarity (deterministic)
-        sorted_candidates = sorted(
-            candidates, key=lambda c: c.cosine_similarity, reverse=True
-        )
+        sorted_candidates = sorted(candidates, key=lambda c: c.cosine_similarity, reverse=True)
         return sorted_candidates[: self._limits.max_pairs]
 
     def check_timeout(self) -> None:
@@ -110,6 +117,7 @@ class ResourceGovernor:
         if clamped < requested:
             logger.warning(
                 "batch size clamped by resource governor",
-                requested=requested, clamped=clamped,
+                requested=requested,
+                clamped=clamped,
             )
         return clamped

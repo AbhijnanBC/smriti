@@ -7,13 +7,13 @@ proceed into claim construction; every other category must be classified
 correctly so it can be recorded as a DiscardedCandidate instead.
 """
 
-import pytest
 from pathlib import Path
 
-from smriti.core.models import SemanticSentence, AssertionType
-from smriti.claims.parser import SpaCyParser
+import pytest
 from smriti.claims.classifier import AssertionClassifier
 from smriti.claims.models import ParsedSentence
+from smriti.claims.parser import SpaCyParser
+from smriti.core.models import AssertionType, SemanticSentence
 
 
 @pytest.fixture(scope="module")
@@ -56,6 +56,7 @@ def classify(parser, classifier, text, origin_block_type="paragraph"):
 
 # ── DECLARATIVE_ASSERTION ─────────────────────────────────────────────────────
 
+
 def test_simple_declarative_assertion(parser, classifier):
     """'Earth orbits the Sun.' -- the canonical positive example."""
     result_type, _ = classify(parser, classifier, "Earth orbits the Sun.")
@@ -63,9 +64,7 @@ def test_simple_declarative_assertion(parser, classifier):
 
 
 def test_negated_declarative_assertion(parser, classifier):
-    result_type, _ = classify(
-        parser, classifier, "Python does not support this feature."
-    )
+    result_type, _ = classify(parser, classifier, "Python does not support this feature.")
     assert result_type == AssertionType.DECLARATIVE_ASSERTION
 
 
@@ -98,6 +97,7 @@ def test_passive_assertion_survives_hyphen_tokenization_quirk(parser, classifier
 
 # ── PROCEDURAL_INSTRUCTION ────────────────────────────────────────────────────
 
+
 def test_imperative_instruction(parser, classifier):
     """'Heat the oil in a pan.' -- the canonical procedural example."""
     result_type, reason = classify(parser, classifier, "Heat the oil in a pan.")
@@ -112,10 +112,9 @@ def test_another_imperative_instruction(parser, classifier):
 
 # ── QUESTION ───────────────────────────────────────────────────────────────
 
+
 def test_question_mark_is_question(parser, classifier):
-    result_type, _ = classify(
-        parser, classifier, "What temperature should the oven be?"
-    )
+    result_type, _ = classify(parser, classifier, "What temperature should the oven be?")
     assert result_type == AssertionType.QUESTION
 
 
@@ -125,6 +124,7 @@ def test_simple_question(parser, classifier):
 
 
 # ── HEADING ────────────────────────────────────────────────────────────────
+
 
 def test_bare_atx_heading_leak(parser, classifier):
     """'## Ingredients' -- literal example from the annotation review."""
@@ -152,23 +152,21 @@ def test_titlecase_noun_phrase_heading(parser, classifier):
 
 # ── METADATA ───────────────────────────────────────────────────────────────
 
+
 def test_source_metadata_line(parser, classifier):
     """'**Source:** Flavor Quotient' -- literal example from the annotation review."""
-    result_type, reason = classify(
-        parser, classifier, "**Source:** Flavor Quotient"
-    )
+    result_type, reason = classify(parser, classifier, "**Source:** Flavor Quotient")
     assert result_type == AssertionType.METADATA
     assert reason == "regex_bold_label_colon"
 
 
 def test_contradicts_metadata_line(parser, classifier):
-    result_type, _ = classify(
-        parser, classifier, "**Contradicts:** Some other claim about eggs."
-    )
+    result_type, _ = classify(parser, classifier, "**Contradicts:** Some other claim about eggs.")
     assert result_type == AssertionType.METADATA
 
 
 # ── LIST_ITEM ──────────────────────────────────────────────────────────────
+
 
 def test_bare_noun_phrase_list_item(parser, classifier):
     """'Coconut oil.' -- literal example from the annotation review."""
@@ -180,9 +178,7 @@ def test_bare_noun_phrase_list_item(parser, classifier):
 
 
 def test_quantity_list_item(parser, classifier):
-    result_type, _ = classify(
-        parser, classifier, "2 tbsp ghee", origin_block_type="bullet_item"
-    )
+    result_type, _ = classify(parser, classifier, "2 tbsp ghee", origin_block_type="bullet_item")
     assert result_type == AssertionType.LIST_ITEM
 
 
@@ -194,6 +190,7 @@ def test_ordered_list_item(parser, classifier):
 
 
 # ── TABLE_CELL ─────────────────────────────────────────────────────────────
+
 
 def test_table_origin_is_table_cell(parser, classifier):
     """Any sentence whose origin_block_type is 'table' is TABLE_CELL,
@@ -207,13 +204,12 @@ def test_table_origin_is_table_cell(parser, classifier):
 
 def test_table_cell_overrides_metadata_pattern(parser, classifier):
     """origin_block_type=table wins even if the text also looks metadata-like."""
-    result_type, _ = classify(
-        parser, classifier, "**Source:** GPT-4.", origin_block_type="table"
-    )
+    result_type, _ = classify(parser, classifier, "**Source:** GPT-4.", origin_block_type="table")
     assert result_type == AssertionType.TABLE_CELL
 
 
 # ── QUOTE ──────────────────────────────────────────────────────────────────
+
 
 def test_block_quote_origin_is_quote(parser, classifier):
     result_type, reason = classify(
@@ -225,15 +221,15 @@ def test_block_quote_origin_is_quote(parser, classifier):
 
 # ── CODE ───────────────────────────────────────────────────────────────────
 
+
 def test_code_block_origin_is_code(parser, classifier):
-    result_type, reason = classify(
-        parser, classifier, "print(x)", origin_block_type="code_block"
-    )
+    result_type, reason = classify(parser, classifier, "print(x)", origin_block_type="code_block")
     assert result_type == AssertionType.CODE
     assert reason == "origin_block_type_code_block"
 
 
 # ── FRAGMENT ───────────────────────────────────────────────────────────────
+
 
 def test_parse_failure_is_fragment(parser, classifier):
     """When spaCy could not parse the sentence at all, classify as FRAGMENT."""
@@ -252,6 +248,7 @@ def test_empty_text_is_fragment(parser, classifier):
 
 
 # ── Never raises ─────────────────────────────────────────────────────────────
+
 
 def test_classify_never_raises_on_odd_input(parser, classifier):
     for text in ["@@@ ### ??? weird !!!", "", "a", "1234567890"]:

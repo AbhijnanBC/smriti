@@ -18,10 +18,9 @@ Metrics collected:
 from __future__ import annotations
 
 import time
-from typing import List
-from smriti.embedding.models import EmbeddingStatus
 
 from smriti.core.models import Phase5Stats
+from smriti.embedding.models import EmbeddingStatus
 
 
 class Phase5StatsCollector:
@@ -40,7 +39,7 @@ class Phase5StatsCollector:
         self._failed = 0
         self._skipped = 0
         self._total_batches = 0
-        self._batch_sizes: List[int] = []
+        self._batch_sizes: list[int] = []
         # Cache lifecycle
         self._cache_reused = 0
         self._cache_regenerated = 0
@@ -104,10 +103,7 @@ class Phase5StatsCollector:
         total_attempts = self._total or 1
 
         cache_hit_rate = self._cached / total_attempts
-        avg_batch = (
-            sum(self._batch_sizes) / len(self._batch_sizes)
-            if self._batch_sizes else 0.0
-        )
+        avg_batch = sum(self._batch_sizes) / len(self._batch_sizes) if self._batch_sizes else 0.0
 
         # Throughput: count vectors that ended up embedded (cached + successful)
         total_embedded = self._successful + self._cached
@@ -143,8 +139,10 @@ def _get_current_memory_mb() -> float:
     (Windows) or /proc/self/status VmPeak (Linux).
     """
     try:
-        import psutil
         import os
+
+        import psutil
+
         return psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024)
     except ImportError:
         pass

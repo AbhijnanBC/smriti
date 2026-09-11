@@ -15,10 +15,9 @@ These are fundamentally different and must be kept separate.
 
 from __future__ import annotations
 
-from typing import List, Optional
 from smriti.core.models import LimitationRecord
 
-LIMITATION_REGISTRY: List[LimitationRecord] = [
+LIMITATION_REGISTRY: list[LimitationRecord] = [
     LimitationRecord(
         limitation_id="LIM-001",
         description="SMRITI processes only English-language documents. Multi-language support would require multilingual NLP models throughout Phases 3–6.",
@@ -79,12 +78,12 @@ LIMITATION_REGISTRY: List[LimitationRecord] = [
 ]
 
 
-def get_limitation(limitation_id: str) -> Optional[LimitationRecord]:
+def get_limitation(limitation_id: str) -> LimitationRecord | None:
     for lim in LIMITATION_REGISTRY:
         if lim.limitation_id == limitation_id:
             return lim
     return None
 
 
-def get_significant_limitations() -> List[LimitationRecord]:
+def get_significant_limitations() -> list[LimitationRecord]:
     return [lim for lim in LIMITATION_REGISTRY if lim.severity == "significant"]

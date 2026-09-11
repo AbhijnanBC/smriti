@@ -2,8 +2,10 @@
 
 import pytest
 from smriti.dashboard.policies.policies import (
-    InteractionPolicy, PolicyEngine, VisualizationPolicy,
-    ComparisonPolicy, ExportPolicy,
+    ExportPolicy,
+    InteractionPolicy,
+    PolicyEngine,
+    VisualizationPolicy,
 )
 
 

@@ -2,11 +2,12 @@
 Unit tests for discovery/builder.py.
 """
 
-import pytest
 from pathlib import Path
-from smriti.discovery.builder import build_source_document, SourceDocument
-from smriti.discovery.metadata import extract_metadata
+
+import pytest
 from smriti.core.models import FileFormat
+from smriti.discovery.builder import SourceDocument, build_source_document
+from smriti.discovery.metadata import extract_metadata
 
 
 @pytest.fixture
@@ -87,10 +88,14 @@ def test_builder_doc_id_is_deterministic(sample_file, tmp_path):
     meta = extract_metadata(sample_file)
 
     doc1 = build_source_document(
-        metadata=meta, content_hash="f" * 64, source_root=tmp_path,
+        metadata=meta,
+        content_hash="f" * 64,
+        source_root=tmp_path,
     )
     doc2 = build_source_document(
-        metadata=meta, content_hash="f" * 64, source_root=tmp_path,
+        metadata=meta,
+        content_hash="f" * 64,
+        source_root=tmp_path,
     )
 
     assert doc1.doc_id == doc2.doc_id

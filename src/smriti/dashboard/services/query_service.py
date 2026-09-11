@@ -4,10 +4,10 @@ query_service.py — Claim retrieval and search for Phase 10.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-import structlog
+from typing import Any
 
-from smriti.core.models import ExplainabilityLevel, ProjectionLevel, PredicateOperator
+import structlog
+from smriti.core.models import ExplainabilityLevel, PredicateOperator, ProjectionLevel
 
 logger = structlog.get_logger(__name__)
 
@@ -22,7 +22,7 @@ class QueryService:
         self,
         claim_id: str,
         explain_level: int = ExplainabilityLevel.NONE,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Retrieve one claim by ID. Returns None if not found."""
         try:
             level = ProjectionLevel.DETAILED
@@ -41,14 +41,13 @@ class QueryService:
     def search_claims(
         self,
         text_query: str = "",
-        filters: Dict[str, Any] = None,
+        filters: dict[str, Any] = None,
         sort_field: str = "reliability_index",
         sort_order: str = "desc",
         limit: int = 20,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search claims with filters and pagination."""
-        from smriti.core.models import SortOrder
         from smriti.api.domain.predicates import Predicate
 
         predicates = []
@@ -69,16 +68,13 @@ class QueryService:
                 offset=offset,
                 projection=ProjectionLevel.STANDARD,
             )
-            claims = [
-                c.to_dict() if hasattr(c, "to_dict") else vars(c)
-                for c in resp.data
-            ]
+            claims = [c.to_dict() if hasattr(c, "to_dict") else vars(c) for c in resp.data]
             return {"claims": claims, "total": resp.total_count or 0}
         except Exception as e:
             logger.error("search_claims failed", error=str(e))
             return {"claims": [], "total": 0}
 
-    def top_claims(self, n: int = 10) -> List[Dict]:
+    def top_claims(self, n: int = 10) -> list[dict]:
         """Return top N most reliable claims."""
         try:
             resp = self._api.search(
@@ -89,16 +85,13 @@ class QueryService:
                 offset=0,
                 projection=ProjectionLevel.STANDARD,
             )
-            return [
-                c.to_dict() if hasattr(c, "to_dict") else vars(c)
-                for c in resp.data
-            ]
+            return [c.to_dict() if hasattr(c, "to_dict") else vars(c) for c in resp.data]
         except Exception as e:
             logger.error("top_claims failed", error=str(e))
             return []
 
     # ── NEW: Compatibility execute method ──────────────────────────────────
-    def execute(self, request) -> Dict[str, Any]:
+    def execute(self, request) -> dict[str, Any]:
         """
         Compatibility method for the Phase 10 architecture.
         If called with a SearchRequest-like object, delegate to search_claims.

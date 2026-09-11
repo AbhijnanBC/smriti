@@ -31,22 +31,28 @@ No business logic lives in the façade.
 
 from __future__ import annotations
 
-import time
 import dataclasses
+import time
+
 import structlog
 
 from smriti.api.domain.requests import (
-    KnowledgeRequest, ClaimRequest, SearchRequest, TraversalRequest,
-    StatisticsRequest, ExplanationRequest, ExportRequest,
+    ClaimRequest,
+    ExplanationRequest,
+    ExportRequest,
+    KnowledgeRequest,
+    SearchRequest,
+    StatisticsRequest,
+    TraversalRequest,
 )
 from smriti.api.domain.responses import KnowledgeResponse, make_execution_context
-from smriti.api.planner.normalizer import QueryNormalizer
-from smriti.api.planner.logical_planner import LogicalPlanner
-from smriti.api.planner.optimizer import QueryOptimizer
-from smriti.api.validation.request_validator import RequestValidator
 from smriti.api.engine.execution import QueryExecutionEngine
+from smriti.api.planner.logical_planner import LogicalPlanner
+from smriti.api.planner.normalizer import QueryNormalizer
+from smriti.api.planner.optimizer import QueryOptimizer
 from smriti.api.store.snapshot import KnowledgeSnapshot
-from smriti.core.models import ExecutionContext, QueryFamily, ExecutionBudget
+from smriti.api.validation.request_validator import RequestValidator
+from smriti.core.models import ExecutionBudget, QueryFamily
 
 logger = structlog.get_logger(__name__)
 

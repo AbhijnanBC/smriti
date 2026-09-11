@@ -1,11 +1,16 @@
 """Unit tests for dashboard/commands/commands.py."""
 
 import pytest
-from smriti.core.models import WorkspaceType, EpistemicLens, ExplainabilityLevel
+from smriti.core.models import WorkspaceType
 from smriti.dashboard.commands.commands import (
-    SelectClaimCommand, ActivateWorkspaceCommand, CompareCommand,
-    ApplyFilterCommand, SubmitSearchCommand, ExportCommand,
-    SetPageCommand, SetSortCommand,
+    ActivateWorkspaceCommand,
+    ApplyFilterCommand,
+    CompareCommand,
+    ExportCommand,
+    SelectClaimCommand,
+    SetPageCommand,
+    SetSortCommand,
+    SubmitSearchCommand,
 )
 
 

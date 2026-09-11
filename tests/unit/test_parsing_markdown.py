@@ -3,9 +3,8 @@ Unit tests for parsing/markdown.py.
 """
 
 import pytest
-from pathlib import Path
-from smriti.parsing.markdown import MarkdownExtractor
 from smriti.core.models import ExtractionMethod, WarningCode
+from smriti.parsing.markdown import MarkdownExtractor
 
 
 @pytest.fixture
@@ -78,6 +77,7 @@ def test_markdown_table_preserved(extractor, tmp_path):
 
 def test_unreadable_file_raises(extractor, tmp_path):
     from smriti.exceptions import MarkdownExtractionError
+
     fake = tmp_path / "nonexistent.md"
     with pytest.raises(MarkdownExtractionError):
         extractor.extract(fake)

@@ -2,14 +2,21 @@
 
 import pytest
 from smriti.core.models import (
-    CandidatePair, RelationshipEvidence, RelationshipType,
-    RelationshipDirection, NLIScores, InferenceMetadata, LifecycleStage,
+    CandidatePair,
+    InferenceMetadata,
+    LifecycleStage,
+    NLIScores,
+    RelationshipDirection,
+    RelationshipEvidence,
+    RelationshipType,
 )
 from smriti.retrieval.classification.resolver import RelationshipResolver, ResolverPolicy
 
 
 def make_evidence(contradiction: float, entailment: float, neutral: float, cosine: float = 0.82):
-    pair = CandidatePair(claim_id_a="c001", claim_id_b="c002", cosine_similarity=cosine, candidate_rank=1)
+    pair = CandidatePair(
+        claim_id_a="c001", claim_id_b="c002", cosine_similarity=cosine, candidate_rank=1
+    )
     scores = [contradiction, entailment, neutral]
     predicted = ["contradiction", "entailment", "neutral"][scores.index(max(scores))]
     raw_confidence = max(scores)
@@ -58,21 +65,19 @@ def test_strong_entailment_resolves_supports(resolver):
     assert rel_type == RelationshipType.SUPPORTS
 
 
-def test_high_cosine_neutral_negligible_contradiction_resolves_refines(resolver):
+def test_high_cosine_neutral_negligible_contradiction_resolves_neutral(resolver):
     """
-    Per the resolver's REFINES rule (see classification/resolver.py rule 3 /
-    "Rectified heuristic"): a refinement is highly similar (cosine >= high_sim_threshold),
-    strictly NOT contradictory (contradiction_score < 0.1), and usually classified
-    NLI-Neutral since it doesn't strictly entail in either direction.
-
-    A merely "weak" contradiction (e.g. contradiction_score=0.60) does NOT
-    qualify — c < 0.1 is a strict ceiling, not a fuzzy one. This replaces an
-    older scenario (contradiction=0.60) that predates that strict ceiling and
-    never actually exercised the REFINES branch (it fell through to UNKNOWN).
+    RECTIFIED (external "reality check" review round 3, P0-4): the
+    resolver's single-direction "refines" rule (high cosine similarity,
+    neutral-dominant, not contradictory, but NEITHER direction passes
+    entailment) is retired -- that population is not a refinement by this
+    ontology's own definition (REFINES requires established one-way
+    entailment); it now correctly falls through to NEUTRAL, whose own
+    condition (neutral_score >= threshold) it already satisfies.
     """
     evidence = make_evidence(contradiction=0.05, entailment=0.35, neutral=0.60, cosine=0.90)
     rel_type, _ = resolver.resolve(evidence)
-    assert rel_type == RelationshipType.REFINES
+    assert rel_type == RelationshipType.NEUTRAL
 
 
 def test_high_neutral_resolves_neutral(resolver):
@@ -123,10 +128,11 @@ def test_resolver_policy_is_configurable():
 def test_resolver_policy_validates_on_construction():
     """RECTIFIED: invalid policy must raise ResolverPolicyError."""
     from smriti.exceptions import ResolverPolicyError
+
     with pytest.raises(ResolverPolicyError):
         ResolverPolicy(
             nli_threshold=0.80,
-            refine_threshold=0.90,   # Violation: refine_threshold >= nli_threshold
+            refine_threshold=0.90,  # Violation: refine_threshold >= nli_threshold
             high_sim_threshold=0.88,
             neutrality_threshold=0.60,
         )
@@ -139,7 +145,7 @@ def test_resolver_contradiction_margin_enforced():
         refine_threshold=0.55,
         high_sim_threshold=0.88,
         neutrality_threshold=0.60,
-        contradiction_margin=0.20,   # C must exceed E by 0.20
+        contradiction_margin=0.20,  # C must exceed E by 0.20
     )
     resolver = RelationshipResolver(policy=policy_with_margin)
     # C=0.85, E=0.10 → gap=0.75 > 0.20 → CONTRADICTS
@@ -154,6 +160,7 @@ def test_resolver_contradiction_margin_enforced():
 
 
 # ── Argmax fix (P0-6): CONTRADICTS/SUPPORTS must beat BOTH alternatives ─────
+
 
 def test_contradiction_beating_only_entailment_is_not_contradicts_if_neutral_dominant(resolver):
     """
@@ -183,9 +190,14 @@ def test_contradiction_still_resolves_when_genuinely_dominant(resolver):
     assert rel_type == RelationshipType.CONTRADICTS
 
 
-def test_refine_contradiction_ceiling_is_policy_driven():
-    """RECTIFIED (P0-6): the REFINES rule's contradiction ceiling must come
-    from policy, not a hard-coded 0.1 literal."""
+def test_refine_contradiction_ceiling_is_deprecated_and_inert():
+    """RECTIFIED (external "reality check" review round 3, P0-4):
+    refine_contradiction_ceiling gated the now-retired "high similarity,
+    no entailment" REFINES heuristic (see resolver.py rule 4, now a
+    no-op). It is deprecated and no longer consumed by any rule -- this
+    test now verifies exactly that: two policies differing only in this
+    field must resolve the same scenario identically, proving the field
+    is genuinely inert rather than silently still gating something."""
     lenient_policy = ResolverPolicy(
         nli_threshold=0.80,
         refine_threshold=0.55,
@@ -193,9 +205,14 @@ def test_refine_contradiction_ceiling_is_policy_driven():
         neutrality_threshold=0.60,
         refine_contradiction_ceiling=0.30,
     )
-    lenient_resolver = RelationshipResolver(policy=lenient_policy)
-    # contradiction=0.20 would fail the old hard-coded c < 0.1 ceiling but
-    # passes this policy's more lenient 0.30 ceiling.
+    strict_policy = ResolverPolicy(
+        nli_threshold=0.80,
+        refine_threshold=0.55,
+        high_sim_threshold=0.88,
+        neutrality_threshold=0.60,
+        refine_contradiction_ceiling=0.05,
+    )
     evidence = make_evidence(contradiction=0.20, entailment=0.15, neutral=0.65, cosine=0.90)
-    rel_type, _ = lenient_resolver.resolve(evidence)
-    assert rel_type == RelationshipType.REFINES
+    lenient_type, _ = RelationshipResolver(policy=lenient_policy).resolve(evidence)
+    strict_type, _ = RelationshipResolver(policy=strict_policy).resolve(evidence)
+    assert lenient_type == strict_type == RelationshipType.NEUTRAL

@@ -35,7 +35,6 @@ Design:
 from __future__ import annotations
 
 import re
-from typing import FrozenSet
 
 try:
     from spacy.lang.en.stop_words import STOP_WORDS
@@ -48,13 +47,13 @@ _MIN_TOKEN_LEN = 3
 RELATEDNESS_VERSION = "1.0"
 
 
-def _content_tokens(text: str) -> FrozenSet[str]:
+def _content_tokens(text: str) -> frozenset[str]:
     """Lowercased non-stopword tokens of length > _MIN_TOKEN_LEN."""
     tokens = _TOKEN_RE.findall(text.lower())
     return frozenset(t for t in tokens if len(t) > _MIN_TOKEN_LEN and t not in STOP_WORDS)
 
 
-def _capitalized_words(text: str) -> FrozenSet[str]:
+def _capitalized_words(text: str) -> frozenset[str]:
     """Capitalized tokens (cheap proxy for named entities — no NER model)."""
     return frozenset(
         t for t in _TOKEN_RE.findall(text) if t[:1].isupper() and t.lower() not in STOP_WORDS

@@ -21,23 +21,35 @@ Rules:
 from __future__ import annotations
 
 import hashlib
-from typing import List, Dict, Optional
+
 import structlog
 
 from smriti.core.models import (
-    Relationship, RelationshipSet, RelationshipEvidence,
-    RelationshipProvenance, RelationshipQuality, SchemaVersionInfo,
-    RelationshipType, RelationshipDirection, LifecycleStage,
+    LifecycleStage,
+    Relationship,
+    RelationshipDirection,
+    RelationshipEvidence,
+    RelationshipProvenance,
+    RelationshipQuality,
+    RelationshipSet,
+    RelationshipType,
+    SchemaVersionInfo,
 )
-from smriti.retrieval.faiss_index import RETRIEVAL_BACKEND, RETRIEVAL_VERSION, INDEX_VERSION
-from smriti.retrieval.classification.resolver import RESOLVER_VERSION
 from smriti.retrieval.classification.calibration import CALIBRATOR_VERSION
+from smriti.retrieval.classification.resolver import RESOLVER_VERSION, compute_decision_confidence
+from smriti.retrieval.faiss_index import INDEX_VERSION, RETRIEVAL_BACKEND, RETRIEVAL_VERSION
 
 logger = structlog.get_logger(__name__)
 
-CURRENT_SCHEMA_VERSION = "6.0"
-CURRENT_MIGRATION_VERSION = "6.0"
-CURRENT_COMPATIBILITY_VERSION = "6.0"
+# RECTIFIED (external review, P1 "fix the resolver version"): bumped from
+# 6.0 -- the bidirectional-NLI rewrite (nli_scores_b_to_a, EQUIVALENT as a
+# genuine relation type, direction derived from NLI rather than claim-ID
+# order) is a materially different relationship schema. A pre-7.0 reader
+# does not know how to interpret EQUIVALENT or the reverse-direction
+# scores, so this is a real version bump, not a cosmetic one.
+CURRENT_SCHEMA_VERSION = "7.0"
+CURRENT_MIGRATION_VERSION = "7.0"
+CURRENT_COMPATIBILITY_VERSION = "7.0"
 
 
 def _compute_relationship_id(
@@ -90,6 +102,13 @@ def build_relationship(
         schema_version=CURRENT_SCHEMA_VERSION,
     )
 
+    # RECTIFIED (external "reality check" review round 3, P0-5): the
+    # persisted relationship confidence must reflect the direction the
+    # resolver actually chose, not always evidence.calibrated_confidence
+    # (A->B only) regardless of outcome -- see compute_decision_confidence()
+    # for the per-relation-type formula.
+    decision_confidence = compute_decision_confidence(evidence, relationship_type, direction)
+
     provenance = RelationshipProvenance(
         retrieval_backend=RETRIEVAL_BACKEND,
         retrieval_version=RETRIEVAL_VERSION,
@@ -102,7 +121,7 @@ def build_relationship(
         cosine_similarity=evidence.cosine_similarity,
         candidate_rank=evidence.pair.candidate_rank,
         raw_nli_confidence=evidence.nli_scores.raw_confidence,
-        calibrated_confidence=evidence.calibrated_confidence,
+        calibrated_confidence=decision_confidence,
         config_hash=config_hash,
         run_id=run_id,
         replay_id=None,
@@ -113,8 +132,8 @@ def build_relationship(
     )
 
     quality = RelationshipQuality(
-        cosine_above_threshold=True,   # Guaranteed by candidate validator
-        nli_above_threshold=evidence.calibrated_confidence >= nli_threshold,
+        cosine_above_threshold=True,  # Guaranteed by candidate validator
+        nli_above_threshold=decision_confidence >= nli_threshold,
         evidence_consistent=not (
             evidence.nli_scores.entailment_score >= nli_threshold
             and evidence.nli_scores.contradiction_score >= nli_threshold
@@ -146,7 +165,7 @@ def build_relationship(
         "relationship built",
         rel_id=relationship_id[:8],
         type=relationship_type.value,
-        calibrated_confidence=f"{evidence.calibrated_confidence:.3f}",
+        decision_confidence=f"{decision_confidence:.3f}",
         calibration_applied=calibration_applied,
     )
 
@@ -154,11 +173,11 @@ def build_relationship(
 
 
 def build_relationship_set(
-    relationships: List[Relationship],
+    relationships: list[Relationship],
     total_candidates: int,
     total_validated: int,
     total_rejected: int,
-    rejected_reasons: Dict[str, int],
+    rejected_reasons: dict[str, int],
     run_id: str,
 ) -> RelationshipSet:
     """Build the final RelationshipSet."""

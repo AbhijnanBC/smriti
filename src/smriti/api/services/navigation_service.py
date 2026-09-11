@@ -14,19 +14,18 @@ consistent service interface.
 
 from __future__ import annotations
 
-import time
 import dataclasses
+import time
 from collections import deque
-from typing import List, Optional, Dict, Set, Tuple
-import structlog
 
+import structlog
 from smriti.api.domain.requests import TraversalRequest
 from smriti.api.domain.responses import KnowledgeResponse, make_response_meta
+from smriti.api.dtos.mapper import DTOMapper
 from smriti.api.planner.plan import PhysicalPlan
 from smriti.api.store.read_store import ReadStore
 from smriti.api.views.claim_view_builder import ClaimViewBuilder
-from smriti.api.dtos.mapper import DTOMapper
-from smriti.core.models import ExecutionContext, QueryFamily
+from smriti.core.models import ExecutionContext
 
 logger = structlog.get_logger(__name__)
 
@@ -114,14 +113,14 @@ class NavigationService:
         self,
         start_claim_id: str,
         max_depth: int,
-        relationship_type_filter: Optional[Set[str]],
-    ) -> Tuple[List[Dict], List[Dict]]:
+        relationship_type_filter: set[str] | None,
+    ) -> tuple[list[dict], list[dict]]:
         """BFS traversal using adjacency list. Deterministic via sorted neighbor order."""
         if not self._adj.get(start_claim_id) and self._store.lookup(start_claim_id) is None:
             return [], []
 
-        visited_nodes: Set[str] = {start_claim_id}
-        visited_edges: Set[str] = set()
+        visited_nodes: set[str] = {start_claim_id}
+        visited_edges: set[str] = set()
         start_record = self._store.lookup(start_claim_id)
         node_records = [start_record] if start_record else []
         edge_records = []
@@ -133,9 +132,7 @@ class NavigationService:
             if depth >= max_depth:
                 continue
 
-            neighbors = sorted(
-                self._adj.get(current_id, []), key=lambda x: x[0]
-            )
+            neighbors = sorted(self._adj.get(current_id, []), key=lambda x: x[0])
             for neighbor_id, edge_id, rtype in neighbors:
                 if relationship_type_filter and rtype not in relationship_type_filter:
                     continue

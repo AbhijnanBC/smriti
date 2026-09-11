@@ -24,31 +24,32 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, FrozenSet, Optional
+from typing import Any
 
 
 class ConfigurationLevel(str, Enum):
-    GLOBAL        = "global"
-    PIPELINE      = "pipeline"
+    GLOBAL = "global"
+    PIPELINE = "pipeline"
     KNOWLEDGE_API = "knowledge_api"
-    INTERACTION   = "interaction"
-    WORKSPACE     = "workspace"
-    RUNTIME       = "runtime"
+    INTERACTION = "interaction"
+    WORKSPACE = "workspace"
+    RUNTIME = "runtime"
     FEATURE_FLAGS = "feature_flags"
 
 
 @dataclass(frozen=True)
 class LevelDescriptor:
     """Formal description of one configuration hierarchy level."""
-    level:       ConfigurationLevel
-    scope:       str
-    owner:       str
-    can_inherit: FrozenSet[ConfigurationLevel]
-    mutable:     bool    # False = frozen after initialization
-    validation:  str     # "strict" | "lenient" | "none"
+
+    level: ConfigurationLevel
+    scope: str
+    owner: str
+    can_inherit: frozenset[ConfigurationLevel]
+    mutable: bool  # False = frozen after initialization
+    validation: str  # "strict" | "lenient" | "none"
 
 
-LEVEL_DESCRIPTORS: Dict[ConfigurationLevel, LevelDescriptor] = {
+LEVEL_DESCRIPTORS: dict[ConfigurationLevel, LevelDescriptor] = {
     ConfigurationLevel.GLOBAL: LevelDescriptor(
         level=ConfigurationLevel.GLOBAL,
         scope="Project-wide defaults applying to all phases and subsystems.",
@@ -126,7 +127,7 @@ class ConfigurationHierarchy:
     ]
 
     def __init__(self) -> None:
-        self._data: Dict[ConfigurationLevel, Dict[str, Any]] = {
+        self._data: dict[ConfigurationLevel, dict[str, Any]] = {
             lvl: {} for lvl in ConfigurationLevel
         }
 
@@ -139,7 +140,7 @@ class ConfigurationHierarchy:
             )
         self._data[level][key] = value
 
-    def load_immutable(self, level: ConfigurationLevel, data: Dict[str, Any]) -> None:
+    def load_immutable(self, level: ConfigurationLevel, data: dict[str, Any]) -> None:
         """Populate an immutable level (called once during initialization)."""
         descriptor = LEVEL_DESCRIPTORS[level]
         if descriptor.mutable:

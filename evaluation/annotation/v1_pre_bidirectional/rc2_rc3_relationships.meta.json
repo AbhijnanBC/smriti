@@ -1,0 +1,17 @@
+{
+  "_purpose": "Metadata for the ARCHIVED pre-bidirectional-NLI annotation round preserved in this directory (pass1/pass2_relationships.json, rc2_rc3_relationships_answer_key.json, rc2_rc3_relationships_blind.json, results_summary.json). RECTIFIED (external \"reality check\" review round 3, P1 annotation metadata): added retroactively; this is exactly one of the two relationship-annotation rounds this project has full raw data for (the other being the current, post-bidirectional round one directory up) -- not a third round, and no third round's raw data exists in this repository.",
+  "protocol_version": "1.0-or-1.1",
+  "protocol_version_note": "Predates this file's own creation; the exact protocol.md revision in effect for this specific round was not pinned at the time. The answer-key schema for this round (single nli_entailment/nli_neutral/nli_contradiction score set, no _b_to_a fields, no source_run_id per entry) confirms it predates the bidirectional-NLI rewrite, consistent with this directory's name.",
+  "source_run_id": null,
+  "source_run_id_note": "Not recorded per-entry in this round's answer-key file (unlike the current round's, which does carry source_run_id) -- genuinely unrecoverable from the retained files alone.",
+  "sample_seed": null,
+  "n_sampled": 228,
+  "model_name": null,
+  "model_revision": null,
+  "temperature": null,
+  "seed": null,
+  "prompt_hash": null,
+  "annotation_timestamp": null,
+  "blind_status": true,
+  "blind_status_note": "rc2_rc3_relationships_blind.json in this directory carries no prediction fields, consistent with blind annotation."
+}

@@ -7,12 +7,10 @@ select_best() evaluates IndexStatistics to pick the most selective (lowest-cost)
 
 from __future__ import annotations
 
-from typing import Optional, List
 import structlog
-
-from smriti.api.index.registry import IndexRegistry
-from smriti.api.index.statistics import IndexStatistics, IndexStats
 from smriti.api.domain.predicates import Predicate
+from smriti.api.index.registry import IndexRegistry
+from smriti.api.index.statistics import IndexStatistics
 
 logger = structlog.get_logger(__name__)
 
@@ -33,13 +31,13 @@ class IndexSelector:
         """Return True if there is an index for this field."""
         return self._registry.has_index(field_name)
 
-    def get_index_name(self, field_name: str) -> Optional[str]:
+    def get_index_name(self, field_name: str) -> str | None:
         """Return the index name for a field, or None."""
         if self._registry.has_index(field_name):
             return f"idx_{field_name}"
         return None
 
-    def select_best(self, predicates: List[Predicate]) -> Optional[str]:
+    def select_best(self, predicates: list[Predicate]) -> str | None:
         """
         Returns the field name with the most selective (cheapest) index.
 
@@ -47,7 +45,7 @@ class IndexSelector:
         If no indexed field is present, returns None.
         """
         best_field = None
-        lowest_estimated_rows = float('inf')
+        lowest_estimated_rows = float("inf")
 
         for pred in predicates:
             if self._registry.has_index(pred.field):
@@ -67,5 +65,5 @@ class IndexSelector:
         return best_field
 
     @property
-    def all_indexed_fields(self) -> List[str]:
+    def all_indexed_fields(self) -> list[str]:
         return self._registry.indexed_fields

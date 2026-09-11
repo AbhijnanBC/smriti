@@ -1,72 +1,311 @@
-\paragraph{This is not a human evaluation.} Every SMRITI-Reference
+\paragraph{This is not a human evaluation, and we could not close this
+gap in this round (P1-10, audit round).} Every SMRITI-Reference
 precision/recall/F1 number in this paper is computed against LLM-derived
 reference labels, not human judgments. Two independent annotation passes
 give a self-consistency signal, but self-consistency between two instances
 of the same kind of annotator is not the same thing as validity against
-independent human judgment. A rigorous follow-up would need 3+ trained
-human annotators, measured Cohen's/Fleiss' $\kappa$ against a target of
-$\kappa > 0.7$, an adjudication protocol, and ideally annotators with no
-exposure to SMRITI's design.
+independent human judgment. The review's own recommended intermediate
+step --- before full human annotation, use annotators drawn from
+genuinely different model families (Annotator A/B/C each a different
+family, blinded pair order, Krippendorff's $\alpha$ or Fleiss' $\kappa$
+instead of simple agreement) --- is one we explicitly attempted to scope
+and could not execute in this round: this project has no integration
+with a second LLM API distinct from the model family that produced the
+existing two passes, and we will not report a ``third annotation pass''
+that is in fact the same kind of annotator judging its own prior work a
+third time, which is exactly the self-consistency-not-independence
+problem this paragraph exists to name. We did close one real,
+adjacent gap while investigating this: neither existing pass recorded
+which model produced it at all (\texttt{model\_name: null} in both
+passes' own metadata, discovered while checking whether they already
+differed) --- \texttt{evaluation/annotation/protocol.md} v2.0 now
+requires \texttt{model\_name} for every future pass specifically so this
+question is answerable next time without having to guess. A rigorous
+follow-up would need either 3+ trained human annotators or 3+ genuinely
+distinct model families, measured Cohen's/Fleiss'/Krippendorff's
+$\kappa$/$\alpha$ against a target of $\kappa > 0.7$, an adjudication
+protocol, and ideally annotators with no exposure to SMRITI's design ---
+per the review's own explicit statement, this should not, and does not,
+block the current research program.
+
+\paragraph{The audit rounds this paper repeatedly credits are not
+external peer review.} This paper's revision history is driven by
+several rounds of adversarial audit, each triggered by feeding a fresh
+repository snapshot to an LLM-based reviewer and asking it to find
+whatever is wrong. This is software-engineering-style adversarial code
+review conducted with AI tooling, orchestrated by the same author as
+the system itself --- not blind peer review by an independent human
+researcher or a third-party institution, and not a form of validation
+external to the author's own process in the way that phrase implies in
+a normal academic context. We use ``audit round'' rather than
+``external review'' or ``peer review'' throughout this paper for
+exactly this reason; where an earlier draft of this paper used those
+terms, they described the same AI-driven audit process, not human
+review, and should be read accordingly. The audits' actual value is
+real (several of the defects they caught, e.g.\ the arg-max bug in
+\S\ref{sec:bugs}, are independently confirmable by reading the affected
+code), but their catching a defect is evidence about that specific
+code path, not a substitute for independent human or third-party
+validation of this paper's claims as a whole.
 
 \paragraph{The resolver fix does not transfer to real, rhetorical
-disagreement.} This is the most important limitation in this paper. On
-SMRITI-Controlled's direct propositional negations, the arg-max fix
-achieves 100\% CONTRADICTS precision (\S\ref{sec:controlled}). On
-SMRITI-Reference's real prose, CONTRADICTS precision is 4.5\% and recall
-on the corpus's own deliberately-planted hard-contradiction pairs is
-14.3\% (\S\ref{sec:results-annotation}) --- not better than the 3.2\%
-this paper's predecessor measured pre-fix. Inspecting the NLI model's raw
-scores directly shows this is not a resolver regression: the model itself
-assigns neutral $>0.97$ probability to most of the missed pairs, because
-they express disagreement as argumentative prose about a shared topic
-rather than direct propositional negation, and a model trained on
+disagreement, and bidirectional NLI does not change that.} This is the
+most important limitation in this paper. On SMRITI-Controlled's direct
+propositional negations, the arg-max fix achieves 98.3\% CONTRADICTS
+precision on the sanitized corpus's frozen TEST split at $n=119$
+(\S\ref{sec:controlled}). On SMRITI-Reference's real
+prose, post-bidirectional-NLI-rewrite CONTRADICTS precision is 14.3\%
+($n=9$/14, 95\% CI [0.0\%, 35.7\%]) and recall on the corpus's own
+deliberately-planted hard-contradiction pairs is 8.0\% ($n=2$/25) ---
+we make no claim of a distinguishable change from the single-direction
+round's 4.5\%/14.3\% or the original 3.2\% pre-fix figure: the three
+samples are independently drawn (not the same pairs re-measured), the
+bootstrap CIs at this sample size are wide enough to contain all three
+point estimates, and no paired significance test is available across
+samples that do not share the same underlying items. Inspecting the NLI model's
+raw scores directly shows this is not a resolver regression: the model
+itself assigns neutral $>0.97$ probability to most of the missed pairs,
+because they express disagreement as argumentative prose about a shared
+topic rather than direct propositional negation, and a model trained on
 SNLI/MultiNLI/ANLI-style propositional pairs is not trained to read that
 as contradiction --- a task mismatch, not a calibration defect (see
 below). SMRITI-Controlled and SMRITI-Reference are therefore not
 in tension; they measure different things, and only the harder,
 real-corpus one is representative of deployment. This paper fixes a
 real, verifiable integration bug (E4/E5, \S\ref{sec:error-taxonomy}) and
-demonstrates that fix generalizes across six categories of
-\emph{propositional} contradiction. It does not solve --- and had we not
-re-run the reference annotation post-fix, would not have discovered ---
-that most naturally-occurring disagreement in personal notes is
-rhetorical, not propositional, and requires a different modeling
-approach entirely (E6).
+a second, later one (Defect 11, \S\ref{sec:bugs}, this same round of
+annotation caught: a hardcoded REFINES direction, unrelated to CONTRADICTS
+precision but a genuine defect in the same resolver), and demonstrates
+the arg-max fix generalizes across six categories of \emph{propositional}
+contradiction. Neither fix solves --- and had we not re-run the reference
+annotation after each one, would not have discovered --- that most
+naturally-occurring disagreement in personal notes is rhetorical, not
+propositional, and requires a different modeling approach entirely (E6).
+Bidirectional NLI was never expected to address E6 (it changes how
+direction and entailment-family relations are computed, not whether the
+NLI model recognizes rhetorical stance conflict as contradiction), and
+the fresh measurement confirms it does not, incidentally --- a negative
+result reported because it was measured, not because it was predicted.
 
-\paragraph{No probability calibration is actually fitted.} Phase 6
-supports temperature, percentile, and isotonic calibration strategies
-for the NLI model's raw confidence
+\input{generated/calibration_table.tex}
+
+\paragraph{Every result reported elsewhere in this paper uses identity
+(i.e., no) probability calibration; a real, fitted calibrator exists but
+is not deployed, and we report it separately for exactly that reason
+(P1-1, audit round).} Phase 6 supports temperature, percentile, and
+isotonic calibration strategies for the NLI model's raw confidence
 (\texttt{retrieval/classification/calibration.py}), but
 \texttt{config/default.yaml} leaves every model's calibration entry
-empty, so every run in this paper uses the identity strategy (raw
-confidence passed through unchanged). We therefore do not call the NLI
-scores used throughout this paper ``calibrated'' in the technical sense
-(probabilities matching empirical frequencies, measurable via ECE or a
-reliability diagram) --- only that the underlying model was itself
-trained on SNLI/MultiNLI/ANLI-style data. Fitting and evaluating one of
-the implemented strategies against a held-out sample is concrete,
-already-half-built future work.
+empty, so every classification, precision, recall, and F1 number
+reported anywhere else in this paper uses the identity strategy (raw
+confidence passed through unchanged) --- classification decisions
+themselves are unaffected by calibration by construction
+(\texttt{calibration.py} never modifies \texttt{predicted\_label}, only
+confidence magnitude), so this does not put any other number in this
+paper at risk. Table~\ref{tab:calibration} reports a real
+temperature-scaling calibrator
+(\texttt{evaluation/calibration/v1/fit\_calibration.py}), fit on
+SMRITI-Controlled-v2's DEV split only and frozen before scoring TEST,
+using the exact production 3-class log-softmax formula
+(\texttt{ConfidenceCalibrator.\_temperature\_scale}, imported directly
+rather than reimplemented). The fitted temperature ($T=3.33$) is much
+greater than 1, confirming the raw NLI confidence is severely
+overconfident. Calibration improves ECE, Brier, and NLL on both DEV and
+the held-out TEST split it was never fit against --- a genuine,
+measured improvement, not a DEV-set artifact --- while leaving accuracy
+unchanged by construction (calibration rescales confidence, never the
+decision). It is not deployed to production: doing so would change
+every \texttt{calibrated\_confidence} value this paper's reliability-index
+computations (\S\ref{sec:ablation}) read as an input signal, which would
+need its own re-verification pass against every already-frozen ablation
+number in this paper, and we did not want a genuinely separate,
+well-scoped improvement to that one field to become an excuse to
+silently re-open numbers this paper has spent significant effort
+reconciling. We therefore report this as a validated but
+not-yet-integrated fix, and call it exactly that rather than quietly
+flipping a config default.
 
-\paragraph{SMRITI-Controlled is small and synthetic.} 24 pairs, entirely
-fictional entity names, is enough to demonstrate that the arg-max/
-relatedness-gate fix generalizes across six contradiction \emph{categories}
-qualitatively, but far too small to report a tight quantitative estimate
-of true contradiction precision in deployment (our own 95\% bootstrap CI
-on retrieval recall, [37.5\%, 79.2\%], is itself evidence of how much
-sampling uncertainty remains at $n=24$). It also cannot speak to
-naturally-occurring contradiction, only to the six categories we
-constructed.
+\input{generated/risk_coverage_table.tex}
 
-\paragraph{SUPPORTS classification remains weak.} SMRITI-Controlled's own
-results (\S\ref{sec:controlled}) show only 25\% classification accuracy on
-retrieved SUPPORTS pairs, in sharp contrast to CONTRADICTS's 100\%; the
-same weakness reproduces on real text, where SMRITI-Reference SUPPORTS
-precision is 27.8\% with only 8.2\% recall
-(\S\ref{sec:results-annotation}). The arg-max fix was applied
-symmetrically to both rules, but evidently entailment scoring on this NLI
-model is less well-calibrated than contradiction scoring for this task,
-or our SUPPORTS test pairs are harder than our CONTRADICTS ones in some
-way we have not isolated. This is unresolved and squarely future work.
+\paragraph{Raw NLI confidence ranks correct vs.\ incorrect decisions
+better than its poor absolute calibration would suggest, but not
+reliably or monotonically (P1-2, audit round).} Calibration (ECE, Brier,
+NLL) and selective-prediction quality (does confidence correctly
+\emph{rank} which decisions to trust) are different properties, and the
+\S\ref{sec:limitations} finding above that raw confidence is severely
+overconfident in absolute terms does not by itself say whether it would
+be useful for deciding which decisions to commit to and which to
+abstain from. \texttt{evaluation/calibration/v1/risk\_coverage.py}
+answers this directly on the same frozen TEST split: sorting all 164
+resolved, non-abstention TEST pairs by raw confidence and measuring the
+error rate (risk) among the retained fraction (coverage) as the
+confidence bar is progressively relaxed gives a TEST-set area under the
+risk-coverage curve (AURC) of 0.060 (DEV: 0.139) --- risk is exactly
+0\% for the top 20\% most confident pairs, rises unevenly through the
+middle of the coverage range (peaking at 10.5\% around 35\% coverage,
+dipping back to 6.1\% at 60\% coverage), and reaches 9.1\% at full
+coverage (100\% $-$ TEST accuracy). (These figures update a previous
+draft's 167/0.063/10.3\%/10.8\% after a P1-H audit-round fix to a minor
+double-counting bug: 6 gold pairs had two Phase-6 candidate rows each
+because both retrieval directions were separately NLI-scored, and the
+previous script counted such a pair twice if both rows matched a
+resolved, non-abstained manifest entry; the fix keys by gold pair, not
+by Phase-6 row, so each pair is counted exactly once.) The
+non-monotonicity in the middle of the curve is real, not a plotting
+artifact --- at this sample size (164 pairs), a handful of
+confidently-wrong or unconfidently-right pairs crossing rank order is
+expected, and we report the curve as measured rather than smoothing it.
+The practical reading: raw confidence is a genuinely useful, not
+useless, selective-prediction signal (the most-confident fifth of
+decisions really are the most reliable fifth), but it is not a signal we
+would trust to set a single sharp commit/abstain threshold without
+further validation, which is consistent with \S\ref{sec:controlled}
+finding (9) and E10's independent finding that the resolver's actual
+\texttt{ResolutionStatus.ABSTAINED} thresholds never fire on
+SMRITI-Controlled-v2's purpose-built ambiguous category at all.
+
+\paragraph{The curve above is a classification-only risk-coverage
+curve; the full end-to-end selective-prediction picture is
+substantially worse, because retrieval misses and abstentions are
+excluded from it entirely (P1-H, audit round).} The 164 TEST pairs
+scored above are only the pairs that (a) Phase 6 actually retrieved as a
+candidate and (b) the resolver did not abstain on --- out of 249 total
+RESOLVED-expected gold pairs in the TEST split, 82 were never retrieved
+at all and 3 were explicitly ABSTAINED. Both are permanent,
+threshold-independent non-commits: no amount of confidence-threshold
+relaxation can recover a pair the retrieval stage never surfaced as a
+candidate. Re-deriving the curve over the full 249-pair population,
+where a retrieval miss or an abstention counts as an uncovered decision
+at every threshold rather than being silently absent from the
+denominator, caps achieved coverage at 65.9\% regardless of how
+permissive the confidence threshold is (end-to-end AURC 0.042, lower
+than the classification-only curve's 0.060 only because risk is
+computed over a smaller, higher-confidence-achievable population --- the
+coverage ceiling itself, not the risk at a given coverage, is the
+binding constraint here). This is the ``fraction of gold decisions
+actually resolved correctly enough to commit'' framing the review
+requested, and it is a materially harder number than the
+classification-only curve on its own: SMRITI's selective-prediction
+story is only as strong as its retrieval recall, and \S\ref{sec:results}
+finding 6 and \S\ref{sec:recall-at-k} already document that retrieval
+recall, not classification confidence, is this pipeline's dominant
+bottleneck.
+
+\paragraph{SMRITI-Controlled is synthetic (though no longer small, and
+now independently validated).} An earlier, 32-pair pilot version of this
+corpus (fictional entity names, 6 hand-written contradiction categories)
+was too small to report a tight quantitative estimate of anything beyond
+qualitative generalization (its own 95\% bootstrap CI on retrieval
+recall was [37.5\%, 79.2\%], $n=24$). SMRITI-Controlled-v2
+(\S\ref{sec:controlled}) addresses the sample-size half of this concern:
+713 pairs across 15 categories, generated by parameterized templates
+rather than hand-authored individually, split by template family into a
+frozen TEST set and a DEV set never used to compute the numbers reported
+here. A second audit round then found that the first version of
+this scale-up had construction defects of its own (ungrammatical
+negation, a subject-dropped SUPPORTS template, non-exclusive
+CONTRADICTS pairs) serious enough to make some of its numbers not
+trustworthy; the corpus was regenerated with an automated validator
+(\texttt{validate\_corpus.py}) that checks for exactly those defect
+classes before any number in this paper is computed from it. What
+remains unaddressed is the synthetic-domain half of the concern: every
+pair still uses fictional entity names and templated phrasing rather than
+naturally-occurring text, so this corpus speaks to the 15 \emph{relation
+categories} we constructed, not to contradiction, support, or ambiguity
+as they actually occur in personal notes --- that is what
+SMRITI-Reference's real-prose annotation (\S\ref{sec:results-annotation})
+is for, and the two corpora's results should continue to be read as
+complementary, not interchangeable.
+
+\paragraph{SUPPORTS classification is strong on the controlled-v2 TEST
+split but remains weak on real prose --- these are two different corpora
+and must not be conflated.} An earlier draft of this section reported
+``0\% classification accuracy on retrieved SUPPORTS pairs'' for
+SMRITI-Controlled-v2's frozen TEST split; that figure did not match
+\texttt{evaluation/controlled/v2/results.json} and has been retracted
+(\S\ref{sec:controlled} finding 3, E3, \S\ref{sec:error-taxonomy}). The
+frozen artifact's actual per-pair rows show the opposite result: all 9
+of the 9 TEST SUPPORTS pairs retrieved as candidates are correctly
+classified SUPPORTS (precision 90.0\%, recall 75.0\%, F1 81.8\%,
+$n=12$), comparable in kind to CONTRADICTS's 98.3\% precision
+($n=119$) on this corpus, though on a much smaller support. The
+remaining controlled-v2 TEST gap is retrieval, not classification: 3 of
+12 SUPPORTS pairs are never surfaced as NLI candidates at all
+(\S\ref{sec:controlled} finding 3). This is a materially different, and
+better, result than SMRITI-Reference's real-prose SUPPORTS numbers
+(\S\ref{sec:results-annotation}): the single-direction annotation round
+measured SMRITI-Reference SUPPORTS precision at 27.8\% with 8.2\% recall,
+and the bidirectional-NLI round measures 0\% on both --- though that
+round's gold-SUPPORTS support in the fresh sample is only $n=2$, too
+small to call a further decline rather than sampling noise on an
+already-rare label. The two results should be read as complementary
+evidence about \emph{different} things, not as corroborating or
+contradicting one another: controlled-v2 shows the resolver's SUPPORTS
+rule works correctly on grammatical, unambiguous entailment once a
+pair reaches the classifier, while SMRITI-Reference shows that
+naturally-occurring, rhetorically-phrased support relations are both
+rare and hard for the same rule to recognize in the wild. Real-prose
+SUPPORTS recognition, not the controlled-corpus rule itself, is the
+open target for future resolver work.
+
+\paragraph{Direction is now rarely emitted at all on real prose, after a
+second review round retired the heuristic that used to emit it.} Defect
+11 (\S\ref{sec:bugs}) fixed a hardcoded-direction bug in a resolver
+fallback branch that fired when NLI's entailment score cleared neither
+direction's margin test, measuring 44.4\% (4/9) direction accuracy on the
+affected subset post-fix --- itself only a partial fix, since a further
+audit round found that whole branch was semantically wrong
+regardless of its direction logic (``no entailment in either direction,
+just high similarity'' is not a refinement under this ontology's own
+definition) and retired it outright. REFINES is now produced exclusively
+by a specificity gate reclassifying a genuine one-way SUPPORTS decision
+-- a much stricter, but also much rarer, path to a directional verdict.
+On the same 228-pair real-corpus sample, direction availability (D1: of
+all determinate-gold-direction pairs, how many get any predicted
+direction at all) falls to 2.2\% ($n=43$), and direction accuracy
+conditional on the predicted relation type already being correct (D4)
+is measured on a single pair ($n=1$), too small to report as anything
+but ``not enough data.'' We read this as the honest continuation of the
+same finding, not a new one: strict NLI entailment plus a lexical
+specificity check essentially never fires on real, rhetorically-phrased
+prose, so there is very little directional SUPPORTS/REFINES output left
+to measure direction accuracy \emph{on} once the semantically-unjustified
+heuristic that used to inflate that population is removed. A
+direction-annotated sample large enough to say anything about direction
+accuracy at all requires controlled-v2-style scale applied to
+relationship annotation (currently out of scope, see below) on text
+where strict one-way entailment genuinely fires often enough to sample.
+
+\input{generated/direction_table.tex}
+
+\paragraph{An external benchmark at the scale the paragraph above says
+is needed exists, and gives a materially clearer picture than the
+28-pair real-corpus sample (P1-3, audit round).} FEVER and SciFact's own
+SUPPORT-labeled claims supply exactly this for free: by each task's own
+definition, a SUPPORT verdict means the evidence entails the claim, so
+gold direction is A\_TO\_B with no additional annotation needed. Scoring
+the same bidirectional resolver against 565 such pairs (300 FEVER + 265
+SciFact; \texttt{evaluation/direction/v1/}) gives D1 (availability) =
+40.4\% [36.5\%, 44.2\%] and D2 (unconditional direction accuracy) =
+39.3\% [35.2\%, 43.2\%] --- an order of magnitude more statistical power
+than the real-corpus sample, and a picture that is neither as bleak as
+the 2.2\% real-corpus availability figure nor as optimistic as
+controlled-v2's own near-ceiling numbers. D3 equals D2 exactly, which is
+not a coincidence: only SUPPORTS/REFINES ever receive a non-symmetric
+direction by this ontology's own construction, so ``direction ==
+A\_TO\_B'' already implies the type was one of those two. D4 (direction
+accuracy given the type is already SUPPORTS/REFINES) is 97.4\% [95.2\%,
+99.1\%] on $n=228$ --- high, and consistent with the real-corpus finding
+that direction \emph{assignment} is not the bottleneck once a
+directional type is reached --- but per this same audit's own caution,
+D4 is reported here, not headlined: the bottleneck this benchmark
+actually identifies is D1 (commitment), not D4 (correctness given
+commitment), and 60\% of genuinely one-way-entailing pairs still resolve
+to something other than a directional SUPPORTS/REFINES call at all
+(\S\ref{sec:fever}, \S\ref{sec:scifact} already document why: the same
+NEUTRAL-defaulting pattern that suppresses SUPPORT/CONTRADICT recall on
+both benchmarks suppresses directional commitment too, for the same
+underlying reason).
 
 \paragraph{Corpus scale and domain coverage.} SMRITI-Reference is 53
 documents across five hand-picked domains; sufficient to exercise
@@ -86,24 +325,175 @@ of which involves an LLM judging SMRITI's output at all --- as the stronger
 evidence in this paper, but cannot fully rule the risk out for the
 SMRITI-Reference numbers specifically.
 
-\paragraph{P0-9, P0-10, and P0-11 from the source review are not addressed
-in this paper.} An external review additionally identified that source-
-diversity/independence signals derive from filesystem-path heuristics
-rather than genuine publisher/author provenance, that transitive SUPPORTS
-propagation may overstate corroboration across multiple hops, and that
-temporal metadata is not yet populated from document frontmatter (confirmed
-present in our own \texttt{stress\_vault} corpus, e.g.\
-\texttt{date: 2024-07-01}, but wiring it through would require changing
-the frozen \texttt{Document}/\texttt{Claim} schemas consumed by every
-downstream phase and re-running the entire pipeline, invalidating every
-post-fix number in \S\ref{sec:metamorphic}--\S\ref{sec:results}). We
-assessed these three as requiring corpus- or schema-level changes
-disproportionate to the remaining scope of this paper, and record them
-here as concrete, scoped future work rather than silently deferring them.
-The fourth item the same review raised in this group, P0-12 (conflict
-pressure not integrated into the uncertainty score), was tractable without
-a schema change or corpus re-run and \emph{is} fixed in this paper
-(Defect 7, \S\ref{sec:bugs}; verified by metamorphic relation MR2).
+\paragraph{Provenance, evidence-aggregation, and temporal metadata: fixed
+in a second remediation round (P1-1/P1-2/P1-3), with genuine residual
+gaps.} An earlier audit round identified three related gaps,
+all since addressed with schema-level changes and re-verified end-to-end
+on real corpora, superseding an earlier draft of this paper that had
+recorded them as deferred future work. \textbf{(P1-1, provenance.)}
+Source-diversity/independence signals previously derived from
+filesystem-path heuristics rather than genuine publisher/author identity.
+\texttt{Document} now carries a \texttt{DocumentProvenance} record parsed
+from two patterns already present in our own corpora --- YAML frontmatter
+(\texttt{stress\_vault}) and inline \texttt{**Source:**} attribution lines
+--- and a \texttt{source\_identity()} helper resolves a declared
+\texttt{source\_id} (or publisher/domain) so that two documents which are
+republications of the same source collapse for diversity/independence
+purposes. On the real SMRITI-Reference corpus this is not a hypothetical
+fix: all 53 documents disclose real provenance (a stray
+administrative manifest file that used to sit inside the scanned corpus
+directory and account for the one exception was relocated out of it in
+a later pass -- see \S\ref{sec:corpus} -- so this is no longer a
+53-of-54 count with one disclosed exception), and six genuinely
+shared publishers exist in the corpus (\texttt{Wikipedia} $\times 10$,
+\texttt{ABP Live} $\times 3$, \texttt{Hindustan Times} $\times 2$,
+\texttt{Apex Football} $\times 2$, \texttt{Sanjeev Kapoor} $\times 2$,
+\texttt{Apache Hadoop Documentation} $\times 2$) that the old path-based
+heuristic scored as independent sources. The residual gap: this resolves
+\emph{declared} identity, not cross-source fact-checking --- two
+publishers can independently restate a claim they both sourced from a
+third, uncredited origin, which we cannot detect. \textbf{(P1-6, evidence-origin
+lineage, audit round.)} The same review round returned to this exact gap
+and named it precisely: a Reuters article, a blog quoting that article,
+and a note quoting the blog can look like three documents and two
+domains while being one information source repeated three times.
+\texttt{DocumentProvenance} now additionally carries
+\texttt{publisher\_id}, \texttt{canonical\_url}, \texttt{lineage\_id}, and
+\texttt{evidence\_origin\_id} --- schema-level fields distinct from the
+free-text \texttt{publisher}/\texttt{url}/\texttt{parent\_source\_id}
+already described above, intended to eventually let document diversity,
+publisher diversity, source-origin diversity, and lineage diversity be
+reported as four separate numbers rather than the one
+\texttt{source\_diversity} signal computes today. We verified directly
+against every corpus's raw markdown (not assumed) that no document this
+project currently holds discloses \texttt{parent\_source\_id} or any
+frontmatter key a normalization function could resolve these four new
+fields from, so --- exactly like \texttt{Claim.claim\_valid\_from/to}
+above (P1-11) --- they exist in the schema and default to \texttt{None}
+on every document, unit-verified never to be silently derived from
+\texttt{author}/\texttt{publisher}/\texttt{publication\_date} even when
+those extract successfully. We add the schema now, ahead of the
+normalization and chain-walking logic that would populate it, rather
+than waiting for a corpus that discloses citation chains to appear before
+designing for the distinction. \textbf{(P1-2, evidence
+aggregation.)} Transitive SUPPORTS propagation previously counted every
+hop as equally independent corroboration. Phase 7's aggregation now
+tracks each supporting claim's shortest hop distance and classifies it
+\texttt{direct} (hop 1), \texttt{derived} (hop 2), or \texttt{multi\_hop}
+(hop $\geq 3$), and Phase 8's evidence-strength signal applies a
+configurable discount (default $1.0/0.6/0.3$) by class rather than
+treating all supporters identically; on a real SMRITI-Reference claim
+with 5 raw supporters (4 direct, 1 derived), \texttt{discounted\_evidence\_strength}
+is $4.6$, not $5$. The discounted \emph{confidence} figure still reuses
+aggregation's own default-weighted precomputed value rather than being
+re-weighted per group under the live policy, a disclosed, minor scoping
+simplification. This is in addition to (not instead of) this paper's
+existing EQUIVALENT-collapsing fix for the specific case of a paraphrase
+in a second document counting as a second independent supporter
+(\S\ref{sec:system}); the two mechanisms are complementary; a genuine,
+non-duplicate multi-hop SUPPORTS chain is now discounted by distance but
+not fully modeled as potentially correlated for other reasons.
+\textbf{(P1-3, temporal metadata.)} \texttt{evolution/temporal.py} has
+read \texttt{Claim.timestamp} (defaulting to \texttt{NO\_TIMESTAMP} when
+absent) since before that field existed on \texttt{Claim} at all, meaning
+every claim in every corpus this project has ever run received
+\texttt{NO\_TIMESTAMP}/\texttt{STATIC\_PARTITION}, never genuine
+\texttt{EVOLUTION\_CHAIN} reasoning. \texttt{Claim} now carries a real
+\texttt{timestamp} field, populated by the pipeline runner from disclosed
+document provenance (never filesystem mtime) after Phase 2, and unit-verified
+to be read correctly by the temporal resolver. On real data this is only
+half-verified: \texttt{stress\_vault}'s 6 real frontmatter dates
+(\texttt{2024-07-01} through \texttt{2024-07-06}) extract correctly into
+Phase 2 output, but that corpus has only 6 claims and 0 relationships
+total, so \texttt{EVOLUTION\_CHAIN} has not been observed firing
+end-to-end on a real corpus --- no corpus we currently hold combines
+disclosed dates with an actual contradiction between dated documents. We
+record this as the one item in this group that remains open, rather than
+claiming a real-data demonstration we do not have. The fourth item this
+same earlier review raised, conflict pressure not integrated into the
+uncertainty score, was fixed still earlier in this paper (Defect 7,
+\S\ref{sec:bugs}; verified by metamorphic relation MR2).
+\textbf{(P1-11, temporal validity model.)} \texttt{Claim.timestamp} is a
+single point in time (the claim's assertion time, effectively its source
+document's disclosed date) --- it conflates ``when this was written''
+with ``when the fact it describes held true,'' which are different
+things for a claim like ``Python 3.12 was released in 2023'' (a claim
+that became true at a specific point and, for a released-software-version
+fact, stays true indefinitely afterward). \texttt{Claim} now additionally
+carries \texttt{claim\_valid\_from}, \texttt{claim\_valid\_to},
+\texttt{temporal\_expression}, and \texttt{temporal\_confidence} as
+distinct, independent fields (\texttt{core/models.py}) --- a schema-level
+extension, not a working feature: no extractor in this pipeline parses a
+claim's own natural-language temporal expression into these fields yet,
+so they default to, and today always equal, \texttt{None}, never
+inferred or backfilled from \texttt{timestamp} or any other field (unit-verified,
+\texttt{test\_temporal\_provenance\_wiring.py}). We add this now, ahead of
+the extractor that would populate it, so that whenever that extractor is
+built, it has a schema to write into that was designed for exactly this
+distinction rather than retrofitted around whatever a first
+implementation happened to produce.
+
+\paragraph{Reliability and graph importance are now reported separately
+(P1-4), and the constraint-based partitioner remains the only one wired
+into production (P1-5).} A second audit round of the merged state
+above found that Phase 8's reliability index conflated two different
+scientific claims --- how well a claim is evidenced, and how structurally
+central it is in the graph --- into one fused number. \texttt{reliability\_index}
+is now fused from evidence-family signals only (evidence strength,
+evidence independence, source diversity, conflict pressure, temporal
+stability); a separate \texttt{importance\_index}, fused by the same
+generic engine over topology strength, hub score, and bridge score, is
+reported alongside it, each with its own decision record. On real
+SMRITI-Reference data this produces claims like one scored
+$\mathrm{reliability\_index}=3.1$ (essentially unevidenced) but
+$\mathrm{importance\_index}=75.0$ (structurally central) --- exactly the
+conflation the review named, now visible as two numbers rather than
+blended into one. The same review asked for a scientific comparison of
+the production partitioner (\S\ref{sec:phase7}) against alternatives.
+
+\input{generated/partitioning_table.tex}
+
+Table~\ref{tab:partitioning} reports it re-run against the current
+reference graph (P1-4, audit round --- the artifact this table replaces
+was generated before this session's resolver/corpus fixes and is
+retracted, not corrected in place, following this paper's own
+convention), and reframed explicitly as a Pareto trade-off (P1-15,
+audit round): \textbf{consistency (contradiction violations) vs.\
+structural connectivity (edges retained), and no variant wins on both.}
+On the current 121-claim graph (68 CONTRADICTS / 54
+SUPPORTS-REFINES-EQUIVALENT edges --- substantially fewer structural
+edges than the earlier 180, a direct, visible consequence of the
+same specificity-gate and REFINES-heuristic fixes already discussed
+above, not a new finding), naive connected components sits at one
+extreme of the frontier: 68 contradiction violations, but every one of
+the 54 structural edges retained. The pre-fix contradiction-edge-deletion
+algorithm still produces 3 violations (reproducing, on real data, the
+counter-example \S\ref{sec:phase7} describes, at a smaller absolute
+count than before simply because there are fewer structural edges to
+create the bridging counter-example with) while cutting none, sitting
+close to the same extreme. The production algorithm sits at the
+opposite extreme: zero violations, but 18 of 54 structural edges cut (a
+69.4\% singleton rate). A weighted-constraint variant that soft-drops
+the locally-weakest CONTRADICTS edge in an unresolvable odd cycle
+instead of shattering the whole component occupies a genuine
+intermediate point on the frontier --- 8 cut edges (10 fewer than
+production) at the cost of exactly one realized contradiction violation
+out of 22 constraints it soft-drops --- the same
+one-violation-per-many-soft-drops trade-off as before, on a
+structurally different graph, which we read as the trade-off itself
+being real and not an artifact of the specific (now-superseded) graph it
+was first measured on. No variant Pareto-dominates another: naive/
+pre-fix win on edges-retained and lose on violations, production wins
+on violations and loses on edges-retained, and the weighted variant is
+a genuine intermediate point, not a compromise that happens to be worse
+on both axes. This remains a research comparison
+(\texttt{evaluation/partitioning/run\_partitioning\_comparison.py}), not a
+production algorithm; the hard zero-violation guarantee in
+\S\ref{sec:phase7} is unchanged. Purity, fragmentation, and ARI/NMI
+against a ground-truth partition (also requested by that review round)
+are not reported: SMRITI-Reference has no hand-labeled ``true'' claim-cluster
+assignment to compare against, and fabricating one for this specific
+real corpus after the fact would be worse than disclosing the gap.
 
 \paragraph{Single-run experiments.} Latency/throughput numbers are
 reported from single runs per corpus size; absolute numbers should be
@@ -112,3 +502,47 @@ read as order-of-magnitude, not precise benchmarks. Phase 12's Gate 5
 STATISTICALLY\_VERIFIED as a result --- we removed a prior mechanism that
 fabricated apparent reproducibility by duplicating a single measurement,
 and have not yet replaced it with a genuine multi-run study.
+
+\paragraph{Reproducibility manifests are now generated automatically,
+not on request, and dependency versions they record are now complete
+(P1-12/P1-13, audit round).} \texttt{scripts/generate\_run\_manifest.py}
+previously had to be invoked separately after a pipeline run, so a
+manifest's existence depended on someone remembering to run it;
+\texttt{scripts/run\_vault.py} now calls it automatically immediately
+after every successful run, and \texttt{benchmark.json} records whether
+that generation itself succeeded (\texttt{manifest\_generated},
+\texttt{complete}) --- a run whose pipeline succeeds but whose manifest
+generation fails is marked \texttt{complete: false}, not silently missing
+a manifest with no trace of why. Separately, the software-version record
+that manifest carries previously covered only PyTorch/CUDA; it now also
+records \texttt{transformers}, \texttt{sentence-transformers}, the loaded
+spaCy model and its version, and FAISS, each independently best-effort
+(a missing optional dependency reports its own reason rather than
+blocking the others). \texttt{poetry.lock} is, and was already, committed
+to the repository; this closes only the dependency-\emph{version-recording}
+gap the review named on top of it, not a previously-missing lockfile.
+
+\paragraph{One master release manifest now ties every number in this
+paper to the exact run that produced it (P1-M, audit round).} Per-run
+manifests (above) answer ``what produced this one run''; they do not
+answer ``which of this project's many run IDs
+(\texttt{20260910\_075752}, \texttt{20260911\_081039},
+\texttt{20260911\_125340}, \texttt{20260911\_152535}, \ldots) does this
+paper's Table $N$ actually come from,'' which a reviewer would otherwise
+have to reconstruct by reading each evaluation script's own docstring.
+\texttt{scripts/generate\_release\_manifest.py} builds
+\texttt{evaluation/release\_manifest\_v1.json} from artifacts already on
+disk (every field either copied from an existing results/run manifest
+or independently computed and cross-checkable against one, never
+invented): the git commit and dirty flag, Python version, a SHA-256 of
+\texttt{poetry.lock}, a content hash of every gold/sample dataset file
+each evaluation category scores against, the embedding and NLI models'
+names and revisions, and, for every evaluation category, either its real
+\texttt{run\_id} or an explicit declared source where no fresh pipeline
+run applies (FEVER/SciFact/SciFact-Open score against a frozen external
+sample; the naive-extraction baselines and SMRITI-ClaimValidity-v1 have
+no run\_id field of their own, so their provenance is recorded from the
+evaluation script's own hardcoded reference instead of left blank). This
+is the single provenance root the review asked for; regenerating it
+after any code or data change is a required step of this project's
+release process from this point forward, not an optional convenience.

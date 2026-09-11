@@ -8,8 +8,6 @@ This makes view composition dynamic and testable.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Optional, Type
-
 from smriti.dashboard.views.base_view import BaseView
 from smriti.exceptions import ViewRegistryError
 
@@ -21,9 +19,9 @@ class ViewRegistry:
     """
 
     def __init__(self) -> None:
-        self._registry: Dict[str, Type[BaseView]] = {}
+        self._registry: dict[str, type[BaseView]] = {}
 
-    def register(self, name: str, view_cls: Type[BaseView]) -> None:
+    def register(self, name: str, view_cls: type[BaseView]) -> None:
         """Register a view class under a name."""
         self._registry[name] = view_cls
 
@@ -33,7 +31,7 @@ class ViewRegistry:
     def all_names(self) -> list:
         return list(self._registry.keys())
 
-    def get_class(self, name: str) -> Type[BaseView]:
+    def get_class(self, name: str) -> type[BaseView]:
         if name not in self._registry:
             raise ViewRegistryError(f"View '{name}' not registered.")
         return self._registry[name]
@@ -55,22 +53,22 @@ class ViewFactory:
 
 def build_default_view_registry() -> ViewRegistry:
     """Register all Phase 10 views."""
-    from smriti.dashboard.views.search_view import SearchView
-    from smriti.dashboard.views.result_list_view import ResultListView
+    from smriti.dashboard.views.audit_view import AuditView
+    from smriti.dashboard.views.conflict_view import ConflictView
     from smriti.dashboard.views.inspector_view import InspectorView
     from smriti.dashboard.views.navigation_view import NavigationView
     from smriti.dashboard.views.reliability_view import ReliabilityView
-    from smriti.dashboard.views.conflict_view import ConflictView
-    from smriti.dashboard.views.audit_view import AuditView
+    from smriti.dashboard.views.result_list_view import ResultListView
+    from smriti.dashboard.views.search_view import SearchView
     from smriti.dashboard.views.statistics_view import StatisticsView
 
     registry = ViewRegistry()
-    registry.register("search",       SearchView)
-    registry.register("result_list",  ResultListView)
-    registry.register("inspector",    InspectorView)
-    registry.register("navigation",   NavigationView)
-    registry.register("reliability",  ReliabilityView)
-    registry.register("conflict",     ConflictView)
-    registry.register("audit",        AuditView)
-    registry.register("statistics",   StatisticsView)
+    registry.register("search", SearchView)
+    registry.register("result_list", ResultListView)
+    registry.register("inspector", InspectorView)
+    registry.register("navigation", NavigationView)
+    registry.register("reliability", ReliabilityView)
+    registry.register("conflict", ConflictView)
+    registry.register("audit", AuditView)
+    registry.register("statistics", StatisticsView)
     return registry

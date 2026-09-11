@@ -3,11 +3,11 @@ Unit tests for claims/parser.py.
 Parser has one job: produce ParsedSentence from SemanticSentence.
 """
 
-import pytest
 from pathlib import Path
-from datetime import datetime, timezone
-from smriti.core.models import SemanticSentence
+
+import pytest
 from smriti.claims.parser import SpaCyParser
+from smriti.core.models import SemanticSentence
 
 
 @pytest.fixture(scope="module")

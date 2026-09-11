@@ -1,9 +1,10 @@
 """conflict_view.py — ConflictView: side-by-side contradiction panel."""
+
 from __future__ import annotations
-from typing import Optional
+
 import streamlit as st
-from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.models.presentation import ClaimPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class ConflictView(BaseView):
@@ -11,16 +12,16 @@ class ConflictView(BaseView):
 
     def __init__(
         self,
-        claim_a: Optional[ClaimPresentationModel] = None,
-        claim_b: Optional[ClaimPresentationModel] = None,
+        claim_a: ClaimPresentationModel | None = None,
+        claim_b: ClaimPresentationModel | None = None,
     ) -> None:
         self._claim_a = claim_a
         self._claim_b = claim_b
 
     def refresh(
         self,
-        claim_a: Optional[ClaimPresentationModel] = None,
-        claim_b: Optional[ClaimPresentationModel] = None,
+        claim_a: ClaimPresentationModel | None = None,
+        claim_b: ClaimPresentationModel | None = None,
     ) -> None:
         self._claim_a = claim_a
         self._claim_b = claim_b

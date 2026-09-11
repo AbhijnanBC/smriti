@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import statistics
 from collections import defaultdict
-from typing import Dict, Any, Iterator, List, Tuple
+from collections.abc import Iterator
+from typing import Any
 
 from smriti.api.domain.views import StatisticsView
 
@@ -20,12 +21,12 @@ class StatisticsViewBuilder:
 
     def build(
         self,
-        records_iter: Iterator[Dict[str, Any]],
+        records_iter: Iterator[dict[str, Any]],
         run_id: str,
         total_edges: int,
         total_partitions: int,
         total_contradictions: int,
-        partition_data: Dict[str, Any] = None,
+        partition_data: dict[str, Any] = None,
         include_histogram: bool = True,
         include_partition_stats: bool = True,
     ) -> StatisticsView:
@@ -37,11 +38,11 @@ class StatisticsViewBuilder:
         ri_values = [r["reliability_index"] for r in records]
         unc_values = [r["uncertainty_score"] for r in records]
 
-        calibration_dist: Dict[str, int] = defaultdict(int)
+        calibration_dist: dict[str, int] = defaultdict(int)
         for r in records:
             calibration_dist[r["calibration_label"]] += 1
 
-        histogram: List[Tuple[str, int]] = []
+        histogram: list[tuple[str, int]] = []
         if include_histogram:
             for bucket_start in range(0, 100, 10):
                 bucket_end = bucket_start + 10
@@ -54,15 +55,18 @@ class StatisticsViewBuilder:
         if include_partition_stats and partition_data:
             for pid, pinfo in partition_data.items():
                 partition_ri = [
-                    r["reliability_index"] for r in records
-                    if r.get("partition_id") == pid
+                    r["reliability_index"] for r in records if r.get("partition_id") == pid
                 ]
-                partition_summaries.append({
-                    "partition_id": pid,
-                    "node_count": pinfo.get("node_count", 0),
-                    "avg_reliability": round(statistics.mean(partition_ri), 2) if partition_ri else 0.0,
-                    "supports_count": pinfo.get("supports_count", 0),
-                })
+                partition_summaries.append(
+                    {
+                        "partition_id": pid,
+                        "node_count": pinfo.get("node_count", 0),
+                        "avg_reliability": (
+                            round(statistics.mean(partition_ri), 2) if partition_ri else 0.0
+                        ),
+                        "supports_count": pinfo.get("supports_count", 0),
+                    }
+                )
             partition_summaries.sort(key=lambda p: p["avg_reliability"], reverse=True)
 
         return StatisticsView(
@@ -83,10 +87,17 @@ class StatisticsViewBuilder:
 
     def _empty_view(self, run_id, edges, partitions, contradictions) -> StatisticsView:
         return StatisticsView(
-            run_id=run_id, total_claims=0, total_edges=edges,
-            total_partitions=partitions, total_contradictions=contradictions,
-            avg_reliability=0.0, median_reliability=0.0,
-            high_reliability_count=0, low_reliability_count=0,
-            avg_uncertainty=0.0, calibration_distribution={},
-            reliability_histogram=[], partition_summaries=[],
+            run_id=run_id,
+            total_claims=0,
+            total_edges=edges,
+            total_partitions=partitions,
+            total_contradictions=contradictions,
+            avg_reliability=0.0,
+            median_reliability=0.0,
+            high_reliability_count=0,
+            low_reliability_count=0,
+            avg_uncertainty=0.0,
+            calibration_distribution={},
+            reliability_histogram=[],
+            partition_summaries=[],
         )

@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "smriti"
 version = "0.1.0"
-description = "Reproducible, self-certifying pipeline for claim extraction, contradiction-aware knowledge graph construction, and reliability scoring over personal note vaults."
-authors = ["Abhijnan B C <you@example.com>"]
+description = "Reproducible pipeline for claim extraction, contradiction-aware knowledge graph construction, and evidence-graded reliability scoring over personal note vaults, with a gate-based internal evaluation report (not a substitute for external review)."
+authors = ["Abhijnan B C <p9713889@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/AbhijnanBC/smriti"
@@ -18,7 +18,9 @@ sentence-transformers = "^3.4"
 torch = "^2.5"
 transformers = "^4.48"
 
-# Retrieval (FAISS strictly on non-Windows, scikit-learn available as fallback)
+# Retrieval (faiss-cpu below now ships Windows wheels too; scikit-learn
+# remains as the graceful fallback the code uses if FAISS import fails
+# for any reason -- see FAISSNotAvailableError in retrieval/faiss_index.py)
 scikit-learn = "^1.4"
 
 # Data processing
@@ -56,6 +58,7 @@ mypy = "^1.10"
 ipython = "^8.24"
 hypothesis = "^6.156.7"
 matplotlib = "^3.11.1"
+types-psutil = "^7.2.2.20260906"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

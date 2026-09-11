@@ -4,7 +4,6 @@ traversal_service.py — Graph traversal for Phase 10.
 
 from __future__ import annotations
 
-from typing import Optional, Dict
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -16,7 +15,7 @@ class TraversalService:
     def __init__(self, api) -> None:
         self._api = api
 
-    def traverse(self, claim_id: str, max_depth: int = 2) -> Optional[Dict]:
+    def traverse(self, claim_id: str, max_depth: int = 2) -> dict | None:
         """Traverse graph from a claim up to max_depth hops."""
         try:
             resp = self._api.traverse(claim_id, max_depth=max_depth)

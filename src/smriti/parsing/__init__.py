@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Tuple
+
 import structlog
 
 from smriti.core.config import get_config
@@ -37,7 +38,6 @@ from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
 from smriti.exceptions import ParsingError
-
 from smriti.parsing.loader import load_document
 
 logger = structlog.get_logger(__name__)
@@ -46,6 +46,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class ExtractionStats:
     """Statistics from one Phase 2 run."""
+
     total_documents: int = 0
     successful: int = 0
     failed: int = 0
@@ -78,12 +79,13 @@ class ExtractionResult:
         manifest_path: Path to the written manifest.json.
         dataset_path:  Path to the written dataset.json.
     """
-    documents: List[Document]
-    failed: List[Tuple[SourceDocument, str]]
+
+    documents: list[Document]
+    failed: list[tuple[SourceDocument, str]]
     stats: ExtractionStats
     run_id: str
-    manifest_path: Optional[Path] = None
-    dataset_path: Optional[Path] = None
+    manifest_path: Path | None = None
+    dataset_path: Path | None = None
 
     def to_dataset_json(self) -> str:
         """
@@ -95,30 +97,49 @@ class ExtractionResult:
         """
         records = []
         for doc in self.documents:
-            records.append({
-                "doc_id": doc.doc_id,
-                "schema_version": doc.schema_version,
-                "path": str(doc.source_document.path),
-                "relative_path": str(doc.source_document.relative_path),
-                "format": doc.source_document.format.value,
-                "extraction_method": doc.extraction_method.value,
-                "encoding_used": doc.encoding_used,
-                "normalized_text": doc.normalized_text,
-                "extraction_warnings": [w.value for w in doc.extraction_warnings],
-                "text_statistics": {
-                    "character_count": doc.text_statistics.character_count,
-                    "word_count": doc.text_statistics.word_count,
-                    "line_count": doc.text_statistics.line_count,
-                    "blank_line_count": doc.text_statistics.blank_line_count,
-                    "paragraph_count": doc.text_statistics.paragraph_count,
-                },
-                "modified_at": doc.source_document.modified_at.isoformat(),
-            })
+            records.append(
+                {
+                    "doc_id": doc.doc_id,
+                    "schema_version": doc.schema_version,
+                    "path": str(doc.source_document.path),
+                    "relative_path": str(doc.source_document.relative_path),
+                    "format": doc.source_document.format.value,
+                    "extraction_method": doc.extraction_method.value,
+                    "encoding_used": doc.encoding_used,
+                    "normalized_text": doc.normalized_text,
+                    "extraction_warnings": [w.value for w in doc.extraction_warnings],
+                    "text_statistics": {
+                        "character_count": doc.text_statistics.character_count,
+                        "word_count": doc.text_statistics.word_count,
+                        "line_count": doc.text_statistics.line_count,
+                        "blank_line_count": doc.text_statistics.blank_line_count,
+                        "paragraph_count": doc.text_statistics.paragraph_count,
+                    },
+                    "modified_at": doc.source_document.modified_at.isoformat(),
+                    # RECTIFIED (external review, P1-1): disclosed source
+                    # identity, if any -- read by the pipeline runner to build
+                    # KnowledgeGraph.document_provenance ahead of Phase 7.
+                    "provenance": {
+                        "source_id": doc.provenance.source_id,
+                        "author": doc.provenance.author,
+                        "publisher": doc.provenance.publisher,
+                        "domain": doc.provenance.domain,
+                        "url": doc.provenance.url,
+                        "publication_date": (
+                            doc.provenance.publication_date.isoformat()
+                            if doc.provenance.publication_date
+                            else None
+                        ),
+                        "parent_source_id": doc.provenance.parent_source_id,
+                        "extraction_method": doc.provenance.extraction_method,
+                    },
+                }
+            )
         return json.dumps(records, indent=2, ensure_ascii=False)
 
 
 def run_extraction(
-    source_documents: List[SourceDocument],
+    source_documents: list[SourceDocument],
     run_id: str,
     manifest_manager: ManifestManager,
     state_manager: StateManager,
@@ -153,8 +174,8 @@ def run_extraction(
         )
 
         # ── Step 2: Process each document ─────────────────────────────────────
-        documents: List[Document] = []
-        failed: List[Tuple[SourceDocument, str]] = []
+        documents: list[Document] = []
+        failed: list[tuple[SourceDocument, str]] = []
 
         for source in source_documents:
             doc, error = load_document(source)
@@ -170,22 +191,26 @@ def run_extraction(
                 failed.append((source, error or "unknown error"))
                 stats.failed += 1
 
-        logger.info("phase 2 extraction complete", **{
-            k: v for k, v in [
-                ("successful", stats.successful),
-                ("failed", stats.failed),
-                ("total_chars", stats.total_characters),
-                ("total_words", stats.total_words),
-            ]
-        })
+        logger.info(
+            "phase 2 extraction complete",
+            **{
+                k: v
+                for k, v in [
+                    ("successful", stats.successful),
+                    ("failed", stats.failed),
+                    ("total_chars", stats.total_characters),
+                    ("total_words", stats.total_words),
+                ]
+            },
+        )
 
         # ── Step 3: Write dataset artifact ────────────────────────────────────
-        phase_dir = manifest_manager.run_dir / "phase2"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+        phase_dir = (
+            manifest_manager.run_dir / "phase2"
+        )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
         phase_dir.mkdir(parents=True, exist_ok=True)
 
-        output_filename = config.get("parsing", {}).get(
-            "output_dataset_filename", "dataset.json"
-        )
+        output_filename = config.get("parsing", {}).get("output_dataset_filename", "dataset.json")
         dataset_path = phase_dir / output_filename
 
         result = ExtractionResult(

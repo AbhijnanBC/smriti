@@ -2,8 +2,8 @@
 Unit tests for embedding/normalization.py.
 """
 
-import pytest
 import math
+
 from smriti.embedding.normalization import l2_normalize, normalize_batch
 
 
@@ -54,6 +54,7 @@ def test_normalize_batch_disabled():
 def test_normalize_384_dim():
     """Must work correctly on 384-dimensional vectors (MiniLM)."""
     import random
+
     random.seed(42)
     vector = [random.uniform(-1, 1) for _ in range(384)]
     normalized = l2_normalize(vector)

@@ -7,7 +7,7 @@ RECTIFIED:
     - Builds enriched ResearchClaim objects with scientific fields
     - Manages EvaluationManifest, AssumptionRegistry, LimitationRegistry
     - Detects and resolves evidence conflicts
-    - Reports PublicationReadinessLevel (ordinal, not binary)
+    - Reports ArtifactReadinessLevel (ordinal, not binary)
 
 Public API:
     from smriti.evaluation import CertificationEngine, run_evaluation
@@ -20,33 +20,40 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.models import (
-    CertificationLevel, CertificationReport, ResearchAssurancePackage,
+    CertificationLevel,
+    CertificationReport,
+    ResearchAssurancePackage,
 )
 from smriti.core.paths import ARTIFACTS_DIR
-from smriti.exceptions import Phase12Error
-
+from smriti.evaluation.certification.artifact_readiness import assess_artifact_readiness
+from smriti.evaluation.certification.claims import assess_research_claims
+from smriti.evaluation.certification.gates import evaluate_certification_gates
+from smriti.evaluation.certification.levels import compute_research_evidence_coverage
+from smriti.evaluation.certification.manifest import build_evaluation_manifest
+from smriti.evaluation.certification.package import build_research_assurance_package
+from smriti.evaluation.certification.report import (
+    build_certification_report,
+    serialize_certification_report,
+)
 from smriti.evaluation.engineering.architectural import run_architectural_verification
 from smriti.evaluation.engineering.confidence import compute_eci, compute_verification_coverage
+from smriti.evaluation.scientific.conflict import (
+    apply_conflict_adjustments,
+    detect_evidence_conflicts,
+)
 from smriti.evaluation.scientific.experiment import EXPERIMENT_REGISTRY, run_experiment
-from smriti.evaluation.scientific.conflict import detect_evidence_conflicts, apply_conflict_adjustments
 from smriti.evaluation.statistical.analysis import (
-    compute_statistical_analysis, STANDARD_THREATS,
+    STANDARD_THREATS,
+    compute_statistical_analysis,
 )
 from smriti.evaluation.statistical.assumptions import ASSUMPTION_REGISTRY
 from smriti.evaluation.statistical.limitations import LIMITATION_REGISTRY
-from smriti.evaluation.certification.claims import assess_research_claims
-from smriti.evaluation.certification.gates import evaluate_certification_gates
-from smriti.evaluation.certification.publication import assess_publication_readiness
-from smriti.evaluation.certification.levels import compute_scientific_confidence_index
-from smriti.evaluation.certification.report import (
-    build_certification_report, serialize_certification_report,
-)
-from smriti.evaluation.certification.manifest import build_evaluation_manifest
-from smriti.evaluation.certification.package import build_research_assurance_package
+from smriti.exceptions import Phase12Error
 
 logger = structlog.get_logger(__name__)
 PHASE12_VERSION = "1.0"
@@ -82,9 +89,12 @@ class CertificationEngine:
         verification_results = run_architectural_verification()
         verification_coverage = compute_verification_coverage(verification_results)
         eci = compute_eci(verification_results)
-        logger.info("engineering verification complete",
-                    passed=sum(1 for r in verification_results if r.status.value == "passed"),
-                    total=len(verification_results), eci=f"{eci.overall_confidence:.1f}")
+        logger.info(
+            "engineering verification complete",
+            passed=sum(1 for r in verification_results if r.status.value == "passed"),
+            total=len(verification_results),
+            eci=f"{eci.overall_confidence:.1f}",
+        )
 
         # ── Part 3: Scientific Evaluation ─────────────────────────────────────
         logger.info("part 3: scientific evaluation")
@@ -92,9 +102,11 @@ class CertificationEngine:
         for experiment in EXPERIMENT_REGISTRY:
             result = run_experiment(experiment, knowledge_api, self._run_id)
             experiment_results.append(result)
-        logger.info("scientific evaluation complete",
-                    experiments=len(experiment_results),
-                    passed=sum(1 for r in experiment_results if r.status.value == "passed"))
+        logger.info(
+            "scientific evaluation complete",
+            experiments=len(experiment_results),
+            passed=sum(1 for r in experiment_results if r.status.value == "passed"),
+        )
 
         # ── Part 4: Statistical Analysis ──────────────────────────────────────
         logger.info("part 4: statistical analysis")
@@ -132,20 +144,22 @@ class CertificationEngine:
             research_claims = apply_conflict_adjustments(research_claims, conflicts)
             logger.info("evidence_conflicts_resolved", count=len(conflicts))
 
-        sci = compute_scientific_confidence_index(
+        evidence_coverage = compute_research_evidence_coverage(
             experiment_results=experiment_results,
             research_claims=research_claims,
             reproducibility_assessments=reproducibility_assessments,
         )
-        logger.info("statistical analysis complete",
-                    sci=f"{sci.overall_confidence:.1f}",
-                    claims_supported=sum(1 for c in research_claims if c.is_supported))
+        logger.info(
+            "statistical analysis complete",
+            evidence_coverage=f"{evidence_coverage.overall_coverage:.1f}",
+            claims_supported=sum(1 for c in research_claims if c.is_supported),
+        )
 
         # ── Part 5: Certification ─────────────────────────────────────────────
         logger.info("part 5: gate-based certification")
 
         # RECTIFIED (P1-6): Ordinal publication readiness
-        publication_readiness = assess_publication_readiness(
+        artifact_readiness = assess_artifact_readiness(
             research_claims=research_claims,
             reproducibility_assessments=reproducibility_assessments,
             eci=eci,
@@ -158,16 +172,18 @@ class CertificationEngine:
             reproducibility_assessments=reproducibility_assessments,
             research_claims=research_claims,
             eci=eci,
-            sci=sci,
-            publication_readiness=publication_readiness,
+            evidence_coverage=evidence_coverage,
+            artifact_readiness=artifact_readiness,
         )
 
         gates_passed = sum(1 for g in gate_results if g.decision.value == "pass")
-        logger.info("certification complete",
-                    level=certification_level.value,
-                    level_name=certification_level.name,
-                    gates_passed=f"{gates_passed}/{len(gate_results)}",
-                    pub_readiness=publication_readiness.readiness_level.value)
+        logger.info(
+            "certification complete",
+            level=certification_level.value,
+            level_name=certification_level.name,
+            gates_passed=f"{gates_passed}/{len(gate_results)}",
+            artifact_readiness_level=artifact_readiness.readiness_level.value,
+        )
 
         # ── Assemble CertificationReport ──────────────────────────────────────
         report = build_certification_report(
@@ -181,8 +197,8 @@ class CertificationEngine:
             statistical_analyses=statistical_analyses,
             reproducibility_assessments=reproducibility_assessments,
             threats_to_validity=list(STANDARD_THREATS),
-            scientific_confidence=sci,
-            publication_readiness=publication_readiness,
+            research_evidence_coverage=evidence_coverage,
+            artifact_readiness=artifact_readiness,
             certification_level=certification_level,
             certification_rationale=rationale,
             gate_results=gate_results,
@@ -207,19 +223,23 @@ class CertificationEngine:
         )
 
         total_time = time.monotonic() - t0
-        logger.info("phase 12 complete",
-                    run_id=self._run_id,
-                    certification_level=certification_level.name,
-                    eci=f"{eci.overall_confidence:.1f}",
-                    sci=f"{sci.overall_confidence:.1f}",
-                    gates_passed=gates_passed,
-                    pub_readiness=publication_readiness.readiness_level.value,
-                    runtime_seconds=f"{total_time:.2f}")
+        logger.info(
+            "phase 12 complete",
+            run_id=self._run_id,
+            certification_level=certification_level.name,
+            eci=f"{eci.overall_confidence:.1f}",
+            evidence_coverage=f"{evidence_coverage.overall_coverage:.1f}",
+            gates_passed=gates_passed,
+            artifact_readiness_level=artifact_readiness.readiness_level.value,
+            runtime_seconds=f"{total_time:.2f}",
+        )
 
         return package
 
 
-def run_evaluation(knowledge_api, run_id: str, manifest_manager, state_manager) -> CertificationReport:
+def run_evaluation(
+    knowledge_api, run_id: str, manifest_manager, state_manager
+) -> CertificationReport:
     """Execute Phase 12 as part of the pipeline. Writes artifacts, returns CertificationReport."""
     start_time = manifest_manager.start_phase(phase=12)
 
@@ -228,7 +248,9 @@ def run_evaluation(knowledge_api, run_id: str, manifest_manager, state_manager) 
     report = package.certification_report
 
     # Write artifacts
-    phase_dir = manifest_manager.run_dir / "phase12"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+    phase_dir = (
+        manifest_manager.run_dir / "phase12"
+    )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     report_json = serialize_certification_report(report)
@@ -236,6 +258,7 @@ def run_evaluation(knowledge_api, run_id: str, manifest_manager, state_manager) 
 
     # Write evaluation manifest
     import json as _json
+
     manifest_data = {
         "manifest_id": package.evaluation_manifest.manifest_id,
         "run_id": run_id,
@@ -260,9 +283,9 @@ def run_evaluation(knowledge_api, run_id: str, manifest_manager, state_manager) 
             "certification_level": report.certification_level.value,
             "certification_name": report.certification_level.name,
             "eci": report.engineering_confidence_index,
-            "sci": report.scientific_confidence_index,
+            "evidence_coverage": report.research_evidence_coverage_index,
             "gates_passed": sum(1 for g in report.gate_results if g.decision.value == "pass"),
-            "pub_readiness": report.publication_readiness.readiness_level.value,
+            "artifact_readiness_level": report.artifact_readiness.readiness_level.value,
             "report_path": str(phase_dir / "certification_report.json"),
             "schema_version": report.schema_version,
         },

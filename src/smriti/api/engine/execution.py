@@ -8,23 +8,27 @@ QueryExecutionEngine handles caching, service dispatch, and timing.
 
 from __future__ import annotations
 
-import time
 import dataclasses
-from typing import Type
-import structlog
+import time
 
-from smriti.core.models import ExecutionContext
+import structlog
+from smriti.api.cache.knowledge_cache import KnowledgeViewCache
 from smriti.api.domain.requests import (
-    KnowledgeRequest, ClaimRequest, SearchRequest, TraversalRequest,
-    StatisticsRequest, ExplanationRequest, ExportRequest,
+    ClaimRequest,
+    ExplanationRequest,
+    ExportRequest,
+    KnowledgeRequest,
+    SearchRequest,
+    StatisticsRequest,
+    TraversalRequest,
 )
 from smriti.api.domain.responses import KnowledgeResponse
-from smriti.api.cache.knowledge_cache import KnowledgeViewCache
-from smriti.api.services.query_service import QueryService
-from smriti.api.services.navigation_service import NavigationService
-from smriti.api.services.statistics_service import StatisticsService
 from smriti.api.services.explain_service import ExplainabilityService
 from smriti.api.services.export_service import ExportService
+from smriti.api.services.navigation_service import NavigationService
+from smriti.api.services.query_service import QueryService
+from smriti.api.services.statistics_service import StatisticsService
+from smriti.core.models import ExecutionContext
 from smriti.exceptions import QueryPlanError
 
 logger = structlog.get_logger(__name__)
@@ -93,7 +97,9 @@ class QueryExecutionEngine:
         self._resolver = resolver
         self._cache = cache
 
-    def execute(self, request: KnowledgeRequest, physical_plan, context: ExecutionContext) -> KnowledgeResponse:
+    def execute(
+        self, request: KnowledgeRequest, physical_plan, context: ExecutionContext
+    ) -> KnowledgeResponse:
         """
         Execute a PhysicalPlan for a KnowledgeRequest.
 
@@ -109,7 +115,9 @@ class QueryExecutionEngine:
 
         # 1. Cache lookup (if the plan is cacheable)
         if physical_plan.cacheable:
-            cached_view = self._cache.get_view(physical_plan.plan_id, physical_plan.projection_level)
+            cached_view = self._cache.get_view(
+                physical_plan.plan_id, physical_plan.projection_level
+            )
             if cached_view is not None:
                 # Cache hit – update context and return
                 context = dataclasses.replace(

@@ -3,9 +3,9 @@ Unit tests for embedding/validation.py.
 Includes dtype validation and post-normalization scenario.
 """
 
-import pytest
 import math
-from smriti.embedding.validation import validate_vector, validate_batch
+
+from smriti.embedding.validation import validate_batch, validate_vector
 
 
 def test_valid_vector_passes():
@@ -94,7 +94,7 @@ def test_validate_batch_mixed():
 
 def test_post_normalization_valid_unit_vector():
     """A correctly normalized unit vector must pass post-norm validation."""
-    import math
+
     vector = [1.0, 0.0, 0.0, 0.0]
     norm = math.sqrt(sum(x * x for x in vector))
     normalized = [x / norm for x in vector]

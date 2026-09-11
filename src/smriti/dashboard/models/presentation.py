@@ -30,50 +30,52 @@ Rules:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 # ── Calibration label display helpers ─────────────────────────────────────────
 
 LABEL_ICON = {
     "very_high": "🟢",
-    "high":      "🔵",
-    "moderate":  "🟡",
-    "low":       "🟠",
-    "very_low":  "🔴",
+    "high": "🔵",
+    "moderate": "🟡",
+    "low": "🟠",
+    "very_low": "🔴",
 }
 
 LABEL_COLOR = {
     "very_high": "#27ae60",
-    "high":      "#2980b9",
-    "moderate":  "#f39c12",
-    "low":       "#e67e22",
-    "very_low":  "#c0392b",
+    "high": "#2980b9",
+    "moderate": "#f39c12",
+    "low": "#e67e22",
+    "very_low": "#c0392b",
 }
 
 
 # ── Presentation Models ────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class SignalPresentationModel:
     """A single reliability signal ready for display."""
+
     key: str
     label: str
     value: float
     color: str
-    formatted: str      # e.g. "0.712"
+    formatted: str  # e.g. "0.712"
 
 
 @dataclass(frozen=True)
 class ComponentScorePresentationModel:
     """One component contribution ready for display."""
+
     signal_name: str
     display_name: str
     contribution: float
-    direction: str      # "positive" | "negative"
+    direction: str  # "positive" | "negative"
     explanation: str
-    icon: str           # "🟢" or "🔴"
-    formatted_contribution: str   # "+22.00" or "−3.50"
+    icon: str  # "🟢" or "🔴"
+    formatted_contribution: str  # "+22.00" or "−3.50"
 
 
 @dataclass(frozen=True)
@@ -82,6 +84,7 @@ class ClaimPresentationModel:
     A claim ready for display. All values are display-ready.
     Created by DTOTransformer from a ServiceClient dict.
     """
+
     claim_id: str
     text: str
     context: str
@@ -107,38 +110,40 @@ class ClaimPresentationModel:
     # Display helpers (pre-computed)
     label_icon: str
     label_color: str
-    label_display: str           # "Very High", "High", …
-    ri_formatted: str            # "78.5"
-    uncertainty_formatted: str   # "12.0"
-    role_display: str            # "Foundational Claim"
-    short_id: str                # First 8 chars
+    label_display: str  # "Very High", "High", …
+    ri_formatted: str  # "78.5"
+    uncertainty_formatted: str  # "12.0"
+    role_display: str  # "Foundational Claim"
+    short_id: str  # First 8 chars
 
     # Explanation (populated at SUMMARY level+)
-    explanation_summary: Optional[str] = None
-    dominant_signal: Optional[str] = None
-    limiting_signal: Optional[str] = None
+    explanation_summary: str | None = None
+    dominant_signal: str | None = None
+    limiting_signal: str | None = None
 
     # Signal vector (populated at DETAILED level+)
-    signals: List[SignalPresentationModel] = field(default_factory=list)
-    component_scores: List[ComponentScorePresentationModel] = field(default_factory=list)
+    signals: list[SignalPresentationModel] = field(default_factory=list)
+    component_scores: list[ComponentScorePresentationModel] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
 class EvidencePresentationModel:
     """Evidence chain for a claim — used in ProvenanceWorkspace."""
+
     claim_id: str
     source_path: str
     document_id: str
     context: str
     support_count: int
     reachable_in_2_hops: int
-    neighbor_ids: List[str]
-    neighbor_texts: List[str]
+    neighbor_ids: list[str]
+    neighbor_texts: list[str]
 
 
 @dataclass(frozen=True)
 class RelationshipPresentationModel:
     """A graph edge ready for display — used in TopologyWorkspace."""
+
     source_id: str
     target_id: str
     relationship_type: str
@@ -150,6 +155,7 @@ class RelationshipPresentationModel:
 @dataclass(frozen=True)
 class AuditPresentationModel:
     """Full audit record for a claim — used in AuditWorkspace."""
+
     claim_id: str
     reliability_index: float
     calibration_label: str
@@ -158,11 +164,11 @@ class AuditPresentationModel:
     summary: str
     dominant_signal: str
     limiting_signal: str
-    signals: List[SignalPresentationModel]
-    component_scores: List[ComponentScorePresentationModel]
-    audit_trail: Dict[str, Any]
-    recommendations: List[str]
-    policy_snapshot: Dict[str, Any]
+    signals: list[SignalPresentationModel]
+    component_scores: list[ComponentScorePresentationModel]
+    audit_trail: dict[str, Any]
+    recommendations: list[str]
+    policy_snapshot: dict[str, Any]
     label_icon: str
     label_color: str
 
@@ -170,6 +176,7 @@ class AuditPresentationModel:
 @dataclass(frozen=True)
 class StatisticsPresentationModel:
     """Global knowledge base statistics ready for display."""
+
     total_claims: int
     total_edges: int
     total_partitions: int
@@ -177,38 +184,39 @@ class StatisticsPresentationModel:
     avg_reliability: float
     median_reliability: float
     avg_uncertainty: float
-    calibration_distribution: Dict[str, int]
-    reliability_histogram: List[tuple]
-    partition_summaries: List[Dict[str, Any]]
+    calibration_distribution: dict[str, int]
+    reliability_histogram: list[tuple]
+    partition_summaries: list[dict[str, Any]]
     run_id: str
 
 
 @dataclass(frozen=True)
 class ContradictionPresentationModel:
     """A pair of contradicting claims for side-by-side display."""
+
     claim_a: ClaimPresentationModel
     claim_b: ClaimPresentationModel
-    conflict_delta: float   # abs(ri_a - ri_b)
+    conflict_delta: float  # abs(ri_a - ri_b)
 
 
 # ── DTO Transformer ───────────────────────────────────────────────────────────
 
 SIGNAL_LABELS = {
-    "evidence_strength":     "Evidence Strength",
+    "evidence_strength": "Evidence Strength",
     "evidence_independence": "Evidence Independence",
-    "source_diversity":      "Source Diversity",
-    "topology_strength":     "Topology Strength",
-    "conflict_pressure":     "Conflict Pressure (↑ = worse)",
-    "temporal_stability":    "Temporal Stability",
+    "source_diversity": "Source Diversity",
+    "topology_strength": "Topology Strength",
+    "conflict_pressure": "Conflict Pressure (↑ = worse)",
+    "temporal_stability": "Temporal Stability",
 }
 
 SIGNAL_COLORS = {
-    "evidence_strength":     "#27ae60",
+    "evidence_strength": "#27ae60",
     "evidence_independence": "#2980b9",
-    "source_diversity":      "#8e44ad",
-    "topology_strength":     "#16a085",
-    "conflict_pressure":     "#c0392b",
-    "temporal_stability":    "#d35400",
+    "source_diversity": "#8e44ad",
+    "topology_strength": "#16a085",
+    "conflict_pressure": "#c0392b",
+    "temporal_stability": "#d35400",
 }
 
 
@@ -221,7 +229,7 @@ class DTOTransformer:
     """
 
     @staticmethod
-    def to_claim_pm(dto: Dict[str, Any]) -> ClaimPresentationModel:
+    def to_claim_pm(dto: dict[str, Any]) -> ClaimPresentationModel:
         """Convert a claim dict from ServiceClient to ClaimPresentationModel."""
         label = dto.get("calibration_label", "very_low")
         role = dto.get("semantic_role", "")
@@ -229,27 +237,33 @@ class DTOTransformer:
         signals = []
         for key, sig_label in SIGNAL_LABELS.items():
             val = float(dto.get(key, 0.0) or 0.0)
-            signals.append(SignalPresentationModel(
-                key=key,
-                label=sig_label,
-                value=val,
-                color=SIGNAL_COLORS.get(key, "#888"),
-                formatted=f"{val:.3f}",
-            ))
+            signals.append(
+                SignalPresentationModel(
+                    key=key,
+                    label=sig_label,
+                    value=val,
+                    color=SIGNAL_COLORS.get(key, "#888"),
+                    formatted=f"{val:.3f}",
+                )
+            )
 
         comp_scores = []
-        for comp in (dto.get("component_scores") or []):
+        for comp in dto.get("component_scores") or []:
             direction = comp.get("direction", "positive")
             contrib = float(comp.get("contribution", 0.0))
-            comp_scores.append(ComponentScorePresentationModel(
-                signal_name=comp.get("signal_name", ""),
-                display_name=comp.get("signal_name", "").replace("_", " ").title(),
-                contribution=contrib,
-                direction=direction,
-                explanation=comp.get("explanation", ""),
-                icon="🟢" if direction == "positive" else "🔴",
-                formatted_contribution=f"+{contrib:.2f}" if contrib >= 0 else f"−{abs(contrib):.2f}",
-            ))
+            comp_scores.append(
+                ComponentScorePresentationModel(
+                    signal_name=comp.get("signal_name", ""),
+                    display_name=comp.get("signal_name", "").replace("_", " ").title(),
+                    contribution=contrib,
+                    direction=direction,
+                    explanation=comp.get("explanation", ""),
+                    icon="🟢" if direction == "positive" else "🔴",
+                    formatted_contribution=(
+                        f"+{contrib:.2f}" if contrib >= 0 else f"−{abs(contrib):.2f}"
+                    ),
+                )
+            )
 
         ri = float(dto.get("reliability_index", 0.0) or 0.0)
         unc = float(dto.get("uncertainty_score", 100.0) or 100.0)
@@ -289,7 +303,7 @@ class DTOTransformer:
         )
 
     @staticmethod
-    def to_audit_pm(dto: Dict[str, Any]) -> AuditPresentationModel:
+    def to_audit_pm(dto: dict[str, Any]) -> AuditPresentationModel:
         """Convert an explanation dict to AuditPresentationModel."""
         label = dto.get("calibration_label", "very_low")
         ri = float(dto.get("reliability_index", 0.0) or 0.0)
@@ -299,25 +313,33 @@ class DTOTransformer:
         sv = dto.get("signal_vector") or {}
         for key, sig_label in SIGNAL_LABELS.items():
             val = float(sv.get(key, 0.0) or 0.0)
-            signals.append(SignalPresentationModel(
-                key=key, label=sig_label, value=val,
-                color=SIGNAL_COLORS.get(key, "#888"),
-                formatted=f"{val:.3f}",
-            ))
+            signals.append(
+                SignalPresentationModel(
+                    key=key,
+                    label=sig_label,
+                    value=val,
+                    color=SIGNAL_COLORS.get(key, "#888"),
+                    formatted=f"{val:.3f}",
+                )
+            )
 
         comp_scores = []
-        for comp in (dto.get("component_scores") or []):
+        for comp in dto.get("component_scores") or []:
             direction = comp.get("direction", "positive")
             contrib = float(comp.get("contribution", 0.0))
-            comp_scores.append(ComponentScorePresentationModel(
-                signal_name=comp.get("signal_name", ""),
-                display_name=comp.get("signal_name", "").replace("_", " ").title(),
-                contribution=contrib,
-                direction=direction,
-                explanation=comp.get("explanation", ""),
-                icon="🟢" if direction == "positive" else "🔴",
-                formatted_contribution=f"+{contrib:.2f}" if contrib >= 0 else f"−{abs(contrib):.2f}",
-            ))
+            comp_scores.append(
+                ComponentScorePresentationModel(
+                    signal_name=comp.get("signal_name", ""),
+                    display_name=comp.get("signal_name", "").replace("_", " ").title(),
+                    contribution=contrib,
+                    direction=direction,
+                    explanation=comp.get("explanation", ""),
+                    icon="🟢" if direction == "positive" else "🔴",
+                    formatted_contribution=(
+                        f"+{contrib:.2f}" if contrib >= 0 else f"−{abs(contrib):.2f}"
+                    ),
+                )
+            )
 
         return AuditPresentationModel(
             claim_id=dto.get("claim_id", ""),
@@ -338,7 +360,7 @@ class DTOTransformer:
         )
 
     @staticmethod
-    def to_statistics_pm(dto: Dict[str, Any]) -> StatisticsPresentationModel:
+    def to_statistics_pm(dto: dict[str, Any]) -> StatisticsPresentationModel:
         """Convert a statistics dict to StatisticsPresentationModel."""
         return StatisticsPresentationModel(
             total_claims=int(dto.get("total_claims", 0)),
@@ -355,7 +377,7 @@ class DTOTransformer:
         )
 
     @staticmethod
-    def to_claims_list(dtos: list) -> List[ClaimPresentationModel]:
+    def to_claims_list(dtos: list) -> list[ClaimPresentationModel]:
         """Batch-convert a list of claim dicts. Returns empty list if input is None."""
         if dtos is None:
             return []

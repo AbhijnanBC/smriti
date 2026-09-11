@@ -43,8 +43,8 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
-from typing import List, Dict, Tuple, Optional, Set
+from dataclasses import dataclass
+
 import structlog
 
 from smriti.core.models import RelationshipType
@@ -55,6 +55,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class GoldPair:
     """A gold-standard relationship label for evaluation."""
+
     claim_id_a: str
     claim_id_b: str
     expected_type: RelationshipType
@@ -78,9 +79,10 @@ class SyntheticVectorCorpus:
         corpus = SyntheticVectorCorpus.generate(seed=42, n_claims=100, n_gold_pairs=50)
         # Use corpus.claims, corpus.embeddings, corpus.gold_labels in tests
     """
-    claims: List[Dict]                          # {claim_id, text}
-    embeddings: List[Tuple[str, List[float]]]   # (claim_id, vector)
-    gold_labels: List[GoldPair]
+
+    claims: list[dict]  # {claim_id, text}
+    embeddings: list[tuple[str, list[float]]]  # (claim_id, vector)
+    gold_labels: list[GoldPair]
     dimension: int
     seed: int
 
@@ -91,7 +93,7 @@ class SyntheticVectorCorpus:
         n_claims: int = 100,
         n_gold_pairs: int = 50,
         dimension: int = 8,
-    ) -> "SyntheticVectorCorpus":
+    ) -> SyntheticVectorCorpus:
         """
         Generate a deterministic synthetic corpus.
 
@@ -106,25 +108,22 @@ class SyntheticVectorCorpus:
 
         # Generate claim texts (templates for determinism)
         claim_texts = [
-            (f"c{i:04d}", f"Synthetic claim {i} about topic {i % 10}.")
-            for i in range(n_claims)
+            (f"c{i:04d}", f"Synthetic claim {i} about topic {i % 10}.") for i in range(n_claims)
         ]
         claims = [{"claim_id": cid, "text": text} for cid, text in claim_texts]
 
         # Generate random L2-normalized embeddings
-        def rand_vector() -> List[float]:
+        def rand_vector() -> list[float]:
             vec = [rng.gauss(0, 1) for _ in range(dimension)]
-            norm = math.sqrt(sum(v ** 2 for v in vec))
+            norm = math.sqrt(sum(v**2 for v in vec))
             return [v / max(norm, 1e-9) for v in vec]
 
-        embeddings_dict: Dict[str, List[float]] = {
-            cid: rand_vector() for cid, _ in claim_texts
-        }
+        embeddings_dict: dict[str, list[float]] = {cid: rand_vector() for cid, _ in claim_texts}
 
         # Create gold pairs with controlled relationship types
-        gold_labels: List[GoldPair] = []
+        gold_labels: list[GoldPair] = []
         claim_ids = [cid for cid, _ in claim_texts]
-        pairs_created: Set[str] = set()
+        pairs_created: set[str] = set()
 
         for i in range(n_gold_pairs):
             idx_a = rng.randint(0, n_claims - 1)
@@ -146,27 +145,32 @@ class SyntheticVectorCorpus:
             elif rel_type_idx == 1:
                 rel_type = RelationshipType.SUPPORTS
                 noise = [rng.gauss(0, 0.01) for _ in range(dimension)]
-                vec = [v + n for v, n in zip(embeddings_dict[id_a], noise)]
-                norm = math.sqrt(sum(v ** 2 for v in vec))
+                vec = [v + n for v, n in zip(embeddings_dict[id_a], noise, strict=False)]
+                norm = math.sqrt(sum(v**2 for v in vec))
                 embeddings_dict[id_b] = [v / max(norm, 1e-9) for v in vec]
             elif rel_type_idx == 2:
                 rel_type = RelationshipType.REFINES
                 noise = [rng.gauss(0, 0.1) for _ in range(dimension)]
-                vec = [v + n for v, n in zip(embeddings_dict[id_a], noise)]
-                norm = math.sqrt(sum(v ** 2 for v in vec))
+                vec = [v + n for v, n in zip(embeddings_dict[id_a], noise, strict=False)]
+                norm = math.sqrt(sum(v**2 for v in vec))
                 embeddings_dict[id_b] = [v / max(norm, 1e-9) for v in vec]
             else:
                 rel_type = RelationshipType.NEUTRAL
 
-            gold_labels.append(GoldPair(
-                claim_id_a=id_a, claim_id_b=id_b, expected_type=rel_type,
-            ))
+            gold_labels.append(
+                GoldPair(
+                    claim_id_a=id_a,
+                    claim_id_b=id_b,
+                    expected_type=rel_type,
+                )
+            )
 
         embeddings = list(embeddings_dict.items())
 
         logger.info(
             "synthetic corpus generated",
-            seed=seed, n_claims=n_claims,
+            seed=seed,
+            n_claims=n_claims,
             n_gold_pairs=len(gold_labels),
         )
 
@@ -182,13 +186,14 @@ class SyntheticVectorCorpus:
 @dataclass
 class BenchmarkResult:
     """Results of running BenchmarkSuite."""
-    recall_at_k: float                          # Fraction of gold pairs retrieved
-    precision: float                            # Fraction of retrieved pairs that are gold
-    relationship_density: float                 # relationships / claims
+
+    recall_at_k: float  # Fraction of gold pairs retrieved
+    precision: float  # Fraction of retrieved pairs that are gold
+    relationship_density: float  # relationships / claims
     nli_latency_ms_per_pair: float
     retrieval_latency_ms_per_claim: float
     memory_mb: float
-    by_type: Dict[str, Dict[str, float]]        # {type: {precision, recall}}
+    by_type: dict[str, dict[str, float]]  # {type: {precision, recall}}
 
 
 class BenchmarkSuite:
@@ -207,9 +212,8 @@ class BenchmarkSuite:
 
     def __init__(self, corpus: SyntheticVectorCorpus) -> None:
         self._corpus = corpus
-        self._gold_by_pair: Dict[str, RelationshipType] = {
-            f"{g.claim_id_a}:{g.claim_id_b}": g.expected_type
-            for g in corpus.gold_labels
+        self._gold_by_pair: dict[str, RelationshipType] = {
+            f"{g.claim_id_a}:{g.claim_id_b}": g.expected_type for g in corpus.gold_labels
         }
 
     def evaluate(
@@ -221,10 +225,7 @@ class BenchmarkSuite:
     ) -> BenchmarkResult:
         """Evaluate a RelationshipSet against the gold labels."""
         gold_keys = set(self._gold_by_pair.keys())
-        predicted_keys = {
-            rel.evidence.pair.pair_key()
-            for rel in relationship_set.relationships
-        }
+        predicted_keys = {rel.evidence.pair.pair_key() for rel in relationship_set.relationships}
 
         retrieved_gold = gold_keys & predicted_keys
         recall_at_k = len(retrieved_gold) / max(len(gold_keys), 1)
@@ -249,12 +250,9 @@ class BenchmarkSuite:
         retrieval_latency_ms = (retrieval_latency_seconds / max(n_claims, 1)) * 1000.0
 
         # Per-type breakdown
-        by_type: Dict[str, Dict[str, float]] = {}
+        by_type: dict[str, dict[str, float]] = {}
         for rel_type in RelationshipType:
-            gold_of_type = {
-                k for k, v in self._gold_by_pair.items()
-                if v == rel_type
-            }
+            gold_of_type = {k for k, v in self._gold_by_pair.items() if v == rel_type}
             predicted_of_type = {
                 rel.evidence.pair.pair_key()
                 for rel in relationship_set.relationships

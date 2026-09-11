@@ -2,8 +2,6 @@
 Unit tests for discovery/hashing.py.
 """
 
-import pytest
-from pathlib import Path
 from smriti.discovery.hashing import compute_hash
 
 

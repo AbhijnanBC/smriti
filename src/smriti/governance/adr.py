@@ -23,33 +23,32 @@ ADR Template fields:
 
 from __future__ import annotations
 
-import json
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
 class ADRStatus(str, Enum):
-    PROPOSED   = "proposed"
-    ACCEPTED   = "accepted"
-    REJECTED   = "rejected"
+    PROPOSED = "proposed"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
     SUPERSEDED = "superseded"
 
 
 class ADRCategory(str, Enum):
-    RUNTIME        = "runtime"
-    KNOWLEDGE      = "knowledge"
-    API            = "api"
-    INTERACTION    = "interaction"
+    RUNTIME = "runtime"
+    KNOWLEDGE = "knowledge"
+    API = "api"
+    INTERACTION = "interaction"
     INFRASTRUCTURE = "infrastructure"
-    GOVERNANCE     = "governance"
-    PERFORMANCE    = "performance"
-    EVOLUTION      = "evolution"
+    GOVERNANCE = "governance"
+    PERFORMANCE = "performance"
+    EVOLUTION = "evolution"
 
 
 @dataclass
@@ -60,31 +59,34 @@ class ADR:
     Once ACCEPTED, content fields (decision, rationale, consequences)
     are effectively immutable — modifications require superseding this ADR.
     """
-    adr_id:       str
-    title:        str
-    status:       ADRStatus
-    category:     ADRCategory
-    context:      str
-    problem:      str
-    alternatives: List[str]
-    decision:     str
-    rationale:    str
-    consequences: List[str]
-    related_adrs: List[str] = field(default_factory=list)
-    created_at:   float = field(default_factory=time.time)
-    accepted_at:  Optional[float] = None
-    superseded_by: Optional[str] = None
+
+    adr_id: str
+    title: str
+    status: ADRStatus
+    category: ADRCategory
+    context: str
+    problem: str
+    alternatives: list[str]
+    decision: str
+    rationale: str
+    consequences: list[str]
+    related_adrs: list[str] = field(default_factory=list)
+    created_at: float = field(default_factory=time.time)
+    accepted_at: float | None = None
+    superseded_by: str | None = None
 
     def accept(self) -> None:
         if self.status != ADRStatus.PROPOSED:
-            raise ValueError(f"ADR {self.adr_id} cannot be accepted from status {self.status.value}.")
+            raise ValueError(
+                f"ADR {self.adr_id} cannot be accepted from status {self.status.value}."
+            )
         self.status = ADRStatus.ACCEPTED
         self.accepted_at = time.time()
         logger.info("adr_accepted", adr_id=self.adr_id, title=self.title)
 
     def supersede(self, new_adr_id: str) -> None:
         if self.status != ADRStatus.ACCEPTED:
-            raise ValueError(f"Only ACCEPTED ADRs can be superseded.")
+            raise ValueError("Only ACCEPTED ADRs can be superseded.")
         self.status = ADRStatus.SUPERSEDED
         self.superseded_by = new_adr_id
         logger.info("adr_superseded", adr_id=self.adr_id, by=new_adr_id)
@@ -130,7 +132,7 @@ class ADRRegistry:
     """
 
     def __init__(self) -> None:
-        self._adrs: Dict[str, ADR] = {}
+        self._adrs: dict[str, ADR] = {}
         self._populate_phase11_adrs()
 
     def _populate_phase11_adrs(self) -> None:
@@ -191,10 +193,10 @@ class ADRRegistry:
             raise ValueError(f"ADR {adr.adr_id} already registered.")
         self._adrs[adr.adr_id] = adr
 
-    def get(self, adr_id: str) -> Optional[ADR]:
+    def get(self, adr_id: str) -> ADR | None:
         return self._adrs.get(adr_id)
 
-    def all_accepted(self) -> List[ADR]:
+    def all_accepted(self) -> list[ADR]:
         return [a for a in self._adrs.values() if a.status == ADRStatus.ACCEPTED]
 
     def export_markdown(self, output_dir: Path) -> None:

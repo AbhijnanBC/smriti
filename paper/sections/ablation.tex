@@ -1,62 +1,102 @@
-We run a leave-one-signal-out ablation (P1-6/P1-7) against the real,
-post-fix 215-claim SMRITI-Reference scoring run reported in
-\S\ref{sec:metamorphic}'s reconstruction test: for each of Phase 8's
+We run a leave-one-signal-out ablation against the real, frozen
+121-claim SMRITI-Reference scoring run produced after all P0 and
+P1-1..P1-5 remediation (run 20260911\_125340 --- re-pointed here per
+P1-4/P1-5, audit round, since the prior run predated this session's
+resolver/corpus fixes): for each of Phase 8's
 eight registered signals, we zero that signal's policy weight
-\emph{without} renormalizing the remaining six, re-score every claim
-through the real, unmodified fusion code, and compare against the
-all-signals baseline. Zeroing rather than renormalizing isolates exactly
-that signal's own contribution, consistent with standard leave-one-out
-sensitivity analysis; the code and full per-signal results are released
+\emph{without} renormalizing its remaining same-family siblings, re-score
+every claim through the real, unmodified fusion code, and compare
+against an all-signals-in-that-family baseline. Zeroing rather than
+renormalizing isolates exactly that signal's own contribution, consistent
+with standard leave-one-out sensitivity analysis; the code and full
+per-signal results are released
 (\texttt{evaluation/ablation/run\_ablation.py}).
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Signal} & \textbf{Weight} & \textbf{Mean shift} & $r$ \\
-\midrule
-topology\_strength     & 0.10 & $-1.81$ & 0.954 \\
-temporal\_stability     & 0.05 & $-1.31$ & 0.993 \\
-conflict\_pressure      & 0.20 & $+1.31$ & 0.989 \\
-evidence\_independence  & 0.15 & $-0.66$ & 0.971 \\
-evidence\_strength      & 0.25 & $-0.61$ & 0.986 \\
-bridge\_score           & 0.05 & $-0.40$ & 0.991 \\
-source\_diversity       & 0.15 & $-0.22$ & 0.999 \\
-hub\_score              & 0.05 & $-0.02$ & 0.999 \\
-\bottomrule
-\end{tabular}
-\caption{Effect of zeroing each signal's policy weight on the 215-claim
-SMRITI-Reference reliability distribution (baseline mean
-$\mathrm{RI}=4.99$/100). Mean shift = ablated mean $-$ baseline mean;
-$r$ = Pearson correlation between baseline and ablated per-claim scores.
-Ranked by mean absolute per-claim delta (Table order here follows that
-ranking, most to least disruptive).}
-\label{tab:ablation}
-\end{table}
+\textbf{Rectified in this work.} A second audit round of the
+merged state found that reliability\_index conflated evidence-based
+trustworthiness with graph-structural centrality (\S\ref{sec:system});
+production now fuses reliability\_index from the 5 evidence-family
+signals only and a separate importance\_index from the 3 topology-family
+signals. This ablation accordingly now runs \emph{two} leave-one-out
+studies, one per index, rather than one study over all 8 signals fused
+into a single score. Because each family's weights are deliberately
+\emph{not} rescaled to sum to 1.0 here (to preserve the leave-one-out
+isolation), the baseline means below are not the same quantity as
+production's rescaled, reported reliability\_index/importance\_index ---
+they are the un-rescaled within-family reference point leave-one-out
+sensitivity is measured against.
 
-Two findings are worth stating plainly. \textbf{(1) The baseline mean
-reliability index across all 215 claims is 4.99 out of 100} --- not a
-property of the ablation, but of the corpus as currently scored, and
-consistent with \S\ref{sec:error-taxonomy}'s finding that partition
-fragmentation and widespread constraint firing (each ablation run logs
-$\geq 1$ fired constraint for the large majority of claims) suppress
-reliability system-wide; this table should be read as \emph{relative}
-sensitivity, not as evidence that any individual signal is well-
-calibrated in absolute terms. \textbf{(2) Policy weight does not predict
-empirical sensitivity.} \texttt{topology\_strength} carries a policy
-weight of only 0.10 --- less than half of \texttt{evidence\_strength}'s
-0.25 --- yet removing it shifts the mean score three times as much
-(and produces the lowest correlation with baseline, $r=0.954$, i.e.\ the
-most rank-order disruption). This is not a bug: Phase 8's fusion applies
-policy-level constraints and interactions on top of the raw weighted sum
-(\S\ref{sec:system}) --- for instance a floor tied to topology under
-\texttt{min\_reliability\_for\_high\_topology} --- so a signal's linear
-weight is not the same quantity as its effect on the final,
-constraint-adjusted score. \texttt{conflict\_pressure}'s positive mean
-shift on removal ($+1.31$) is the expected sign check: it is the fusion's
-only negative-direction signal, so removing its penalty raises scores,
-consistent with \S\ref{sec:bugs} Defect 7's fix depending on this signal
-being real and non-zero. \texttt{hub\_score} is, by a wide margin, the
-least consequential signal in the current policy ($r=0.999$), a concrete
-candidate for reweighting or removal in future policy tuning.
+\input{generated/ablation_table.tex}
+
+Three findings are worth stating plainly. \textbf{(1) Both baseline means
+are low} (evidence-family $5.86$/100, topology-family $2.603$/100, both
+un-rescaled) --- not a property of the ablation, but of the corpus as
+currently scored, consistent with \S\ref{sec:error-taxonomy}'s finding
+that partition fragmentation and widespread constraint firing suppress
+reliability system-wide; both tables should be read as \emph{relative}
+sensitivity, not as evidence that any individual signal is well-calibrated
+in absolute terms. \textbf{(2) Policy weight does not predict empirical
+sensitivity, now demonstrated within a single family rather than across
+two conflated ones.} Within the topology family, \texttt{topology\_strength}
+(weight $0.10$) shifts the mean importance score $-2.40$ and produces the
+lowest correlation with baseline ($r=0.347$, substantial rank-order
+disruption), while \texttt{hub\_score} (weight $0.05$, exactly half of
+\texttt{topology\_strength}'s) shifts it only $-0.04$ ($r=0.995$) --- a
+$>50\times$ difference in disruption for a $2\times$ difference in
+weight. Within the evidence family, \texttt{source\_diversity} (weight
+$0.15$) is the single most
+disruptive signal in that table ($-1.61$, exceeding \texttt{evidence\_strength}'s
+$-1.48$ despite that signal's weight being over $1.5\times$ larger,
+$0.25$ vs.\ $0.15$). Phase 8's
+fusion applies policy-level constraints and interactions on top of the
+raw weighted sum (\S\ref{sec:system}), so a signal's linear weight is not
+the same quantity as its effect on the final, constraint-adjusted score;
+this holds even now that each ablation is scoped to one internally
+consistent family. \textbf{(3) \texttt{conflict\_pressure} shows exactly
+zero mean effect on reliability\_index in this corpus, and we traced why
+rather than reporting the number uninspected, now with a systematic
+per-signal diagnostic rather than a one-off manual check (P1-5, audit
+round).} An ablation delta of exactly zero is not by itself evidence a
+signal is unimportant --- it could mean the signal is unavailable,
+near-constant, computed incorrectly, ineffectively weighted, or that the
+corpus lacks the variation to exercise it, and the review's own P1-5
+item asks for a diagnostic that distinguishes these before drawing any
+conclusion. Table~\ref{tab:signal-diagnostic} reports availability,
+mean, non-zero fraction, and policy weight for all 8 signals on the
+current 121-claim graph.
+
+\input{generated/signal_diagnostic_table.tex}
+
+\texttt{conflict\_pressure} is available on 100\% of claims, non-zero on
+49.6\% of them (60 of 121), and carries the second-largest weight (0.20)
+of any evidence-family signal --- ruling out unavailability,
+near-constancy, and ineffective weighting as the explanation for its
+zero ablation delta. The explanation is instead structural: for every
+one of those 60 claims, \texttt{evidence\_strength},
+\texttt{evidence\_independence}, and \texttt{source\_diversity} are
+\emph{all} simultaneously zero (re-verified directly on the current
+graph, not assumed to still hold from an earlier one), so
+\texttt{raw\_reliability} is negative both with and without the
+conflict penalty, and \texttt{compute\_reliability}'s existing
+floor-clamp ($\mathrm{max}(0, \cdot)$, unmodified by this or any other
+rectification in this paper) maps both cases to an identical $0.0$. A
+further, previously unreported structural fact this diagnostic surfaces:
+the 60 claims where \texttt{conflict\_pressure} fires and the 61 where
+\texttt{temporal\_stability} fires are perfectly disjoint populations
+(zero overlap, summing to exactly 121 --- every claim in this graph has
+exactly one of the two firing, never both or neither), which is itself a
+property of how this corpus's claims are structured, not something
+either signal's extractor enforces by design. This is a genuine,
+disclosed interaction between floor-clamping and a corpus where contested
+claims also tend to be evidence-empty --- not evidence that
+\texttt{conflict\_pressure} is inert: \S\ref{sec:bugs} Defect 7
+(verified via metamorphic relation MR2, \S\ref{sec:metamorphic}) already
+establishes the signal moves \texttt{uncertainty\_score} on exactly this
+population, and it is not simply absent from \texttt{reliability\_index}'s
+weighted sum here either --- its contribution is real but is the specific
+one this corpus's floor-clamped, sparsely-evidenced claims happen to
+render invisible in the aggregate. \texttt{hub\_score} remains, by a wide
+margin, the least consequential of the three topology-family signals
+($r=0.997$; Table~\ref{tab:signal-diagnostic} shows why: 0.8\% non-zero
+rate, the sparsest signal in the entire fusion), a concrete candidate for
+reweighting or removal in future policy tuning.

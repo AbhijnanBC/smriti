@@ -9,9 +9,16 @@ logging:
   level: "WARNING"
 
 embedding:
-  cache_embeddings: false
+  batch_size: 4            # Small batches for test speed
+  cache_embeddings: false  # No caching during tests
+  normalize: true
+  device: "cpu"
+  instruction_prefix: ""
+  max_seq_length: null
 
 nli:
+  nli_threshold: 0.70
+  batch_size: 4
   cache_nli_results: false
 
 
@@ -42,15 +49,9 @@ claim_extraction:
   split_conditionals: false
   enable_annotation: true  
 
-# config/test.yaml — Phase 5 test overrides
-embedding_phase5:
-  batch_size: 4            # Small batches for test speed
-  cache_embeddings: false  # No caching during tests
-  normalize: true
-  device: "cpu"
-  instruction_prefix: ""
-  max_seq_length: null  
-
+# (RECTIFIED, P0-7: "embedding_phase5" here used to duplicate and shadow
+# "embedding:" above -- these overrides were never actually applied
+# during test runs. Moved into "embedding:" above.)
 
 relationship_discovery:
   top_k: 5
@@ -66,12 +67,11 @@ relationship_discovery:
 resolver_policy:
   contradiction_margin: 0.0
   entailment_margin: 0.0
-  confidence_policy: "calibrated"
-  version: "1.0"
+  confidence_policy: "raw"   # RECTIFIED (P1-C): calibration: {} below is IDENTITY, not a real calibrator
 
-nli_phase6:
-  nli_threshold: 0.70
-  cache_nli_results: false
+# (RECTIFIED, P0-7: "nli_phase6" here used to duplicate and shadow "nli:"
+# above -- nli_threshold: 0.70 was never actually applied during test
+# runs; moved into "nli:" above.)
 
 calibration: {}
 

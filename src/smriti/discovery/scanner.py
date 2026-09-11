@@ -18,8 +18,7 @@ Rules:
 """
 
 from pathlib import Path
-from typing import List, Set
-from collections import deque
+
 import structlog
 
 from smriti.core.config import get_config
@@ -29,7 +28,7 @@ logger = structlog.get_logger(__name__)
 
 # Directories that are always skipped, regardless of config.
 # These are non-negotiable system directories.
-_ALWAYS_IGNORE: Set[str] = {
+_ALWAYS_IGNORE: set[str] = {
     ".git",
     ".obsidian",
     ".vscode",
@@ -41,7 +40,7 @@ _ALWAYS_IGNORE: Set[str] = {
 }
 
 
-def discover_files(root_dirs: List[Path]) -> List[Path]:
+def discover_files(root_dirs: list[Path]) -> list[Path]:
     """
     Recursively discover all candidate files under root_dirs.
 
@@ -56,11 +55,9 @@ def discover_files(root_dirs: List[Path]) -> List[Path]:
         Nothing. All errors are logged and skipped.
     """
     config = get_config()
-    ignored_dirs: Set[str] = _ALWAYS_IGNORE | set(
-        config["discovery"].get("ignored_dirs", [])
-    )
+    ignored_dirs: set[str] = _ALWAYS_IGNORE | set(config["discovery"].get("ignored_dirs", []))
 
-    candidates: List[Path] = []
+    candidates: list[Path] = []
 
     for root_dir in root_dirs:
         logger.info("scanning directory", path=str(root_dir))
@@ -81,8 +78,8 @@ def discover_files(root_dirs: List[Path]) -> List[Path]:
 def _scan_iterative(
     root_dir: Path,
     root_dir_original: Path,
-    ignored_dirs: Set[str],
-    accumulator: List[Path],
+    ignored_dirs: set[str],
+    accumulator: list[Path],
 ) -> None:
     """
     Iterative directory walk using a stack.
@@ -124,18 +121,20 @@ def _scan_iterative(
                 # Valid symlink pointing to a directory — recurse
                 resolved = entry.resolve()
                 # Guard against symlink loops pointing outside the vault
-                if resolved == root_dir_original or str(resolved).startswith(str(root_dir_original)):
+                if resolved == root_dir_original or str(resolved).startswith(
+                    str(root_dir_original)
+                ):
                     pass  # within vault, safe to follow
                 else:
                     logger.debug("symlink points outside vault, skipping", path=str(entry))
                     continue
 
             if entry.is_dir():
-                resolved_dir = entry.resolve()          # <-- ADD THIS
-                if resolved_dir not in visited:         # <-- ADD THIS: Cycle protection
+                resolved_dir = entry.resolve()  # <-- ADD THIS
+                if resolved_dir not in visited:  # <-- ADD THIS: Cycle protection
                     visited.add(resolved_dir)
                     stack.append(entry)
-                else:                                   # <-- ADD THIS
-                    logger.debug("symlink cycle detected, skipping", path=str(entry))    
+                else:  # <-- ADD THIS
+                    logger.debug("symlink cycle detected, skipping", path=str(entry))
             elif entry.is_file():
                 accumulator.append(entry.resolve())

@@ -8,7 +8,7 @@ belong here, not in the state domain object.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from smriti.exceptions import WorkspaceSerializationError
 
@@ -20,7 +20,7 @@ class WorkspaceSerializer:
     """
 
     @staticmethod
-    def to_json(snapshot: Dict[str, Any]) -> str:
+    def to_json(snapshot: dict[str, Any]) -> str:
         """Serialize a state snapshot to JSON string."""
         try:
             return json.dumps(snapshot, indent=2, default=str)
@@ -28,7 +28,7 @@ class WorkspaceSerializer:
             raise WorkspaceSerializationError(f"Serialization failed: {e}") from e
 
     @staticmethod
-    def from_json(json_str: str) -> Dict[str, Any]:
+    def from_json(json_str: str) -> dict[str, Any]:
         """Deserialize a JSON string to a state snapshot dict."""
         try:
             return json.loads(json_str)
@@ -36,7 +36,7 @@ class WorkspaceSerializer:
             raise WorkspaceSerializationError(f"Deserialization failed: {e}") from e
 
     @staticmethod
-    def validate_snapshot(snapshot: Dict[str, Any]) -> bool:
+    def validate_snapshot(snapshot: dict[str, Any]) -> bool:
         """Check that a snapshot has the required keys for restoration."""
         required = {"workspace_type", "active_lens", "run_id"}
         return required.issubset(snapshot.keys())

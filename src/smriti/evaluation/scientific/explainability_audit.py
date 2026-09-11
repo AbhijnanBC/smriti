@@ -20,8 +20,6 @@ tolerance.
 
 from __future__ import annotations
 
-from typing import Dict, List
-
 from smriti.core.models import SignalVector
 from smriti.scoring.fusion import _apply_constraints
 from smriti.scoring.policies import load_policy
@@ -34,7 +32,7 @@ from smriti.scoring.policies import load_policy
 _TOLERANCE = 0.01
 
 
-def _rebuild_signal_vector(record: Dict) -> SignalVector:
+def _rebuild_signal_vector(record: dict) -> SignalVector:
     sv = record.get("signal_vector", {})
     statuses = record.get("signal_statuses", {})
     return SignalVector(
@@ -44,12 +42,14 @@ def _rebuild_signal_vector(record: Dict) -> SignalVector:
         topology_strength=sv.get("topology_strength", 0.0),
         conflict_pressure=sv.get("conflict_pressure", 0.0),
         temporal_stability=sv.get("temporal_stability", 0.0),
-        evidence_completeness=record.get("evidence_completeness", sv.get("evidence_completeness", 0.0)),
+        evidence_completeness=record.get(
+            "evidence_completeness", sv.get("evidence_completeness", 0.0)
+        ),
         statuses=statuses,
     )
 
 
-def run_reconstruction_audit(api) -> Dict:
+def run_reconstruction_audit(api) -> dict:
     """
     Iterate every scored claim in the live KnowledgeAccessService, recompute
     raw_reliability from its own recorded component_scores, replay the
@@ -57,7 +57,7 @@ def run_reconstruction_audit(api) -> Dict:
     stored reliability_index.
     """
     store = getattr(api, "_store", None)
-    records: Dict[str, Dict] = getattr(store, "_reliability_records", None) if store else None
+    records: dict[str, dict] = getattr(store, "_reliability_records", None) if store else None
 
     if not isinstance(records, dict) or not records:
         return {
@@ -65,14 +65,14 @@ def run_reconstruction_audit(api) -> Dict:
             "n_checked": 0,
             "n_mismatched": 0,
             "note": "No reliability records accessible on this KnowledgeAccessService "
-                    "(e.g. a test double rather than a live Phase 9 service).",
+            "(e.g. a test double rather than a live Phase 9 service).",
         }
 
     policy = load_policy()
     fp = policy.fusion
 
     n_checked = 0
-    mismatches: List[Dict] = []
+    mismatches: list[dict] = []
 
     for claim_id, record in records.items():
         component_scores = record.get("component_scores", [])
@@ -83,20 +83,22 @@ def run_reconstruction_audit(api) -> Dict:
         raw_reconstructed = sum(c.get("contribution", 0.0) for c in component_scores)
 
         sv = _rebuild_signal_vector(record)
-        constrained_log: List[str] = []
+        constrained_log: list[str] = []
         constrained_reconstructed = _apply_constraints(raw_reconstructed, sv, fp, constrained_log)
         final_reconstructed = max(0.0, min(100.0, constrained_reconstructed))
 
         stored_final = record.get("reliability_index", 0.0)
         delta = abs(final_reconstructed - stored_final)
         if delta > _TOLERANCE:
-            mismatches.append({
-                "claim_id": claim_id,
-                "stored_reliability_index": stored_final,
-                "reconstructed_final": round(final_reconstructed, 4),
-                "reconstructed_raw": round(raw_reconstructed, 4),
-                "delta": round(delta, 4),
-            })
+            mismatches.append(
+                {
+                    "claim_id": claim_id,
+                    "stored_reliability_index": stored_final,
+                    "reconstructed_final": round(final_reconstructed, 4),
+                    "reconstructed_raw": round(raw_reconstructed, 4),
+                    "delta": round(delta, 4),
+                }
+            )
 
     exact_match_rate = (n_checked - len(mismatches)) / n_checked if n_checked else 0.0
 
@@ -105,5 +107,7 @@ def run_reconstruction_audit(api) -> Dict:
         "n_checked": n_checked,
         "n_mismatched": len(mismatches),
         "mismatches_sample": mismatches[:10],
-        "fusion_policy_used": policy.fusion.version if hasattr(policy.fusion, "version") else "unknown",
+        "fusion_policy_used": (
+            policy.fusion.version if hasattr(policy.fusion, "version") else "unknown"
+        ),
     }

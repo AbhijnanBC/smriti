@@ -15,10 +15,14 @@ for type-safe signal identification across the registry and fusion.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats,
-    SignalManifest, SignalStatus, SignalID,
+    ClaimNode,
+    KnowledgeGraph,
+    RawSignal,
+    ScoringGlobalStats,
+    SignalID,
+    SignalManifest,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 
@@ -53,7 +57,7 @@ class BaseSignalExtractor(ABC):
         return "identity"
 
     @property
-    def dependency_list(self) -> List[str]:
+    def dependency_list(self) -> list[str]:
         """
         Which graph fields this extractor depends on.
         RECTIFIED (P0-4): For SignalManifest.dependency_list.
@@ -95,14 +99,14 @@ class BaseSignalExtractor(ABC):
     def build_manifest(
         self,
         signal: RawSignal,
-        quality_flags: Optional[List[str]] = None,
+        quality_flags: list[str] | None = None,
     ) -> SignalManifest:
         """
         RECTIFIED (P0-4): Build a SignalManifest for this signal/claim.
         Called by the normalization engine after extract().
         """
         return SignalManifest(
-            signal_id=self.signal_id.value,           # RECTIFIED: use signal_id (not signal_name)
+            signal_id=self.signal_id.value,  # RECTIFIED: use signal_id (not signal_name)
             extractor_version=self.version,
             raw_value=signal.raw_value,
             normalized_value=signal.normalized_value,

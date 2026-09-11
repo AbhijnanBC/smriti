@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from typing import List
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalID, SignalStatus, TemporalStatus,
+    ClaimNode,
+    KnowledgeGraph,
+    RawSignal,
+    ScoringGlobalStats,
+    SignalID,
+    SignalStatus,
+    TemporalStatus,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -25,15 +30,18 @@ class TemporalStabilityExtractor(BaseSignalExtractor):
         return "step_function_temporal_status"
 
     @property
-    def dependency_list(self) -> List[str]:
+    def dependency_list(self) -> list[str]:
         return ["temporal_metadata.status", "temporal_metadata.temporal_confidence"]
 
     def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
         return max(0.0, min(1.0, raw))
 
     def extract(
-        self, node: ClaimNode, graph: KnowledgeGraph,
-        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+        self,
+        node: ClaimNode,
+        graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats,
+        policy: ReliabilityPolicy,
     ) -> RawSignal:
         # RECTIFIED (external review, item 21): a claim with NO temporal
         # information is not thereby "moderately stable" -- it is a claim

@@ -1,7 +1,6 @@
 """Test deep-merge config loader."""
 
-import pytest
-from smriti.core.config import _deep_merge, Config
+from smriti.core.config import Config, _deep_merge
 
 
 def test_deep_merge_flat():
@@ -27,18 +26,16 @@ def test_deep_merge_shallow_update_would_fail():
     # shallow update — loses model key
     shallow = dict(base)
     shallow.update(override)
-    assert "model" not in shallow["embedding"]   # broken
+    assert "model" not in shallow["embedding"]  # broken
     # deep merge — keeps model key
     deep = _deep_merge(base, override)
-    assert "model" in deep["embedding"]          # correct
+    assert "model" in deep["embedding"]  # correct
 
 
 def test_config_loads_default(tmp_path):
     config_dir = tmp_path / "config"
     config_dir.mkdir()
-    (config_dir / "default.yaml").write_text(
-        "embedding:\n  model: MiniLM\n  batch_size: 32\n"
-    )
+    (config_dir / "default.yaml").write_text("embedding:\n  model: MiniLM\n  batch_size: 32\n")
     cfg = Config(env="dev", config_dir=config_dir)
     assert cfg["embedding"]["model"] == "MiniLM"
     assert cfg["embedding"]["batch_size"] == 32
@@ -47,12 +44,8 @@ def test_config_loads_default(tmp_path):
 def test_config_dev_override_deep_merges(tmp_path):
     config_dir = tmp_path / "config"
     config_dir.mkdir()
-    (config_dir / "default.yaml").write_text(
-        "embedding:\n  model: MiniLM\n  batch_size: 32\n"
-    )
-    (config_dir / "dev.yaml").write_text(
-        "embedding:\n  batch_size: 8\n"
-    )
+    (config_dir / "default.yaml").write_text("embedding:\n  model: MiniLM\n  batch_size: 32\n")
+    (config_dir / "dev.yaml").write_text("embedding:\n  batch_size: 8\n")
     cfg = Config(env="dev", config_dir=config_dir)
-    assert cfg["embedding"]["model"] == "MiniLM"    # inherited
-    assert cfg["embedding"]["batch_size"] == 8      # overridden
+    assert cfg["embedding"]["model"] == "MiniLM"  # inherited
+    assert cfg["embedding"]["batch_size"] == 8  # overridden

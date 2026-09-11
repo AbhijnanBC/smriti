@@ -20,9 +20,8 @@ from __future__ import annotations
 
 import threading
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -31,7 +30,8 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class Counter:
     """Monotonically increasing count metric."""
-    name:  str
+
+    name: str
     value: int = 0
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -47,7 +47,8 @@ class Counter:
 @dataclass
 class Gauge:
     """Current-value metric (can increase or decrease)."""
-    name:  str
+
+    name: str
     value: float = 0.0
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -67,17 +68,19 @@ class Gauge:
 class Histogram:
     """Distribution metric for latency and throughput measurement."""
 
-    def __init__(self, name: str, buckets: tuple[float, ...] = (5, 10, 25, 50, 100, 250, 500, 1000)) -> None:
-        self.name    = name
+    def __init__(
+        self, name: str, buckets: tuple[float, ...] = (5, 10, 25, 50, 100, 250, 500, 1000)
+    ) -> None:
+        self.name = name
         self.buckets = buckets
-        self._values: List[float] = []
-        self._lock   = threading.Lock()
+        self._values: list[float] = []
+        self._lock = threading.Lock()
 
     def observe(self, value: float) -> None:
         with self._lock:
             self._values.append(value)
 
-    def summary(self) -> Dict[str, float]:
+    def summary(self) -> dict[str, float]:
         with self._lock:
             if not self._values:
                 return {"count": 0, "sum": 0.0, "mean": 0.0, "p50": 0.0, "p95": 0.0, "p99": 0.0}
@@ -85,11 +88,11 @@ class Histogram:
             n = len(sorted_vals)
             return {
                 "count": n,
-                "sum":   sum(sorted_vals),
-                "mean":  sum(sorted_vals) / n,
-                "p50":   sorted_vals[int(n * 0.50)],
-                "p95":   sorted_vals[int(n * 0.95)],
-                "p99":   sorted_vals[int(n * 0.99)],
+                "sum": sum(sorted_vals),
+                "mean": sum(sorted_vals) / n,
+                "p50": sorted_vals[int(n * 0.50)],
+                "p95": sorted_vals[int(n * 0.95)],
+                "p99": sorted_vals[int(n * 0.99)],
             }
 
 
@@ -101,9 +104,9 @@ class MetricsCollector:
     """
 
     def __init__(self) -> None:
-        self._counters:   Dict[str, Counter]   = {}
-        self._gauges:     Dict[str, Gauge]     = {}
-        self._histograms: Dict[str, Histogram] = {}
+        self._counters: dict[str, Counter] = {}
+        self._gauges: dict[str, Gauge] = {}
+        self._histograms: dict[str, Histogram] = {}
         self._lock = threading.Lock()
         self._register_defaults()
 
@@ -138,12 +141,12 @@ class MetricsCollector:
                 self._histograms[name] = Histogram(name=name)
             return self._histograms[name]
 
-    def snapshot(self) -> Dict:
+    def snapshot(self) -> dict:
         """Return a complete metrics snapshot (read-only)."""
         with self._lock:
             return {
-                "counters":   {n: c.value for n, c in self._counters.items()},
-                "gauges":     {n: g.value for n, g in self._gauges.items()},
+                "counters": {n: c.value for n, c in self._counters.items()},
+                "gauges": {n: g.value for n, g in self._gauges.items()},
                 "histograms": {n: h.summary() for n, h in self._histograms.items()},
-                "timestamp":  time.time(),
+                "timestamp": time.time(),
             }

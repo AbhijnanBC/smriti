@@ -32,13 +32,13 @@ Note: After normalization, validation.py is called again (post-norm check).
 from __future__ import annotations
 
 import math
-from typing import List
+
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
-def l2_normalize(vector: List[float]) -> List[float]:
+def l2_normalize(vector: list[float]) -> list[float]:
     """
     Apply L2 normalization to a vector.
 
@@ -69,9 +69,9 @@ def l2_normalize(vector: List[float]) -> List[float]:
 
 
 def normalize_batch(
-    vectors: List[List[float]],
+    vectors: list[list[float]],
     enabled: bool = True,
-) -> List[List[float]]:
+) -> list[list[float]]:
     """
     Normalize a batch of vectors.
 

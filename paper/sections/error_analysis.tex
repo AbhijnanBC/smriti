@@ -46,11 +46,22 @@ corpus and the re-annotated SMRITI-Reference sample.
 claim's partition, the fragmentation above directly and mechanically
 suppressed reliability scores system-wide: a claim isolated into its own
 singleton partition has no corroborating neighbors by construction,
-regardless of how well-established the claim itself is. This is not a
-Phase 8 calibration bug in isolation --- it is a symptom propagating upward
-from Phase 6, and improves automatically as Phase 6's precision improves
-(the partition count and singleton rate reported in \S\ref{sec:results}
-for the post-fix system are lower in both absolute and relative terms).
+regardless of how well-established the claim itself is. At the time of
+this measurement, Phase 8 fused topology strength directly into
+reliability\_index; \S\ref{sec:system} and \S\ref{sec:limitations}
+describe a later, separate rectification (P1-4) that reports graph
+importance as its own index rather than blending it into reliability at
+all, so this specific mechanical suppression path no longer applies to
+reliability\_index post-split (importance\_index inherits it instead,
+which is the correct scope for a graph-structure effect). This
+fragmentation is not a Phase 8 calibration bug in isolation --- it is a
+symptom propagating upward from Phase 6, and improves automatically as
+Phase 6's precision improves; \S\ref{sec:limitations} reports the current
+partitioner's own partition count and singleton rate on the post-fix
+corpus (55.6\%, substantially lower than the 82.9\% above, though not
+directly comparable since the current figure isolates partitioning
+\emph{algorithm} choice on an already-precision-fixed edge set, not
+residual Phase 6 CONTRADICTS precision).
 
 \paragraph{Secondary failure mode: claim-extraction noise from document
 metadata.} Phase 4 previously extracted a claim from every semantic
@@ -63,38 +74,153 @@ claim volume and validity.
 \label{sec:error-taxonomy}
 
 Rather than propose failure categories in the abstract, we derive a
-taxonomy directly from the 24 row-level outcomes in
-Table~\ref{tab:controlled} (the fully-adjudicated, zero-annotation
-SMRITI-Reference-Controlled corpus) plus the two pipeline-level failure
-modes already characterized above on SMRITI-Reference. Every entry below
-is traceable to specific, real pair IDs; we do not report a category we
-did not actually observe.
+taxonomy directly from the 482 core row-level outcomes in
+Table~\ref{tab:controlled} (SMRITI-Controlled-v2, the 713-pair,
+15-category scale-up of the zero-annotation corpus, post-bidirectional-NLI-
+rewrite) plus the pipeline-level failure modes already characterized
+above on SMRITI-Reference. Every entry below is traceable to specific,
+real pair IDs or a specific, reproducible category-level rate; we do not
+report a category we did not actually observe. An earlier draft of this
+taxonomy was built from a 32-pair pilot version of this corpus; several
+of its findings (E2, E3, E7) turned out, once corpus size grew by roughly
+20$\times$, to be either not reproduced or far more severe than the
+pilot's small sample suggested. We report the revision itself as a
+finding: a construction-time-gold corpus removes annotation noise, but
+not sampling noise, and $n=1$--6 anecdotes in the pilot version of this
+section should not have been read as rates.
 
 \begin{itemize}
   \item \textbf{E1 -- Retrieval miss.} The true pair is never surfaced as
-    an NLI candidate at all, so no classification is possible. Observed on
-    4/24 controlled pairs (\texttt{D02} direct, \texttt{D08} temporal,
-    \texttt{S05}/\texttt{S06} supports) and is the sole determinant of
-    SMRITI-Controlled's retrieval-recall ceiling (\S\ref{sec:controlled}).
-    Root cause is Phase 5/6 candidate generation (cosine-similarity
-    thresholding), upstream of the resolver fix this paper centers on.
-  \item \textbf{E2 -- Entailment under-call.} A genuinely-SUPPORTS pair is
-    retrieved but the NLI model's own top class is neutral rather than
-    entailment, so the (correctly arg-max-respecting) resolver reports
-    NEUTRAL. Observed on 2/6 retrieved supports pairs (\texttt{S01},
-    \texttt{S02}). This is an NLI scoring limitation, not a resolver
-    logic bug: the same arg-max rule that gives CONTRADICTS 100\%
-    precision here faithfully reports what the model's own probabilities
-    say. (We do not call this a ``calibration'' issue either --- no
-    probability calibration is fitted in this system at all; see
-    \S\ref{sec:limitations}.)
-  \item \textbf{E3 -- Over-eager refinement.} A genuinely-SUPPORTS pair is
-    classified REFINES instead, because the resolver's REFINES rule
-    (\S\ref{sec:system}, \texttt{refine\_contradiction\_ceiling}) treats
-    "low contradiction score" as evidence of elaboration rather than of
-    plain confirmation. Observed once (\texttt{S03}); one case is too few
-    to distinguish a genuine resolver miscalibration from a defensible
-    alternative reading of that specific pair (\S\ref{sec:controlled}).
+    an NLI candidate at all, so no classification is possible. On the
+    sanitized corpus's frozen TEST split this is the sole determinant of
+    each category's retrieval-recall column in Table~\ref{tab:controlled}.
+    All six CONTRADICTS subtypes now reach 100\% retrieval recall on
+    TEST (the corpus's one remaining CONTRADICTS TEST miss, in
+    \emph{temporal}, is a classification miss given retrieval, not a
+    retrieval miss --- see the per-class table). Retrieval miss remains
+    real for \emph{SUPPORTS} (25.0\% miss rate on TEST, 3 of 12) and for
+    \emph{EQUIVALENT} (28.6\%, 4 of 14). Root cause is Phase 5/6
+    candidate generation (cosine-similarity thresholding), upstream of
+    the resolver fix this paper centers on.
+  \item \textbf{E3 -- RETRACTED: an earlier draft's claim that SUPPORTS
+    classification collapses to zero correct labels on the sanitized
+    corpus's frozen TEST split did not match the frozen results
+    artifact.} The claim previously here read: ``0 of 9 retrieved TEST
+    SUPPORTS pairs are correctly labeled SUPPORTS.''
+    \texttt{evaluation/controlled/v2/results.json}'s per-pair rows show
+    the opposite: all 9 of the 9 retrieved TEST SUPPORTS pairs are
+    correctly labeled SUPPORTS (precision 90.0\%, recall 75.0\%, F1
+    81.8\%, DEV: precision 85.0\%/recall 87.2\%/F1 86.1\%). SUPPORTS
+    classification given retrieval is not a resolver weakness on this
+    corpus; the residual TEST recall gap is retrieval (E1: 3 of 12
+    SUPPORTS pairs never reach the classifier), not classification. We
+    keep this entry, retracted rather than deleted, so a reader comparing
+    this paper against an earlier draft or an earlier audit
+    round can see exactly what changed and why (\S\ref{sec:controlled}
+    finding 3 has the full per-pair reconciliation). SUPPORTS
+    classification on \emph{real}, naturally-occurring prose remains
+    weak (\S\ref{sec:limitations}) --- that is a separate finding, on a
+    separate corpus, and is not affected by this retraction.
+  \item \textbf{E7 -- Same-entity multi-attribute conflation is the
+    dominant failure mode of the entire hard-NEUTRAL extension.} A
+    genuinely NEUTRAL pair describing two \emph{compatible} attributes of
+    the same named entity (e.g.\ ``the \{X\} uses Redis for response
+    caching'' / ``uses an in-memory LRU cache for response caching'') is
+    frequently misclassified CONTRADICTS. On the sanitized corpus's
+    frozen TEST split (17 purpose-built multi-attribute pairs), all 17
+    are retrieved (100\%, confirming the relatedness gate correctly
+    recognizes these as topically related --- that is its entire job),
+    and only 5 of 17 (29.4\%) are correctly labeled NEUTRAL; the other 12
+    are all misclassified CONTRADICTS. (An earlier draft of this entry
+    reported ``zero are correctly labeled NEUTRAL''; the frozen results
+    artifact shows 5, not 0, and this entry is corrected accordingly ---
+    the finding survives at a less extreme magnitude.) Neither the
+    relatedness gate nor the NLI model reliably distinguishes ``two
+    attributes describing the same entity'' from ``two mutually exclusive
+    claims about the same entity''; ``X uses A'' and ``X uses B'' most
+    often read as a factual disagreement about which is true, when both
+    can be. This is this corpus's most consequential open item for
+    future resolver work, and it survives corpus sanitation unchanged in
+    kind --- it is a genuine resolver/gate gap, not a symptom of the
+    grammar or exclusivity defects fixed elsewhere in this corpus.
+  \item \textbf{E9 -- Implicit-exclusivity phrasing weakening the
+    \emph{direct} and \emph{entity} CONTRADICTS subtypes.} \textbf{Fixed,
+    not merely disclosed.} A second audit round identified that an
+    earlier draft's \emph{direct} subtype (``runs on \{A\}'' vs.\ ``runs
+    on \{B\}'') and the original pilot corpus's \emph{entity} subtype
+    (``developed by Team Alpha'' vs.\ ``developed by Team Beta'') did not
+    actually satisfy CONTRADICTS's own definition: a system can run on
+    both architectures, and a project can have multiple contributing
+    teams, so the two claims in each pair could both be true at once ---
+    the corpus was asserting a contradiction the text did not itself
+    establish. \S\ref{sec:controlled} describes the fix: every CONTRADICTS
+    pair in the regenerated corpus now carries an explicit exclusivity
+    premise (``primary deployment platform,'' ``developed \emph{solely}
+    by'') and \texttt{contradiction\_basis}/\texttt{exclusivity\_type}
+    metadata, checked by \texttt{validate\_corpus.py}. Post-fix,
+    \emph{direct} and \emph{entity} both reach 100\% TEST retrieval
+    recall with 100\% classification accuracy given retrieval --- we
+    record this as a fixed defect, discovered by audit, rather
+    than continuing to report the pre-fix numbers as an ongoing
+    corpus-construction caveat.
+  \item \textbf{E10 -- No measurable abstention on genuinely ambiguous
+    input, and confidence/margin/entropy diagnostics show this is a
+    benchmark-design gap, not a threshold-tuning one.} \textbf{Open,
+    reclassified from a prior draft's ``substantially achieved'' framing
+    (P0-E, audit round).} \texttt{ResolutionStatus.ABSTAINED}
+    (\S\ref{sec:system}, audit round P0-4) is a formally defined,
+    reachable resolver outcome, but on the frozen TEST split's 15 pairs
+    purpose-built with hedged, non-committal language (``build time
+    varies depending on project size,'' ``some large projects report
+    longer build times'') so that no confident label is well-supported by
+    the text, the resolver abstains zero times: all 15 are retrieved as
+    candidates and confidently classified NEUTRAL. Confidence/margin/
+    entropy diagnostics on these same 15 pairs' own recorded NLI scores
+    (Table~\ref{tab:abstention-diagnostic}, \S\ref{sec:controlled}
+    finding 9) show why no threshold adjustment would fix this: mean
+    neutral-class confidence is 98.9\%/98.7\% (A$\to$B/B$\to$A), mean
+    margin over the runner-up class is 97.5--97.8 points, and the
+    \emph{lowest} neutral confidence observed across all 15 pairs, either
+    direction, is still 92.5\%. Per the selective-prediction framing this
+    same review recommended, we report this as \textbf{0\% abstention
+    rate / 100\% coverage} on a population explicitly constructed to
+    warrant abstention, not as ``UNKNOWN classification accuracy''
+    against some single correct label these pairs do not have --- but we
+    go further than that framing alone: \texttt{ResolutionStatus.ABSTAINED}
+    is a \emph{confidence-based} mechanism (fires when the model is
+    insufficiently confident to commit), not a \emph{semantic-ambiguity}
+    detector (recognizing that a claim pair is genuinely hedged or
+    underspecified, independent of model confidence), and this benchmark
+    tests the latter while only the former is implemented. This is not
+    evidence \texttt{ABSTAINED} is unreachable in general (SMRITI-Reference's
+    own pipeline does emit it on other inputs, and unit tests correctly
+    verify the low-confidence branch fires when confidence genuinely is
+    low), but it is evidence that hedged natural language does not
+    reliably produce low NLI confidence in this model, so a benchmark
+    built from hedged language does not exercise abstention no matter how
+    the threshold is tuned.
+  \item \textbf{E11 -- More than half of all CONTRADICTS verdicts fire on
+    candidate pairs the corpus never intended to test.} \textbf{Open, new
+    finding (audit round P0-9).} Measured by retaining every
+    NLI-scored candidate (\texttt{--env eval}), not only the ones
+    surviving production's NEUTRAL/UNKNOWN filters: of 1{,}089 total
+    candidates Phase 6 scored across the full corpus, only 496 (45.6\%)
+    correspond to a manifest-intended pair at all, and of all
+    CONTRADICTS verdicts, 383 (55.2\%) are on non-intended pairs. This is
+    not the same failure as E4 (the original arg-max/relatedness-gate
+    bug, which produced false CONTRADICTS between claims sharing no real
+    topic): these non-intended pairs were retrieved because embedding
+    similarity genuinely found them close, most plausibly because many
+    template families reuse a limited pool of attribute/verb phrases
+    across dozens of different entities, so two \emph{different} intended
+    pairs' claims can end up lexically closer to \emph{each other} than
+    either is to some unrelated claim. Whether these 383 calls are
+    themselves correct is not established (they were never given a
+    construction-time label), but their volume relative to the 119
+    intended, scored CONTRADICTS trials on TEST means gold-pair-only precision
+    (finding 1, \S\ref{sec:results}) is measuring a curated slice of a
+    much larger and largely unaudited set of real verdicts the same run
+    produces.
   \item \textbf{E4 -- Spurious cross-document contradiction} (pre-fix
     only; \textbf{fixed}, \S\ref{sec:bugs} Defect 5). Unrelated pairs
     resolved to CONTRADICTS because the old resolver never checked the
@@ -126,30 +252,29 @@ did not actually observe.
     for-this-task probability more trustworthy, not teach the model a
     task it was never trained on. Recorded as unresolved in
     \S\ref{sec:limitations}.
-  \item \textbf{E7 -- Same-entity multi-attribute conflation.}
-    \textbf{Open, newly discovered post-fix.} A genuinely NEUTRAL pair
-    describing two \emph{compatible} attributes of the same named entity
-    (\S\ref{sec:hard-neutral}: ``the Aerotrix rover uses LiDAR'' /
-    ``uses a stereo camera'') is misclassified CONTRADICTS. Unlike E4,
-    the relatedness gate is not at fault --- the pair genuinely is
-    related (shared entity token), which is exactly what the gate is
-    designed to detect, so passing it through to the resolver is
-    correct behavior. The failure is that neither the gate nor the NLI
-    model distinguishes ``two attributes describing the same entity''
-    from ``two mutually exclusive claims about the same entity''; ``X
-    uses A'' and ``X uses B'' read as a factual disagreement about
-    which is true, when both can be. Observed once ($n=1$ of 2
-    retrieved hard-neutral pairs); too small to report a rate, but a
-    real, reproducible instance, not a hypothetical one.
 \end{itemize}
 
-E1--E3, E6, and E7 remain open (E1 is a retrieval-stage problem, E2/E3
-are SUPPORTS-side NLI scoring problems, E6 is an NLI task mismatch
-between rhetorical and propositional disagreement, not a calibration
-gap, and E7 is a same-entity multi-attribute conflation the relatedness
-gate cannot catch by design); E4--E5
-are the two mechanisms this paper's central fixes target and close on the evidence
-available here. We do not claim this list is exhaustive over failure
-modes SMRITI could exhibit on other corpora --- only that it is exhaustive
-over failure modes we actually observed on the two corpora reported in
-this paper.
+E1, E6, E7, E10, and E11 remain open (E1 is a retrieval-stage problem
+with an uneven, category-dependent rate; E3 is RETRACTED, not open --- SUPPORTS
+classification is strong given retrieval (\S\ref{sec:controlled} finding
+3), and the residual TEST gap is a retrieval, not classification,
+problem (E1); E6 is an NLI task mismatch between rhetorical
+and propositional disagreement, not a calibration gap; E7 is this
+evaluation's single largest source of classification error on the
+hard-NEUTRAL extension, a same-entity multi-attribute conflation the
+relatedness gate cannot catch by design; E10 is a confidence-based-
+abstention-vs-semantic-ambiguity-detection gap --- 0\% abstention rate on
+text engineered to warrant it, with confidence/margin/entropy
+diagnostics confirming this is not a threshold-tuning fix away, not
+``inaccuracy'' against a label that does not exist; and E11 is a newly
+measured, large volume of CONTRADICTS verdicts on candidate pairs outside
+this corpus's own intended test set (not a false-positive rate --- these
+pairs were never given a construction-time label, so their correctness
+is not established either way), invisible to any gold-pair-only
+metric); E9 is a corpus-construction defect a second audit round
+found and this revision fixes, not merely discloses; E4--E5 are the two
+mechanisms this paper's central fixes target and close on the evidence
+available here. We do not claim this
+list is exhaustive over failure modes SMRITI could exhibit on other
+corpora --- only that it is exhaustive over failure modes we actually
+observed on the two corpora reported in this paper.

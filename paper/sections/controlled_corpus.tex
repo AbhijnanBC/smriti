@@ -6,41 +6,124 @@ deliberately planted, still involve claims about ML architectures,
 cricket tactics, and cooking technique --- domains where a human or LLM
 annotator's judgment of ``does this really contradict that'' still
 requires interpretation. To obtain evidence that requires \emph{no}
-interpretation at all, we construct SMRITI-Controlled-v1: 24 claim pairs
-(48 single-sentence documents), each written so its relationship label is
-a fact about how the pair was constructed, not an opinion about what it
-means. Six categories of CONTRADICTS pairs (2 each): \emph{direct}
-reversal ("uses 4 GB of RAM" vs.\ "uses 8 GB of RAM"), \emph{negated}
-("supports GPU execution" vs.\ "does not support GPU execution"),
-\emph{numeric} ("Jupiter has 95 known moons" vs.\ "79 known moons"),
-\emph{temporal} (same explicit time reference, opposite state),
-\emph{entity} (same artifact attributed to two different named
-individuals/teams), and \emph{attribute} (a property asserted and its
-negation). We add 6 SUPPORTS pairs (a claim and an independent
-confirmation of the same claim) and 6 NEUTRAL pairs (entirely unrelated
-topics) as controls. \textbf{These six NEUTRAL pairs share no
-vocabulary at all and are never retrieved as NLI candidates
-(\S\ref{sec:controlled}, point 2) --- so they test embedding-based
-retrieval's ability to filter unrelated pairs, not whether the
-relatedness gate rejects a false CONTRADICTS on a pair the resolver
-actually sees.} To test the latter directly (an external review point),
-we add a 6-pair hard-neutral extension, each pair deliberately
-constructed to share vocabulary or topic with its partner despite being
-genuinely NEUTRAL: two \emph{same-topic} pairs (the same named entity,
-two different but compatible attributes --- e.g.\ a rover using both
-LiDAR and a stereo camera for obstacle detection), two \emph{lexical-
-collision} pairs (a shared word used in two unrelated senses, e.g.\
-``Python'' the language vs.\ ``python'' the snake), and two
-\emph{adjacent-non-conflicting} pairs (two true statements about
-different aspects of the same technique, e.g.\ pressure-cooking's
-effect on cook time vs.\ its vessel requirement). The full corpus and
-its gold manifest are released.
+interpretation at all, we construct SMRITI-Controlled: a corpus whose
+every pair's relationship label is a fact about how the pair was
+constructed, not an opinion about what it means --- \textbf{construction-
+defined}, not human- or LLM-annotated, and we use that term throughout
+rather than ``gold'' to avoid implying a human-judgment standard this
+corpus was never meant to meet. Its first version (SMRITI-Controlled-v1,
+32 hand-written pairs across CONTRADICTS's six subtypes plus
+SUPPORTS/NEUTRAL/EQUIVALENT controls) was too small to support the
+category-level statistical power an audit round requested; scaling
+it to \textbf{SMRITI-Controlled-v2} then surfaced a second, more
+important problem a second audit round caught: the scaled-up
+generator itself had real defects --- systematic ungrammatical negation
+(``does not supports''), a subject-dropped SUPPORTS template, and
+CONTRADICTS pairs whose two claims could in fact both be true at once
+(``runs on ARM64'' / ``runs on x86-64''; ``developed by Team Alpha'' /
+``developed by Team Beta''), none of which our own validation caught
+before the numbers in an earlier draft of this section were computed.
+We report the fix, not only the result: \textbf{SMRITI-Controlled-v2 is
+regenerated from scratch} (\texttt{evaluation/controlled/generators/}) to
+\textbf{713 pairs (1{,}426 documents)} across \textbf{15 categories},
+every CONTRADICTS pair now constructed with an explicit exclusivity
+premise (\texttt{contradiction\_basis} + \texttt{exclusivity\_type}
+metadata --- e.g.\ ``primary deployment platform'' rather than a bare
+platform name, ``developed \emph{solely} by'' rather than a bare
+attribution, so the two claims are logically, not just superficially,
+incompatible), and a corpus validator
+(\texttt{evaluation/controlled/generators/validate\_corpus.py}) that
+checks every pair for exactly the defect classes the review named
+(ungrammatical negation, dangling-subject confirmations, exact and
+normalized-text duplicates including duplicates against the untouched
+v1 pairs, missing exclusivity metadata) before any number in this paper
+is computed from it. This is a disclosed, deterministic generation
+process over parameterized sentence templates (a pool of $62 \times 30$
+fictional entity names, combined with category-specific attribute/
+number/date/person pools), not a claim that 681 of these pairs were each
+individually hand-written the way the original 32 were.
 
-Because the label is definitional, we can additionally separate
-\textbf{retrieval recall} (did the intended pair even become an NLI
-candidate?) from \textbf{classification accuracy} (given it was a
-candidate, was it labeled correctly?) --- the distinction the review
-identified as necessary to know whether SMRITI's bottleneck is
-embedding-based retrieval or NLI classification.
+The 15 categories are: six CONTRADICTS subtypes (\emph{direct},
+\emph{negated}, \emph{numeric}, \emph{temporal}, \emph{entity},
+\emph{attribute}, 47 pairs each); \textbf{SUPPORTS} (independent,
+same-specificity confirmation, 51 pairs); \textbf{REFINES} (an entailing
+claim that adds specificity the entailed claim lacks, deliberately spread
+across \textbf{seven independent specificity mechanisms} as separate
+template families --- numeric-and-date, geographic scope, population
+scope, experimental condition, named dataset, causal mechanism, and
+qualification --- rather than one mechanism repeated, since an earlier
+draft's single numeric-and-date-only design was, an audit round
+correctly noted, unsurprising evidence that the specificity heuristic
+recognizes the one feature it was written around, not evidence that it
+recognizes refinement in general; 49 pairs); \textbf{EQUIVALENT}
+(bidirectional entailment via paraphrase, likewise spread across
+\textbf{seven difficulty tiers} --- easy lexical paraphrase, syntactic
+transformation, lexically-divergent hard paraphrase, discourse-level
+contextual restatement, negation-preserving restatement, numerical-unit
+restatement (0.5s/500ms), and measurement-unit restatement (4GB/4096MB)
+--- for the same reason; 49 pairs); four \textbf{hard-NEUTRAL} subtypes
+deliberately constructed to share vocabulary or topic with their partner
+despite being genuinely NEUTRAL --- \emph{same-topic} (47 pairs),
+\emph{lexical-collision} (47 pairs, and now sentence-initially
+capitalized regardless of which sense is intended --- e.g.\ ``python
+sheds its skin'' [the snake sense] corrected to ``Python sheds its skin''
+with a capital P, since English capitalizes the first word of a sentence
+mechanically regardless of whether that word is a proper noun in
+context; the original lowercase version was a second, independent
+grammar defect this same validation pass caught, distinct from the
+negation and dangling-subject defects above),
+\emph{multi-attribute} (45 pairs), and \emph{adjacent-non-conflicting}
+(47 pairs); one \textbf{easy NEUTRAL} control (51 pairs); and
+\textbf{ambiguous/abstention} (45 pairs deliberately hedged with modal
+language so that no confident label is well-supported by the text; gold
+status ABSTAINED --- see \S\ref{sec:system}'s \texttt{ResolutionStatus}
+--- rather than a semantic relation, since abstention is a claim about
+resolver confidence, not about how two propositions relate). Every
+category is split by \textbf{template family}, not by individual pair,
+into a frozen \textbf{TEST} set and a \textbf{DEV} set usable for
+threshold tuning (\S\ref{sec:results}); the split is stratified per
+category so that every category has both TEST and DEV representation
+even where it has few template families (an earlier, globally-hashed
+version of this split left one category with zero TEST pairs purely by
+chance). The full corpus, its construction-defined manifest, and the
+validator are released.
+
+\textbf{Split-integrity stress tests (P1-E, audit round).} Template-
+family-disjointness alone leaves open whether the same fictional
+entity (e.g. ``the Emberfen Queue'') could appear in both TEST and DEV
+under different template families --- a strict reviewer's concern, even
+though these entities are fictional and the leakage risk is lower than
+for a real named-entity task. \texttt{validate\_corpus.py} now runs a
+second, independent audit against this: for every pair, it reconstructs
+which entity/subject it is actually about (the shared fictional-name
+pool draw for most categories; the fixed one-subject-per-template-family
+mapping for the two categories that use a small closed subject list),
+then checks that no entity/subject crosses the TEST/DEV boundary. All
+713 pairs resolve to an entity/subject key, and \textbf{zero cross the
+split in either direction}: this corpus is Family-held-out,
+Entity-held-out, \emph{and} Family+entity-held-out simultaneously ---
+stronger than the template-family-disjointness alone previously
+verified, and the entity check now runs as a standing regression gate
+alongside the existing grammar/duplicate/exclusivity checks, so a future
+corpus regeneration that introduced entity leakage would be caught
+before it could reach a reported number.
+
+Because the label is definitional, we separate \textbf{retrieval recall}
+(did the intended pair even become an NLI candidate?) from
+\textbf{classification accuracy} (given it was a candidate, was it
+labeled correctly?), and additionally --- new in this revision, per the
+same review's point that gold-pair-only recall says nothing about how
+many \emph{other} candidates flooded the same NLI stage ---
+\textbf{candidate-level precision}: of every pair Phase 6 actually
+scored with NLI, what fraction corresponds to a pair this corpus intends
+to test at all (\S\ref{sec:results}).
 
 \input{sections/controlled_results.tex}
+
+\subsection{SMRITI-ClosedWorld-v1: A Closed Labeled-Pair Precision Benchmark}
+\label{sec:closed-world}
+\input{sections/closed_world.tex}
+
+\subsection{Retrieval Recall@K and the Candidate-Volume Tradeoff}
+\label{sec:recall-at-k}
+\input{sections/recall_at_k.tex}

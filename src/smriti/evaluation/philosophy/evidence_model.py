@@ -7,8 +7,8 @@ Evidence Lifecycle:
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -16,7 +16,7 @@ class EvidenceChainLink:
     level: str
     identifier: str
     description: str
-    artifact_path: Optional[str] = None
+    artifact_path: str | None = None
 
 
 @dataclass(frozen=True)

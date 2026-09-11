@@ -15,7 +15,6 @@ It is used by governance, documentation, and compliance verification.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from smriti.governance.evolution import StabilityLevel
 
@@ -27,14 +26,15 @@ class InterfaceDescriptor:
 
     Contracts are immutable once registered. Updates require a new version.
     """
+
     name: str
     module: str
     owner: str
     stability: StabilityLevel
     version: str
-    methods: Dict[str, str] = field(default_factory=dict)      # method_name -> description
-    input_schema: Dict[str, str] = field(default_factory=dict) # param_name -> type description
-    output_schema: str = ""                                    # return type description
+    methods: dict[str, str] = field(default_factory=dict)  # method_name -> description
+    input_schema: dict[str, str] = field(default_factory=dict)  # param_name -> type description
+    output_schema: str = ""  # return type description
     is_deprecated: bool = False
     deprecation_message: str = ""
 
@@ -48,7 +48,7 @@ class ContractRegistry:
     """
 
     def __init__(self) -> None:
-        self._contracts: Dict[str, InterfaceDescriptor] = {}
+        self._contracts: dict[str, InterfaceDescriptor] = {}
         self._populate_defaults()
 
     def _populate_defaults(self) -> None:
@@ -153,19 +153,19 @@ class ContractRegistry:
             raise ValueError(f"Contract '{contract.name}' already registered.")
         self._contracts[contract.name] = contract
 
-    def get(self, name: str) -> Optional[InterfaceDescriptor]:
+    def get(self, name: str) -> InterfaceDescriptor | None:
         """Retrieve a contract by name."""
         return self._contracts.get(name)
 
-    def list_contracts(self) -> List[InterfaceDescriptor]:
+    def list_contracts(self) -> list[InterfaceDescriptor]:
         """Return all registered contracts."""
         return list(self._contracts.values())
 
-    def stable_contracts(self) -> List[InterfaceDescriptor]:
+    def stable_contracts(self) -> list[InterfaceDescriptor]:
         """Return only STABLE contracts."""
         return [c for c in self._contracts.values() if c.stability == StabilityLevel.STABLE]
 
-    def deprecated_contracts(self) -> List[InterfaceDescriptor]:
+    def deprecated_contracts(self) -> list[InterfaceDescriptor]:
         """Return only deprecated contracts."""
         return [c for c in self._contracts.values() if c.is_deprecated]
 

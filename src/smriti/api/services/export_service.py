@@ -7,18 +7,18 @@ consistent service interface.
 from __future__ import annotations
 
 import csv
+import dataclasses
 import io
 import json
 import time
-import dataclasses
-from typing import Any, Dict, List
-import structlog
+from typing import Any
 
+import structlog
+from smriti.api.domain.predicates import SortSpec
 from smriti.api.domain.requests import ExportRequest
 from smriti.api.domain.responses import KnowledgeResponse, make_response_meta
-from smriti.api.domain.predicates import SortSpec
 from smriti.api.store.read_store import ReadStore
-from smriti.core.models import ExportFormat, ExecutionContext
+from smriti.core.models import ExecutionContext, ExportFormat
 from smriti.exceptions import ExportError
 
 logger = structlog.get_logger(__name__)
@@ -74,13 +74,14 @@ class ExportService:
         }
         return KnowledgeResponse(data=result, meta=make_response_meta(ctx))
 
-    def _collect_records(self, request: ExportRequest) -> List[Dict]:
+    def _collect_records(self, request: ExportRequest) -> list[dict]:
         """Use ReadStore.stream() — pure primitive iteration."""
         predicates = list(request.predicates)
         if not predicates:
             return list(self._store.stream())
         # Apply predicates via scan for filtered exports
         from smriti.api.domain.predicates import Pagination
+
         all_records = []
         offset = 0
         page_size = 1000
@@ -111,18 +112,27 @@ class ExportService:
                 "semantic_role": rec["semantic_role"],
             }
             if request.include_reliability:
-                claim_data.update({
-                    "reliability_index": rec["reliability_index"],
-                    "calibration_label": rec["calibration_label"],
-                    "uncertainty_score": rec["uncertainty_score"],
-                })
+                claim_data.update(
+                    {
+                        "reliability_index": rec["reliability_index"],
+                        "calibration_label": rec["calibration_label"],
+                        "uncertainty_score": rec["uncertainty_score"],
+                    }
+                )
             result["claims"].append(claim_data)
         return json.dumps(result, indent=2, ensure_ascii=False)
 
     def _export_csv(self, request: ExportRequest) -> str:
         records = self._collect_records(request)
         output = io.StringIO()
-        headers = ["claim_id", "claim_text", "context", "document_id", "partition_id", "semantic_role"]
+        headers = [
+            "claim_id",
+            "claim_text",
+            "context",
+            "document_id",
+            "partition_id",
+            "semantic_role",
+        ]
         if request.include_reliability:
             headers += ["reliability_index", "calibration_label", "uncertainty_score"]
         writer = csv.DictWriter(output, fieldnames=headers, extrasaction="ignore")
@@ -140,15 +150,15 @@ class ExportService:
             '  <graph id="smriti_knowledge" edgedefault="directed">',
         ]
         for rec in records:
-            ri = f' reliability="{rec.get("reliability_index", 0)}"' if request.include_reliability else ""
+            ri = (
+                f' reliability="{rec.get("reliability_index", 0)}"'
+                if request.include_reliability
+                else ""
+            )
             text_esc = (
-                rec["claim_text"].replace("&", "&amp;")
-                .replace("<", "&lt;").replace(">", "&gt;")
+                rec["claim_text"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             )
-            lines.append(
-                f'    <node id="{rec["claim_id"]}"'
-                f' label="{text_esc[:80]}"{ri}/>'
-            )
+            lines.append(f'    <node id="{rec["claim_id"]}"' f' label="{text_esc[:80]}"{ri}/>')
         if request.include_graph_structure:
             for er in edge_records:
                 lines.append(

@@ -22,20 +22,19 @@ Design:
 
 from __future__ import annotations
 
-from typing import List, Tuple
 import structlog
 
-from smriti.core.models import SemanticSentence, SegmentationWarning
-from smriti.extraction.rules import CONTEXT_VALID_PATTERN
+from smriti.core.models import SegmentationWarning, SemanticSentence
 from smriti.exceptions import SentenceValidationError
+from smriti.extraction.rules import CONTEXT_VALID_PATTERN
 
 logger = structlog.get_logger(__name__)
 
 
 def validate_sentences(
-    sentences: List[SemanticSentence],
+    sentences: list[SemanticSentence],
     document_id: str,
-) -> Tuple[List[SemanticSentence], List[SegmentationWarning]]:
+) -> tuple[list[SemanticSentence], list[SegmentationWarning]]:
     """
     Validate a collection of SemanticSentences.
 
@@ -52,8 +51,8 @@ def validate_sentences(
         SentenceValidationError: On duplicate IDs, non-monotonic positions,
                                   or document_id mismatch.
     """
-    warnings: List[SegmentationWarning] = []
-    valid: List[SemanticSentence] = []
+    warnings: list[SegmentationWarning] = []
+    valid: list[SemanticSentence] = []
     seen_ids = set()
     last_position = -1
 

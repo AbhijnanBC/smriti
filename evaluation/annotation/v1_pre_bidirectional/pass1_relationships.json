@@ -1,0 +1,914 @@
+{
+  "f28e13a9e5a4567e": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "a3a993c8c3247309": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "802e3383e8d87c40": {
+    "label": "CONTRADICTS",
+    "note": "D11 explicitly frames pressure-cooking as a quality-cutting shortcut; D1 relies on that exact method for fork-tender results."
+  },
+  "4ce28d97216a6aac": {
+    "label": "CONTRADICTS",
+    "note": "D11 explicitly rejects the pressure cooker as inferior; D4 explicitly praises it as the technique that makes the dish work."
+  },
+  "a696cdbaf023c868": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "549a1457a8ace7c1": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "4d88661bf1d2cecf": {
+    "label": "CONTRADICTS",
+    "note": "B11 claims the convolutional approach is outdated while B5 claims U-Net is the de facto standard — direct status conflict."
+  },
+  "fb5e1f6b97c7c3f8": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "3a16e6c9d38aeaa6": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "04baf84a88269a6c": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "a7a3bfb8d5bdaf81": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "361dfaf436484b10": {
+    "label": "CONTRADICTS",
+    "note": "Core method dispute: D1 uses the pressure cooker for speed; D11 argues only the slow process yields proper texture/flavour."
+  },
+  "c4a3af7009c1263b": {
+    "label": "CONTRADICTS",
+    "note": "D11 explicitly says pressure-cooker heat destroys collagen/texture in ways slow braising does not, directly rebutting D1's fork-tender claim."
+  },
+  "fc06e91da63deaa8": {
+    "label": "CONTRADICTS",
+    "note": "D11 explicitly calls pressure-cooker use for this dish a \"culinary betrayal\", directly opposing D1's premise."
+  },
+  "cc97d7bef3fbd967": {
+    "label": "CONTRADICTS",
+    "note": "D11's traditional slow method is presented as the correct alternative to D1's pressure-cooker method."
+  },
+  "32f272799ff90d60": {
+    "label": "CONTRADICTS",
+    "note": "D11 explicitly says pressure cooking produces an inferior, watery sauce, contradicting D1's positive framing of the pressure-cooker result."
+  },
+  "c51d584d4c23044e": {
+    "label": "CONTRADICTS",
+    "note": "D11 ties the classic dish's essential qualities to slow reduction, implicitly and explicitly excluding D1's fast pressure-cooker method."
+  },
+  "d8373da16ba5f9ad": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "54433a11923e8dee": {
+    "label": "CONTRADICTS",
+    "note": "B6 says U-Net is now the dominant approach outperforming even human experts; B11 says the field is rapidly abandoning U-Net — direct conflict."
+  },
+  "747211d00b969898": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "052f60198b3a7c92": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "dea6589746e222b1": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "4b28feb0e8516be6": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "dd2dc2d9df00b464": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "49498953c179893a": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "65f3e8c61fcbf9ed": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "f6dd98242e90be27": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "29d1c5331d075c62": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "1b6c48854ae314bf": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6d15e71de83b3af9": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "943fd3015983f92d": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "65b4254811a1ffc8": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "d7eb1c2132c88080": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "75b0f54ae3431f44": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "4eb8c6ea761e0a8d": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "4c353a851abefa03": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "8e53f0cd13b2a437": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "f3e074642ff99319": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6ebb980e71c037bc": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "de4c7c65309d96fd": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "9c5eb33158fdb5ff": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "2115d46a14e1bfb0": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "0591ddd94a7a1ebc": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "29b9baf915951423": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "156a71149a3ae91e": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "1a590501c5251497": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "12859a0146082e9b": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "8955d2dd93214246": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "e02a36024442fada": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "f6bd4b7707d4e104": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "51b5766c6b4d9dc5": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "60ba2e014f9643b6": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "e1b1c88bf84509c5": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "e44ea2da3abf5388": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "e9d170e78c14422f": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "682cf617118350bb": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "38c5bd156fa3c2ab": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "8fb888afab3d8be0": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "912982b7db581be0": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "f93a943fc6fae2c7": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "266f00adfa23a534": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "49c9f5d71681725b": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "d07b7bd7009f1d07": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "ac1a22f332dedea5": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6e511fafbd7cac18": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "fc7ce39e442e32af": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "82380e63669e0974": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "cd70f254f7ec9155": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "7c623e0c8097cdac": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "952aaa84cdb84f64": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "1778a0de61cae19a": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "b696647f25d49145": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "cb6c3e2bc3743640": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "b3a50b574685ec97": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "b1a9c76e5e95d960": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "fa03342f0e48682a": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "68d5bc45e1595f50": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6eeb4aa313e6c72d": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "3dba7235d3715e16": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "5f4179a7d098886a": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6a42a3312d5ab03c": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "cc6faf7289654289": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "4a720ebcaff7c1e6": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "4e30419d878a002d": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "b47be125fe10bda8": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "c35bde389f73e9bd": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "4e89537656055f0f": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "5718949f6ce2520c": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "554b0b3a308a2da5": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "31998b16aeb86dd2": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "3793a9638fa10dcc": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "720d1e4edc9a1f43": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "90039130d673e7d8": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "1f33a92ff8529740": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "00fa656ddab9dcb3": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "517b2411e558b945": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "2776d61fb1ba12bb": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "ed52cdc5c9c27985": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "23a8c136d85d0248": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "24b8f3f24d6ce71c": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "ba02a6d0e8ad9aa6": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "ae4e1a480504eb09": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "f7d90ec82d9ab7e0": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "b1f7123ef8201e30": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "b106e44cae176201": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "ccc655dd5e807f18": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "09813e9f480ef1aa": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "4c252919a6ad0d43": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "2946790a81daa0b0": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "b541554cc7677c87": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "9bce388e96687d5a": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "9dbce86776ad3654": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "256a0bda95af4ba5": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "41229a83f1d6a0dd": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "6a9a6924a789f82d": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "61625097a1084841": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "5a0534cda1a74300": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "550d52e96d86f6a3": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "d224af4ee65bf8e7": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "a2c2304b4e364566": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6d40bddd1ea69f6d": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "4f104ff3ef3463ef": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "3d63d5d633e0dc39": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "a63bd361c4c893dd": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "938026cb2be0b4e7": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "aa6062468acd3722": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "2ca3cf79a1f31d4a": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "916c48ec46d950de": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "d876ffacd496c138": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "8c18746da3510472": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "0c49d1591b75a872": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "f2e7ce5fb6da0ef9": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "7e21cb274d897872": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "6e1d7d11083a69de": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "251be028ff209912": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "5c8f9dd1e05f0aad": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "b422ab898cbd8eaa": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "9de02d9d3beb5f45": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "24e6363dc6ab6c32": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "97f393250d0aade2": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "0bf2655bdb9acbd8": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "e14d2f54e2dd88f8": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "de245ebdf1243dd8": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "ca9dc98e1418f3ca": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "bc02ff9c609d44e7": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "faa460bc6b95b9c0": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "2ce1485c27b0e55f": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "cddd86ef34951aa1": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "61f86c2ba496faba": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "ac2eddb214cbe481": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "6dba21e117f36fdd": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "2aecf91c076edaf4": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "c7d7174695e31fe4": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "9a544b60eabf5efa": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "9f712ce7c4a09596": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "d297ec347009a425": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "643df16c66811ac2": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "e364dbb1ee85b7ab": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "fe48fe573daf4505": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "8382ec4bc33d8601": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "33ff293a938f049a": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "49fcdecf46bd7df1": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "66f2077d47f6f14a": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "2a52984a38b8d980": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "76c712c20aec9a09": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "0906023ad4cb1f76": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "202ea48dec8648a6": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "6a0d8dd1933d2cf9": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "fd6aa9a7141fbe4d": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "a1a4fa54837bac92": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "a6acd73ed2dbac27": {
+    "label": "CONTRADICTS",
+    "note": "C9's general theory (left-arm wrist-spin more effective vs RHB) is contradicted by C2's specific data point (Noor Ahmad's numbers actually drop against RHB)."
+  },
+  "3ac1c6e271739431": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "f93f37f1b14975b0": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "fd9fac46541e0afb": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "33c236084f877d9c": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "fea7ed59857d5171": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "b1868893e92b848a": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "725f3b304a6b06c4": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "73cc93b62f7a6b96": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "6eba53f3f683ad22": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "91cde30cce8cdeed": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "8def9ca8b7b3475a": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "5d2b74fc1af91836": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "89f8a7727ec64e86": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "1a1210e03619557c": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "606c276968e779ab": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "f00162baff329a4b": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "9488890e465bb2ea": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "5e27f10c946a0d6b": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "70fae2d83e0eb17b": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "f44c26bc9d0821a7": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "ecc8d7beb91dcdbd": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "09758665c27624db": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "5c72e4f4cf48f81a": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "cdf17982f750ba7f": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "040b9b476d1feaf5": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "54ee04d7f02187c0": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "c03e4690f37adac8": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "ae4a66cbd4b8e212": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "e8b2aadd0bb08468": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "83a3bc3be40bd73d": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "1e83fccfb587b380": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "bec8e941f7707522": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "22deca58b634c273": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "1567371823b17f10": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "0244be3a447afa3c": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "572ffd15a7f72074": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "ba0f956f91ba0193": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "976d5210da2d2ce3": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "0f396399fd03f928": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "46e67eb69e364cd1": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "ab95d47de4b4cde6": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "6d9edf9a89a9f911": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "c548f0c2f85a938b": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "b84f82b2a796fd01": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "fc68f59f01eed6fd": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "85b93b11ee89e7e8": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "f66f957cf8282980": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "29913c30b1424200": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "4b355f69b22e8f95": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "ddd6aeb89d86de37": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "b3e07de743f33890": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "46c908da5d1f08cf": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "97c6ccbfd64f4939": {
+    "label": "NEUTRAL",
+    "note": "Different aspects or unrelated/insufficiently connected claims; neither supports nor contradicts."
+  },
+  "f7380e33aee3dded": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "931e259c9f1e774d": {
+    "label": "SUPPORTS",
+    "note": "Consistent, mutually reinforcing claims on a shared topic; no conflict."
+  },
+  "677b85f1d7852628": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  },
+  "6a5748d4ecd5e2fd": {
+    "label": "REFINES",
+    "note": "One claim elaborates or adds specific detail to the other without conflicting."
+  }
+}

@@ -2,12 +2,12 @@
 Unit tests for claims/structure.py.
 """
 
-import pytest
 from pathlib import Path
-from smriti.core.models import SemanticSentence, ExtractionMode
+
+import pytest
 from smriti.claims.parser import SpaCyParser
-from smriti.claims.boundaries import BoundaryDetector
 from smriti.claims.structure import StructureExtractor
+from smriti.core.models import ExtractionMode, SemanticSentence
 
 
 @pytest.fixture(scope="module")
@@ -24,7 +24,7 @@ def extractor():
 
 
 def make_parsed(parser, text):
-    from smriti.claims.parser import SpaCyParser
+
     sentence = SemanticSentence(
         sentence_id="s001",
         document_id="d001",
@@ -42,6 +42,7 @@ def make_parsed(parser, text):
 
 def make_candidate(parser, text):
     from smriti.claims.models import AssertionCandidate
+
     parsed = make_parsed(parser, text)
     return AssertionCandidate(
         text=text,
@@ -63,18 +64,28 @@ def test_svo_extraction_simple(parser, extractor):
 
 def test_failed_parse_produces_lexical(parser, extractor):
     """If parse failed, mode must be LEXICAL."""
-    from smriti.claims.models import ParsedSentence, AssertionCandidate
+    from smriti.claims.models import AssertionCandidate, ParsedSentence
     from smriti.core.models import SemanticSentence
+
     sentence = SemanticSentence(
-        sentence_id="s002", document_id="d001", text="test",
-        context="", position=0, char_start=0, char_end=4,
-        source_path=Path("test.md"), origin_block_type="paragraph",
+        sentence_id="s002",
+        document_id="d001",
+        text="test",
+        context="",
+        position=0,
+        char_start=0,
+        char_end=4,
+        source_path=Path("test.md"),
+        origin_block_type="paragraph",
         schema_version="3.0",
     )
     failed_parsed = ParsedSentence(sentence=sentence, spacy_doc=None, parse_ok=False)
     candidate = AssertionCandidate(
-        text="test", span_start=0, span_end=4,
-        source=failed_parsed, boundary_reason="parse_failed",
+        text="test",
+        span_start=0,
+        span_end=4,
+        source=failed_parsed,
+        boundary_reason="parse_failed",
     )
     result = extractor.extract(candidate, parser)
     assert result.extraction_mode == ExtractionMode.LEXICAL

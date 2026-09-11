@@ -1,7 +1,6 @@
 """Unit tests for workspace lifecycle methods."""
 
-import pytest
-from smriti.core.models import WorkspaceType, WorkspaceStatus
+from smriti.core.models import WorkspaceStatus, WorkspaceType
 from smriti.dashboard.workspaces.registry import build_default_registry
 
 
@@ -10,8 +9,9 @@ def test_all_workspaces_support_full_lifecycle():
     registry = build_default_registry()
     for ws_type in WorkspaceType:
         ws = registry.get(ws_type)
-        assert ws.status == WorkspaceStatus.CREATED, \
-            f"{ws_type.value}: expected CREATED after construction"
+        assert (
+            ws.status == WorkspaceStatus.CREATED
+        ), f"{ws_type.value}: expected CREATED after construction"
 
         ws.on_suspend()
         assert ws.status == WorkspaceStatus.SUSPENDED
@@ -27,18 +27,20 @@ def test_all_workspaces_support_full_lifecycle():
 def test_workspace_profile_has_capabilities():
     """WorkspaceProfile must include capabilities."""
     from smriti.core.models import WorkspaceCapabilities
+
     registry = build_default_registry()
     for ws_type in WorkspaceType:
         ws = registry.get(ws_type)
-        assert isinstance(ws.profile.capabilities, WorkspaceCapabilities), \
-            f"{ws_type.value} missing capabilities"
+        assert isinstance(
+            ws.profile.capabilities, WorkspaceCapabilities
+        ), f"{ws_type.value} missing capabilities"
 
 
 def test_workspace_profile_has_version():
     """WorkspaceProfile must include version."""
     from smriti.core.models import WorkspaceVersion
+
     registry = build_default_registry()
     for ws_type in WorkspaceType:
         ws = registry.get(ws_type)
-        assert isinstance(ws.profile.version, WorkspaceVersion), \
-            f"{ws_type.value} missing version"
+        assert isinstance(ws.profile.version, WorkspaceVersion), f"{ws_type.value} missing version"

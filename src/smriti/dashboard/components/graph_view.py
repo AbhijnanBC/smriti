@@ -5,11 +5,12 @@ Operates on traversal dict directly (graph structure, not claim presentation).
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
+
 import streamlit as st
 
 
-def render_graph_view(traversal: Dict[str, Any], center_id: str) -> None:
+def render_graph_view(traversal: dict[str, Any], center_id: str) -> None:
     """
     Render a graph neighborhood using Plotly scatter-with-lines.
 
@@ -18,8 +19,9 @@ def render_graph_view(traversal: Dict[str, Any], center_id: str) -> None:
         center_id:  The starting claim_id (rendered at center).
     """
     try:
-        import plotly.graph_objects as go
         import math
+
+        import plotly.graph_objects as go
 
         nodes = traversal.get("nodes", [])
         edges = traversal.get("edges", [])
@@ -49,24 +51,33 @@ def render_graph_view(traversal: Dict[str, Any], center_id: str) -> None:
                 edge_y += [y0, y1, None]
 
         edge_trace = go.Scatter(
-            x=edge_x, y=edge_y,
+            x=edge_x,
+            y=edge_y,
             line=dict(width=1, color="#888"),
-            hoverinfo="none", mode="lines",
+            hoverinfo="none",
+            mode="lines",
         )
 
-        node_x = [positions[n.get("claim_id", "")][0] for n in nodes if n.get("claim_id") in positions]
-        node_y = [positions[n.get("claim_id", "")][1] for n in nodes if n.get("claim_id") in positions]
+        node_x = [
+            positions[n.get("claim_id", "")][0] for n in nodes if n.get("claim_id") in positions
+        ]
+        node_y = [
+            positions[n.get("claim_id", "")][1] for n in nodes if n.get("claim_id") in positions
+        ]
         node_text = [
             f"{n.get('claim_text', '')[:40]}... (RI: {n.get('reliability_index', 0):.1f})"
-            for n in nodes if n.get("claim_id") in positions
+            for n in nodes
+            if n.get("claim_id") in positions
         ]
         node_colors = [
             "red" if n.get("claim_id") == center_id else "blue"
-            for n in nodes if n.get("claim_id") in positions
+            for n in nodes
+            if n.get("claim_id") in positions
         ]
 
         node_trace = go.Scatter(
-            x=node_x, y=node_y,
+            x=node_x,
+            y=node_y,
             mode="markers+text",
             hoverinfo="text",
             text=node_text,
@@ -78,7 +89,9 @@ def render_graph_view(traversal: Dict[str, Any], center_id: str) -> None:
             data=[edge_trace, node_trace],
             layout=go.Layout(
                 title=f"Graph Neighborhood (depth=2 from {center_id[:8]})",
-                showlegend=False, hovermode="closest", height=450,
+                showlegend=False,
+                hovermode="closest",
+                height=450,
                 margin=dict(b=20, l=5, r=5, t=40),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),

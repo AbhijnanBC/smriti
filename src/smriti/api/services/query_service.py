@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import time
-from typing import List
-import structlog
 
+import structlog
 from smriti.api.domain.requests import ClaimRequest, SearchRequest
 from smriti.api.domain.responses import KnowledgeResponse, make_response_meta
+from smriti.api.dtos.mapper import DTOMapper
 from smriti.api.planner.plan import PhysicalPlan
 from smriti.api.store.read_store import ReadStore
 from smriti.api.views.claim_view_builder import ClaimViewBuilder
-from smriti.api.dtos.mapper import DTOMapper
-from smriti.core.models import ExecutionContext, QueryFamily
+from smriti.core.models import ExecutionContext
 from smriti.exceptions import ClaimNotFoundError
 
 logger = structlog.get_logger(__name__)
@@ -43,6 +42,7 @@ class QueryService:
         dto = self._mapper.claim_to_dto(view, request.projection.level)
 
         import dataclasses
+
         ctx = dataclasses.replace(
             ctx,
             execution_ms=round((time.monotonic() - t0) * 1000, 2),
@@ -70,6 +70,7 @@ class QueryService:
             dtos.append(dto)
 
         import dataclasses
+
         ctx = dataclasses.replace(
             ctx,
             execution_ms=round((time.monotonic() - t0) * 1000, 2),

@@ -28,9 +28,9 @@ Rules:
 
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Protocol
-import structlog
+from typing import Protocol
 
+import structlog
 from smriti.core.models import InteractionEvent, InteractionEventType
 
 logger = structlog.get_logger(__name__)
@@ -44,7 +44,7 @@ class EventSubscriber(Protocol):
         ...
 
     @property
-    def subscribed_types(self) -> List[InteractionEventType]:
+    def subscribed_types(self) -> list[InteractionEventType]:
         """Event types this subscriber wants. Empty = all events."""
         ...
 
@@ -56,8 +56,8 @@ class InteractionEventBus:
     """
 
     def __init__(self) -> None:
-        self._subscribers: List[EventSubscriber] = []
-        self._event_log: List[InteractionEvent] = []
+        self._subscribers: list[EventSubscriber] = []
+        self._event_log: list[InteractionEvent] = []
 
     def subscribe(self, subscriber: EventSubscriber) -> None:
         """Register a subscriber. Called once during session bootstrap."""
@@ -85,7 +85,7 @@ class InteractionEventBus:
                 )
 
     @property
-    def event_log(self) -> List[InteractionEvent]:
+    def event_log(self) -> list[InteractionEvent]:
         """Read-only copy of all published events."""
         return list(self._event_log)
 
@@ -98,21 +98,22 @@ class InteractionEventBus:
 
 # ── Built-in Subscribers ──────────────────────────────────────────────────────
 
+
 class HistorySubscriber:
     """Logs every event for session analytics (read-only history)."""
 
     def __init__(self) -> None:
-        self._history: List[InteractionEvent] = []
+        self._history: list[InteractionEvent] = []
 
     @property
-    def subscribed_types(self) -> List[InteractionEventType]:
+    def subscribed_types(self) -> list[InteractionEventType]:
         return []  # All events
 
     def on_event(self, event: InteractionEvent) -> None:
         self._history.append(event)
 
     @property
-    def history(self) -> List[InteractionEvent]:
+    def history(self) -> list[InteractionEvent]:
         return list(self._history)
 
 
@@ -136,7 +137,7 @@ class WorkspaceSyncSubscriber:
         self._pending_sync = False
 
     @property
-    def subscribed_types(self) -> List[InteractionEventType]:
+    def subscribed_types(self) -> list[InteractionEventType]:
         return list(self.WORKSPACE_EVENTS)
 
     def on_event(self, event: InteractionEvent) -> None:
@@ -164,7 +165,7 @@ class NotificationSubscriber:
         self._nc = notification_center
 
     @property
-    def subscribed_types(self) -> List[InteractionEventType]:
+    def subscribed_types(self) -> list[InteractionEventType]:
         return list(self.NOTIFICATION_EVENTS)
 
     def on_event(self, event: InteractionEvent) -> None:
@@ -179,7 +180,7 @@ class StreamlitLifecycleSubscriber:
     """
 
     @property
-    def subscribed_types(self) -> List[InteractionEventType]:
+    def subscribed_types(self) -> list[InteractionEventType]:
         # Subscribe to all events, or selectively filter WORKSPACE_EVENTS
         # We subscribe to everything except NOTIFICATION_SENT to avoid excessive reruns.
         return []  # All events
@@ -188,6 +189,7 @@ class StreamlitLifecycleSubscriber:
         # Note: In Streamlit, calling st.rerun() immediately halts execution.
         # Ensure this subscriber is registered LAST in the session bootstrap.
         import streamlit as st
+
         # Only rerun if it's a state-mutating event (skip notifications)
         if event.event_type != InteractionEventType.NOTIFICATION_SENT:
             st.rerun()

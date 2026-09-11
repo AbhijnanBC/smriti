@@ -29,8 +29,7 @@ that produced it.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -38,11 +37,12 @@ class TraceabilityLink:
     """
     A single link in the architectural traceability chain.
     """
-    artifact_id:    str      # unique ID for this artifact (e.g., "MOD-runtime")
-    artifact_type:  str      # "requirement" | "principle" | "invariant" | "adr" | "module" | "test"
-    name:           str
-    traced_to:      Optional[str]   # parent artifact_id (None = root)
-    description:    str
+
+    artifact_id: str  # unique ID for this artifact (e.g., "MOD-runtime")
+    artifact_type: str  # "requirement" | "principle" | "invariant" | "adr" | "module" | "test"
+    name: str
+    traced_to: str | None  # parent artifact_id (None = root)
+    description: str
 
 
 class TraceabilityMatrix:
@@ -54,7 +54,7 @@ class TraceabilityMatrix:
     """
 
     def __init__(self) -> None:
-        self._links: Dict[str, TraceabilityLink] = {}
+        self._links: dict[str, TraceabilityLink] = {}
         self._populate_phase11()
 
     def _populate_phase11(self) -> None:
@@ -135,10 +135,10 @@ class TraceabilityMatrix:
     def register(self, link: TraceabilityLink) -> None:
         self._links[link.artifact_id] = link
 
-    def trace_chain(self, artifact_id: str) -> List[TraceabilityLink]:
+    def trace_chain(self, artifact_id: str) -> list[TraceabilityLink]:
         """Return the full traceability chain from artifact to root."""
-        chain: List[TraceabilityLink] = []
-        current_id: Optional[str] = artifact_id
+        chain: list[TraceabilityLink] = []
+        current_id: str | None = artifact_id
         visited: set[str] = set()
         while current_id and current_id not in visited:
             link = self._links.get(current_id)
@@ -149,5 +149,5 @@ class TraceabilityMatrix:
             current_id = link.traced_to
         return chain
 
-    def all_links(self) -> List[TraceabilityLink]:
+    def all_links(self) -> list[TraceabilityLink]:
         return list(self._links.values())

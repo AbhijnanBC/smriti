@@ -8,9 +8,7 @@ No changes to the resolver itself.
 
 from __future__ import annotations
 
-from typing import Dict, Type
 import structlog
-
 from smriti.exceptions import QueryPlanError
 
 logger = structlog.get_logger(__name__)
@@ -36,9 +34,9 @@ class ServiceResolver:
     """
 
     def __init__(self) -> None:
-        self._registry: Dict[Type, object] = {}
+        self._registry: dict[type, object] = {}
 
-    def register(self, request_type: Type, service_instance: object) -> None:
+    def register(self, request_type: type, service_instance: object) -> None:
         """
         Register a service for a specific request type.
 

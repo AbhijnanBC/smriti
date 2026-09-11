@@ -2,7 +2,8 @@
 confidence.py — Engineering Confidence Index (ECI) computation.
 
 The ECI answers: "Can the engineering architecture itself be trusted?"
-This is independent of scientific confidence (SCI).
+This is independent of research evidence coverage (core.models.ResearchEvidenceCoverage,
+renamed from "Scientific Confidence Index (SCI)" in P2).
 
 ECI Dimensions (each 0–100):
     Architecture:     Architectural invariants verified
@@ -16,38 +17,36 @@ ECI Dimensions (each 0–100):
 
 from __future__ import annotations
 
-from typing import List, Dict
 from smriti.core.models import (
+    EngineeringVerificationIndex,
     VerificationResult,
     VerificationStatus,
-    EngineeringConfidenceIndex,
 )
-
 
 # Domain prefix → ECI dimension mapping
 DOMAIN_DIMENSION = {
     "ARCH": "architecture",
-    "DEP":  "infrastructure",
-    "INV":  "runtime",
+    "DEP": "infrastructure",
+    "INV": "runtime",
     "CONT": "integration",
     "COMP": "compliance",
-    "OBS":  "observability",
-    "GOV":  "governance",
+    "OBS": "observability",
+    "GOV": "governance",
 }
 
 # Dimension weights (must sum to 1.0)
 DIMENSION_WEIGHTS = {
-    "architecture":    0.25,
-    "runtime":         0.15,
-    "infrastructure":  0.15,
-    "observability":   0.10,
-    "governance":      0.15,
-    "integration":     0.15,
-    "compliance":      0.05,
+    "architecture": 0.25,
+    "runtime": 0.15,
+    "infrastructure": 0.15,
+    "observability": 0.10,
+    "governance": 0.15,
+    "integration": 0.15,
+    "compliance": 0.05,
 }
 
 
-def compute_eci(results: List[VerificationResult]) -> EngineeringConfidenceIndex:
+def compute_eci(results: list[VerificationResult]) -> EngineeringVerificationIndex:
     """
     Compute the Engineering Confidence Index from verification results.
 
@@ -65,10 +64,10 @@ def compute_eci(results: List[VerificationResult]) -> EngineeringConfidenceIndex
         4: 85–94 ECI
         5: >= 95 ECI (Engineering Complete)
     """
-    dimension_scores: Dict[str, float] = {k: 100.0 for k in DIMENSION_WEIGHTS}
+    dimension_scores: dict[str, float] = {k: 100.0 for k in DIMENSION_WEIGHTS}
 
     # Group by dimension
-    dimension_results: Dict[str, List[VerificationResult]] = {k: [] for k in DIMENSION_WEIGHTS}
+    dimension_results: dict[str, list[VerificationResult]] = {k: [] for k in DIMENSION_WEIGHTS}
 
     for result in results:
         prefix = result.rule_id.split("-")[0] if "-" in result.rule_id else "ARCH"
@@ -97,11 +96,14 @@ def compute_eci(results: List[VerificationResult]) -> EngineeringConfidenceIndex
         weight for dim, weight in DIMENSION_WEIGHTS.items() if dimension_results[dim]
     )
     if measured_weight > 0:
-        overall = sum(
-            dimension_scores[dim] * weight
-            for dim, weight in DIMENSION_WEIGHTS.items()
-            if dimension_results[dim]
-        ) / measured_weight
+        overall = (
+            sum(
+                dimension_scores[dim] * weight
+                for dim, weight in DIMENSION_WEIGHTS.items()
+                if dimension_results[dim]
+            )
+            / measured_weight
+        )
     else:
         overall = 0.0
 
@@ -119,7 +121,7 @@ def compute_eci(results: List[VerificationResult]) -> EngineeringConfidenceIndex
     else:
         level = 0
 
-    return EngineeringConfidenceIndex(
+    return EngineeringVerificationIndex(
         architecture_confidence=dimension_scores["architecture"],
         runtime_confidence=dimension_scores["runtime"],
         infrastructure_confidence=dimension_scores["infrastructure"],
@@ -132,14 +134,14 @@ def compute_eci(results: List[VerificationResult]) -> EngineeringConfidenceIndex
     )
 
 
-def compute_verification_coverage(results: List[VerificationResult]) -> list:
+def compute_verification_coverage(results: list[VerificationResult]) -> list:
     """
     Compute coverage statistics per rule category.
     Returns list of VerificationCoverage.
     """
     from smriti.core.models import VerificationCoverage
 
-    categories: Dict[str, List[VerificationResult]] = {}
+    categories: dict[str, list[VerificationResult]] = {}
     for result in results:
         prefix = result.rule_id.split("-")[0] if "-" in result.rule_id else "ARCH"
         categories.setdefault(prefix, []).append(result)
@@ -150,12 +152,14 @@ def compute_verification_coverage(results: List[VerificationResult]) -> list:
         passed = sum(1 for r in cat_results if r.status == VerificationStatus.PASSED)
         failed = sum(1 for r in cat_results if r.status == VerificationStatus.FAILED)
         skipped = sum(1 for r in cat_results if r.status == VerificationStatus.SKIPPED)
-        coverages.append(VerificationCoverage(
-            category=cat,
-            total_rules=total,
-            rules_passed=passed,
-            rules_failed=failed,
-            rules_skipped=skipped,
-            coverage_percentage=round((passed / total) * 100.0, 1) if total > 0 else 0.0,
-        ))
+        coverages.append(
+            VerificationCoverage(
+                category=cat,
+                total_rules=total,
+                rules_passed=passed,
+                rules_failed=failed,
+                rules_skipped=skipped,
+                coverage_percentage=round((passed / total) * 100.0, 1) if total > 0 else 0.0,
+            )
+        )
     return coverages

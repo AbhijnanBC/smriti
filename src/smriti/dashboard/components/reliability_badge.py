@@ -36,15 +36,21 @@ def render_calibration_distribution_from_pm(stats: StatisticsPresentationModel) 
         counts = list(dist.values())
         colors = [LABEL_COLOR.get(k, "#95a5a6") for k in dist.keys()]
 
-        fig = go.Figure(go.Bar(
-            x=labels, y=counts, marker_color=colors,
-            text=counts, textposition="outside",
-        ))
+        fig = go.Figure(
+            go.Bar(
+                x=labels,
+                y=counts,
+                marker_color=colors,
+                text=counts,
+                textposition="outside",
+            )
+        )
         fig.update_layout(
             title="Calibration Distribution",
             xaxis_title="Calibration Level",
             yaxis_title="Claim Count",
-            height=300, showlegend=False,
+            height=300,
+            showlegend=False,
         )
         st.plotly_chart(fig, use_container_width=True)
     except ImportError:

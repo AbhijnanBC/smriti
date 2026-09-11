@@ -7,16 +7,17 @@
 \toprule
 \textbf{Label} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{N (gold)} \\
 \midrule
-SUPPORTS     & 27.8\% & 8.2\% & 12.7\% & 61 \\
-CONTRADICTS  & 4.5\% & 25.0\% & 7.7\% & 8 \\
-REFINES      & 50.0\% & 41.7\% & 45.5\% & 48 \\
-NEUTRAL      & 28.7\% & 34.7\% & 31.4\% & 72 \\
+EQUIVALENT   & 33.3\% & 20.0\% & 25.0\% & 5 \\
+SUPPORTS     & 0.0\% & 0.0\% & 0.0\% & 2 \\
+CONTRADICTS  & 14.3\% & 22.2\% & 17.4\% & 9 \\
+REFINES      & 50.0\% & 2.3\% & 4.4\% & 43 \\
+NEUTRAL      & 69.5\% & 88.3\% & 77.8\% & 137 \\
 \bottomrule
 \end{tabular}
-\caption{SMRITI's per-class precision/recall/F1 against the 189
+\caption{SMRITI's per-class precision/recall/F1 against the 196
 inter-pass-agreed (excluding UNSURE) relationship labels in the fresh
-SMRITI-Reference sample ($\kappa=0.7559$ between passes). CONTRADICTS
-precision's 95\% bootstrap CI is [0.0\%, 11.4\%] ($n=44$
-SMRITI-predicted-CONTRADICTS items in this sample). Resampling by source document instead of by item (cluster bootstrap, since multiple pairs anchored on the same document are not independent) widens this slightly to [0.0\%, 13.0\%].}
+SMRITI-Reference sample ($\kappa=0.726$ between passes). CONTRADICTS
+precision's 95\% bootstrap CI is [0.0\%, 35.7\%] ($n=14$
+SMRITI-predicted-CONTRADICTS items in this sample). Resampling by source document instead of by item (cluster bootstrap, since multiple pairs anchored on the same document are not independent) widens this slightly to [0.0\%, 38.5\%]. Direction metrics over the 43 SUPPORTS/REFINES items with a determinate gold direction (both annotator passes agree): D1 (direction availability) = 2.2\%; D2 (direction accuracy, type-independent) = 0.0\%; D3 (joint type+direction accuracy) = 0.0\%; D4 (direction accuracy given type already correct, $n=1$) = 0.0\%.}
 \label{tab:reference-relationships}
 \end{table}

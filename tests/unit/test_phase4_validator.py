@@ -3,12 +3,17 @@ Unit tests for claims/validator.py.
 """
 
 import hashlib
-import pytest
 from pathlib import Path
-from smriti.core.models import (
-    Claim, ExtractionMode, AssertionMetadata, Modality, ClaimProvenance, ClaimWarning,
-)
+
+import pytest
 from smriti.claims.validator import validate_claims
+from smriti.core.models import (
+    AssertionMetadata,
+    Claim,
+    ClaimProvenance,
+    ClaimWarning,
+    ExtractionMode,
+)
 from smriti.exceptions import ClaimValidationError
 
 
@@ -74,11 +79,12 @@ def test_wrong_document_id_raises():
 
 
 def test_no_provenance_raises():
-    from dataclasses import replace
+
     claim = make_claim("aaa", "Text.")
     # Forcefully create a claim with no provenance
     # (cannot happen in normal pipeline, but test the validator)
     import dataclasses
+
     bad_claim = dataclasses.replace(claim, provenance=None)
     with pytest.raises(ClaimValidationError):
         validate_claims([bad_claim], "doc001", {})
@@ -89,6 +95,7 @@ def test_empty_input_returns_empty():
     assert valid == []
     assert warnings == []
 
+
 def test_duplicate_id_with_same_content_raises_too():
     """Even if content_hash matches, duplicate IDs are not allowed."""
     claim1 = make_claim("dup", "Same text")
@@ -96,4 +103,4 @@ def test_duplicate_id_with_same_content_raises_too():
     # They share same sentence_id, doc_id, etc. In practice they'd be identical.
     # The validator should still raise.
     with pytest.raises(ClaimValidationError, match="Duplicate"):
-        validate_claims([claim1, claim2], "doc001", {})    
+        validate_claims([claim1, claim2], "doc001", {})

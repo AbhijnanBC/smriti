@@ -29,42 +29,53 @@ Architectural invariants:
 
 from __future__ import annotations
 
-from typing import List, Tuple
 import structlog
 
 from smriti.core.models import (
-    ContributionSet, ContributionCandidate, ComponentScore,
-    ReliabilityDecisionRecord, SignalVector,
+    ComponentScore,
+    ContributionCandidate,
+    ContributionSet,
+    ReliabilityDecisionRecord,
+    SignalVector,
 )
 from smriti.scoring.policies import FusionPolicy, ReliabilityPolicy
 
 logger = structlog.get_logger(__name__)
 
-FUSION_ALGORITHM_VERSION = "weighted_linear_v2"   # Bumped for generic fusion
+FUSION_ALGORITHM_VERSION = "weighted_linear_v2"  # Bumped for generic fusion
 
 
 def compute_reliability(
     contribution_set: ContributionSet,
     policy: ReliabilityPolicy,
-    signal_vector: SignalVector,        # Still needed for constraint checks
-) -> Tuple[float, float, List[ComponentScore], ReliabilityDecisionRecord]:
+    signal_vector: SignalVector,  # Still needed for constraint checks
+    constraint_pipeline: list | None = None,  # NEW (P1-4)
+) -> tuple[float, float, list[ComponentScore], ReliabilityDecisionRecord]:
     """
     Compute Reliability Index, Uncertainty Score, ComponentScores, and DecisionRecord.
 
     RECTIFIED (P0-2): Receives ContributionSet (generic), not SignalVector (named).
     RECTIFIED (P0-5): Returns ReliabilityDecisionRecord alongside the scores.
+    RECTIFIED (P1-4): Accepts an explicit constraint_pipeline so the same
+    generic engine can be called once per index family (evidence vs.
+    importance) with the constraints that actually apply to that family --
+    see scoring.constraints.EVIDENCE_CONSTRAINT_PIPELINE /
+    IMPORTANCE_CONSTRAINT_PIPELINE. Defaults to the legacy full pipeline
+    (minus the retired TopologyWithoutEvidenceConstraint) for callers that
+    still pass a single, unsplit ContributionSet.
 
     Args:
-        contribution_set:  Generic set of ContributionCandidates from normalization.
-        policy:            Active ReliabilityPolicy.
-        signal_vector:     For constraint evaluation and uncertainty (backward compat).
+        contribution_set:    Generic set of ContributionCandidates from normalization.
+        policy:              Active ReliabilityPolicy.
+        signal_vector:       For constraint evaluation and uncertainty (backward compat).
+        constraint_pipeline: Which FusionConstraints to run. None = default.
 
     Returns:
         (reliability_index, uncertainty_score, component_scores, decision_record)
     """
     fp = policy.fusion
-    policy_interactions: List[str] = []
-    constraints_activated: List[str] = []
+    policy_interactions: list[str] = []
+    constraints_activated: list[str] = []
 
     # ── Step 1: Policy interactions (before contribution building) ────────────
     # Interactions are documented but do not use signal names directly in Fusion.
@@ -74,29 +85,33 @@ def compute_reliability(
     )
 
     # ── Step 2: Build ComponentScores (generic — no signal name references) ───
-    component_scores: List[ComponentScore] = []
+    component_scores: list[ComponentScore] = []
     for candidate in adjusted_candidates:
         if candidate.direction == "positive":
             contribution = candidate.normalized_value * candidate.policy_weight * 100
         else:
             contribution = -(candidate.normalized_value * candidate.policy_weight * 100)
 
-        component_scores.append(ComponentScore(
-            signal_id=candidate.signal_id,
-            normalized_value=candidate.normalized_value,
-            policy_weight=candidate.policy_weight,
-            adjusted_value=candidate.normalized_value,
-            contribution=contribution,
-            direction=candidate.direction,
-            explanation=_build_signal_explanation(candidate.signal_id, candidate.normalized_value, candidate.direction),
-        ))
+        component_scores.append(
+            ComponentScore(
+                signal_id=candidate.signal_id,
+                normalized_value=candidate.normalized_value,
+                policy_weight=candidate.policy_weight,
+                adjusted_value=candidate.normalized_value,
+                contribution=contribution,
+                direction=candidate.direction,
+                explanation=_build_signal_explanation(
+                    candidate.signal_id, candidate.normalized_value, candidate.direction
+                ),
+            )
+        )
 
     # ── Step 3: Raw fusion ────────────────────────────────────────────────────
     raw_reliability = sum(c.contribution for c in component_scores)
 
     # ── Step 4: Constraint validation ─────────────────────────────────────────
     constrained_reliability = _apply_constraints(
-        raw_reliability, signal_vector, fp, constraints_activated
+        raw_reliability, signal_vector, fp, constraints_activated, constraint_pipeline
     )
 
     # ── Step 5: Clamp ─────────────────────────────────────────────────────────
@@ -140,10 +155,10 @@ def compute_reliability(
 
 
 def _apply_policy_interactions(
-    candidates: List[ContributionCandidate],
+    candidates: list[ContributionCandidate],
     policy: ReliabilityPolicy,
-    interactions_log: List[str],
-) -> List[ContributionCandidate]:
+    interactions_log: list[str],
+) -> list[ContributionCandidate]:
     """
     Apply policy interactions to adjust candidate values before fusion.
 
@@ -160,8 +175,11 @@ def _apply_policy_interactions(
     # If evidence_independence is low, discount evidence_strength
     independence = candidates_map.get("evidence_independence")
     evidence = candidates_map.get("evidence_strength")
-    if (independence and evidence
-            and independence.normalized_value < policy.evidence.independence_discount_threshold):
+    if (
+        independence
+        and evidence
+        and independence.normalized_value < policy.evidence.independence_discount_threshold
+    ):
         discount = policy.evidence.echo_chamber_penalty
         new_value = evidence.normalized_value * (1.0 - discount)
         new_candidate = ContributionCandidate(
@@ -185,24 +203,28 @@ def _apply_constraints(
     raw_ri: float,
     sv: SignalVector,
     fp: FusionPolicy,
-    constraints_log: List[str],
+    constraints_log: list[str],
+    constraint_pipeline: list | None = None,
 ) -> float:
-    """Execute the ConstraintPipeline."""
-    from smriti.scoring.constraints import CONSTRAINT_PIPELINE
-    
+    """Execute the given constraint pipeline (default: legacy full pipeline)."""
+    if constraint_pipeline is None:
+        from smriti.scoring.constraints import CONSTRAINT_PIPELINE
+
+        constraint_pipeline = CONSTRAINT_PIPELINE
+
     result = raw_ri
-    for constraint in CONSTRAINT_PIPELINE:
+    for constraint in constraint_pipeline:
         result, log_msg = constraint.apply(result, sv, fp)
         if log_msg:
             constraints_log.append(log_msg)
-            
+
     return result
 
 
 def _compute_uncertainty(
     sv: SignalVector,
     fp: FusionPolicy,
-) -> Tuple[float, List[Tuple[str, float]]]:
+) -> tuple[float, list[tuple[str, float]]]:
     """
     Compute uncertainty score and decompose into named components.
 
@@ -261,10 +283,11 @@ def _build_signal_explanation(
 
 # ── Backward-compatible wrapper for tests that use old signature ───────────────
 
+
 def compute_reliability_from_signal_vector(
     signal_vector: SignalVector,
     policy: ReliabilityPolicy,
-) -> Tuple[float, float, List[ComponentScore]]:
+) -> tuple[float, float, list[ComponentScore]]:
     """
     Backward-compatible wrapper for existing tests.
     Converts SignalVector to ContributionSet and calls the generic fusion.
@@ -278,14 +301,16 @@ def compute_reliability_from_signal_vector(
         # Get value from signal_vector by signal_id
         value = getattr(signal_vector, signal_id, 0.0)
         if weight > 0:
-            candidates.append(ContributionCandidate(
-                signal_id=signal_id,
-                normalized_value=value,
-                policy_weight=weight,
-                direction=direction,
-                label=signal_id.replace("_", " ").title(),
-                raw_value=value,
-            ))
+            candidates.append(
+                ContributionCandidate(
+                    signal_id=signal_id,
+                    normalized_value=value,
+                    policy_weight=weight,
+                    direction=direction,
+                    label=signal_id.replace("_", " ").title(),
+                    raw_value=value,
+                )
+            )
 
     cs = ContributionSet(
         candidates=tuple(candidates),

@@ -15,27 +15,42 @@ import json
 import time
 from pathlib import Path
 from typing import Dict
+
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
-from smriti.core.models import KnowledgeGraph, ReliabilityMetadata, ScoredKnowledgeGraph, SignalStatus,  RawSignal
+from smriti.core.models import (
+    KnowledgeGraph,
+    RawSignal,
+    ReliabilityMetadata,
+    ScoredKnowledgeGraph,
+    SignalStatus,
+)
 from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
 from smriti.exceptions import Phase8Error
-
-from smriti.scoring.policies import load_policy, PolicyProfile
-from smriti.scoring.graph_stats import compute_global_stats
-from smriti.scoring.signals import signal_registry
-from smriti.scoring.normalization import assemble_contribution_set
-from smriti.scoring.fusion import compute_reliability
-from smriti.scoring.explanation import build_explanation
 from smriti.scoring.builder import (
+    apply_calibration_label,  # <-- RECTIFICATION: added import
     build_reliability_metadata,
     build_scored_knowledge_graph,
-    apply_calibration_label,          # <-- RECTIFICATION: added import
 )
+from smriti.scoring.constraints import EVIDENCE_CONSTRAINT_PIPELINE, IMPORTANCE_CONSTRAINT_PIPELINE
+from smriti.scoring.explanation import build_explanation
+from smriti.scoring.fusion import compute_reliability
+from smriti.scoring.graph_stats import compute_global_stats
+from smriti.scoring.normalization import (
+    assemble_contribution_set,
+    split_contribution_set_by_category,
+)
+from smriti.scoring.policies import (
+    EVIDENCE_SIGNAL_NAMES,
+    IMPORTANCE_SIGNAL_NAMES,
+    PolicyProfile,
+    load_policy,
+)
+from smriti.scoring.signals import signal_registry
 from smriti.scoring.statistics import Phase8StatsCollector
 
 logger = structlog.get_logger(__name__)
@@ -66,6 +81,7 @@ def _serialize_scored_graph(scored: ScoredKnowledgeGraph) -> str:
             "reliability_index": meta.reliability_index,
             "uncertainty_score": meta.uncertainty_score,
             "evidence_completeness": meta.evidence_completeness,
+            "importance_index": meta.importance_index,
             "calibration_label": meta.calibration_label.value,
             "policy_version": meta.policy_version,
             "schema_version": meta.schema_version,
@@ -107,6 +123,32 @@ def _serialize_scored_graph(scored: ScoredKnowledgeGraph) -> str:
                     "explanation": c.explanation,
                 }
                 for c in meta.component_scores
+            ],
+            "importance_decision_record": (
+                {
+                    "policy_interactions": list(
+                        meta.importance_decision_record.policy_interactions
+                    ),
+                    "constraints_activated": list(
+                        meta.importance_decision_record.constraints_activated
+                    ),
+                    "contribution_order": list(meta.importance_decision_record.contribution_order),
+                    "raw_reliability": meta.importance_decision_record.raw_reliability,
+                    "constrained_reliability": meta.importance_decision_record.constrained_reliability,
+                    "final_reliability": meta.importance_decision_record.final_reliability,
+                    "dominant_adjustment": meta.importance_decision_record.dominant_adjustment,
+                }
+                if meta.importance_decision_record
+                else None
+            ),
+            "importance_components": [
+                {
+                    "signal": c.signal_id,
+                    "contribution": round(c.contribution, 3),
+                    "direction": c.direction,
+                    "explanation": c.explanation,
+                }
+                for c in meta.importance_component_scores
             ],
             "explanation": {
                 "summary": meta.explanation.summary,
@@ -185,7 +227,7 @@ def score_knowledge_graph(
 
     # ── Step 4: Score every node ──────────────────────────────────────────────
     stats.record_signal_start()
-    reliability: Dict[str, ReliabilityMetadata] = {}
+    reliability: dict[str, ReliabilityMetadata] = {}
 
     with Timer("phase8_scoring"):
         for claim_id, node in sorted(graph.nodes.items()):
@@ -220,12 +262,41 @@ def score_knowledge_graph(
                 claim_id=claim_id,
             )
 
-            # 4c: Generic fusion (ContributionSet, not SignalVector)
+            # 4c: Generic fusion, called TWICE (P1-4: reliability vs. graph
+            # importance conflation) -- once against the evidence-family
+            # candidates only (-> reliability_index) and once against the
+            # topology-family candidates only (-> importance_index). Same
+            # generic engine both times; only the ContributionSet and the
+            # constraint pipeline differ.
             stats.record_fusion_start()
+            evidence_cs = split_contribution_set_by_category(
+                contribution_set, EVIDENCE_SIGNAL_NAMES
+            )
+            importance_cs = split_contribution_set_by_category(
+                contribution_set, IMPORTANCE_SIGNAL_NAMES
+            )
+
             ri, unc, component_scores, decision_record = compute_reliability(
-                contribution_set=contribution_set,
+                contribution_set=evidence_cs,
                 policy=policy,
                 signal_vector=signal_vector,
+                constraint_pipeline=EVIDENCE_CONSTRAINT_PIPELINE,
+            )
+            # Uncertainty is not computed a second time here: _compute_uncertainty
+            # is itself entirely evidence-family (completeness/diversity/
+            # independence/conflict) -- there is no defined "importance
+            # uncertainty" concept yet, so only the importance index and its
+            # own component scores/decision record are kept from this call.
+            (
+                importance_index,
+                _importance_unc,
+                importance_component_scores,
+                importance_decision_record,
+            ) = compute_reliability(
+                contribution_set=importance_cs,
+                policy=policy,
+                signal_vector=signal_vector,
+                constraint_pipeline=IMPORTANCE_CONSTRAINT_PIPELINE,
             )
             stats.record_fusion_end()
 
@@ -251,6 +322,9 @@ def score_knowledge_graph(
                 run_id=run_id,
                 extractors=extractors,
                 graph=graph,
+                importance_index=importance_index,
+                importance_component_scores=importance_component_scores,
+                importance_decision_record=importance_decision_record,
             )
 
             reliability[claim_id] = meta
@@ -292,8 +366,8 @@ def score_knowledge_graph(
         outputs={
             "claims_scored": scored_graph.total_scored,
             "avg_reliability": round(scored_graph.avg_reliability, 2),
-            "high_reliability": final_stats.knowledge.high_reliability_count,   # FIXED
-            "low_reliability": final_stats.knowledge.low_reliability_count,      # FIXED
+            "high_reliability": final_stats.knowledge.high_reliability_count,  # FIXED
+            "low_reliability": final_stats.knowledge.low_reliability_count,  # FIXED
             "policy_version": policy.version,
             "policy_profile": policy.profile,
             "registered_signals": final_stats.execution.registered_signal_count,  # Use execution

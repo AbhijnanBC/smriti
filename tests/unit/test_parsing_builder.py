@@ -2,9 +2,10 @@
 Unit tests for parsing/builder.py.
 """
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
+import pytest
 from smriti.core.models import (
     Document,
     ExtractionMethod,
@@ -15,7 +16,6 @@ from smriti.core.models import (
     WarningCode,
 )
 from smriti.parsing.builder import build_document
-from smriti.exceptions import BuilderError, DocumentError
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def source_doc():
         format=FileFormat.MARKDOWN,
         content_hash="a" * 64,
         size_bytes=100,
-        modified_at=datetime.now(tz=timezone.utc),
+        modified_at=datetime.now(tz=UTC),
     )
 
 
@@ -90,14 +90,14 @@ def test_warnings_merged(source_doc, stats):
 def test_wrong_doc_id_raises(source_doc, extraction_result, stats):
     """doc_id must match source_document.doc_id — mismatch raises DocumentError."""
     wrong_source = SourceDocument(
-        doc_id="b" * 64,         # different doc_id
+        doc_id="b" * 64,  # different doc_id
         path=Path("other.md"),
         relative_path=Path("other.md"),
         source_root=Path("."),
         format=FileFormat.MARKDOWN,
         content_hash="b" * 64,
         size_bytes=100,
-        modified_at=datetime.now(tz=timezone.utc),
+        modified_at=datetime.now(tz=UTC),
     )
     # Builder uses source_document.doc_id — so the Document will have "b"*64
     # This should succeed; the invariant is enforced inside Document.__post_init__
@@ -114,9 +114,61 @@ def test_empty_document_produces_warning(source_doc, stats):
         encoding_used="utf-8",  # RECTIFICATION: added missing field
     )
     empty_stats = TextStatistics(
-        character_count=0, word_count=0, line_count=0,
-        blank_line_count=0, paragraph_count=0,
+        character_count=0,
+        word_count=0,
+        line_count=0,
+        blank_line_count=0,
+        paragraph_count=0,
     )
     doc = build_document(source_doc, extraction_result, "", (), empty_stats)
     assert doc.has_warnings
     assert WarningCode.NO_EXTRACTABLE_TEXT in doc.extraction_warnings
+
+
+# ── P1-1: provenance is populated end-to-end through build_document ───
+
+
+def test_document_without_provenance_signal_has_unavailable_provenance(
+    source_doc, extraction_result, stats
+):
+    doc = build_document(source_doc, extraction_result, "Hello\n\nWorld.", (), stats)
+    assert not doc.provenance.is_available
+    assert doc.provenance.author is None
+
+
+def test_document_with_yaml_frontmatter_populates_provenance(source_doc, stats):
+    raw_text = (
+        "---\ndate: 2024-07-01\n---\n# HDFS Storage Layer\n\nHDFS divides datasets into blocks.\n"
+    )
+    extraction_result = RawExtractionResult(
+        raw_text=raw_text,
+        warnings=(),
+        method=ExtractionMethod.MARKDOWN,
+        encoding_used="utf-8",
+    )
+    doc = build_document(source_doc, extraction_result, raw_text, (), stats)
+    assert doc.provenance.is_available
+    assert doc.provenance.extraction_method == "yaml_frontmatter"
+    from datetime import datetime as _dt
+
+    assert doc.provenance.publication_date == _dt(2024, 7, 1)
+    # raw_text itself must remain untouched -- provenance extraction is read-only.
+    assert doc.raw_text == raw_text
+
+
+def test_document_with_inline_source_line_populates_provenance(source_doc, stats):
+    raw_text = (
+        "# A4. HDFS Block Storage Architecture\n\n"
+        "**Source:** Apache Hadoop Documentation\n\n"
+        "Body text here.\n"
+    )
+    extraction_result = RawExtractionResult(
+        raw_text=raw_text,
+        warnings=(),
+        method=ExtractionMethod.MARKDOWN,
+        encoding_used="utf-8",
+    )
+    doc = build_document(source_doc, extraction_result, raw_text, (), stats)
+    assert doc.provenance.is_available
+    assert doc.provenance.extraction_method == "inline_source_line"
+    assert doc.provenance.publisher == "Apache Hadoop Documentation"

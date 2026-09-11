@@ -8,15 +8,14 @@ Views coordinated: NavigationView + SearchView + ResultListView + InspectorView
 from __future__ import annotations
 
 import streamlit as st
-
 from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType
+from smriti.dashboard.models.presentation import DTOTransformer
+from smriti.dashboard.views.inspector_view import InspectorView
+from smriti.dashboard.views.navigation_view import NavigationView
+from smriti.dashboard.views.result_list_view import ResultListView
+from smriti.dashboard.views.search_view import SearchView
 from smriti.dashboard.workspaces.base import BaseWorkspace
 from smriti.dashboard.workspaces.context import WorkspaceContext
-from smriti.dashboard.models.presentation import DTOTransformer
-from smriti.dashboard.views.navigation_view import NavigationView
-from smriti.dashboard.views.search_view import SearchView
-from smriti.dashboard.views.result_list_view import ResultListView
-from smriti.dashboard.views.inspector_view import InspectorView
 
 
 class ResearchWorkspace(BaseWorkspace):
@@ -36,7 +35,7 @@ class ResearchWorkspace(BaseWorkspace):
 
     def on_create(self) -> None:
         """Build views — no data yet, just structure."""
-        from smriti.dashboard.views.navigation_view import NavigationView
+
         # Views created here are placeholders; data injected via refresh_all()
         # Actual state_manager injected at first render via _fetch_and_refresh
         pass

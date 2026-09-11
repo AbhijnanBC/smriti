@@ -1,11 +1,12 @@
 """reliability_view.py — ReliabilityView: reliability metrics and calibration chart."""
+
 from __future__ import annotations
-from typing import List, Optional
+
 import streamlit as st
-from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.models.presentation import ClaimPresentationModel, StatisticsPresentationModel
-from smriti.dashboard.components.reliability_badge import render_calibration_distribution_from_pm
 from smriti.dashboard.components.claim_card import render_claim_card
+from smriti.dashboard.components.reliability_badge import render_calibration_distribution_from_pm
+from smriti.dashboard.models.presentation import ClaimPresentationModel, StatisticsPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class ReliabilityView(BaseView):
@@ -13,9 +14,9 @@ class ReliabilityView(BaseView):
 
     def __init__(
         self,
-        claims: List[ClaimPresentationModel] = None,
-        stats: Optional[StatisticsPresentationModel] = None,
-        selected_claim: Optional[ClaimPresentationModel] = None,
+        claims: list[ClaimPresentationModel] = None,
+        stats: StatisticsPresentationModel | None = None,
+        selected_claim: ClaimPresentationModel | None = None,
     ) -> None:
         self._claims = claims or []
         self._stats = stats
@@ -23,9 +24,9 @@ class ReliabilityView(BaseView):
 
     def refresh(
         self,
-        claims: List[ClaimPresentationModel] = None,
-        stats: Optional[StatisticsPresentationModel] = None,
-        selected_claim: Optional[ClaimPresentationModel] = None,
+        claims: list[ClaimPresentationModel] = None,
+        stats: StatisticsPresentationModel | None = None,
+        selected_claim: ClaimPresentationModel | None = None,
     ) -> None:
         self._claims = claims or []
         self._stats = stats

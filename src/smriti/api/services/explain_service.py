@@ -6,15 +6,15 @@ consistent service interface.
 
 from __future__ import annotations
 
-import time
-import structlog
 import dataclasses
+import time
 
+import structlog
 from smriti.api.domain.requests import ExplanationRequest
 from smriti.api.domain.responses import KnowledgeResponse, make_response_meta
 from smriti.api.planner.plan import PhysicalPlan
 from smriti.api.store.read_store import ReadStore
-from smriti.core.models import ExplainabilityLevel, ExecutionContext
+from smriti.core.models import ExecutionContext, ExplainabilityLevel
 from smriti.exceptions import ClaimNotFoundError
 
 logger = structlog.get_logger(__name__)
@@ -45,9 +45,7 @@ class ExplainabilityService:
 
         rel_record = self._store.fetch_relationship(request.claim_id)
         if rel_record is None:
-            raise ClaimNotFoundError(
-                f"No reliability record for claim '{request.claim_id}'"
-            )
+            raise ClaimNotFoundError(f"No reliability record for claim '{request.claim_id}'")
 
         level = request.explainability_level
         result = self._build_explanation_dto(rel_record, level)
@@ -69,24 +67,30 @@ class ExplainabilityService:
             "explainability_level": level.value,
         }
         if level >= ExplainabilityLevel.SUMMARY:
-            dto.update({
-                "summary": exp.get("summary", ""),
-                "dominant_signal": exp.get("dominant_signal", ""),
-                "limiting_signal": exp.get("limiting_signal", ""),
-            })
+            dto.update(
+                {
+                    "summary": exp.get("summary", ""),
+                    "dominant_signal": exp.get("dominant_signal", ""),
+                    "limiting_signal": exp.get("limiting_signal", ""),
+                }
+            )
         if level >= ExplainabilityLevel.DETAILED:
-            dto.update({
-                "component_scores": rel_record.get("component_scores", []),
-                "signal_vector": rel_record.get("signal_vector", {}),
-                "signal_statuses": rel_record.get("signal_statuses", {}),
-                "strengths": exp.get("strengths", []),
-                "weaknesses": exp.get("weaknesses", []),
-            })
+            dto.update(
+                {
+                    "component_scores": rel_record.get("component_scores", []),
+                    "signal_vector": rel_record.get("signal_vector", {}),
+                    "signal_statuses": rel_record.get("signal_statuses", {}),
+                    "strengths": exp.get("strengths", []),
+                    "weaknesses": exp.get("weaknesses", []),
+                }
+            )
         if level >= ExplainabilityLevel.FULL_AUDIT:
-            dto.update({
-                "recommendations": exp.get("recommendations", []),
-                "audit": rel_record.get("audit", {}),
-                "policy_snapshot": rel_record.get("policy_snapshot", {}),
-                "schema_version": rel_record.get("schema_version", "8.0"),
-            })
+            dto.update(
+                {
+                    "recommendations": exp.get("recommendations", []),
+                    "audit": rel_record.get("audit", {}),
+                    "policy_snapshot": rel_record.get("policy_snapshot", {}),
+                    "schema_version": rel_record.get("schema_version", "8.0"),
+                }
+            )
         return dto

@@ -1,27 +1,23 @@
 """Integration tests for Phase 9 KnowledgeAccessService."""
 
 import json
-import pytest
-from pathlib import Path
 
-from smriti.api import build_knowledge_api, KnowledgeAccessService
-from smriti.core.models import (
-    ScoredKnowledgeGraph, KnowledgeGraph, ClaimNode, RelationshipEdge,
-    KnowledgePartition, GraphStatistics, ValidationReport,
-    SemanticRole, TopologyMetrics, SupportAggregate, TemporalMetadata,
-    TemporalStatus, RelationshipType, RelationshipDirection,
-    ReliabilityMetadata, CalibrationLabel, SignalVector,
-    ComponentScore, ReliabilityExplanation, ReliabilityAudit,
-    NodeAnnotations, ScoringGlobalStats,
-    ExportFormat, ExplainabilityLevel, ProjectionLevel, PredicateOperator,
-)
+import pytest
+from smriti.api import KnowledgeAccessService, build_knowledge_api
 from smriti.api.domain.predicates import Predicate
+from smriti.core.models import (
+    ExplainabilityLevel,
+    ExportFormat,
+    PredicateOperator,
+    ProjectionLevel,
+)
 from smriti.exceptions import RequestValidationError
 
 
 def make_test_graph():
     """Reuse the same factory as unit tests."""
     from tests.unit.test_phase9_store import make_test_scored_graph
+
     return make_test_scored_graph()
 
 
@@ -36,6 +32,7 @@ def api(scored_graph):
 
 
 # ── Original 35 integration tests ────────────────────────────────────────────
+
 
 def test_api_builds_successfully(api):
     assert isinstance(api, KnowledgeAccessService)
@@ -63,6 +60,7 @@ def test_get_claim_returns_correct_id(api):
 
 def test_get_claim_not_found_raises(api):
     from smriti.exceptions import ClaimNotFoundError
+
     with pytest.raises(ClaimNotFoundError):
         api.get_claim("nonexistent_claim_id")
 
@@ -94,9 +92,7 @@ def test_search_returns_all_claims(api):
 
 
 def test_search_with_predicate(api):
-    resp = api.search(
-        predicates=(Predicate("calibration_label", PredicateOperator.EQ, "high"),)
-    )
+    resp = api.search(predicates=(Predicate("calibration_label", PredicateOperator.EQ, "high"),))
     assert resp.total_count == 1
     assert resp.data[0].claim_id == "c001"
 
@@ -260,18 +256,19 @@ def test_search_replaces_top_claims(api):
 
 # ── 6 new rectified integration tests ────────────────────────────────────────
 
+
 def test_no_top_claims_method(api):
     """RECTIFIED (P1-4): top_claims() must not exist on KnowledgeAccessService."""
-    assert not hasattr(api, "top_claims"), (
-        "top_claims() must be removed. Use search(sort_field='reliability_index', limit=n) instead."
-    )
+    assert not hasattr(
+        api, "top_claims"
+    ), "top_claims() must be removed. Use search(sort_field='reliability_index', limit=n) instead."
 
 
 def test_no_contradicted_claims_method(api):
     """RECTIFIED (P1-4): contradicted_claims() must not exist on KnowledgeAccessService."""
-    assert not hasattr(api, "contradicted_claims"), (
-        "contradicted_claims() must be removed. Use search() with calibration_label predicate."
-    )
+    assert not hasattr(
+        api, "contradicted_claims"
+    ), "contradicted_claims() must be removed. Use search() with calibration_label predicate."
 
 
 def test_api_has_capability_registry(api):
@@ -300,6 +297,7 @@ def test_view_not_dto_in_cache(api):
     assert cache.size > 0
     # If a cached value is a ClaimDTO, this is a violation
     from smriti.api.dtos.claim_dto import ClaimDTO
+
     for key in cache._store:
         stored = cache._store[key]
         # The stored object should be a KnowledgeResponse wrapping a DTO
@@ -314,8 +312,10 @@ def test_view_not_dto_in_cache(api):
 def test_validation_centralized_in_request_validator(api):
     """RECTIFIED (P0-big): Validation must go through RequestValidator, not API methods."""
     from smriti.api.validation.request_validator import RequestValidator
+
     validator = RequestValidator()
     from smriti.api.domain.requests import ClaimRequest
+
     with pytest.raises(RequestValidationError):
         validator.validate(ClaimRequest(run_id="r1", claim_id=""))
 

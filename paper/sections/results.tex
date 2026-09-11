@@ -46,14 +46,32 @@ of total token volume, not document or claim count.
 \subsection{Baseline Comparison: Extraction Volume}
 
 Baseline B1 (naive keyword extraction), run directly against the raw
-SMRITI-Reference markdown files, produced 690 claims --- now
+SMRITI-Reference markdown files, produced \textbf{636} claims --- now
 \emph{more} than SMRITI's own (post-fix) Phase 4 output of 397 claims from
 the same 53 documents, a reversal from the pre-fix comparison (726 vs.\
-690). This is the assertion classifier working as intended: SMRITI now
-recovers substantially \emph{less} volume than the naive baseline because
-it explicitly discards non-declarative sentence types the naive baseline
+690, both measured before a later fix described next). This is the
+assertion classifier working as intended: SMRITI now recovers
+substantially \emph{less} volume than the naive baseline because it
+explicitly discards non-declarative sentence types the naive baseline
 cannot distinguish (\S\ref{sec:results-annotation} quantifies the
-resulting gain in structural validity directly).
+resulting gain in structural validity directly). \textbf{Corrected
+measurement (audit round, P1 "\texttt{\_MANIFEST.md} is
+contaminating the baseline"):} an administrative manifest file used to
+sit inside the scanned corpus directory (\texttt{data/raw/reference\_vault/}),
+counted by both the real pipeline's discovery stage and this naive
+baseline, but never as a real document. The real pipeline's assertion
+classifier already discarded 100\% of its content as non-declarative
+metadata (0 of 397 Phase 4 claims trace to it), but the naive baseline
+has no such classifier and extracted spurious "claims" from the
+manifest's own list lines, inflating an earlier measurement of this
+comparison (690) by about 8\%. The manifest is relocated to
+\texttt{evaluation/reference/manifest.md}, outside any scanned corpus
+directory, and the corrected 636-claim figure above is measured against
+the now-uncontaminated 53-document corpus.
+
+\subsection{Claim-Extraction Semantic Validity}
+\label{sec:claim-validity}
+\input{sections/claim_validity.tex}
 
 \subsection{Precision, Recall, and Agreement Against SMRITI-Reference}
 \label{sec:results-annotation}
@@ -62,3 +80,15 @@ resulting gain in structural validity directly).
 \subsection{Reliability Signal Ablation}
 \label{sec:ablation}
 \input{sections/ablation.tex}
+
+\subsection{Zero-Shot Transfer to a Public Benchmark: FEVER}
+\label{sec:fever}
+\input{sections/fever.tex}
+
+\subsection{Zero-Shot Transfer to a Second Domain: SciFact}
+\label{sec:scifact}
+\input{sections/scifact.tex}
+
+\subsection{Open-Domain Generalization: SciFact-Open}
+\label{sec:scifact-open}
+\input{sections/scifact_open.tex}

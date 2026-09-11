@@ -1,0 +1,79 @@
+\input{generated/scifact_open_table.tex}
+
+SciFact-Open \citep{wadden2022scifact} extends SciFact with the concern
+this paper's own candidate-precision finding (\S\ref{sec:results} finding
+6) already raises for SMRITI-Controlled-v2: a real verification system
+must work over a much larger, open-domain candidate pool, most of which
+is irrelevant to any given claim, not a small curated set of pre-matched
+evidence. We approximate this with a 412-pair benchmark built from
+\texttt{umbc-scify/scifact-open} (\texttt{evaluation/scifact\_open/v1/}):
+206 claims paired with their own genuine, verified SUPPORT/CONTRADICT
+evidence document (\emph{genuine\_evidence}), and the same 206 claims
+each paired with one document drawn at random from a real,
+topically-diverse 500{,}000-abstract pool (\emph{unverified\_random\_distractor}).
+\textbf{The distractor bucket's NEI label is expected by construction
+intent, not individually verified} --- random sampling from a large,
+diverse pool makes genuine topical overlap with one specific claim very
+unlikely, but this is a probabilistic argument, not a checked ground
+truth the way SMRITI-ClosedWorld-v1's guaranteed-neutral distractors are
+(\S\ref{sec:closed-world}); we report it with this caveat attached, not
+as a certified labeled-pair measurement. The key structural difference
+from \S\ref{sec:scifact}'s plain SciFact evaluation is the evidence text
+itself: SciFact-Open's genuine\_evidence bucket supplies the
+\emph{entire} cited abstract (title and full abstract, unsegmented) as
+evidence, not SciFact's own extracted gold rationale sentences --- a
+closer approximation of what a real retrieval-augmented system would
+actually hand the classifier.
+
+\textbf{(1) Genuine\_evidence accuracy collapses to 8.7\% (18/206) ---
+far below chance on a binary SUPPORT/CONTRADICT task, and a much larger
+drop than plain SciFact's already-low 48.2\% three-way accuracy
+(\S\ref{sec:scifact}).} Recall falls to 11.4\% for SUPPORT and 5.9\% for
+CONTRADICT (SciFact with extracted rationale sentences: 28.7\%/23.4\%).
+Precision, by contrast, holds up (92.3\%/66.7\%) --- the same
+precision-favoring profile seen on every corpus in this paper, now at an
+extreme point on the recall axis.
+
+\textbf{(2) The same NEUTRAL-defaulting failure mode identified on FEVER
+and SciFact is present here at its most extreme: 175 of 206 pairs
+(84.9\%) resolve to SMRITI's native NEUTRAL relation type, regardless of
+gold label (85/105 SUPPORT, 90/101 CONTRADICT).} Read alongside
+\S\ref{sec:fever} and \S\ref{sec:scifact}, this completes a monotonic
+progression across three corpora that differ specifically in evidence
+length and density: FEVER's single evidence sentence(s) (51.2\% resolve
+NEUTRAL) $<$ SciFact's extracted rationale sentences (74.6\%) $<$
+SciFact-Open's full, unsegmented abstract (84.9\%). This pattern is
+consistent with signal dilution in long premise text as a real
+contributor to SMRITI's under-commitment problem, distinct from (and
+additive to) the domain-specific vocabulary difficulty \S\ref{sec:scifact}
+discusses --- the same claims and the same genuine evidence documents,
+differing only in whether the evidence is trimmed to its rationale
+sentences or left as the full abstract, show a large accuracy gap
+purely from that difference. We did not design a controlled experiment
+that isolates evidence length from domain shift, so we report this as a
+suggestive, not confirmed, contributor.
+
+\textbf{(3) On real, randomly-sampled distractor documents, SMRITI is
+well-behaved: 194 of 206 (94.2\%) correctly resolve to NEI, with only 4
+false CONTRADICT calls (1.9\%) and 8 false SUPPORT calls.} This is a
+substantially lower false-contradiction rate than FEVER's NEI arm
+(17.3\%, \S\ref{sec:fever} finding 4) and is closer in spirit to
+SMRITI-ClosedWorld-v1's guaranteed-neutral distractors (0\% false
+CONTRADICTS, \S\ref{sec:closed-world}), even though this bucket's
+distractors are real, unconstructed scientific abstracts rather than a
+purpose-built control. Read together with finding (1), the picture is
+specific rather than diffuse: SMRITI's resolver is not generally
+trigger-happy on unrelated real text --- it is specifically bad at
+recognizing genuine support and contradiction once the evidence is long
+and undifferentiated, not bad at rejecting irrelevant evidence.
+
+Read together, \S\ref{sec:fever}, \S\ref{sec:scifact}, and this section
+make the same point with increasing force: SMRITI's contradiction/
+entailment judgment is precision-favoring and well above a naive
+baseline on text no one involved in this project wrote, but its recall
+degrades sharply as evidence moves from short, clean, single-sentence
+text toward long, natural, retrieval-realistic text --- exactly the
+generalization gap SciFact-Open was designed to expose, now measured
+directly on SMRITI rather than assumed from its architecture. As with
+FEVER and SciFact, no threshold is tuned against this benchmark before
+or after the number is reported.

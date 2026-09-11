@@ -28,9 +28,10 @@ Rules:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Tuple, Iterator
+from collections.abc import Iterator
+from typing import Any
 
-from smriti.api.domain.predicates import Predicate, SortSpec, Pagination
+from smriti.api.domain.predicates import Pagination, Predicate, SortSpec
 
 
 class ReadStore(ABC):
@@ -45,18 +46,18 @@ class ReadStore(ABC):
     def node_count(self) -> int: ...
 
     @abstractmethod
-    def lookup(self, claim_id: str) -> Optional[Dict[str, Any]]:
+    def lookup(self, claim_id: str) -> dict[str, Any] | None:
         """O(1) point lookup by claim_id. Returns raw record or None."""
         ...
 
     @abstractmethod
     def scan(
         self,
-        predicates: List[Predicate],
+        predicates: list[Predicate],
         sort: SortSpec,
         pagination: Pagination,
-        text_contains: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        text_contains: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
         """
         Linear scan with predicate filter, sort, and pagination.
         Returns (page_records, total_matching_count).
@@ -65,21 +66,21 @@ class ReadStore(ABC):
         ...
 
     @abstractmethod
-    def fetch_relationship(self, claim_id: str) -> Optional[Dict[str, Any]]:
+    def fetch_relationship(self, claim_id: str) -> dict[str, Any] | None:
         """O(1) point lookup of reliability record. Returns raw dict or None."""
         ...
 
     @abstractmethod
-    def stream(self) -> Iterator[Dict[str, Any]]:
+    def stream(self) -> Iterator[dict[str, Any]]:
         """Return all claim records as an iterator (for export/full-scan)."""
         ...
 
     @abstractmethod
-    def get_edge_records(self) -> List[Dict[str, Any]]:
+    def get_edge_records(self) -> list[dict[str, Any]]:
         """Return all edge records as raw dicts (for graph traversal by NavigationService)."""
         ...
 
     @abstractmethod
-    def get_adjacency(self) -> Dict[str, List[Tuple[str, str, str]]]:
+    def get_adjacency(self) -> dict[str, list[tuple[str, str, str]]]:
         """Return adjacency list: {claim_id: [(neighbor_id, edge_id, rel_type)]}"""
         ...

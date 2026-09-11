@@ -33,12 +33,12 @@ Determinism guarantee:
 
 import re
 import unicodedata
-from typing import List
+
 import structlog
 
 from smriti.core.config import get_config
-from smriti.exceptions import NormalizationError
 from smriti.core.models import NormalizationResult, WarningCode
+from smriti.exceptions import NormalizationError
 
 logger = structlog.get_logger(__name__)
 
@@ -67,7 +67,7 @@ def normalize_text(raw_text: str) -> NormalizationResult:
     collapse_blank_lines: int = parsing_cfg.get("collapse_blank_lines", 2)
     remove_trailing_ws: bool = parsing_cfg.get("remove_trailing_whitespace", True)
 
-    warnings: List[WarningCode] = []
+    warnings: list[WarningCode] = []
     text = raw_text
 
     try:

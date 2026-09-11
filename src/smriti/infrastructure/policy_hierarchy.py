@@ -17,28 +17,29 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class PolicyLevel(str, Enum):
-    GLOBAL        = "global"
-    RUNTIME       = "runtime"
-    INTERACTION   = "interaction"
-    WORKSPACE     = "workspace"
-    FEATURE       = "feature"
+    GLOBAL = "global"
+    RUNTIME = "runtime"
+    INTERACTION = "interaction"
+    WORKSPACE = "workspace"
+    FEATURE = "feature"
 
 
 @dataclass(frozen=True)
 class PolicyDescriptor:
     """Formal description of one policy hierarchy level."""
-    level:       PolicyLevel
-    scope:       str
-    owner:       str
-    overridable: bool     # Can lower-level policies override this?
-    validation:  str
+
+    level: PolicyLevel
+    scope: str
+    owner: str
+    overridable: bool  # Can lower-level policies override this?
+    validation: str
 
 
-POLICY_LEVEL_DESCRIPTORS: Dict[PolicyLevel, PolicyDescriptor] = {
+POLICY_LEVEL_DESCRIPTORS: dict[PolicyLevel, PolicyDescriptor] = {
     PolicyLevel.GLOBAL: PolicyDescriptor(
         level=PolicyLevel.GLOBAL,
         scope="Project-wide defaults for all interactions and runtime.",
@@ -93,9 +94,7 @@ class PolicyHierarchy:
     ]
 
     def __init__(self) -> None:
-        self._data: Dict[PolicyLevel, Dict[str, Any]] = {
-            level: {} for level in PolicyLevel
-        }
+        self._data: dict[PolicyLevel, dict[str, Any]] = {level: {} for level in PolicyLevel}
 
     def set(self, level: PolicyLevel, key: str, value: Any) -> None:
         self._data[level][key] = value
@@ -106,9 +105,9 @@ class PolicyHierarchy:
                 return self._data[level][key]
         return default
 
-    def effective_policy(self) -> Dict[str, Any]:
+    def effective_policy(self) -> dict[str, Any]:
         """Return merged policy (higher levels take precedence)."""
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         for level in reversed(self._PRIORITY):
             result.update(self._data[level])
         return result

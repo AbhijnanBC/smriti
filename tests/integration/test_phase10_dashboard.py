@@ -3,25 +3,27 @@ Integration tests for Phase 10.
 Validates EpistemicState → ServiceClient → PresentationModel consistency.
 """
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 from smriti.core.models import (
-    WorkspaceType, EpistemicLens, ExplainabilityLevel,
-    ProjectionLevel, ExportFormat,
+    EpistemicLens,
+    ExplainabilityLevel,
+    WorkspaceType,
 )
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
-from smriti.dashboard.services.client import ServiceClient
-from smriti.dashboard.workspaces.registry import build_default_registry
-from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
-from smriti.dashboard.models.presentation import DTOTransformer
+from smriti.dashboard.commands.commands import ActivateWorkspaceCommand, SelectClaimCommand
 from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
-from smriti.dashboard.commands.commands import SelectClaimCommand, ActivateWorkspaceCommand
+from smriti.dashboard.models.presentation import DTOTransformer
+from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
+from smriti.dashboard.services.client import ServiceClient
+from smriti.dashboard.state.epistemic_state import EpistemicStateManager
+from smriti.dashboard.workspaces.registry import build_default_registry
 
 
 # ── Test‑specific PolicyEngine with validate_command ─────────────────────────
 class TestPolicyEngine(PolicyEngine):
     """Subclass that implements validate_command for testing."""
+
     def validate_command(self, command):
         """Enforce interaction policies for commands.
         For this test suite, we allow all commands.
@@ -73,16 +75,21 @@ def make_mock_api():
 
     api.get_claim.return_value = mock_response
     api.search.return_value = mock_response
-    api.statistics.return_value = MagicMock(data={
-        "total_claims": 10, "total_edges": 5,
-        "total_partitions": 2, "total_contradictions": 1,
-        "avg_reliability": 72.3, "median_reliability": 75.0,
-        "avg_uncertainty": 18.5,
-        "calibration_distribution": {"high": 4, "moderate": 4, "low": 2},
-        "reliability_histogram": [("0-10", 0), ("10-20", 1)],
-        "partition_summaries": [],
-        "run_id": "test_run_phase10",
-    })
+    api.statistics.return_value = MagicMock(
+        data={
+            "total_claims": 10,
+            "total_edges": 5,
+            "total_partitions": 2,
+            "total_contradictions": 1,
+            "avg_reliability": 72.3,
+            "median_reliability": 75.0,
+            "avg_uncertainty": 18.5,
+            "calibration_distribution": {"high": 4, "moderate": 4, "low": 2},
+            "reliability_histogram": [("0-10", 0), ("10-20", 1)],
+            "partition_summaries": [],
+            "run_id": "test_run_phase10",
+        }
+    )
     api.top_claims.return_value = mock_response
 
     export_resp = MagicMock()
@@ -91,7 +98,8 @@ def make_mock_api():
 
     traversal_resp = MagicMock()
     traversal_resp.data = {
-        "start_claim_id": "c001", "navigation_mode": "local",
+        "start_claim_id": "c001",
+        "navigation_mode": "local",
         "depth_reached": 1,
         "nodes": [mock_claim_dto.to_dict.return_value],
         "edges": [],
@@ -109,9 +117,13 @@ def make_mock_api():
         "dominant_signal": "evidence_strength",
         "limiting_signal": "conflict_pressure",
         "component_scores": [
-            {"signal_name": "evidence_strength", "contribution": 22.0,
-             "direction": "positive", "explanation": "Good support.",
-             "signal": "evidence_strength"}
+            {
+                "signal_name": "evidence_strength",
+                "contribution": 22.0,
+                "direction": "positive",
+                "explanation": "Good support.",
+                "signal": "evidence_strength",
+            }
         ],
         "signal_vector": {"evidence_strength": 0.70},
         "audit": {"policy_version": "1.0", "fusion_algorithm": "weighted_linear_v1"},
@@ -151,6 +163,7 @@ def policy_engine():
 
 # ── Interaction lifecycle ─────────────────────────────────────────────────────
 
+
 def test_interaction_lifecycle_completes(state_mgr):
     state_mgr.activate_workspace(WorkspaceType.RELIABILITY)
     state_mgr.apply_filter("calibration_label", "high")
@@ -165,6 +178,7 @@ def test_interaction_lifecycle_completes(state_mgr):
 
 
 # ── ServiceClient ─────────────────────────────────────────────────────────────
+
 
 def test_client_get_claim(client):
     result = client.get_claim("c001")
@@ -203,6 +217,7 @@ def test_client_traverse(client):
 
 # ── DTO → PresentationModel pipeline ─────────────────────────────────────────
 
+
 def test_claim_dto_converts_to_pm(client):
     """ServiceClient dict must be convertible to ClaimPresentationModel."""
     dto = client.get_claim("c001")
@@ -226,6 +241,7 @@ def test_explanation_dto_converts_to_audit_pm(client):
 
 # ── Command dispatch pipeline ─────────────────────────────────────────────────
 
+
 def test_dispatcher_select_claim_command(state_mgr, policy_engine):
     dispatcher = InteractionDispatcher(state_mgr, policy_engine)
     dispatcher.dispatch(SelectClaimCommand(session_id="s", claim_id="c001"))
@@ -234,13 +250,14 @@ def test_dispatcher_select_claim_command(state_mgr, policy_engine):
 
 def test_dispatcher_activate_workspace_command(state_mgr, policy_engine):
     dispatcher = InteractionDispatcher(state_mgr, policy_engine)
-    dispatcher.dispatch(ActivateWorkspaceCommand(
-        session_id="s", workspace_type=WorkspaceType.AUDIT
-    ))
+    dispatcher.dispatch(
+        ActivateWorkspaceCommand(session_id="s", workspace_type=WorkspaceType.AUDIT)
+    )
     assert state_mgr.state.workspace_type == WorkspaceType.AUDIT
 
 
 # ── WorkspaceRegistry ─────────────────────────────────────────────────────────
+
 
 def test_all_workspaces_registered(registry):
     for ws_type in WorkspaceType:
@@ -254,6 +271,7 @@ def test_workspace_has_correct_profile(registry):
 
 
 # ── Policy enforcement ────────────────────────────────────────────────────────
+
 
 def test_policy_rejects_large_graph(policy_engine):
     allowed, _ = policy_engine.validate_graph_size(1000)
@@ -272,6 +290,7 @@ def test_policy_allows_json_export(policy_engine):
 
 # ── Knowledge immutability ────────────────────────────────────────────────────
 
+
 def test_interaction_does_not_modify_api(mock_api, state_mgr, client):
     original_node_count = mock_api.node_count
     original_run_id = mock_api.run_id
@@ -287,6 +306,7 @@ def test_interaction_does_not_modify_api(mock_api, state_mgr, client):
 
 # ── Determinism ───────────────────────────────────────────────────────────────
 
+
 def test_same_state_produces_same_requests(mock_api, state_mgr, client):
     state_mgr.select_claim("c001")
     result1 = client.get_claim("c001")
@@ -297,8 +317,10 @@ def test_same_state_produces_same_requests(mock_api, state_mgr, client):
 
 # ── Serialization ─────────────────────────────────────────────────────────────
 
+
 def test_workspace_state_serializable(state_mgr):
     import json
+
     state_mgr.activate_workspace(WorkspaceType.AUDIT)
     state_mgr.apply_filter("calibration_label", "high")
     state_mgr.select_claim("c001")

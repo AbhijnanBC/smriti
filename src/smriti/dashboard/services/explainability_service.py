@@ -4,9 +4,7 @@ explainability_service.py — Explainability retrieval for Phase 10.
 
 from __future__ import annotations
 
-from typing import Optional, Dict
 import structlog
-
 from smriti.core.models import ExplainabilityLevel
 
 logger = structlog.get_logger(__name__)
@@ -22,10 +20,11 @@ class ExplainabilityService:
         self,
         claim_id: str,
         level: int = ExplainabilityLevel.FULL_AUDIT,
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """Retrieve full explainability record for one claim."""
         try:
             from smriti.core.models import ExplainabilityLevel as EL
+
             resp = self._api.explain(claim_id, level=EL(level))
             return resp.data
         except Exception as e:

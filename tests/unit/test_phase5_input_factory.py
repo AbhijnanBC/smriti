@@ -5,12 +5,16 @@ Tests both EmbeddingInputFactory (payload) and CacheKeyFactory (keys).
 These are now separate classes with separate responsibilities.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 from smriti.core.models import (
-    Claim, ClaimProvenance, ExtractionMode, AssertionMetadata, Modality,
+    AssertionMetadata,
+    Claim,
+    ClaimProvenance,
+    ExtractionMode,
 )
-from smriti.embedding.input_factory import EmbeddingInputFactory, CacheKeyFactory
+from smriti.embedding.input_factory import CacheKeyFactory, EmbeddingInputFactory
 
 
 def make_claim(
@@ -30,8 +34,10 @@ def make_claim(
         structured_assertion=None,
         assertion_metadata=AssertionMetadata(),
         provenance=ClaimProvenance(
-            sentence_id="s001", document_id="d001",
-            source_path=Path("test.md"), sentence_context=context,
+            sentence_id="s001",
+            document_id="d001",
+            source_path=Path("test.md"),
+            sentence_context=context,
             sentence_position=0,
         ),
         schema_version="4.0",
@@ -52,6 +58,7 @@ def key_factory():
 
 # ── EmbeddingInputFactory tests ───────────────────────────────────────────────
 
+
 def test_payload_without_context(payload_factory):
     """Claim without context → payload is just claim.text."""
     claim = make_claim(text="Python is fast.", context="")
@@ -61,7 +68,9 @@ def test_payload_without_context(payload_factory):
 def test_payload_with_context(payload_factory):
     """Claim with context → payload is 'context\\ntext'."""
     claim = make_claim(text="It supports yield statements.", context="Python > Generators")
-    assert payload_factory.build_payload(claim) == "Python > Generators\nIt supports yield statements."
+    assert (
+        payload_factory.build_payload(claim) == "Python > Generators\nIt supports yield statements."
+    )
 
 
 def test_payload_does_not_modify_claim(payload_factory):
@@ -95,6 +104,7 @@ def test_instruction_prefix_with_context():
 
 
 # ── CacheKeyFactory tests ─────────────────────────────────────────────────────
+
 
 def test_cache_key_is_32_chars(key_factory):
     """Cache key must be exactly 32 hex characters."""
@@ -139,4 +149,4 @@ def test_payload_factory_and_key_factory_are_independent():
 
     # Payloads differ but keys are the same — cache key depends on content, not enriched input
     assert payload_plain != payload_with
-    assert key == key_factory_shared.build_cache_key(claim)   # Key is stable
+    assert key == key_factory_shared.build_cache_key(claim)  # Key is stable

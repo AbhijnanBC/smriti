@@ -1,0 +1,46 @@
+\input{generated/recall_at_k_table.tex}
+
+\S\ref{sec:controlled}'s finding (1) reports SMRITI-Controlled-v2's
+retrieval recall at production's fixed operating point (top-$k=50$,
+cosine threshold $=0.75$) without asking how sensitive that number is to
+either parameter, or what it costs in candidate volume to move it (P1-8,
+audit round). We answer this directly from SMRITI-Controlled-v2's
+already-computed Phase 5 embeddings (real cached vectors; no
+re-embedding, no NLI re-run), sweeping top-$k$ and the cosine threshold
+independently against all 620 non-abstention gold pairs.
+
+\textbf{(1) At production's threshold, top-$k$ makes no difference at
+all: recall is identical (72.9\%) at $k=10, 25, 50,$ and $100$.} The
+binding constraint at this corpus's embedding density is the threshold,
+not the neighbor-list depth --- far fewer than 10 candidates typically
+clear cosine $\geq 0.75$ for any given claim, so raising $k$ from 10 to
+100 admits no additional true positives (or false ones): mean
+candidates/claim is exactly 1.59 across all four settings. This is a
+useful negative result: at this corpus's current scale, tuning $k$
+upward would add pure overhead (larger candidate lists to validate) with
+zero recall benefit, and tuning it downward to as little as 10 would
+lose nothing.
+
+\textbf{(2) The threshold, not top-$k$, is where the real recall/volume
+tradeoff lives, and it is a real tradeoff, not a free lunch.} Lowering
+the threshold from production's 0.75 to 0.60 raises recall from 72.9\%
+to 83.4\% (+10.5 points) but more than triples candidate volume (1.59
+$\to$ 5.32 candidates/claim, +234\%) --- every additional true positive
+recovered brings several additional low-similarity candidates the NLI
+stage must also score, most of which are not the intended pair (a smaller-scale
+echo of \S\ref{sec:results} finding 6's open-world candidate-volume
+finding). Raising the threshold to 0.90 collapses recall to 39.5\% while
+barely reducing candidate volume below the noise floor (1.00
+candidates/claim, i.e.\ almost every claim retrieves at most one
+neighbor this strict) --- past a certain point, tightening the threshold
+loses recall without buying back any of the volume it cost at looser
+settings, because the population left at very high similarity is
+already close to one-candidate-per-claim.
+
+We read this as a disclosed operating-point justification rather than a
+claim that 0.75 is optimal: production's current threshold sits closer
+to the volume-efficient end of the curve (1.59 candidates/claim) than
+the recall-maximizing end (5.32 candidates/claim at 0.60, for +10.5
+recall points), and whether that tradeoff is the right one depends on
+the downstream cost of false candidates, which \S\ref{sec:results}
+finding 6 already shows is non-trivial on this same corpus.

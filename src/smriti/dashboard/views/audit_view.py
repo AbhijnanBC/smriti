@@ -1,22 +1,20 @@
 """audit_view.py — AuditView: renders 4-level explainability from AuditPresentationModel."""
+
 from __future__ import annotations
 
-from typing import Optional
-
 import streamlit as st
-
-from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.models.presentation import AuditPresentationModel
 from smriti.core.models import ExplainabilityLevel
+from smriti.dashboard.models.presentation import AuditPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class AuditView(BaseView):
     """Renders audit trail at any explainability level."""
 
-    def __init__(self, audit: Optional[AuditPresentationModel] = None) -> None:
+    def __init__(self, audit: AuditPresentationModel | None = None) -> None:
         self._audit = audit
 
-    def refresh(self, audit: Optional[AuditPresentationModel] = None) -> None:
+    def refresh(self, audit: AuditPresentationModel | None = None) -> None:
         self._audit = audit
 
     def supports(self, context) -> bool:
@@ -50,13 +48,15 @@ class AuditView(BaseView):
             st.divider()
             st.subheader("Signal Measurements")
             # Guard against None signals
-            for sig in (pm.signals or []):
+            for sig in pm.signals or []:
                 st.progress(float(sig.value), text=f"{sig.label}: {sig.formatted}")
 
             st.subheader("Component Contributions")
             # Guard against None component_scores
-            for comp in (pm.component_scores or []):
-                st.markdown(f"{comp.icon} **{comp.display_name}:** `{comp.formatted_contribution}` — {comp.explanation}")
+            for comp in pm.component_scores or []:
+                st.markdown(
+                    f"{comp.icon} **{comp.display_name}:** `{comp.formatted_contribution}` — {comp.explanation}"
+                )
 
         if level >= ExplainabilityLevel.FULL_AUDIT:
             st.divider()
@@ -67,7 +67,7 @@ class AuditView(BaseView):
             if pm.recommendations:
                 st.subheader("Recommendations")
                 # Guard against None recommendations (though it should be a list)
-                for rec in (pm.recommendations or []):
+                for rec in pm.recommendations or []:
                     st.markdown(f"💡 {rec}")
 
             if pm.policy_snapshot:

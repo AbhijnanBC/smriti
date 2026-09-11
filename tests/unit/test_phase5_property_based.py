@@ -8,18 +8,19 @@ Install: poetry add --group dev hypothesis
 """
 
 import math
+
 import pytest
 
 try:
-    from hypothesis import given, settings, assume, HealthCheck
+    from hypothesis import HealthCheck, assume, given, settings
     from hypothesis import strategies as st
+
     HAS_HYPOTHESIS = True
 except ImportError:
     HAS_HYPOTHESIS = False
 
 pytestmark = pytest.mark.skipif(
-    not HAS_HYPOTHESIS,
-    reason="hypothesis not installed — run: poetry add --group dev hypothesis"
+    not HAS_HYPOTHESIS, reason="hypothesis not installed — run: poetry add --group dev hypothesis"
 )
 
 
@@ -43,7 +44,6 @@ if HAS_HYPOTHESIS:
         norm = math.sqrt(sum(x * x for x in normalized))
         assert abs(norm - 1.0) < 1e-5, f"norm={norm} for input {values[:4]}..."
 
-
     @given(
         values=st.lists(
             st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False),
@@ -59,7 +59,6 @@ if HAS_HYPOTHESIS:
         l2_normalize(values)
         assert values == original
 
-
     @given(
         values=st.lists(
             st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False),
@@ -73,7 +72,7 @@ if HAS_HYPOTHESIS:
         assume(sum(x * x for x in values) > 0)
         once = l2_normalize(values)
         twice = l2_normalize(once)
-        for a, b in zip(once, twice):
+        for a, b in zip(once, twice, strict=False):
             assert abs(a - b) < 1e-5
 
 
@@ -84,17 +83,25 @@ if HAS_HYPOTHESIS:
 
     @given(
         text=st.text(min_size=1, max_size=1000),
-        model_sig=st.text(min_size=1, max_size=64, alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"))),
-        config_hash=st.text(min_size=1, max_size=64, alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"))),
+        model_sig=st.text(
+            min_size=1, max_size=64, alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"))
+        ),
+        config_hash=st.text(
+            min_size=1, max_size=64, alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"))
+        ),
     )
     @settings(max_examples=200)
     def test_property_cache_key_always_32_hex_chars(text, model_sig, config_hash):
         """For ANY text and signatures, cache key is always exactly 32 hex chars."""
-        from pathlib import Path
-        from smriti.core.models import (
-            Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
-        )
         import hashlib
+        from pathlib import Path
+
+        from smriti.core.models import (
+            AssertionMetadata,
+            Claim,
+            ClaimProvenance,
+            ExtractionMode,
+        )
 
         claim = Claim(
             claim_id="c001",
@@ -107,8 +114,10 @@ if HAS_HYPOTHESIS:
             structured_assertion=None,
             assertion_metadata=AssertionMetadata(),
             provenance=ClaimProvenance(
-                sentence_id="s001", document_id="d001",
-                source_path=Path("test.md"), sentence_context="",
+                sentence_id="s001",
+                document_id="d001",
+                source_path=Path("test.md"),
+                sentence_context="",
                 sentence_position=0,
             ),
             schema_version="4.0",
@@ -140,7 +149,6 @@ if HAS_HYPOTHESIS:
         assume(any(x != 0.0 for x in values))
         is_valid, error = validate_vector(values, expected_dimension=len(values))
         assert is_valid is True, f"Expected valid but got error: {error}"
-
 
     @given(
         values=st.lists(

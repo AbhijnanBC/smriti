@@ -12,14 +12,14 @@ consistent service interface.
 from __future__ import annotations
 
 import time
-import structlog
 
+import structlog
 from smriti.api.domain.requests import StatisticsRequest
 from smriti.api.domain.responses import KnowledgeResponse, make_response_meta
 from smriti.api.planner.plan import PhysicalPlan
 from smriti.api.store.read_store import ReadStore
 from smriti.api.views.statistics_view_builder import StatisticsViewBuilder
-from smriti.core.models import ExecutionContext, QueryFamily
+from smriti.core.models import ExecutionContext
 
 logger = structlog.get_logger(__name__)
 
@@ -51,17 +51,12 @@ class StatisticsService:
         t0 = time.monotonic()
 
         # Collect graph-wide metadata
-        total_edges = (
-            self._graph_metadata.statistics.edge_count
-            if self._graph_metadata else 0
-        )
+        total_edges = self._graph_metadata.statistics.edge_count if self._graph_metadata else 0
         total_partitions = (
-            self._graph_metadata.statistics.partition_count
-            if self._graph_metadata else 0
+            self._graph_metadata.statistics.partition_count if self._graph_metadata else 0
         )
         total_contradictions = (
-            self._graph_metadata.statistics.contradiction_count
-            if self._graph_metadata else 0
+            self._graph_metadata.statistics.contradiction_count if self._graph_metadata else 0
         )
         partition_data = {}
         if self._graph_metadata and request.include_partition_stats:
@@ -100,6 +95,7 @@ class StatisticsService:
         }
 
         import dataclasses
+
         ctx = dataclasses.replace(
             ctx,
             execution_ms=round((time.monotonic() - t0) * 1000, 2),

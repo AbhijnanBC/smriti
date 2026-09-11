@@ -8,7 +8,6 @@ Enables future per-workspace, per-user, or per-organization policies.
 
 from __future__ import annotations
 
-from typing import Dict
 from smriti.dashboard.policies.policies import InteractionPolicy, load_interaction_policy
 
 
@@ -19,7 +18,7 @@ class PolicyRegistry:
     """
 
     def __init__(self) -> None:
-        self._policies: Dict[str, InteractionPolicy] = {
+        self._policies: dict[str, InteractionPolicy] = {
             "default": load_interaction_policy(),
         }
         self._active_name: str = "default"

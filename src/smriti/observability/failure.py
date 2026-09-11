@@ -16,128 +16,159 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
 class FailureCategory(str, Enum):
-    INFRASTRUCTURE         = "infrastructure"
-    CONFIGURATION          = "configuration"
-    RESOURCE               = "resource"
-    INTERACTION            = "interaction"
-    KNOWLEDGE_API          = "knowledge_api"
-    WORKSPACE              = "workspace"
-    PERSISTENCE            = "persistence"
-    EXTERNAL_DEPENDENCY    = "external_dependency"
-    INTERNAL_UNEXPECTED    = "internal_unexpected"
-    OBSERVABILITY          = "observability"
+    INFRASTRUCTURE = "infrastructure"
+    CONFIGURATION = "configuration"
+    RESOURCE = "resource"
+    INTERACTION = "interaction"
+    KNOWLEDGE_API = "knowledge_api"
+    WORKSPACE = "workspace"
+    PERSISTENCE = "persistence"
+    EXTERNAL_DEPENDENCY = "external_dependency"
+    INTERNAL_UNEXPECTED = "internal_unexpected"
+    OBSERVABILITY = "observability"
 
 
 class FailureSeverity(str, Enum):
     CRITICAL = "critical"
-    HIGH     = "high"
-    MEDIUM   = "medium"
-    LOW      = "low"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 class IsolationStrategy(str, Enum):
     TERMINATE = "terminate"
-    DEGRADE   = "degrade"
-    SKIP      = "skip"
-    IGNORE    = "ignore"
+    DEGRADE = "degrade"
+    SKIP = "skip"
+    IGNORE = "ignore"
 
 
 class PropagationPolicy(str, Enum):
     PROPAGATE = "propagate"
-    CONTAIN   = "contain"
-    LOG_ONLY  = "log_only"
+    CONTAIN = "contain"
+    LOG_ONLY = "log_only"
 
 
 class RecoveryPolicy(str, Enum):
     REBUILD = "rebuild"
     RESTORE = "restore"
-    RETRY   = "retry"
-    NONE    = "none"
+    RETRY = "retry"
+    NONE = "none"
 
 
 @dataclass(frozen=True)
 class FailureTaxonomyEntry:
-    category:            FailureCategory
-    severity:            FailureSeverity
-    isolation_strategy:  IsolationStrategy
-    propagation_policy:  PropagationPolicy
-    recovery_policy:     RecoveryPolicy
-    source_modules:      tuple
-    description:         str
+    category: FailureCategory
+    severity: FailureSeverity
+    isolation_strategy: IsolationStrategy
+    propagation_policy: PropagationPolicy
+    recovery_policy: RecoveryPolicy
+    source_modules: tuple
+    description: str
 
 
 FAILURE_TAXONOMY: dict = {
     FailureCategory.CONFIGURATION: FailureTaxonomyEntry(
-        category=FailureCategory.CONFIGURATION, severity=FailureSeverity.CRITICAL,
-        isolation_strategy=IsolationStrategy.TERMINATE, propagation_policy=PropagationPolicy.PROPAGATE,
-        recovery_policy=RecoveryPolicy.NONE, source_modules=("smriti.core.config",),
+        category=FailureCategory.CONFIGURATION,
+        severity=FailureSeverity.CRITICAL,
+        isolation_strategy=IsolationStrategy.TERMINATE,
+        propagation_policy=PropagationPolicy.PROPAGATE,
+        recovery_policy=RecoveryPolicy.NONE,
+        source_modules=("smriti.core.config",),
         description="Configuration is invalid or missing — system cannot start.",
     ),
     FailureCategory.INFRASTRUCTURE: FailureTaxonomyEntry(
-        category=FailureCategory.INFRASTRUCTURE, severity=FailureSeverity.CRITICAL,
-        isolation_strategy=IsolationStrategy.TERMINATE, propagation_policy=PropagationPolicy.PROPAGATE,
-        recovery_policy=RecoveryPolicy.NONE, source_modules=("smriti.runtime", "smriti.infrastructure"),
+        category=FailureCategory.INFRASTRUCTURE,
+        severity=FailureSeverity.CRITICAL,
+        isolation_strategy=IsolationStrategy.TERMINATE,
+        propagation_policy=PropagationPolicy.PROPAGATE,
+        recovery_policy=RecoveryPolicy.NONE,
+        source_modules=("smriti.runtime", "smriti.infrastructure"),
         description="Core runtime infrastructure failed to initialize.",
     ),
     FailureCategory.KNOWLEDGE_API: FailureTaxonomyEntry(
-        category=FailureCategory.KNOWLEDGE_API, severity=FailureSeverity.HIGH,
-        isolation_strategy=IsolationStrategy.DEGRADE, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.RETRY, source_modules=("smriti.api",),
+        category=FailureCategory.KNOWLEDGE_API,
+        severity=FailureSeverity.HIGH,
+        isolation_strategy=IsolationStrategy.DEGRADE,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.RETRY,
+        source_modules=("smriti.api",),
         description="Knowledge API failed to serve a request.",
     ),
     FailureCategory.WORKSPACE: FailureTaxonomyEntry(
-        category=FailureCategory.WORKSPACE, severity=FailureSeverity.MEDIUM,
-        isolation_strategy=IsolationStrategy.SKIP, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.RESTORE, source_modules=("smriti.dashboard.workspaces",),
+        category=FailureCategory.WORKSPACE,
+        severity=FailureSeverity.MEDIUM,
+        isolation_strategy=IsolationStrategy.SKIP,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.RESTORE,
+        source_modules=("smriti.dashboard.workspaces",),
         description="A dashboard workspace failed to render or activate.",
     ),
     FailureCategory.PERSISTENCE: FailureTaxonomyEntry(
-        category=FailureCategory.PERSISTENCE, severity=FailureSeverity.HIGH,
-        isolation_strategy=IsolationStrategy.DEGRADE, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.REBUILD, source_modules=("smriti.core",),
+        category=FailureCategory.PERSISTENCE,
+        severity=FailureSeverity.HIGH,
+        isolation_strategy=IsolationStrategy.DEGRADE,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.REBUILD,
+        source_modules=("smriti.core",),
         description="Artifact read or write failed.",
     ),
     FailureCategory.RESOURCE: FailureTaxonomyEntry(
-        category=FailureCategory.RESOURCE, severity=FailureSeverity.MEDIUM,
-        isolation_strategy=IsolationStrategy.DEGRADE, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.REBUILD, source_modules=("smriti.infrastructure.resources",),
+        category=FailureCategory.RESOURCE,
+        severity=FailureSeverity.MEDIUM,
+        isolation_strategy=IsolationStrategy.DEGRADE,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.REBUILD,
+        source_modules=("smriti.infrastructure.resources",),
         description="A governed resource exceeded its policy limits.",
     ),
     FailureCategory.INTERACTION: FailureTaxonomyEntry(
-        category=FailureCategory.INTERACTION, severity=FailureSeverity.MEDIUM,
-        isolation_strategy=IsolationStrategy.SKIP, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.NONE, source_modules=("smriti.dashboard.controller",),
+        category=FailureCategory.INTERACTION,
+        severity=FailureSeverity.MEDIUM,
+        isolation_strategy=IsolationStrategy.SKIP,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.NONE,
+        source_modules=("smriti.dashboard.controller",),
         description="User interaction failed.",
     ),
     FailureCategory.EXTERNAL_DEPENDENCY: FailureTaxonomyEntry(
-        category=FailureCategory.EXTERNAL_DEPENDENCY, severity=FailureSeverity.HIGH,
-        isolation_strategy=IsolationStrategy.DEGRADE, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.RETRY, source_modules=("smriti.embedding", "smriti.retrieval"),
+        category=FailureCategory.EXTERNAL_DEPENDENCY,
+        severity=FailureSeverity.HIGH,
+        isolation_strategy=IsolationStrategy.DEGRADE,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.RETRY,
+        source_modules=("smriti.embedding", "smriti.retrieval"),
         description="External model or library failed.",
     ),
     FailureCategory.OBSERVABILITY: FailureTaxonomyEntry(
-        category=FailureCategory.OBSERVABILITY, severity=FailureSeverity.LOW,
-        isolation_strategy=IsolationStrategy.IGNORE, propagation_policy=PropagationPolicy.LOG_ONLY,
-        recovery_policy=RecoveryPolicy.NONE, source_modules=("smriti.observability",),
+        category=FailureCategory.OBSERVABILITY,
+        severity=FailureSeverity.LOW,
+        isolation_strategy=IsolationStrategy.IGNORE,
+        propagation_policy=PropagationPolicy.LOG_ONLY,
+        recovery_policy=RecoveryPolicy.NONE,
+        source_modules=("smriti.observability",),
         description="Telemetry or metrics collection failed — execution continues.",
     ),
     FailureCategory.INTERNAL_UNEXPECTED: FailureTaxonomyEntry(
-        category=FailureCategory.INTERNAL_UNEXPECTED, severity=FailureSeverity.HIGH,
-        isolation_strategy=IsolationStrategy.DEGRADE, propagation_policy=PropagationPolicy.CONTAIN,
-        recovery_policy=RecoveryPolicy.NONE, source_modules=("*",),
+        category=FailureCategory.INTERNAL_UNEXPECTED,
+        severity=FailureSeverity.HIGH,
+        isolation_strategy=IsolationStrategy.DEGRADE,
+        propagation_policy=PropagationPolicy.CONTAIN,
+        recovery_policy=RecoveryPolicy.NONE,
+        source_modules=("*",),
         description="Unclassified unexpected internal failure.",
     ),
 }
 
 
 # ── Failure Escalation Ladder (NEW P2-4) ──────────────────────────────────────
+
 
 class EscalationStage(str, Enum):
     """
@@ -146,24 +177,26 @@ class EscalationStage(str, Enum):
     Replace binary Failure → Recovery with:
     Detect → Classify → Isolate → Recover → Escalate → Terminate
     """
-    DETECT    = "detect"     # Failure observed
-    CLASSIFY  = "classify"   # Category and severity assigned
-    ISOLATE   = "isolate"    # Blast radius contained
-    RECOVER   = "recover"    # Automatic recovery attempted
-    ESCALATE  = "escalate"   # Human intervention required
+
+    DETECT = "detect"  # Failure observed
+    CLASSIFY = "classify"  # Category and severity assigned
+    ISOLATE = "isolate"  # Blast radius contained
+    RECOVER = "recover"  # Automatic recovery attempted
+    ESCALATE = "escalate"  # Human intervention required
     TERMINATE = "terminate"  # System must stop
 
 
 @dataclass
 class EscalationRecord:
     """Tracks one failure through the escalation ladder."""
-    failure_id:      str
-    category:        FailureCategory
-    current_stage:   EscalationStage
-    history:         List[str] = field(default_factory=list)
+
+    failure_id: str
+    category: FailureCategory
+    current_stage: EscalationStage
+    history: list[str] = field(default_factory=list)
     recovery_attempt: int = 0
     max_recovery_attempts: int = 3
-    resolved:        bool = False
+    resolved: bool = False
 
     def advance(self, stage: EscalationStage, notes: str = "") -> None:
         self.history.append(f"{stage.value}: {notes}")
@@ -192,6 +225,7 @@ class FailureEscalationLadder:
     def __init__(self) -> None:
         self._taxonomy = FailureTaxonomy()
         import uuid
+
         self._id_gen = lambda: str(uuid.uuid4())[:8]
 
     def detect(self, exc: Exception, source: str) -> EscalationRecord:
@@ -233,8 +267,11 @@ class FailureEscalationLadder:
     def escalate(self, record: EscalationRecord) -> None:
         """Stage 5: Require human intervention."""
         record.advance(EscalationStage.ESCALATE, notes="human_intervention_required")
-        logger.error("failure_requires_human_intervention", failure_id=record.failure_id,
-                     category=record.category.value)
+        logger.error(
+            "failure_requires_human_intervention",
+            failure_id=record.failure_id,
+            category=record.category.value,
+        )
 
     def terminate(self, record: EscalationRecord) -> None:
         """Stage 6: System must stop."""
@@ -245,15 +282,18 @@ class FailureEscalationLadder:
 @dataclass
 class FailureRecord:
     """Observable record of a single failure event."""
-    category:      FailureCategory
-    message:       str
-    source:        str
-    timestamp:     float = field(default_factory=time.monotonic)
+
+    category: FailureCategory
+    message: str
+    source: str
+    timestamp: float = field(default_factory=time.monotonic)
     traceback_str: str = ""
-    resolved:      bool = False
+    resolved: bool = False
 
     @classmethod
-    def from_exception(cls, exc: Exception, category: FailureCategory, source: str) -> "FailureRecord":
+    def from_exception(
+        cls, exc: Exception, category: FailureCategory, source: str
+    ) -> FailureRecord:
         return cls(
             category=category,
             message=str(exc),
@@ -266,7 +306,7 @@ class FailureTaxonomy:
     """Classifies exceptions and produces FailureRecords."""
 
     def classify(self, exc: Exception, source: str) -> FailureRecord:
-        from smriti import exceptions as smex
+
         category = self._infer_category(exc, source)
         record = FailureRecord.from_exception(exc, category, source)
         logger.warning("failure_classified", category=category.value, source=source)
@@ -277,6 +317,7 @@ class FailureTaxonomy:
 
     def _infer_category(self, exc: Exception, source: str) -> FailureCategory:
         from smriti import exceptions as smex
+
         if isinstance(exc, smex.ConfigError):
             return FailureCategory.CONFIGURATION
         if isinstance(exc, (smex.RuntimeException, smex.RuntimeException)):

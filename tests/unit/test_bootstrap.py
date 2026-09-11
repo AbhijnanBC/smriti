@@ -1,7 +1,9 @@
 """Unit tests for evaluation/statistical/bootstrap.py (P1-11)."""
 
 from smriti.evaluation.statistical.bootstrap import (
-    bootstrap_proportion_ci, bootstrap_mean_ci, bootstrap_proportion_ci_clustered,
+    bootstrap_mean_ci,
+    bootstrap_proportion_ci,
+    bootstrap_proportion_ci_clustered,
 )
 
 
@@ -29,7 +31,9 @@ def test_proportion_ci_wider_for_smaller_samples():
     """A smaller sample should generally produce a wider (or equal) CI
     than a larger sample with the same underlying proportion."""
     small = bootstrap_proportion_ci([True, True, True, False] * 2, n_resamples=1000, seed=1)  # n=8
-    large = bootstrap_proportion_ci([True, True, True, False] * 20, n_resamples=1000, seed=1)  # n=80
+    large = bootstrap_proportion_ci(
+        [True, True, True, False] * 20, n_resamples=1000, seed=1
+    )  # n=80
     small_width = small.ci_upper - small.ci_lower
     large_width = large.ci_upper - large.ci_lower
     assert small_width >= large_width

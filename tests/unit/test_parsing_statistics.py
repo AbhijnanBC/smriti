@@ -6,7 +6,6 @@ Every statistic is verified for correctness and internal consistency.
 
 import pytest
 from smriti.parsing.statistics import compute_statistics
-from smriti.core.models import TextStatistics
 
 
 def test_empty_string_returns_zeros():
@@ -68,7 +67,7 @@ def test_character_count_includes_whitespace():
 def test_multiline_blank_lines():
     text = "line1\n\n\n\nline2"
     stats = compute_statistics(text)
-    assert stats.blank_line_count == 3   # 3 empty lines between line1 and line2
+    assert stats.blank_line_count == 3  # 3 empty lines between line1 and line2
     assert stats.line_count == 5
 
 
@@ -80,5 +79,6 @@ def test_returns_frozen_dataclass():
 
 def test_non_string_raises():
     from smriti.exceptions import StatisticsError
+
     with pytest.raises(StatisticsError):
         compute_statistics(123)  # type: ignore

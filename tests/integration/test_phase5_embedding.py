@@ -12,27 +12,27 @@ All assertions reflect the rectified API:
     - Embedding has no status field
 """
 
-import pytest
-import math
 import json
+import math
 from pathlib import Path
-from typing import List
-from unittest.mock import MagicMock
 
-from smriti.core.models import (
-    Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
-    Modality, EmbeddedClaim,
-    EmbeddingModelDescriptor, EmbeddingProvenance,
-    EmbeddingQuality, Vector,
-)
+import pytest
 from smriti.core.manifest import ManifestManager
+from smriti.core.models import (
+    AssertionMetadata,
+    Claim,
+    ClaimProvenance,
+    EmbeddingModelDescriptor,
+    EmbeddingQuality,
+    ExtractionMode,
+    Vector,
+)
 from smriti.core.state import StateManager
-from smriti.embedding import embed_claims, Phase5Result
+from smriti.embedding import Phase5Result, embed_claims
 from smriti.embedding.embedder import BaseEmbedder, EmbedderCapabilities
-from smriti.embedding.models import EmbeddingStatus 
-
 
 # ── Mock embedder ─────────────────────────────────────────────────────────────
+
 
 class MockEmbedder(BaseEmbedder):
     """Mock embedder that returns deterministic fake vectors."""
@@ -62,9 +62,10 @@ class MockEmbedder(BaseEmbedder):
             supports_long_context=False,
         )
 
-    def encode_batch(self, texts: List[str]) -> List[List[float]]:
+    def encode_batch(self, texts: list[str]) -> list[list[float]]:
         """Deterministic: hash of text → 4 floats."""
         import hashlib
+
         results = []
         for text in texts:
             h = int(hashlib.sha256(text.encode()).hexdigest(), 16)
@@ -76,6 +77,7 @@ class MockEmbedder(BaseEmbedder):
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_embedder():
@@ -112,8 +114,10 @@ def make_claim(
         structured_assertion=None,
         assertion_metadata=AssertionMetadata(),
         provenance=ClaimProvenance(
-            sentence_id="s001", document_id=document_id,
-            source_path=Path("test.md"), sentence_context=context,
+            sentence_id="s001",
+            document_id=document_id,
+            source_path=Path("test.md"),
+            sentence_context=context,
             sentence_position=0,
         ),
         schema_version="4.0",
@@ -136,6 +140,7 @@ def run_embedding(mock_embedder, claims, run_id, test_managers, **kwargs):
 
 # ── Basic production ──────────────────────────────────────────────────────────
 
+
 def test_empty_claims_produces_empty_result(mock_embedder, run_id, test_managers):
     result = run_embedding(mock_embedder, [], run_id, test_managers)
     assert isinstance(result, Phase5Result)
@@ -143,7 +148,9 @@ def test_empty_claims_produces_empty_result(mock_embedder, run_id, test_managers
 
 
 def test_single_claim_produces_embedded_claim(mock_embedder, run_id, test_managers):
-    result = run_embedding(mock_embedder, [make_claim("c001", "Python is fast.")], run_id, test_managers)
+    result = run_embedding(
+        mock_embedder, [make_claim("c001", "Python is fast.")], run_id, test_managers
+    )
     assert result.total_embedded == 1
     assert result.stats.failed == 0
 
@@ -164,8 +171,11 @@ def test_empty_text_claim_is_skipped(mock_embedder, run_id, test_managers):
 
 # ── Immutability and purity ───────────────────────────────────────────────────
 
+
 def test_embedded_claims_are_immutable(mock_embedder, run_id, test_managers):
-    result = run_embedding(mock_embedder, [make_claim("c001", "Python is fast.")], run_id, test_managers)
+    result = run_embedding(
+        mock_embedder, [make_claim("c001", "Python is fast.")], run_id, test_managers
+    )
     with pytest.raises(Exception):
         result.embedded_claims[0].claim_id = "modified"
 
@@ -181,12 +191,13 @@ def test_embedding_has_no_status_field(mock_embedder, run_id, test_managers):
     """Critical fix: Embedding must not have a status field."""
     result = run_embedding(mock_embedder, [make_claim("c001", "Test.")], run_id, test_managers)
     ec = result.embedded_claims[0]
-    assert not hasattr(ec.embedding, "status"), (
-        "Embedding should not have status — it's a pure semantic artifact"
-    )
+    assert not hasattr(
+        ec.embedding, "status"
+    ), "Embedding should not have status — it's a pure semantic artifact"
 
 
 # ── EmbeddingQuality ──────────────────────────────────────────────────────────
+
 
 def test_embedded_claim_has_quality(mock_embedder, run_id, test_managers):
     """EmbeddedClaim must carry EmbeddingQuality."""
@@ -206,6 +217,7 @@ def test_quality_fresh_embedding(mock_embedder, run_id, test_managers):
 
 
 # ── Vector domain object ──────────────────────────────────────────────────────
+
 
 def test_vector_is_vector_type(mock_embedder, run_id, test_managers):
     """EmbeddedClaim.vector must return a Vector domain object."""
@@ -244,6 +256,7 @@ def test_normalized_vectors_are_unit_length(mock_embedder, run_id, test_managers
 
 # ── Schema and provenance ─────────────────────────────────────────────────────
 
+
 def test_schema_version_is_50(mock_embedder, run_id, test_managers):
     result = run_embedding(mock_embedder, [make_claim("c001", "Test.")], run_id, test_managers)
     for ec in result.embedded_claims:
@@ -259,6 +272,7 @@ def test_embedding_descriptor_family(mock_embedder, run_id, test_managers):
 
 
 # ── Batch retry ───────────────────────────────────────────────────────────────
+
 
 def test_batch_failure_triggers_individual_retry(run_id, test_managers):
     """
@@ -295,6 +309,7 @@ def test_batch_failure_triggers_individual_retry(run_id, test_managers):
 
 def test_one_bad_vector_does_not_abort_batch(run_id, test_managers):
     """NaN in one vector must not fail the other claims in the batch."""
+
     class NaNSecondEmbedder(MockEmbedder):
         def encode_batch(self, texts):
             vectors = super().encode_batch(texts)
@@ -314,10 +329,11 @@ def test_one_bad_vector_does_not_abort_batch(run_id, test_managers):
     )
 
     assert result.total_embedded >= 1  # c001 succeeds
-    assert result.stats.failed >= 1    # c002 fails validation
+    assert result.stats.failed >= 1  # c002 fails validation
 
 
 # ── Warnings and errors ───────────────────────────────────────────────────────
+
 
 def test_result_has_warnings_list(mock_embedder, run_id, test_managers):
     """Phase5Result must expose a warnings list."""
@@ -334,6 +350,7 @@ def test_result_has_errors_list(mock_embedder, run_id, test_managers):
 
 
 # ── Artifacts ─────────────────────────────────────────────────────────────────
+
 
 def test_dataset_json_written(mock_embedder, run_id, test_managers):
     result = run_embedding(mock_embedder, [make_claim("c001", "Test.")], run_id, test_managers)
@@ -382,14 +399,27 @@ def test_pipeline_state_updated(mock_embedder, run_id, test_managers):
 
 # ── Determinism ───────────────────────────────────────────────────────────────
 
+
 def test_same_claims_same_vectors(mock_embedder, run_id, test_managers):
     claims = [make_claim("c001", "Python is fast."), make_claim("c002", "Julia is faster.")]
     manifest_mgr, state_mgr = test_managers
 
-    r1 = embed_claims(claims=claims, run_id=run_id, manifest_manager=manifest_mgr,
-                      state_manager=state_mgr, embedder=mock_embedder, force_reembed=True)
-    r2 = embed_claims(claims=claims, run_id=run_id + "_2", manifest_manager=manifest_mgr,
-                      state_manager=state_mgr, embedder=mock_embedder, force_reembed=True)
+    r1 = embed_claims(
+        claims=claims,
+        run_id=run_id,
+        manifest_manager=manifest_mgr,
+        state_manager=state_mgr,
+        embedder=mock_embedder,
+        force_reembed=True,
+    )
+    r2 = embed_claims(
+        claims=claims,
+        run_id=run_id + "_2",
+        manifest_manager=manifest_mgr,
+        state_manager=state_mgr,
+        embedder=mock_embedder,
+        force_reembed=True,
+    )
 
     v1 = {ec.claim_id: ec.values for ec in r1.embedded_claims}
     v2 = {ec.claim_id: ec.values for ec in r2.embedded_claims}
@@ -397,6 +427,7 @@ def test_same_claims_same_vectors(mock_embedder, run_id, test_managers):
 
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
+
 
 def test_stats_has_throughput_field(mock_embedder, run_id, test_managers):
     """Phase5Stats must include vectors_per_second."""

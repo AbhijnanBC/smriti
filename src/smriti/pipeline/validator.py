@@ -4,7 +4,7 @@ Ensures data integrity at each phase boundary.
 """
 
 from pathlib import Path
-from typing import List
+
 from smriti.exceptions import ValidationError
 
 
@@ -20,7 +20,7 @@ class Validator:
         return p
 
     @staticmethod
-    def validate_markdown_files(directory: Path) -> List[Path]:
+    def validate_markdown_files(directory: Path) -> list[Path]:
         """Find all markdown files in directory (recursive)."""
         files = list(directory.glob("**/*.md"))
         if not files:

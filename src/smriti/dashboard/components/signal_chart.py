@@ -26,13 +26,18 @@ def render_signal_chart_from_pm(pm: ClaimPresentationModel) -> None:
         labels = [s.label for s in pm.signals]
         values = [s.value for s in pm.signals]
         colors = [s.color for s in pm.signals]
-        texts  = [s.formatted for s in pm.signals]
+        texts = [s.formatted for s in pm.signals]
 
-        fig = go.Figure(go.Bar(
-            x=values, y=labels, orientation="h",
-            marker_color=colors,
-            text=texts, textposition="outside",
-        ))
+        fig = go.Figure(
+            go.Bar(
+                x=values,
+                y=labels,
+                orientation="h",
+                marker_color=colors,
+                text=texts,
+                textposition="outside",
+            )
+        )
         fig.update_layout(
             title="Reliability Signal Vector",
             xaxis=dict(range=[0, 1.1], title="Signal Value (0–1)"),

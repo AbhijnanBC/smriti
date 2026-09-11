@@ -20,10 +20,9 @@ System Invariants (10 canonical):
 
 from __future__ import annotations
 
-import ast
+from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Callable, Dict, List, Optional
+
 import structlog
 
 from smriti.exceptions import Phase11InvariantViolation
@@ -39,11 +38,12 @@ class SystemInvariant:
     check() returns True if the invariant holds, raises Phase11InvariantViolation
     if it is violated, or returns False if it cannot be evaluated (non-fatal).
     """
-    id:          int
-    name:        str
-    statement:   str
-    scope:       str          # "runtime" | "architecture" | "pipeline"
-    check:       Optional[Callable[[], bool]] = None
+
+    id: int
+    name: str
+    statement: str
+    scope: str  # "runtime" | "architecture" | "pipeline"
+    check: Callable[[], bool] | None = None
 
     def assert_holds(self) -> None:
         """Raise Phase11InvariantViolation if this invariant is violated."""
@@ -64,8 +64,7 @@ class SystemInvariant:
 
 # ── System Invariant catalog ──────────────────────────────────────────────────
 
-SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
-
+SYSTEM_INVARIANTS: dict[int, SystemInvariant] = {
     1: SystemInvariant(
         id=1,
         name="knowledge_graph_immutable",
@@ -73,7 +72,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="architecture",
         check=None,  # Enforced structurally (frozen dataclass + AST compliance tests)
     ),
-
     2: SystemInvariant(
         id=2,
         name="presentation_read_only",
@@ -81,7 +79,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="architecture",
         check=None,  # Enforced by dependency matrix and architecture tests
     ),
-
     3: SystemInvariant(
         id=3,
         name="interactions_through_phase10",
@@ -89,7 +86,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="runtime",
         check=None,  # Verified by architecture tests (no direct API calls from CLI)
     ),
-
     4: SystemInvariant(
         id=4,
         name="queries_through_phase9",
@@ -97,7 +93,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="architecture",
         check=None,  # Enforced by trust boundary and dependency matrix
     ),
-
     5: SystemInvariant(
         id=5,
         name="configuration_immutable_after_init",
@@ -105,7 +100,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="runtime",
         check=lambda: True,  # ConfigurationContext is a frozen dataclass
     ),
-
     6: SystemInvariant(
         id=6,
         name="infrastructure_no_domain_knowledge",
@@ -113,7 +107,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="architecture",
         check=None,
     ),
-
     7: SystemInvariant(
         id=7,
         name="operational_services_no_boundary_bypass",
@@ -121,7 +114,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="architecture",
         check=None,
     ),
-
     8: SystemInvariant(
         id=8,
         name="every_execution_has_provenance",
@@ -129,7 +121,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="pipeline",
         check=None,
     ),
-
     9: SystemInvariant(
         id=9,
         name="layers_acyclic",
@@ -137,7 +128,6 @@ SYSTEM_INVARIANTS: Dict[int, SystemInvariant] = {
         scope="architecture",
         check=None,  # Verified by DependencyGraph.resolve_order() and architecture tests
     ),
-
     10: SystemInvariant(
         id=10,
         name="single_owner_per_interface",
@@ -155,7 +145,7 @@ def assert_all_invariants() -> None:
     Called at startup and periodically during health monitoring.
     Invariants without a check function are validated by architecture tests.
     """
-    violations: List[str] = []
+    violations: list[str] = []
     for inv_id, invariant in SYSTEM_INVARIANTS.items():
         try:
             invariant.assert_holds()

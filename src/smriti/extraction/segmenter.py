@@ -27,19 +27,18 @@ Output: List[SentenceCandidate]
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-from typing import List, FrozenSet
+
 import structlog
 
 from smriti.core.config import get_config
+from smriti.core.models import SegmentationWarning
 from smriti.extraction.rules import (
     DEFAULT_ABBREVIATIONS,
-    SENTENCE_ENDING_CHARS,
-    MIN_SENTENCE_CHARS_DEFAULT,
     MAX_SENTENCE_CHARS_DEFAULT,
+    MIN_SENTENCE_CHARS_DEFAULT,
+    SENTENCE_ENDING_CHARS,
 )
-from smriti.core.models import SegmentationWarning
 
 logger = structlog.get_logger(__name__)
 
@@ -55,6 +54,7 @@ class SentenceCandidate:
         char_end:   Approximate character end
         warnings:   Any per-candidate warnings
     """
+
     text: str
     char_start: int
     char_end: int
@@ -74,10 +74,8 @@ class SentenceSegmenter:
         extraction_cfg = cfg.get("extraction", {})
         segmentation_cfg = cfg.get("segmentation", {})
 
-        custom_abbrevs = frozenset(
-            a.lower() for a in extraction_cfg.get("abbreviations", [])
-        )
-        self._abbreviations: FrozenSet[str] = DEFAULT_ABBREVIATIONS | custom_abbrevs
+        custom_abbrevs = frozenset(a.lower() for a in extraction_cfg.get("abbreviations", []))
+        self._abbreviations: frozenset[str] = DEFAULT_ABBREVIATIONS | custom_abbrevs
 
         self._min_chars: int = segmentation_cfg.get(
             "min_sentence_chars", MIN_SENTENCE_CHARS_DEFAULT
@@ -86,7 +84,7 @@ class SentenceSegmenter:
             "max_sentence_chars", MAX_SENTENCE_CHARS_DEFAULT
         )
 
-    def segment(self, prose: str, block_char_start: int = 0) -> List[SentenceCandidate]:
+    def segment(self, prose: str, block_char_start: int = 0) -> list[SentenceCandidate]:
         """
         Split prose into sentence candidates.
 
@@ -102,7 +100,7 @@ class SentenceSegmenter:
             return []
 
         raw_candidates = self._split_into_candidates(prose)
-        result: List[SentenceCandidate] = []
+        result: list[SentenceCandidate] = []
         running_offset = block_char_start
 
         for raw_text in raw_candidates:
@@ -129,17 +127,19 @@ class SentenceSegmenter:
             char_start = running_offset + (len(raw_text) - len(raw_text.lstrip()))
             char_end = char_start + len(text)
 
-            result.append(SentenceCandidate(
-                text=text,
-                char_start=char_start,
-                char_end=char_end,
-                warnings=tuple(warnings),
-            ))
+            result.append(
+                SentenceCandidate(
+                    text=text,
+                    char_start=char_start,
+                    char_end=char_end,
+                    warnings=tuple(warnings),
+                )
+            )
             running_offset += len(raw_text)
 
         return result
 
-    def _split_into_candidates(self, prose: str) -> List[str]:
+    def _split_into_candidates(self, prose: str) -> list[str]:
         """
         Split prose string into sentence candidate strings.
 
@@ -149,7 +149,7 @@ class SentenceSegmenter:
             check if it's actually an abbreviation or decimal
           - If not, split here
         """
-        candidates: List[str] = []
+        candidates: list[str] = []
         current_start = 0
         i = 0
         length = len(prose)
@@ -176,7 +176,7 @@ class SentenceSegmenter:
 
                 # Check: followed by whitespace then uppercase (or end of string)
                 j = i + 1
-                while j < length and prose[j] in '"\')\\]':
+                while j < length and prose[j] in "\"')\\]":
                     j += 1
 
                 if j >= length:
@@ -215,9 +215,7 @@ class SentenceSegmenter:
         # Scan back over letters AND internal periods, so multi-part
         # abbreviations like "e.g", "i.e", "u.s", "a.m" are reconstructed
         # in full rather than stopping at the first internal ".".
-        while word_start > 0 and (
-            text[word_start - 1].isalpha() or text[word_start - 1] == "."
-        ):
+        while word_start > 0 and (text[word_start - 1].isalpha() or text[word_start - 1] == "."):
             word_start -= 1
 
         preceding_word = text[word_start:word_end].lower()

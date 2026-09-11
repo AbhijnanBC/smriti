@@ -3,20 +3,19 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
-import dataclasses
-
-from smriti.core.models import ResponseMeta, ExecutionContext, ExecutionBudget
+from smriti.core.models import ExecutionBudget, ExecutionContext, ResponseMeta
 
 
 @dataclass
 class KnowledgeResponse:
     """Generic response wrapper. Always includes ResponseMeta."""
+
     data: Any
     meta: ResponseMeta
-    total_count: Optional[int] = None
+    total_count: int | None = None
 
 
 def make_response_meta(ctx: ExecutionContext) -> ResponseMeta:
@@ -42,7 +41,7 @@ def make_execution_context(
     projection_level: str,
     explain_level: int,
     api_version: str = "1.0",
-    budget: Optional[ExecutionBudget] = None,
+    budget: ExecutionBudget | None = None,
 ) -> ExecutionContext:
     """Build a fresh ExecutionContext for a new request."""
     if budget is None:

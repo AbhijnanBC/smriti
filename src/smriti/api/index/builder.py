@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
-import structlog
+from typing import Any
 
+import structlog
 from smriti.api.index.registry import IndexRegistry
 
 logger = structlog.get_logger(__name__)
@@ -27,8 +27,8 @@ class IndexBuilder:
 
     def build(
         self,
-        claim_records: Dict[str, Dict[str, Any]],
-        fields: List[str] = None,
+        claim_records: dict[str, dict[str, Any]],
+        fields: list[str] = None,
     ) -> IndexRegistry:
         """
         Build indexes for the specified fields.
@@ -44,7 +44,7 @@ class IndexBuilder:
         fields = fields or DEFAULT_INDEXED_FIELDS
 
         for field_name in fields:
-            index: Dict[Any, List[str]] = {}
+            index: dict[Any, list[str]] = {}
             for claim_id, record in claim_records.items():
                 value = self._get_index_value(field_name, record)
                 if value is not None:
@@ -58,9 +58,9 @@ class IndexBuilder:
         )
         return registry
 
-    def _get_index_value(self, field_name: str, record: Dict) -> Any:
+    def _get_index_value(self, field_name: str, record: dict) -> Any:
         """Get the index key for a field. Special handling for bucketed fields."""
         if field_name == "reliability_index_bucket":
             ri = record.get("reliability_index", 0.0)
-            return int(ri // 10) * 10   # Bucket: 0, 10, 20, ..., 90
+            return int(ri // 10) * 10  # Bucket: 0, 10, 20, ..., 90
         return record.get(field_name)

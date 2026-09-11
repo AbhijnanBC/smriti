@@ -8,12 +8,11 @@ Views coordinated: Two ResultListViews (side A / side B) + ConflictView
 from __future__ import annotations
 
 import streamlit as st
-
 from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType
-from smriti.dashboard.workspaces.base import BaseWorkspace
-from smriti.dashboard.workspaces.context import WorkspaceContext
 from smriti.dashboard.models.presentation import DTOTransformer
 from smriti.dashboard.views.conflict_view import ConflictView
+from smriti.dashboard.workspaces.base import BaseWorkspace
+from smriti.dashboard.workspaces.context import WorkspaceContext
 
 
 class ConflictWorkspace(BaseWorkspace):
@@ -39,7 +38,9 @@ class ConflictWorkspace(BaseWorkspace):
         )
 
         result = context.client.search_claims(
-            sort_field="conflict_pressure", sort_order="desc", limit=state.page_size,
+            sort_field="conflict_pressure",
+            sort_order="desc",
+            limit=state.page_size,
         )
         claims = result.get("claims", [])
         if not claims:

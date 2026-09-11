@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List
 
 from smriti.api.index.registry import IndexRegistry
 
@@ -11,6 +10,7 @@ from smriti.api.index.registry import IndexRegistry
 @dataclass(frozen=True)
 class IndexStats:
     """Statistics for one index."""
+
     field_name: str
     unique_values: int
     total_entries: int
@@ -20,7 +20,7 @@ class IndexStats:
 class IndexStatistics:
     """Computes and caches statistics about built indexes."""
 
-    def compute(self, registry: IndexRegistry) -> Dict[str, IndexStats]:
+    def compute(self, registry: IndexRegistry) -> dict[str, IndexStats]:
         stats = {}
         for field in registry.indexed_fields:
             idx = registry._indexes.get(field, {})

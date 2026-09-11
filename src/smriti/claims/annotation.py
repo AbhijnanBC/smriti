@@ -22,22 +22,22 @@ from __future__ import annotations
 
 import structlog
 
-from smriti.core.models import Modality
 from smriti.claims.models import (
-    StructuredAssertionCandidate, 
     AnnotatedAssertion,
     LinguisticMetadata,
-    SemanticMetadata
+    SemanticMetadata,
+    StructuredAssertionCandidate,
 )
 from smriti.claims.rules import (
-    NEGATION_MARKERS,
+    ATTRIBUTION_VERBS,
+    COMPARISON_MARKERS,
+    MODALITY_IMPOSSIBLE,
     MODALITY_POSSIBLE,
     MODALITY_PROBABLE,
     MODALITY_REQUIRED,
-    MODALITY_IMPOSSIBLE,
-    ATTRIBUTION_VERBS,
-    COMPARISON_MARKERS,
+    NEGATION_MARKERS,
 )
+from smriti.core.models import Modality
 
 logger = structlog.get_logger(__name__)
 

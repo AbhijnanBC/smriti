@@ -43,8 +43,8 @@ def test_clear_cache(cache):
 
 def test_hit_rate_tracking(cache):
     cache.set_view("p1", "summary", "data")
-    cache.get_view("p1", "summary")   # hit
-    cache.get_view("p2", "summary")   # miss
+    cache.get_view("p1", "summary")  # hit
+    cache.get_view("p2", "summary")  # miss
     assert 0.0 < cache.hit_rate < 1.0
 
 
@@ -60,13 +60,22 @@ def test_cache_stores_views_not_dtos():
     """RECTIFIED (P0-4): Cache must store views (not DTOs). Type is opaque — any non-DTO works."""
     cache = KnowledgeViewCache(max_size=10, run_id="run1")
     # Store a ClaimView-like object (not a DTO)
+
     from smriti.api.domain.views import ClaimView
-    from pathlib import Path
+
     view = ClaimView(
-        claim_id="c001", claim_text="Test.", context="", document_id="d1",
-        source_path="test.md", partition_id="p1", semantic_role="unclassified",
-        reliability_index=80.0, uncertainty_score=10.0, evidence_completeness=1.0,
-        calibration_label="very_high", policy_version="1.0",
+        claim_id="c001",
+        claim_text="Test.",
+        context="",
+        document_id="d1",
+        source_path="test.md",
+        partition_id="p1",
+        semantic_role="unclassified",
+        reliability_index=80.0,
+        uncertainty_score=10.0,
+        evidence_completeness=1.0,
+        calibration_label="very_high",
+        policy_version="1.0",
     )
     cache.set_view("plan1", "standard", view)
     retrieved = cache.get_view("plan1", "standard")
@@ -79,6 +88,6 @@ def test_cache_stores_views_not_dtos():
 def test_cache_is_class_knowledge_view_cache():
     """RECTIFIED (P0-4): Cache class must be KnowledgeViewCache, not KnowledgeCache."""
     cache = KnowledgeViewCache(max_size=5, run_id="r1")
-    assert "View" in type(cache).__name__, (
-        "Cache class must be KnowledgeViewCache to signal View-level storage."
-    )
+    assert (
+        "View" in type(cache).__name__
+    ), "Cache class must be KnowledgeViewCache to signal View-level storage."

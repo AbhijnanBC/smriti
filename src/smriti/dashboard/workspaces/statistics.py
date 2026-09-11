@@ -8,10 +8,10 @@ Views coordinated: StatisticsView
 from __future__ import annotations
 
 from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType
-from smriti.dashboard.workspaces.base import BaseWorkspace
-from smriti.dashboard.workspaces.context import WorkspaceContext
 from smriti.dashboard.models.presentation import DTOTransformer
 from smriti.dashboard.views.statistics_view import StatisticsView
+from smriti.dashboard.workspaces.base import BaseWorkspace
+from smriti.dashboard.workspaces.context import WorkspaceContext
 
 
 class StatisticsWorkspace(BaseWorkspace):

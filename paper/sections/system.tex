@@ -40,8 +40,9 @@ embeds every claim with a cached Sentence-BERT model. Phase 6 retrieves
 the top-$k$ nearest neighbors per claim by cosine similarity above a
 threshold (exact search via FAISS's flat inner-product index, not
 approximate), then classifies each candidate pair with a cross-encoder
-NLI model into SUPPORTS / CONTRADICTS / REFINES / NEUTRAL.
-\textbf{Rectified in this work}, in two parts:
+NLI model into CONTRADICTS / SUPPORTS / REFINES / EQUIVALENT / NEUTRAL
+(UNKNOWN denotes abstention and is never persisted to Phase 7).
+\textbf{Rectified in this work}, in three parts:
 
 \begin{enumerate}
   \item \emph{Arg-max resolution.} The resolver previously committed to
@@ -62,6 +63,42 @@ NLI model into SUPPORTS / CONTRADICTS / REFINES / NEUTRAL.
     the specific population responsible for the original 100\% measured
     false-positive rate: candidate pairs that embedding retrieval surfaced
     as similar but that share no real subject matter.
+  \item \emph{Bidirectional NLI (this work).} An adversarial-audit round
+    identified that Phase 6 ran the NLI cross-encoder in only
+    \emph{one} direction per pair, with the direction fixed by which claim
+    ID happened to sort first lexicographically --- an artifact of
+    canonicalization, not a semantic decision. This had two consequences:
+    the system could never distinguish ``A entails B'' from ``B entails A''
+    from ``both'' (a genuine equivalence) from ``neither,'' and every
+    reported SUPPORTS edge's direction field was hardcoded
+    \texttt{A\_TO\_B} regardless of which claim actually did the
+    confirming. The resolver now runs the cross-encoder on both
+    $(\mathrm{claim}_a, \mathrm{claim}_b)$ and $(\mathrm{claim}_b,
+    \mathrm{claim}_a)$ orderings (one batched \texttt{predict()} call over
+    both direction's pairs, not two separate calls) and persists both
+    directions' raw probabilities on every decision
+    (\texttt{RelationshipEvidence.nli\_scores} /
+    \texttt{nli\_scores\_b\_to\_a}). Because contradiction is symmetric but
+    entailment is not, the two directions are combined differently: the
+    CONTRADICTS test averages both directions' contradiction and neutral
+    scores and compares against the \emph{maximum} entailment score across
+    both directions (a stricter bar than either direction alone); the
+    entailment test is evaluated per-direction. If \emph{both} directions
+    independently pass the entailment test, the pair is
+    \textbf{EQUIVALENT} (symmetric by construction, added as a fifth
+    relation type distinct from SUPPORTS); if exactly one direction passes,
+    a model-free \emph{specificity heuristic}
+    (content-token count plus weighted numeric/date/entity-mention counts,
+    run as a separate orchestration stage rather than inside the resolver,
+    mirroring the relatedness gate's own separation of concerns) decides
+    whether the entailing claim is materially more specific than the
+    entailed one; if so the edge is reclassified SUPPORTS $\to$ REFINES
+    with genuine, NLI-derived direction, never inferred from claim-ID
+    order. All 913 pre-existing tests pass unchanged under this rewrite (a
+    legacy single-direction code path is preserved exactly for any evidence
+    object lacking the new field), and Phase 4's claim population is
+    verified byte-identical before and after on the real corpus, isolating
+    every measured change in \S\ref{sec:results} to this one mechanism.
 \end{enumerate}
 
 \paragraph{Phase 7: contradiction-safe graph construction.}
@@ -71,10 +108,16 @@ same graph partition, even when they share a common SUPPORTS neighbor --- a
 case that defeats the naive algorithm of deleting CONTRADICTS edges and
 taking connected components (Figure~\ref{fig:partition}). SMRITI 2-colors
 the contradiction-only subgraph via BFS and restricts union-find merging
-along SUPPORTS/REFINES edges to same-colored nodes; components containing
-an odd contradiction cycle are conservatively degraded into singleton
-partitions. \S\ref{sec:bugs} describes a subtle correctness bug we found
-and fixed in this exact code path.
+along SUPPORTS/REFINES/EQUIVALENT edges to same-colored nodes; components
+containing an odd contradiction cycle are conservatively degraded into
+singleton partitions. \S\ref{sec:bugs} describes a subtle correctness bug
+we found and fixed in this exact code path, and a second, related bug
+introduced and fixed within this work: because EQUIVALENT is genuinely
+symmetric, mirroring its support relationship in both directions (so each
+claim sees the other as a supporter) created a two-node cycle in an
+evidence-aggregation traversal originally written for a strictly directed
+SUPPORTS graph, which a node's own claim ID would then rediscover as its
+own transitive supporter; fixed with an explicit self-exclusion check.
 
 \begin{figure}[t]
   \centering
@@ -84,15 +127,32 @@ and fixed in this exact code path.
   \label{fig:partition}
 \end{figure}
 
-\paragraph{Phase 8: evidence-aware reliability.} Eight independently-
-weighted signals (evidence strength, evidence independence, source
-diversity, topology strength, hub score, bridge score, conflict
-pressure, temporal stability) are fused into a single reliability index
-per claim, with a full decision record (raw/constrained/final score,
-every constraint that fired) attached. Evidence completeness is tracked
+\paragraph{Phase 8: evidence-aware reliability, reported separately from
+graph importance.} Eight independently-weighted signals (evidence
+strength, evidence independence, source diversity, topology strength, hub
+score, bridge score, conflict pressure, temporal stability) are extracted
+per claim through the same generic fusion engine, which never references
+a signal by name and only ever sees a \texttt{ContributionSet} of
+normalized value/weight/direction candidates. A second independent
+review, of the merged state produced by the three rectifications below,
+found that routing all eight signals through one fusion call and calling
+the result ``reliability'' conflated two different scientific claims: how
+well a claim is evidenced, and how structurally central it is in the
+graph. The fusion engine is accordingly now called \emph{twice} per
+claim, with the same eight \texttt{ContributionCandidate}s split by
+category and each half's weights rescaled to sum to 1.0 on their own: once
+over the five evidence-family signals (evidence strength, evidence
+independence, source diversity, conflict pressure, temporal stability),
+producing \texttt{reliability\_index}, and once over the three
+topology-family signals (topology strength, hub score, bridge score),
+producing a separate \texttt{importance\_index} --- each with its own
+full decision record (raw/constrained/final score, every constraint that
+fired). A constraint that previously capped reliability whenever topology
+was high and evidence was low is retired, since it was itself an artifact
+of the conflation this split removes. Evidence completeness is tracked
 separately and feeds only the uncertainty computation
-(\S\ref{sec:ablation}), not the weighted fusion sum itself.
-\textbf{Rectified in this work}, in two parts: (i) the evidence-independence
+(\S\ref{sec:ablation}), not either weighted fusion sum.
+\textbf{Rectified in this work}, in three parts: (i) the evidence-independence
 signal previously returned its \emph{maximum} value (1.0, ``fully
 independent'') for a claim with zero supporting evidence at all ---
 literally rewarding the absence of evidence. It now returns
@@ -106,7 +166,29 @@ claim under active, heavy dispute registered as less \emph{reliable} but
 not more \emph{uncertain} --- two published numbers moving in a way its own
 design does not intend. \texttt{conflict\_pressure} is now a fourth
 weighted uncertainty component (\S\ref{sec:metamorphic} verifies this
-directly via MR2). Both fixes are detailed in \S\ref{sec:bugs}.
+directly via MR2). (iii) \emph{Semantic-duplicate evidence collapsing},
+new in this work: introducing EQUIVALENT (this section) created a way for
+one underlying fact to appear as two distinct supporting claim\_ids ---
+a paraphrase, restated in a second document, previously counted as a
+second, independent source toward both \texttt{source\_diversity} and
+\texttt{evidence\_independence}. Phase 7's evidence aggregation now
+additionally computes \texttt{independent\_evidence\_group\_ids}: a
+union-find over EQUIVALENT edges among a claim's supporters collapses
+each equivalence class to one representative claim\_id, and these two
+Phase 8 signals measure diversity/independence over that collapsed set
+rather than the raw supporter list (\texttt{supporting\_claim\_ids}
+itself is unchanged, since signals that measure support volume rather
+than evidence independence should still see every raw supporter). This
+closes one of the two open items this paper's own relationship-ontology
+documentation flagged when EQUIVALENT was introduced; the broader
+provenance question --- that source-diversity/independence derived from
+filesystem-path heuristics rather than genuine publisher/author identity
+--- is addressed in a later remediation round (a real
+\texttt{DocumentProvenance} record and \texttt{source\_identity()}
+resolver, \S\ref{sec:limitations}), though resolving only \emph{declared}
+identity leaves cross-source fact-checking of undeclared shared origins
+open. All three fixes are
+detailed in \S\ref{sec:bugs} and \S\ref{sec:limitations}.
 
 \paragraph{Phases 9--12: API, dashboard, runtime, and evaluation.} Phase 9
 exposes a query planner and cache. Phase 10 is an interactive dashboard

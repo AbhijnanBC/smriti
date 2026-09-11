@@ -1,0 +1,78 @@
+{
+  "run_id": "20260911_125340",
+  "n_claims": 121,
+  "signals": {
+    "bridge_score": {
+      "family": "importance",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.0331,
+      "variance_raw_value": 0.031965,
+      "non_zero_fraction": 0.0331,
+      "policy_weight": 0.05
+    },
+    "conflict_pressure": {
+      "family": "evidence",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.2938,
+      "variance_raw_value": 0.113331,
+      "non_zero_fraction": 0.4959,
+      "policy_weight": 0.2
+    },
+    "evidence_independence": {
+      "family": "evidence",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.1003,
+      "variance_raw_value": 0.089269,
+      "non_zero_fraction": 0.1074,
+      "policy_weight": 0.15
+    },
+    "evidence_strength": {
+      "family": "evidence",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.0617,
+      "variance_raw_value": 0.033169,
+      "non_zero_fraction": 0.1074,
+      "policy_weight": 0.25
+    },
+    "hub_score": {
+      "family": "importance",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.0083,
+      "variance_raw_value": 0.008196,
+      "non_zero_fraction": 0.0083,
+      "policy_weight": 0.05
+    },
+    "source_diversity": {
+      "family": "evidence",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.1074,
+      "variance_raw_value": 0.095895,
+      "non_zero_fraction": 0.1074,
+      "policy_weight": 0.15
+    },
+    "temporal_stability": {
+      "family": "evidence",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.2521,
+      "variance_raw_value": 0.062496,
+      "non_zero_fraction": 0.5041,
+      "policy_weight": 0.05
+    },
+    "topology_strength": {
+      "family": "importance",
+      "availability": 1.0,
+      "n_available": 121,
+      "mean_raw_value": 0.2397,
+      "variance_raw_value": 0.175086,
+      "non_zero_fraction": 0.2645,
+      "policy_weight": 0.1
+    }
+  }
+}

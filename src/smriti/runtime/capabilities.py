@@ -39,7 +39,6 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional
 
 import structlog
 
@@ -50,12 +49,13 @@ logger = structlog.get_logger(__name__)
 
 class Capability(str, Enum):
     """All runtime capabilities that can be individually enabled/disabled."""
-    QUERY         = "query"
-    EXPORT        = "export"
-    EXPLAIN       = "explain"
-    SEARCH        = "search"
-    TRAVERSE      = "traverse"
-    STATISTICS    = "statistics"
+
+    QUERY = "query"
+    EXPORT = "export"
+    EXPLAIN = "explain"
+    SEARCH = "search"
+    TRAVERSE = "traverse"
+    STATISTICS = "statistics"
     VISUALIZATION = "visualization"
 
 
@@ -69,20 +69,22 @@ class FeatureStatus(str, Enum):
     DEGRADED    → available but running in a fallback mode
     UNAVAILABLE → enabled but dependencies are failing
     """
-    INSTALLED   = "installed"
-    ENABLED     = "enabled"
-    AVAILABLE   = "available"
-    DEGRADED    = "degraded"
+
+    INSTALLED = "installed"
+    ENABLED = "enabled"
+    AVAILABLE = "available"
+    DEGRADED = "degraded"
     UNAVAILABLE = "unavailable"
 
 
 @dataclass
 class CapabilityState:
     """Current state of one capability, now with explicit FeatureStatus."""
+
     capability: Capability
     status: FeatureStatus = FeatureStatus.INSTALLED
     reason: str = ""
-    updated_at: Optional[float] = None
+    updated_at: float | None = None
 
     @property
     def is_usable(self) -> bool:
@@ -92,8 +94,12 @@ class CapabilityState:
     @property
     def is_enabled(self) -> bool:
         """True if the feature is toggled on (even if not yet available)."""
-        return self.status in {FeatureStatus.ENABLED, FeatureStatus.AVAILABLE,
-                               FeatureStatus.DEGRADED, FeatureStatus.UNAVAILABLE}
+        return self.status in {
+            FeatureStatus.ENABLED,
+            FeatureStatus.AVAILABLE,
+            FeatureStatus.DEGRADED,
+            FeatureStatus.UNAVAILABLE,
+        }
 
 
 class CapabilityModel:
@@ -124,9 +130,8 @@ class CapabilityModel:
         # only promotes to AVAILABLE `elif all_healthy and state.is_enabled`,
         # which never becomes true), silently disabling every feature.
         # Capabilities are on by default; disable() is the explicit opt-out.
-        self._capabilities: Dict[Capability, CapabilityState] = {
-            cap: CapabilityState(capability=cap, status=FeatureStatus.ENABLED)
-            for cap in Capability
+        self._capabilities: dict[Capability, CapabilityState] = {
+            cap: CapabilityState(capability=cap, status=FeatureStatus.ENABLED) for cap in Capability
         }
         self._lock = threading.Lock()
 
@@ -291,7 +296,8 @@ class CapabilityModel:
     # ── Helpers and reporting ─────────────────────────────────────────────────
 
     def _publish_change(self, capability: Capability, new_status: FeatureStatus) -> None:
-        from smriti.runtime.events import publish, ArchitectureEventType
+        from smriti.runtime.events import ArchitectureEventType, publish
+
         publish(
             ArchitectureEventType.CAPABILITY_CHANGED,
             source="runtime.capabilities",
@@ -300,13 +306,13 @@ class CapabilityModel:
             reason=self._capabilities[capability].reason,
         )
 
-    def snapshot(self) -> Dict[str, Dict]:
+    def snapshot(self) -> dict[str, dict]:
         """Return a read‑only snapshot of all capability states."""
         with self._lock:
             return {
                 cap.value: {
-                    "status":   state.status.value,
-                    "reason":   state.reason,
+                    "status": state.status.value,
+                    "reason": state.reason,
                     "updated_at": state.updated_at,
                     "is_usable": state.is_usable,
                     "is_enabled": state.is_enabled,
@@ -324,13 +330,12 @@ class CapabilityModel:
         with self._lock:
             return all(state.is_enabled for state in self._capabilities.values())
 
-    def disabled_list(self) -> List[str]:
+    def disabled_list(self) -> list[str]:
         """Return names of features that are currently not usable (status < AVAILABLE)."""
         with self._lock:
-            return [cap.value for cap, state in self._capabilities.items()
-                    if not state.is_usable]
+            return [cap.value for cap, state in self._capabilities.items() if not state.is_usable]
 
-    def status_summary(self) -> Dict[FeatureStatus, int]:
+    def status_summary(self) -> dict[FeatureStatus, int]:
         """Count how many features are in each status."""
         counts = {s: 0 for s in FeatureStatus}
         with self._lock:

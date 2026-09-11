@@ -4,15 +4,15 @@ Provides a unified CLI for running the pipeline and launching the dashboard.
 """
 
 import argparse
-import sys
 import subprocess
-from pathlib import Path
+import sys
 
-from smriti.core.logger import setup_logging, get_logger
+from smriti.core.logger import get_logger, setup_logging
 from smriti.core.paths import RAW_DATA_DIR, SRC_DIR
 
 setup_logging()
 logger = get_logger(__name__)
+
 
 def run_pipeline(start: int, stop: int) -> None:
     """Executes the SMRITI backend pipeline."""
@@ -33,15 +33,16 @@ def run_pipeline(start: int, stop: int) -> None:
         logger.error("fatal pipeline error", error=str(e), exc_info=True)
         sys.exit(1)
 
+
 def run_dashboard() -> None:
     """Launches the Streamlit interaction session."""
     logger.info("launching smriti dashboard")
     dashboard_path = SRC_DIR / "dashboard" / "app.py"
-    
+
     if not dashboard_path.exists():
         logger.error("dashboard entry point not found", path=str(dashboard_path))
         sys.exit(1)
-        
+
     try:
         subprocess.run(["streamlit", "run", str(dashboard_path)], check=True)
     except KeyboardInterrupt:
@@ -50,13 +51,16 @@ def run_dashboard() -> None:
         logger.error("dashboard process failed", error=str(e))
         sys.exit(1)
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="SMRITI: Epistemic Knowledge Graph Platform")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Pipeline Command
     pipe_parser = subparsers.add_parser("pipeline", help="Execute the batch processing pipeline")
-    pipe_parser.add_argument("--start", type=int, default=1, help="Phase to start from (default: 1)")
+    pipe_parser.add_argument(
+        "--start", type=int, default=1, help="Phase to start from (default: 1)"
+    )
     pipe_parser.add_argument("--stop", type=int, default=12, help="Phase to stop at (default: 12)")
 
     # Dashboard Command
@@ -68,6 +72,7 @@ def main() -> None:
         run_pipeline(args.start, args.stop)
     elif args.command == "ui":
         run_dashboard()
+
 
 if __name__ == "__main__":
     main()

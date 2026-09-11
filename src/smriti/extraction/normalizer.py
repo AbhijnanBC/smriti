@@ -18,12 +18,12 @@ Design:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple
+
 import structlog
 
-from smriti.extraction.scanner import BlockType, ScannerEvent
-from smriti.extraction.rules import TABLE_KV_TEMPLATE, TABLE_SEPARATOR_PATTERN
 from smriti.core.models import SegmentationWarning
+from smriti.extraction.rules import TABLE_KV_TEMPLATE, TABLE_SEPARATOR_PATTERN
+from smriti.extraction.scanner import BlockType, ScannerEvent
 
 logger = structlog.get_logger(__name__)
 
@@ -42,6 +42,7 @@ class NormalizedBlock:
         warnings:    Any warnings emitted during normalisation.
         skip:        If True, this block produces no sentences (headings, code, etc.)
     """
+
     prose: str
     block_type: BlockType
     char_start: int
@@ -61,6 +62,7 @@ def normalize_event(event: ScannerEvent) -> NormalizedBlock:
 
 
 # ── Strategy implementations ──────────────────────────────────────────────────
+
 
 def _normalize_paragraph(event: ScannerEvent) -> NormalizedBlock:
     """Paragraphs pass through unchanged."""
@@ -92,7 +94,7 @@ def _normalize_heading(event: ScannerEvent) -> NormalizedBlock:
 def _normalize_bullet_item(event: ScannerEvent) -> NormalizedBlock:
     """Bullet list items become single prose sentences."""
     text = event.text.strip()
-    if text and not text[-1] in ".?!":
+    if text and text[-1] not in ".?!":
         text = text + "."
     return NormalizedBlock(
         prose=text,
@@ -112,7 +114,7 @@ def _normalize_ordered_item(event: ScannerEvent) -> NormalizedBlock:
 def _normalize_block_quote(event: ScannerEvent) -> NormalizedBlock:
     """Block quotes pass through as prose."""
     text = event.text.strip()
-    if text and not text[-1] in ".?!":
+    if text and text[-1] not in ".?!":
         text = text + "."
     return NormalizedBlock(
         prose=text,
@@ -155,7 +157,7 @@ def _normalize_table(event: ScannerEvent) -> NormalizedBlock:
             skip=True,
         )
 
-    def parse_row(line: str) -> List[str]:
+    def parse_row(line: str) -> list[str]:
         return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
     try:
@@ -233,14 +235,14 @@ def _normalize_unknown(event: ScannerEvent) -> NormalizedBlock:
 
 # Strategy dispatch table — extend here for new formats
 _NORMALIZERS = {
-    BlockType.PARAGRAPH:       _normalize_paragraph,
-    BlockType.HEADING:         _normalize_heading,
-    BlockType.BULLET_ITEM:     _normalize_bullet_item,
-    BlockType.ORDERED_ITEM:    _normalize_ordered_item,
-    BlockType.BLOCK_QUOTE:     _normalize_block_quote,
-    BlockType.TABLE:           _normalize_table,
-    BlockType.CODE_BLOCK:      _normalize_code_block,
-    BlockType.FRONT_MATTER:    _normalize_skip,
+    BlockType.PARAGRAPH: _normalize_paragraph,
+    BlockType.HEADING: _normalize_heading,
+    BlockType.BULLET_ITEM: _normalize_bullet_item,
+    BlockType.ORDERED_ITEM: _normalize_ordered_item,
+    BlockType.BLOCK_QUOTE: _normalize_block_quote,
+    BlockType.TABLE: _normalize_table,
+    BlockType.CODE_BLOCK: _normalize_code_block,
+    BlockType.FRONT_MATTER: _normalize_skip,
     BlockType.HORIZONTAL_RULE: _normalize_skip,
-    BlockType.BLANK:           _normalize_skip,
+    BlockType.BLANK: _normalize_skip,
 }

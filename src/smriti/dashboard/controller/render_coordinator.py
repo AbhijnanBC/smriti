@@ -17,12 +17,11 @@ from __future__ import annotations
 
 import streamlit as st
 import structlog
-
 from smriti.dashboard.workspaces.context import (
-    WorkspaceContext,
+    InfrastructureContext,
     InteractionContext,
     RenderingContext,
-    InfrastructureContext,
+    WorkspaceContext,
 )
 from smriti.exceptions import WorkspaceNotFoundError
 

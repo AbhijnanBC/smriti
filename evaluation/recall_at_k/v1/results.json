@@ -1,0 +1,77 @@
+{
+  "run_id": "20260911_081039",
+  "n_gold_pairs": 620,
+  "n_claims": 1370,
+  "production_top_k": 50,
+  "production_threshold": 0.75,
+  "top_k_sweep_at_fixed_threshold": [
+    {
+      "top_k": 10,
+      "threshold": 0.75,
+      "recall": 0.729,
+      "mean_candidates_per_claim": 1.59
+    },
+    {
+      "top_k": 25,
+      "threshold": 0.75,
+      "recall": 0.729,
+      "mean_candidates_per_claim": 1.59
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.75,
+      "recall": 0.729,
+      "mean_candidates_per_claim": 1.59
+    },
+    {
+      "top_k": 100,
+      "threshold": 0.75,
+      "recall": 0.729,
+      "mean_candidates_per_claim": 1.59
+    }
+  ],
+  "threshold_sweep_at_fixed_top_k": [
+    {
+      "top_k": 50,
+      "threshold": 0.6,
+      "recall": 0.8339,
+      "mean_candidates_per_claim": 5.318
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.65,
+      "recall": 0.8113,
+      "mean_candidates_per_claim": 3.47
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.7,
+      "recall": 0.779,
+      "mean_candidates_per_claim": 2.247
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.75,
+      "recall": 0.729,
+      "mean_candidates_per_claim": 1.59
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.8,
+      "recall": 0.6597,
+      "mean_candidates_per_claim": 1.361
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.85,
+      "recall": 0.5548,
+      "mean_candidates_per_claim": 1.197
+    },
+    {
+      "top_k": 50,
+      "threshold": 0.9,
+      "recall": 0.3952,
+      "mean_candidates_per_claim": 0.996
+    }
+  ]
+}

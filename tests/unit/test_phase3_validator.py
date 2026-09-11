@@ -2,16 +2,25 @@
 Unit tests for extraction/validator.py.
 """
 
-import pytest
 from pathlib import Path
-from smriti.core.models import SemanticSentence, SegmentationWarning
-from smriti.extraction.validator import validate_sentences
-from smriti.extraction.scanner import BlockType
+
+import pytest
+from smriti.core.models import SegmentationWarning, SemanticSentence
 from smriti.exceptions import SentenceValidationError
+from smriti.extraction.scanner import BlockType
+from smriti.extraction.validator import validate_sentences
 
 
-def make_sentence(sid, doc_id, text, position, char_start=0, char_end=10, context="",
-                   origin_block_type=BlockType.PARAGRAPH):
+def make_sentence(
+    sid,
+    doc_id,
+    text,
+    position,
+    char_start=0,
+    char_end=10,
+    context="",
+    origin_block_type=BlockType.PARAGRAPH,
+):
     return SemanticSentence(
         sentence_id=sid,
         document_id=doc_id,
@@ -57,7 +66,7 @@ def test_duplicate_id_raises():
 def test_non_monotonic_position_raises():
     sentences = [
         make_sentence("aaa", "doc1", "First.", 2),  # Position 2
-        make_sentence("bbb", "doc1", "Second.", 1), # Position 1 — goes backwards!
+        make_sentence("bbb", "doc1", "Second.", 1),  # Position 1 — goes backwards!
     ]
     with pytest.raises(SentenceValidationError):
         validate_sentences(sentences, "doc1")
@@ -78,7 +87,7 @@ def test_empty_input_returns_empty():
 
 
 def test_invalid_context_emits_warning():
-    from smriti.extraction.rules import CONTEXT_SEPARATOR
+
     # context with illegal characters (e.g., "Python@CUDA")
     sentences = [
         make_sentence("aaa", "doc1", "text", 0, 0, 4, context="Python@CUDA"),

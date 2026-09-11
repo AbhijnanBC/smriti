@@ -1,42 +1,135 @@
 \input{generated/controlled_results_table.tex}
 
-Table~\ref{tab:controlled} is, we think, the cleanest evidence in this
-paper. Three findings, each requiring no interpretation at all:
+Table~\ref{tab:controlled} reports SMRITI-Controlled-v2 \emph{after
+corpus sanitation} (\S\ref{sec:controlled}): 180 frozen-TEST core pairs
+(the six CONTRADICTS subtypes, SUPPORTS, REFINES, EQUIVALENT, and the
+easy-NEUTRAL control), with 302 DEV pairs reported alongside for
+transparency only. An earlier draft of this table, computed against the
+pre-sanitation corpus, is retracted rather than corrected in place: a
+second audit round found the corpus itself had ungrammatical
+negation, a subject-dropped SUPPORTS template, and non-exclusive
+CONTRADICTS pairs, so its numbers measured those defects at least as
+much as the resolver. Every number below is from the sanitized,
+validated corpus (\texttt{evaluation/controlled/generators/
+validate\_corpus.py} passes with zero findings) and the frozen TEST
+split specifically, unless marked DEV.
 
-\textbf{(1) Across all six contradiction categories, every retrieved pair
-was classified correctly}: 10 of 12 designed contradiction pairs were
-retrieved as NLI candidates, and all 10 were correctly labeled
-CONTRADICTS with contradiction scores of 0.996--1.000 --- 100\%
-classification precision on a fully objective test set, spanning direct
-reversal, explicit negation, numeric facts, temporal state, named-entity
-attribution, and property negation alike. This directly answers RQ2/RQ3
-for \emph{propositional} contradiction: the arg-max and relatedness-gate
-fix is not an artifact of one corpus's idiosyncrasies. It is not the
-final word on RQ3, however --- \S\ref{sec:results-annotation} shows the
-same fix does not transfer to SMRITI-Reference's \emph{rhetorical}
-disagreement, which this controlled corpus was not designed to test.
+\textbf{(1) Propositional CONTRADICTS remains strong on the frozen TEST
+set.} Pooled across all six subtypes, 119 of 180 core TEST pairs are
+CONTRADICTS-category, and all 119 are retrieved as candidates (100\%
+retrieval recall); classification precision/recall/F1 given retrieval
+are 98.3\%/99.2\%/98.7\% (118 of 119 correctly classified, plus one
+false positive from a different gold category). Five of the six
+subtypes (\emph{entity}, \emph{negated}, \emph{numeric},
+\emph{attribute}, \emph{direct}) reach 100\% retrieval recall and 100\%
+classification accuracy on TEST; \emph{temporal} reaches 100\% retrieval
+recall but only 94.1\% classification accuracy (16/17) --- the corpus's
+single CONTRADICTS classification miss on TEST, and now a
+classification failure rather than a retrieval failure. This is a
+materially cleaner result than any earlier draft of this corpus
+reported, and it is now attributable to the resolver rather than partly
+to the corpus: \emph{direct}'s explicit-exclusivity fix (``primary
+deployment platform is X'' rather than a bare ``runs on X'') removed the
+specific non-exclusivity defect a prior draft's own \emph{direct} misses
+traced to, and the \emph{entity} subtype's ``developed \emph{solely}
+by'' fix removed the analogous defect in attribution pairs.
 
-\textbf{(2) All six ``easy'' NEUTRAL control pairs were correctly
-excluded before NLI ever ran} (0/6 retrieved as candidates at all) ---
-i.e.\ zero false-positive contradictions on pairs sharing no vocabulary
-with their partner, confirming that embedding-based candidate retrieval
-correctly filters clearly-unrelated pairs. This is a weaker claim than
-it may look: it shows retrieval works, not that the relatedness gate
-would have rejected a false CONTRADICTS had one of these pairs actually
-been retrieved (an external review point) --- \S\ref{sec:hard-neutral}
-tests that directly.
+\textbf{(2) The easy-NEUTRAL control shows zero false-positive
+contradictions, and DEV agrees.} 0/21 TEST and 0/30 DEV easy-NEUTRAL
+pairs are retrieved as candidates at all, confirming embedding-based
+candidate retrieval reliably filters pairs sharing no vocabulary. This
+is only a claim about retrieval, not about the relatedness gate
+(\S\ref{sec:hard-neutral} tests that directly).
 
-\textbf{(3) SUPPORTS is the weaker link}: only 4 of 6 designed SUPPORTS
-pairs were retrieved, and of those, only 1 was correctly labeled SUPPORTS
-(the other 3 were split across NEUTRAL and REFINES). REFINES is, in one
-case, a defensible alternative reading ("X improves Y" followed by "an
-independent benchmark confirms X improves Y" is arguably an elaboration as
-much as a confirmation), but the low classification accuracy here --- in
-sharp contrast to CONTRADICTS's 100\% --- indicates the entailment side of
-the resolver (which received the identical arg-max fix as the
-contradiction side) is not yet as well-calibrated, and is a concrete
-target for future work distinct from the contradiction fix this paper
-centers on.
+\textbf{(3) SUPPORTS is strong on the frozen TEST set, and this survives
+corpus sanitation.} 9 of 12 TEST SUPPORTS pairs are retrieved (75.0\%),
+and \emph{all 9} are correctly labeled SUPPORTS: precision 90.0\%,
+recall 75.0\%, F1 81.8\% (the one precision-reducing false positive is
+an EQUIVALENT pair misclassified as SUPPORTS, not a SUPPORTS pair
+misclassified as something else). DEV shows the same profile at a
+larger scale: 34 of 39 retrieved (87.2\%), all 34 correctly labeled
+(precision 85.0\%, recall 87.2\%, F1 86.1\%). The remaining TEST gap is
+entirely retrieval, not classification: three SUPPORTS pairs (SP008,
+SP028, SP048) are never surfaced as candidates at all, so the
+entailment side of the resolver never gets the chance to classify them
+--- every SUPPORTS pair that \emph{is} retrieved is classified
+correctly on both TEST and DEV. \textbf{This paragraph corrects a stale
+claim in an earlier draft, which reported ``0/9 correct'' for TEST
+SUPPORTS.} That figure did not match
+\texttt{evaluation/controlled/v2/results.json} even at the time it was
+written; the per-pair rows in that frozen artifact (\texttt{score\_controlled\_v2.py}'s
+own output) show 9/9, not 0/9, and the numbers above are read directly
+from it rather than retyped from an earlier round's prose.
+
+\textbf{(4) REFINES holds up despite being deliberately spread across
+seven independent specificity mechanisms, not the single mechanism a
+second audit round flagged as circular.} 12 of 14 TEST REFINES pairs are
+retrieved (85.7\%) and all 12 are correctly classified (precision/recall/F1
+= 100.0\%/85.7\%/92.3\% at the per-class level; DEV: 30 of 35 retrieved,
+85.7\%, all 30 correctly classified, precision/recall/F1 =
+88.2\%/85.7\%/87.0\%). Because
+numeric-and-date is now only one of seven template families (geographic
+scope, population scope, experimental condition, named dataset, causal
+mechanism, and qualification are the other six), this result is no
+longer explainable as ``the heuristic recognizes the one feature it was
+written to recognize'' --- it recognizes specificity expressed several
+structurally different ways.
+
+\textbf{(5) EQUIVALENT has perfect precision when it commits, but weak
+recall on TEST driven by both retrieval misses and classification
+misses.} 10 of 14 TEST EQUIVALENT pairs are retrieved (71.4\%), but only
+5 of those 10 are correctly labeled EQUIVALENT: precision 100\% (the
+resolver is never wrong when it \emph{does} commit to EQUIVALENT), but
+recall only 35.7\% and F1 52.6\%. The other 5 retrieved-but-not-EQUIVALENT
+pairs are misclassifications, not retrieval misses: one is labeled
+SUPPORTS, two CONTRADICTS, and two UNKNOWN/abstained. DEV shows the same
+profile at a larger scale (26 of 35 retrieved, 74.3\%; 8 of those 26
+correctly labeled, 30.8\% given retrieval; precision 100\%, recall
+22.9\%, F1 37.2\%). This is a different profile from earlier drafts'
+report of a purely retrieval-limited EQUIVALENT recall gap: roughly half
+of the TEST recall loss is retrieval never surfacing the pair as a
+candidate, and the other half is the resolver surfacing it and then
+resolving it to the wrong relation type, most often CONTRADICTS --- which,
+given SUPPORTS's own strong classification profile (finding 3), is now
+the more concerning half of this result.
+
+\textbf{(6) Candidate-level precision is far weaker than gold-pair
+precision, and more than half of all CONTRADICTS calls fire on pairs
+this corpus never intended to test.} This is the most important new
+finding in this section (audit round P0-9), measured by running the
+full corpus with every NLI-scored candidate retained
+(\texttt{--env eval}, \S\ref{sec:system}) rather than only the ones that
+survive production's NEUTRAL/UNKNOWN filters. Phase 6 scored
+\textbf{1{,}089} candidate pairs in total; only \textbf{496} (45.6\%)
+correspond to any pair this corpus's manifest actually intends to test.
+Of all CONTRADICTS verdicts across that full candidate pool,
+\textbf{383} (55.2\%) are on non-intended pairs --- pairs that
+embedding retrieval surfaced as similar (most plausibly because many
+templates reuse a limited pool of attribute/verb phrases across
+different entities, so two \emph{different} pairs' claims can become
+lexically close to each other, not just to their own intended partner)
+but that the corpus's own design never asked the resolver to judge at
+all.
+
+\input{generated/candidate_precision_table.tex}
+
+Table~\ref{tab:candidate-precision} reports this directly. This
+does not contradict finding (1) above --- CONTRADICTS precision
+\emph{on the intended pairs} really is 98.3\% --- but it substantially
+qualifies what that number is evidence of: the resolver is not simply
+accurate on contradiction, it is accurate on the specific, curated
+population of pairs this corpus draws its intended tests from, while
+also producing a large absolute volume of CONTRADICTS verdicts on pairs
+outside that population that this table's per-category rows never
+count as errors because they were never counted as trials at all.
+Whether those 383 non-intended CONTRADICTS calls are themselves correct
+or incorrect is not established here (they were never given a
+construction-time label, since the corpus was not designed with them in
+mind) --- but their sheer volume relative to the 119 intended,
+gold-scored CONTRADICTS trials on TEST is itself the finding: a
+controlled corpus's own gold-pair metrics can look strong while the same
+run generates several times as many additional, unaudited CONTRADICTS
+verdicts on the side.
 
 \subsection{Hard-Neutral Extension: Does the Relatedness Gate Actually
 Work?}
@@ -44,27 +137,86 @@ Work?}
 
 \input{generated/hard_neutral_table.tex}
 
-\textbf{(4) The relatedness gate has a real, demonstrated gap.} Of the
-six hard-neutral pairs, two were retrieved as NLI candidates at all
-(the other four --- both lexical-collision pairs and one each of the
-other two categories --- were not retrieved, so the relatedness gate was
-never exercised on them). Of those two, \textbf{one was misclassified
-CONTRADICTS}: ``The Aerotrix rover uses LiDAR for obstacle detection''
-paired with ``The Aerotrix rover uses a stereo camera for obstacle
-detection'' --- two claims about the same named entity, sharing the
-entity token ``Aerotrix'' (exactly the token overlap the relatedness
-gate's entity-token bonus is designed to detect as \emph{related}), but
-describing two compatible sensors, not a genuine conflict. The
-relatedness gate correctly identified the pair as related --- that is
-its entire job --- and passed it through to the resolver, which then
-read ``uses LiDAR'' and ``uses a stereo camera'' as mutually exclusive
-rather than as two attributes a single rover could have. This is
-precisely the gap an external review predicted: the gate only asks
-\emph{is this pair topically related}, never \emph{are these two
-specific attributes of this entity actually incompatible}, and the NLI
-model has no special handling for multi-attribute entities either. The
-other retrieved hard-neutral pair (the two slow-braising statements,
-adjacent-non-conflicting category) was correctly labeled NEUTRAL,
-so this is not a uniform failure of the gate; with $n=1$ misclassified
-pair, we report this as a demonstrated failure mode, not a rate, and
-record it as E7 in \S\ref{sec:error-taxonomy}.
+\textbf{(7) The relatedness gate's multi-attribute gap is the dominant
+failure mode of the hard-NEUTRAL extension on TEST, exactly as the
+pre-sanitation corpus also found --- this result was not an artifact of
+that corpus's other defects.} All 17 TEST multi-attribute pairs (same
+named entity, two different but compatible attributes, e.g.\ ``the
+\{X\} uses Redis for response caching'' vs.\ ``the \{X\} uses an
+in-memory LRU cache for response caching'') are retrieved, and only 5 of
+17 (29.4\%) are correctly labeled NEUTRAL; the other 12 are all
+misclassified as CONTRADICTS. \textbf{This paragraph corrects a stale
+claim in an earlier draft, which reported ``0/17 correct.''} The
+per-pair rows in \texttt{evaluation/controlled/v2/results.json} show 5
+correct, not 0; the finding survives the correction, but at a less
+extreme magnitude than previously reported. The relatedness gate
+correctly recognizes these as topically related --- that is its entire
+job --- but neither the gate nor the NLI model reliably distinguishes
+``two attributes describing the same entity'' from ``two mutually
+exclusive claims about the same entity,'' so on this subtype it defaults
+to CONTRADICTS more often than not. We revise E7 in
+\S\ref{sec:error-taxonomy} accordingly.
+
+\textbf{(8) The other three hard-NEUTRAL subtypes are, on TEST
+specifically, not retrieved at all.} \emph{Same-topic}, \emph{lexical-
+collision}, and \emph{adjacent-non-conflicting} all show 0\% retrieval
+recall on TEST (0/19, 0/16, 0/17 respectively), while DEV shows partial
+retrieval for the same categories (\emph{same-topic} 71.4\%,
+\emph{adjacent-non-conflicting} 26.7\%, \emph{lexical-collision} 3.2\%).
+This is a real, disclosed consequence of splitting by template family
+rather than by pair (\S\ref{sec:controlled}): these three categories
+have few template families each, and the stratified split, while it
+guarantees every category has \emph{some} TEST representation, does not
+guarantee every category's TEST families are equally likely to be
+retrieved as its DEV families. We report this rather than treating TEST
+retrieval recall of exactly 0\% as a resolver finding for these three
+categories --- it is a sampling property of a 5-to-12-family category
+split at this corpus size, and DEV's non-zero recall on the identical
+category shows the corpus itself does contain retrievable instances.
+
+\textbf{(9) SMRITI has no measurable abstention behavior on genuinely
+ambiguous input, on the frozen TEST set, despite UNKNOWN/ABSTAINED being
+a formally defined, reachable resolver outcome --- and the reason is not
+a miscalibrated threshold, it is that this benchmark does not actually
+produce low-confidence NLI output (P0-E, audit round).} All 15 TEST
+ambiguous/abstention pairs are retrieved, and the resolver abstains on
+\emph{zero} of them (coverage = 100\%, abstention rate = 0\%): it
+commits instead to NEUTRAL on all 15.
+
+\input{generated/abstention_diagnostic_table.tex}
+
+Table~\ref{tab:abstention-diagnostic} answers the question a miscalibrated-
+threshold explanation would need to be true: is the resolver's confidence
+on these 15 pairs actually low (a threshold-tuning problem) or is it
+confidently wrong about what kind of uncertainty this is (a benchmark-
+design problem)? The NLI cross-encoder's neutral-class confidence
+averages 98.9\%/98.7\% (A$\to$B/B$\to$A) with a mean margin over the
+runner-up class of 97.5--97.8 points and normalized entropy of
+0.05--0.054 (0 = certain, 1 = maximally uncertain over the three NLI
+classes) --- and the single \emph{lowest} neutral confidence observed
+across all 15 pairs, in either direction, is still 92.5\%. There is no
+threshold this resolver could set, using its current confidence-based
+abstention mechanism, that would fire on these specific 15 pairs without
+also firing on a large fraction of genuinely-NEUTRAL pairs elsewhere in
+this corpus, because from this NLI model's perspective these pairs are
+not uncertain at all --- they are confidently, unambiguously NEUTRAL. We
+therefore separate two concepts the ontology conflates if left
+unstated: \textbf{confidence-based abstention} (``the model is
+insufficiently confident to commit'' --- what
+\texttt{ResolutionStatus.ABSTAINED} actually implements and what
+\S\ref{sec:system}'s low-confidence unit tests correctly verify fires
+when it should) and \textbf{semantic ambiguity detection} (``this claim
+pair is genuinely underspecified or hedged, independent of how
+confident any model is about it''), which this resolver has no mechanism
+for at all. This benchmark's hedged, deliberately-vague natural-language
+constructions (``build time varies depending on project size,'' etc.)
+read to this NLI model as ordinary topically-unrelated NEUTRAL text, not
+as linguistically hedged uncertainty --- a real, informative finding
+about the gap between human-perceived ambiguity and NLI-model confidence,
+not evidence that the benchmark or the resolver is broken. We record
+this as E10 in \S\ref{sec:error-taxonomy}, and we do not report P0-E's
+underlying architectural question (does SMRITI validate abstention on
+ambiguous input) as resolved: the confidence-based mechanism and its
+low-confidence branch are correct and unit-verified in isolation, but
+this benchmark does not exercise semantic ambiguity detection at all, and
+no corpus in this paper currently does.

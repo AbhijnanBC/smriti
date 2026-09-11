@@ -2,10 +2,10 @@
 
 import pytest
 from smriti.evaluation.statistical.analysis import (
-    compute_statistical_analysis,
-    compute_effect_size,
-    assess_reproducibility,
     STANDARD_THREATS,
+    assess_reproducibility,
+    compute_effect_size,
+    compute_statistical_analysis,
 )
 
 

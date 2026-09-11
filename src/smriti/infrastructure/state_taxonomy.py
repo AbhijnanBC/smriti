@@ -13,31 +13,33 @@ Three Categories:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
 
 
 class StateCategory(str, Enum):
     """Classification of every piece of state in SMRITI."""
-    BUSINESS    = "business"     # Domain knowledge — immutable during runtime
-    RUNTIME     = "runtime"      # Session / interaction — mutable, ephemeral
+
+    BUSINESS = "business"  # Domain knowledge — immutable during runtime
+    RUNTIME = "runtime"  # Session / interaction — mutable, ephemeral
     OPERATIONAL = "operational"  # Infrastructure — disposable, reconstructible
 
 
 @dataclass(frozen=True)
 class StateDescriptor:
     """Formal description of a state variable in the taxonomy."""
-    name:              str
-    category:          StateCategory
-    owner:             str
-    lifetime:          str    # "pipeline_run" | "session" | "request" | "indefinite"
-    mutability:        str    # "immutable" | "mutable" | "append-only"
-    persistence:       str    # "artifact" | "session" | "in-memory" | "disk"
-    recovery_strategy: str    # "rebuild" | "restore" | "discard"
+
+    name: str
+    category: StateCategory
+    owner: str
+    lifetime: str  # "pipeline_run" | "session" | "request" | "indefinite"
+    mutability: str  # "immutable" | "mutable" | "append-only"
+    persistence: str  # "artifact" | "session" | "in-memory" | "disk"
+    recovery_strategy: str  # "rebuild" | "restore" | "discard"
 
 
 # ── Business State ────────────────────────────────────────────────────────────
+
 
 class BusinessState:
     """
@@ -89,6 +91,7 @@ class BusinessState:
 
 # ── Runtime State ─────────────────────────────────────────────────────────────
 
+
 class RuntimeStateCategory:
     """
     Runtime State catalog — session and interaction state.
@@ -137,6 +140,7 @@ class RuntimeStateCategory:
 
 
 # ── Operational State ─────────────────────────────────────────────────────────
+
 
 class OperationalState:
     """

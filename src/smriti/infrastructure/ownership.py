@@ -11,21 +11,21 @@ Principle: Every subsystem has exactly one owner,
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 
 @dataclass(frozen=True)
 class SubsystemOwnership:
     """Ownership declaration for a single SMRITI subsystem."""
-    subsystem:       str
-    owner:           str
-    responsibility:  str
-    module_path:     str
+
+    subsystem: str
+    owner: str
+    responsibility: str
+    module_path: str
 
 
 # ── Canonical ownership table ─────────────────────────────────────────────────
 
-OWNERSHIP_TABLE: Dict[str, SubsystemOwnership] = {
+OWNERSHIP_TABLE: dict[str, SubsystemOwnership] = {
     "configuration": SubsystemOwnership(
         subsystem="Configuration",
         owner="ConfigurationManager",
@@ -93,7 +93,7 @@ class OwnershipRegistry:
     def __init__(self) -> None:
         self._table = OWNERSHIP_TABLE.copy()
 
-    def owner_of(self, subsystem: str) -> Optional[SubsystemOwnership]:
+    def owner_of(self, subsystem: str) -> SubsystemOwnership | None:
         return self._table.get(subsystem.lower().replace(" ", "_"))
 
     def all_subsystems(self) -> list[SubsystemOwnership]:

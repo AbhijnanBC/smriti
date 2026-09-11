@@ -18,8 +18,8 @@ from __future__ import annotations
 
 import random
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Sequence
 
 
 @dataclass(frozen=True)
@@ -55,11 +55,13 @@ def bootstrap_proportion_ci(
 
     point_estimate = sum(outcomes) / n
     if n == 1:
-        return BootstrapResult(point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level)
+        return BootstrapResult(
+            point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level
+        )
 
     rng = random.Random(seed)
     outcomes_list = list(outcomes)
-    resample_means: List[float] = []
+    resample_means: list[float] = []
     for _ in range(n_resamples):
         resample = [outcomes_list[rng.randrange(n)] for _ in range(n)]
         resample_means.append(sum(resample) / n)
@@ -118,16 +120,18 @@ def bootstrap_proportion_ci_clustered(
     point_estimate = sum(outcomes) / n
 
     by_cluster: dict = {}
-    for outcome, cid in zip(outcomes, cluster_ids):
+    for outcome, cid in zip(outcomes, cluster_ids, strict=False):
         by_cluster.setdefault(cid, []).append(outcome)
     clusters = list(by_cluster.values())
     n_clusters = len(clusters)
 
     if n_clusters <= 1:
-        return BootstrapResult(point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level)
+        return BootstrapResult(
+            point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level
+        )
 
     rng = random.Random(seed)
-    resample_means: List[float] = []
+    resample_means: list[float] = []
     for _ in range(n_resamples):
         drawn = [clusters[rng.randrange(n_clusters)] for _ in range(n_clusters)]
         pooled = [item for cluster in drawn for item in cluster]
@@ -163,11 +167,13 @@ def bootstrap_mean_ci(
 
     point_estimate = statistics.mean(values)
     if n == 1:
-        return BootstrapResult(point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level)
+        return BootstrapResult(
+            point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level
+        )
 
     rng = random.Random(seed)
     values_list = list(values)
-    resample_means: List[float] = []
+    resample_means: list[float] = []
     for _ in range(n_resamples):
         resample = [values_list[rng.randrange(n)] for _ in range(n)]
         resample_means.append(sum(resample) / n)

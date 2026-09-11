@@ -30,6 +30,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
 import structlog
 
 from smriti.core.config import get_config
@@ -47,31 +48,31 @@ from smriti.core.models import (
 from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import Phase5Error, EmbeddingModelError, EmbeddingInferenceError
-
-from smriti.embedding.embedder import (
-    BaseEmbedder,
-    SentenceTransformerEmbedder,
-    PHASE5_PIPELINE_VERSION,
-    PHASE5_SCHEMA_VERSION,
-)
-from smriti.embedding.input_factory import EmbeddingInputFactory, CacheKeyFactory
-from smriti.embedding.cache import EmbeddingCachePolicy
-from smriti.embedding.validation import validate_vector
-from smriti.embedding.normalization import l2_normalize
 from smriti.embedding.builders import (
-    build_vector,
+    build_embedded_claim,
     build_embedding,
     build_embedding_quality,
-    build_embedded_claim,
+    build_vector,
 )
-from smriti.embedding.statistics import Phase5StatsCollector
+from smriti.embedding.cache import EmbeddingCachePolicy
+from smriti.embedding.embedder import (
+    PHASE5_PIPELINE_VERSION,
+    PHASE5_SCHEMA_VERSION,
+    BaseEmbedder,
+    SentenceTransformerEmbedder,
+)
+from smriti.embedding.input_factory import CacheKeyFactory, EmbeddingInputFactory
 from smriti.embedding.models import EmbeddingResult, EmbeddingStatus
+from smriti.embedding.normalization import l2_normalize
+from smriti.embedding.statistics import Phase5StatsCollector
+from smriti.embedding.validation import validate_vector
+from smriti.exceptions import EmbeddingInferenceError, EmbeddingModelError, Phase5Error
 
 logger = structlog.get_logger(__name__)
 
 
 # ── Public result type ────────────────────────────────────────────────────────
+
 
 @dataclass
 class Phase5Result:
@@ -88,13 +89,14 @@ class Phase5Result:
         manifest_path:   Path to written manifest.json.
         dataset_path:    Path to written dataset.json.
     """
-    embedded_claims: List[EmbeddedClaim]
+
+    embedded_claims: list[EmbeddedClaim]
     stats: Phase5Stats
     run_id: str
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    manifest_path: Optional[Path] = None
-    dataset_path: Optional[Path] = None
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    manifest_path: Path | None = None
+    dataset_path: Path | None = None
 
     @property
     def total_embedded(self) -> int:
@@ -113,33 +115,35 @@ class Phase5Result:
             # Derive status from quality (status is not on Embedding)
             status = "cached" if ec.quality.cache_used else "success"
 
-            records.append({
-                "claim_id":       ec.claim_id,
-                "vector":         list(ec.values),   # Plain list of floats
-                "dimension":      ec.dimension,
-                "schema_version": ec.schema_version,
-                "status":         status,
-                "quality": {
-                    "dimension_ok": ec.quality.dimension_ok,
-                    "normalized":   ec.quality.normalized,
-                    "finite":       ec.quality.finite,
-                    "cache_used":   ec.quality.cache_used,
-                },
-                "model": {
-                    "provider":          ec.embedding.descriptor.provider,
-                    "model_name":        ec.embedding.descriptor.model_name,
-                    "revision":          ec.embedding.descriptor.model_revision,
-                    "dimension":         ec.embedding.descriptor.dimension,
-                    "signature":         ec.embedding.descriptor.model_signature,
-                    "embedding_family":  ec.embedding.descriptor.embedding_family,
-                },
-                "provenance": {
-                    "pipeline_version":   ec.embedding.provenance.pipeline_version,
-                    "normalization_mode": ec.embedding.provenance.normalization_mode,
-                    "device":             ec.embedding.provenance.device,
-                    "config_hash":        ec.embedding.provenance.config_hash,
-                },
-            })
+            records.append(
+                {
+                    "claim_id": ec.claim_id,
+                    "vector": list(ec.values),  # Plain list of floats
+                    "dimension": ec.dimension,
+                    "schema_version": ec.schema_version,
+                    "status": status,
+                    "quality": {
+                        "dimension_ok": ec.quality.dimension_ok,
+                        "normalized": ec.quality.normalized,
+                        "finite": ec.quality.finite,
+                        "cache_used": ec.quality.cache_used,
+                    },
+                    "model": {
+                        "provider": ec.embedding.descriptor.provider,
+                        "model_name": ec.embedding.descriptor.model_name,
+                        "revision": ec.embedding.descriptor.model_revision,
+                        "dimension": ec.embedding.descriptor.dimension,
+                        "signature": ec.embedding.descriptor.model_signature,
+                        "embedding_family": ec.embedding.descriptor.embedding_family,
+                    },
+                    "provenance": {
+                        "pipeline_version": ec.embedding.provenance.pipeline_version,
+                        "normalization_mode": ec.embedding.provenance.normalization_mode,
+                        "device": ec.embedding.provenance.device,
+                        "config_hash": ec.embedding.provenance.config_hash,
+                    },
+                }
+            )
         return json.dumps(records, indent=2, ensure_ascii=False)
 
 
@@ -147,14 +151,15 @@ class Phase5Result:
 # We monkeypatch a convenience method here so EmbeddedClaim.to_dataset_json
 # doesn't need to import from __init__ (which would create a circular import).
 
-#def _values_as_list(self) -> List[float]:
-    #"""Return vector values as a plain Python list."""
-    #return list(self.embedding.vector.values)
+# def _values_as_list(self) -> List[float]:
+# """Return vector values as a plain Python list."""
+# return list(self.embedding.vector.values)
 
-#EmbeddedClaim.values_as_list = _values_as_list   # type: ignore[attr-defined]
+# EmbeddedClaim.values_as_list = _values_as_list   # type: ignore[attr-defined]
 
 
 # ── Config hash ───────────────────────────────────────────────────────────────
+
 
 def _compute_config_hash(config: dict) -> str:
     """
@@ -174,11 +179,11 @@ def _compute_config_hash(config: dict) -> str:
     """
     emb_cfg = config.get("embedding", {})
     relevant = {
-        "model_name":        emb_cfg.get("model_name", ""),
-        "normalize":         emb_cfg.get("normalize", True),
-        "device":            emb_cfg.get("device", "cpu"),
+        "model_name": emb_cfg.get("model_name", ""),
+        "normalize": emb_cfg.get("normalize", True),
+        "device": emb_cfg.get("device", "cpu"),
         "instruction_prefix": emb_cfg.get("instruction_prefix", ""),
-        "max_seq_length":    emb_cfg.get("max_seq_length", None),
+        "max_seq_length": emb_cfg.get("max_seq_length", None),
     }
     material = (
         f"model:{relevant['model_name']}|"
@@ -192,12 +197,13 @@ def _compute_config_hash(config: dict) -> str:
 
 # ── Core public function ───────────────────────────────────────────────────────
 
+
 def embed_claims(
-    claims: List[Claim],
+    claims: list[Claim],
     run_id: str,
     manifest_manager: ManifestManager,
     state_manager: StateManager,
-    embedder: Optional[BaseEmbedder] = None,
+    embedder: BaseEmbedder | None = None,
     force_reembed: bool = False,
 ) -> Phase5Result:
     """
@@ -272,17 +278,17 @@ def embed_claims(
     stats_collector = Phase5StatsCollector()
 
     # Accumulated warnings and errors for Phase5Result
-    all_warnings: List[str] = []
-    all_errors: List[str] = []
+    all_warnings: list[str] = []
+    all_errors: list[str] = []
 
     # ── Process claims ─────────────────────────────────────────────────────────
-    embedded_claims: List[EmbeddedClaim] = []
+    embedded_claims: list[EmbeddedClaim] = []
 
     with Timer("phase5_embedding"):
         # ── Stage 1 + 2: Validate claims, build payloads and cache keys ───────
-        valid_claims: List[Claim] = []
-        payloads: Dict[str, str] = {}     # claim_id → payload text
-        cache_keys: Dict[str, str] = {}   # claim_id → cache key
+        valid_claims: list[Claim] = []
+        payloads: dict[str, str] = {}  # claim_id → payload text
+        cache_keys: dict[str, str] = {}  # claim_id → cache key
 
         for claim in claims:
             if not claim.text or not claim.text.strip():
@@ -295,8 +301,8 @@ def embed_claims(
             valid_claims.append(claim)
 
         # ── Stage 3: Cache resolution ─────────────────────────────────────────
-        pending_claims: List[Claim] = []
-        cached_results: Dict[str, List[float]] = {}   # claim_id → cached vector
+        pending_claims: list[Claim] = []
+        cached_results: dict[str, list[float]] = {}  # claim_id → cached vector
 
         for claim in valid_claims:
             cache_key = cache_keys[claim.claim_id]
@@ -325,8 +331,10 @@ def embed_claims(
             raw_cached = cached_results[claim.claim_id]
             try:
                 vec = build_vector(
-                    raw_cached, descriptor.dimension,
-                    dtype=VectorDType.FLOAT64, normalized=True,
+                    raw_cached,
+                    descriptor.dimension,
+                    dtype=VectorDType.FLOAT64,
+                    normalized=True,
                 )
                 emb = build_embedding(claim.claim_id, vec, descriptor, provenance)
                 qual = build_embedding_quality(vec, descriptor, cache_used=True)
@@ -335,13 +343,15 @@ def embed_claims(
             except Exception as e:
                 msg = f"claim {claim.claim_id[:8]}: cached vector build failed: {e}"
                 all_errors.append(msg)
-                logger.error("cached vector build failed", claim_id=claim.claim_id[:8], error=str(e))
+                logger.error(
+                    "cached vector build failed", claim_id=claim.claim_id[:8], error=str(e)
+                )
                 stats_collector.record_failed()
 
         # ── Stages 4-9: Batch inference for pending claims ────────────────────
         if pending_claims:
             for batch_start in range(0, len(pending_claims), batch_size):
-                batch_claims = pending_claims[batch_start:batch_start + batch_size]
+                batch_claims = pending_claims[batch_start : batch_start + batch_size]
                 batch_payloads = [payloads[c.claim_id] for c in batch_claims]
                 stats_collector.record_batch(len(batch_claims))
 
@@ -352,7 +362,7 @@ def embed_claims(
                 )
 
                 # Attempt batch inference — on failure, retry individually
-                raw_vectors: Optional[List[List[float]]] = None
+                raw_vectors: list[list[float]] | None = None
                 try:
                     raw_vectors = embedder.encode_batch(batch_payloads)
                 except (EmbeddingInferenceError, Exception) as batch_err:
@@ -427,7 +437,9 @@ def embed_claims(
     )
 
     # ── Write artifacts ───────────────────────────────────────────────────────
-    phase_dir = manifest_manager.run_dir / "phase5"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+    phase_dir = (
+        manifest_manager.run_dir / "phase5"
+    )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     dataset_path = phase_dir / "dataset.json"
@@ -446,26 +458,26 @@ def embed_claims(
         start_time=start_time,
         inputs={"claims": len(claims)},
         outputs={
-            "total_embedded":          result.total_embedded,
-            "successful":              stats.successful,
-            "cached":                  stats.cached,
-            "stale":                   stats.stale,
-            "failed":                  stats.failed,
-            "skipped":                 stats.skipped,
+            "total_embedded": result.total_embedded,
+            "successful": stats.successful,
+            "cached": stats.cached,
+            "stale": stats.stale,
+            "failed": stats.failed,
+            "skipped": stats.skipped,
             # Cache lifecycle metrics (high priority addition)
-            "cache_entries_reused":      stats.cache_entries_reused,
+            "cache_entries_reused": stats.cache_entries_reused,
             "cache_entries_regenerated": stats.cache_entries_regenerated,
             "cache_entries_invalidated": stats.cache_entries_invalidated,
             # Throughput
-            "vectors_per_second":      f"{stats.vectors_per_second:.1f}",
-            "current_memory_mb":       f"{stats.current_memory_mb:.1f}",
+            "vectors_per_second": f"{stats.vectors_per_second:.1f}",
+            "current_memory_mb": f"{stats.current_memory_mb:.1f}",
             # Model
-            "model":        descriptor.model_name,
-            "dimension":    descriptor.dimension,
+            "model": descriptor.model_name,
+            "dimension": descriptor.dimension,
             "dataset_path": str(dataset_path),
             # Diagnostics
             "warnings": len(all_warnings),
-            "errors":   len(all_errors),
+            "errors": len(all_errors),
         },
         status="success",
     )
@@ -491,20 +503,21 @@ def embed_claims(
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+
 def _process_batch_results(
-    batch_claims: List[Claim],
-    raw_vectors: List[List[float]],
+    batch_claims: list[Claim],
+    raw_vectors: list[list[float]],
     descriptor: EmbeddingModelDescriptor,
     provenance: EmbeddingProvenance,
-    cache_keys: Dict[str, str],
+    cache_keys: dict[str, str],
     cache_policy: EmbeddingCachePolicy,
     model_sig: str,
     config_hash: str,
     normalize: bool,
-    embedded_claims: List[EmbeddedClaim],
+    embedded_claims: list[EmbeddedClaim],
     stats_collector: Phase5StatsCollector,
-    all_warnings: List[str],
-    all_errors: List[str],
+    all_warnings: list[str],
+    all_errors: list[str],
 ) -> None:
     """
     Process raw inference output for one batch (or single claim retry).
@@ -525,7 +538,9 @@ def _process_batch_results(
             continue
 
         # ── Stage 6: L2 Normalization ─────────────────────────────────────────
-        final_vector_list = l2_normalize(raw_vector) if normalize else [float(x) for x in raw_vector]
+        final_vector_list = (
+            l2_normalize(raw_vector) if normalize else [float(x) for x in raw_vector]
+        )
 
         # ── Stage 7: Post-normalization re-validation ─────────────────────────
         is_valid_post, error_post = validate_vector(final_vector_list, descriptor.dimension)

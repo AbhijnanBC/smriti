@@ -4,13 +4,19 @@ Tests Vector, Embedding, EmbeddingQuality, and EmbeddedClaim construction.
 """
 
 import pytest
-import math
 from smriti.core.models import (
-    EmbeddingModelDescriptor, EmbeddingProvenance,
-    EmbeddingQuality, Vector, Embedding, EmbeddedClaim,
+    EmbeddedClaim,
+    Embedding,
+    EmbeddingModelDescriptor,
+    EmbeddingProvenance,
+    EmbeddingQuality,
+    Vector,
 )
 from smriti.embedding.builders import (
-    build_vector, build_embedding, build_embedding_quality, build_embedded_claim,
+    build_embedded_claim,
+    build_embedding,
+    build_embedding_quality,
+    build_vector,
 )
 
 
@@ -37,6 +43,7 @@ def provenance():
 
 
 # ── build_vector ──────────────────────────────────────────────────────────────
+
 
 def test_build_vector_returns_vector(descriptor):
     vec = build_vector([0.25, 0.25, 0.25, 0.25], descriptor.dimension, normalized=True)
@@ -72,6 +79,7 @@ def test_build_vector_dimension_mismatch_raises(descriptor):
 
 # ── build_embedding ───────────────────────────────────────────────────────────
 
+
 def test_build_embedding_returns_embedding(descriptor, provenance):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension, normalized=True)
     emb = build_embedding("c001", vec, descriptor, provenance)
@@ -101,6 +109,7 @@ def test_build_embedding_is_frozen(descriptor, provenance):
 
 # ── build_embedding_quality ───────────────────────────────────────────────────
 
+
 def test_build_embedding_quality_fresh(descriptor):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension, normalized=True)
     quality = build_embedding_quality(vec, descriptor, cache_used=False)
@@ -125,6 +134,7 @@ def test_build_embedding_quality_is_frozen(descriptor):
 
 
 # ── build_embedded_claim ──────────────────────────────────────────────────────
+
 
 def test_build_embedded_claim_returns_embedded_claim(descriptor, provenance):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension, normalized=True)

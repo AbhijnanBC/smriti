@@ -23,38 +23,38 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Tuple, Dict, Set
+
 import structlog
 
-from smriti.core.config import get_config
-from smriti.core.models import CandidatePair, EmbeddedClaim, Claim, LifecycleStage
+from smriti.core.models import CandidatePair, Claim, EmbeddedClaim, LifecycleStage
 
 logger = structlog.get_logger(__name__)
 
 
 class RejectionReason(str, Enum):
-    SELF_COMPARISON     = "self_comparison"
-    DUPLICATE_PAIR      = "duplicate_pair"
-    MISSING_CLAIM       = "missing_claim"
-    MISSING_EMBEDDING   = "missing_embedding"
-    INVALID_EMBEDDING   = "invalid_embedding"
-    BELOW_THRESHOLD     = "below_threshold"
+    SELF_COMPARISON = "self_comparison"
+    DUPLICATE_PAIR = "duplicate_pair"
+    MISSING_CLAIM = "missing_claim"
+    MISSING_EMBEDDING = "missing_embedding"
+    INVALID_EMBEDDING = "invalid_embedding"
+    BELOW_THRESHOLD = "below_threshold"
 
 
 @dataclass(frozen=True)
 class CandidateValidationResult:
     """Result of validating a single candidate pair."""
+
     pair: CandidatePair
     is_valid: bool
     rejection_reason: RejectionReason | None = None
 
 
 def validate_candidates(
-    candidates: List[CandidatePair],
-    claims_map: Dict[str, Claim],
-    embeddings_map: Dict[str, EmbeddedClaim],
+    candidates: list[CandidatePair],
+    claims_map: dict[str, Claim],
+    embeddings_map: dict[str, EmbeddedClaim],
     sim_threshold: float,
-) -> Tuple[List[CandidatePair], Dict[str, int]]:
+) -> tuple[list[CandidatePair], dict[str, int]]:
     """
     Validate all candidate pairs before NLI inference.
     Valid pairs are promoted to lifecycle stage VALIDATED_CANDIDATE.
@@ -62,9 +62,9 @@ def validate_candidates(
     Returns:
         (valid_pairs, rejected_reason_counts)
     """
-    valid: List[CandidatePair] = []
-    rejected_counts: Dict[str, int] = {}
-    seen_pair_keys: Set[str] = set()
+    valid: list[CandidatePair] = []
+    rejected_counts: dict[str, int] = {}
+    seen_pair_keys: set[str] = set()
 
     def reject(reason: RejectionReason) -> None:
         key = reason.value

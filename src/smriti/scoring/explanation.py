@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List
 import structlog
 
 from smriti.core.models import ComponentScore, ReliabilityExplanation
@@ -14,12 +13,13 @@ MAX_EXPLANATION_SIGNALS = 3
 
 def build_explanation(
     reliability_index: float,
-    component_scores: List[ComponentScore],
+    component_scores: list[ComponentScore],
 ) -> ReliabilityExplanation:
     """Build a structured explanation from ComponentScores."""
     positive = sorted(
         [c for c in component_scores if c.contribution > 0],
-        key=lambda c: c.contribution, reverse=True,
+        key=lambda c: c.contribution,
+        reverse=True,
     )
     negative = sorted(
         [c for c in component_scores if c.contribution < 0],
@@ -27,12 +27,10 @@ def build_explanation(
     )
 
     strengths = tuple(
-        (c.signal_id, round(c.contribution, 2))
-        for c in positive[:MAX_EXPLANATION_SIGNALS]
+        (c.signal_id, round(c.contribution, 2)) for c in positive[:MAX_EXPLANATION_SIGNALS]
     )
     weaknesses = tuple(
-        (c.signal_id, round(c.contribution, 2))
-        for c in negative[:MAX_EXPLANATION_SIGNALS]
+        (c.signal_id, round(c.contribution, 2)) for c in negative[:MAX_EXPLANATION_SIGNALS]
     )
 
     dominant = positive[0].signal_id if positive else "none"
@@ -74,7 +72,7 @@ def _build_summary(ri: float, positive: list, negative: list) -> str:
     return base
 
 
-def _build_recommendations(component_scores: List[ComponentScore]) -> tuple:
+def _build_recommendations(component_scores: list[ComponentScore]) -> tuple:
     recs = []
     score_map = {c.signal_id: c.contribution for c in component_scores}
 

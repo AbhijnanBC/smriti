@@ -1,0 +1,3989 @@
+{
+  "source": "FEVER + SciFact gold-SUPPORT pairs (gold direction = A_TO_B by task definition)",
+  "n_total": 565,
+  "n_fever": 300,
+  "n_scifact": 265,
+  "D1_availability": {
+    "n": 565,
+    "proportion": 0.4035,
+    "ci_lower": 0.3646,
+    "ci_upper": 0.4425
+  },
+  "D2_unconditional_direction_accuracy": {
+    "n": 565,
+    "proportion": 0.3929,
+    "ci_lower": 0.3522,
+    "ci_upper": 0.4319
+  },
+  "D3_joint_type_and_direction": {
+    "n": 565,
+    "proportion": 0.3929,
+    "ci_lower": 0.3522,
+    "ci_upper": 0.4319
+  },
+  "D4_direction_given_type_correct": {
+    "n": 228,
+    "proportion": 0.9737,
+    "ci_lower": 0.9518,
+    "ci_upper": 0.9912
+  },
+  "n_equivalent_predicted_excluded_from_d4": 16,
+  "elapsed_seconds": 129.42099999999982,
+  "rows": [
+    {
+      "source": "fever",
+      "id": "26ef42cbc7564939aabf7743e624803d",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d3074b9a4d55c7840734512c713ea992",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "45ed9f289fa57b68ae3a49e3a58e56c7",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "f9d5bd466719c6956555207612614a4c",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "445bb534ee506802f233bf622dd8ef67",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1f583becc7351fdd2918c610e11b9f86",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "eab0509932b4f66755af249fd8f034e1",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "e8f235cdc9269c5928f507f9603929fa",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1ff1f95acfe8e9c2fd981524030af786",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "f66536043670cc7d055c90049a65c8dd",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "a611d93e0441430f641a28a978c04926",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "468113f413be1c017a61e763138759a0",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b1761f4e9a3ee43bfe5bfb041b43ae24",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "947c4a4e9053eb6c200a77d9f005cc05",
+      "status": "abstained",
+      "relation_type": null,
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "65d001119c6ee6086ee4a9c7149ca284",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "70f2e5d4517d0cdec03d5c2a3f20c002",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "46b413768e74a771d2a76d86faa3f565",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7764b5eca10cc26296a9fe9c13320b30",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b30032d4bec40abb3bce2c578b198fce",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "def419cc38633417bec89c5ca0048ca8",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "a62c1889c22a51e17e396a108ad93c04",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7d2d65e82933e3f38bb0579b8865049f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7f6cc0dc3f83443a8f8bbfec6a82f509",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "15ff620872b323fb50d0c89d32fe5223",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "9adf92a51f5589a313236cda76026774",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "42a7a31812acffdba3b83e0476188d67",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "00ecab52d4b337c13b9a9ef3fff94982",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "8f5f3bc76d0fb4b5ed090c2df8684b60",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "f2a38cc0b0a3707ec5e41f9f3dcec52b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "865fa0dfc3bf7955f59b79977e51eccb",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "c058d469cf7d1fb218aa616e86a1e0ac",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "7db68b1cd98b80814aa72f504f800059",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "71e6b0c705709958e214474a8be802fb",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "7151e6bb2156e0cd9ae593c97c91408c",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "08a25e669f3bd53ad79737e21e480499",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b3eeb56fc28d6ce8cdb7660db7074e31",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "e2128b657a13686d85ddce2cdf6c88cc",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "198f84a2645f50c01e8673a2a0d8e3ee",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "26616c00a50c3ceea4d2178c9dd32ae4",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "fb722234537fc0573c3af0fbc5defcb9",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b6237c284601c2bb15933f4c4aff3f19",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "458e335fb32cc63cb6505a624e523686",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "de17903665ea355ee80193fbd000c616",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "a39e2063b2c2d837a50a2897ef932515",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "16ffc8209687ca3ceb7df4eea01e1694",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b49761befd0d72acf81ccdd4e0dea324",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "8ee0ae4349f4c946ab97eebec73799d5",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "6d57c37d16ab5b2da0097f44a8da0da4",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "96b7f52a8e6cda650b82ce241e73d3a6",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "a0229b8a5bda0d77e76ad5f6516eeba6",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "bda68b7c2507953dcf620cfa17bbf591",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a0b07e765544faa624f2fb2d678babbd",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0462650eee68a94e1b30312ea119581a",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "449fd920863213ad1be73af816b8fdec",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d72f7bf70b24eb7058a168edc57d19c9",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "50ef4dafb5451fc47a19347c851081d1",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "ea832ac484c32066220156cee75eb0ed",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d61190fc573c245143c2e8ac1591ad21",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "361112fa0ee724324f4ab7c84092f807",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0d43dd1ff013c5cd8b5c195c3ff16483",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "c0c1aae770c066f12ae563f1697343b6",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5496c285d4b0f473376dddd3e98702ae",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0a70b5666d3a21864aaeca39444500d7",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "860563be2d5c6f101324687e74f44dbb",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d4eca91b96646ce201633efe6434b9d5",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "dfc1281120ebb626c0f17148e170fedb",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a0b8b2e72a6bf8f0693339da690b229f",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "4357603c17ddb98b923af8774f0f8ca4",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "37198aa536f5b521eca2cb4d1ea6bd0f",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "bdb3b18cf0c4fb64c2b1c514828e5fc2",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "7c7ecb4b7e367bf87df3903e07d8984f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "54e32df43d2d4c432804d72d355c719d",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a7dfb8fb8617a483dec6b7ecd2d44d55",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "ae3de18f3a7efaf491858e2876940101",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "ff2fe86a4b9c8dd68b6d9b5bd7718b6f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "e4a0ffc6a15837394faf0cf0dd1ea353",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a6441471d7576f2fdc568024f02bc5b5",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "97f3e8b4e1ee0567c088e59016566fe1",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "921e5a51c6de98adde50976624e99c8f",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "4f19d74f78ea5f3da158ed8f2fa099b2",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "73005fd35c9e19db46b62073690c6840",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "f9ec3a3941d5742d6774009ce58bac05",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "e47fbe8157cbfef9de15661cc92f9b13",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "48f917c959d3b7c8c4acdacab2370599",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "9a6e96096c095c462dbef4d320fa74f7",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "631062aa384078cb92acc95e924b5b96",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "60d7182cfaf14ce9cc26f6d00caa707e",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "8fabe2eb5111f4588d1f81c9ebdb0d73",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "235e27499c5eed94a075e93e2bec7a27",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "f5d1482078c9399c3e41df7a34a362be",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "938798fe76c65351243988daee3c3da4",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "d608d1cad176653049cb7d272b7736ef",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "750f1f9f2ce051f537a0f0182ce4c294",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5959aa384c17233a47dda1c0a83be807",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "6137985f62cc265c74c62312479fa3ca",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "695b9292d9aa986052a14280ef72c51d",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "8d44f616f3336b320f805e12cc194b71",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d84fd6d5a37bbea1101d4688f31980aa",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "dbfacb5d9a1f0e7e76bb7591c97621cd",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "d6aa255b9e5d2d0bd848d075eeb95ab1",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "70fbcdc73cf81ca2622d6b649d4b9d43",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b1fa77cafe168b8c4821c91656f5db47",
+      "status": "abstained",
+      "relation_type": null,
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "91a65e1549a2978e5b1e5489fb42a0ad",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "702df8de20befaa697b7f16b0bcf23af",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "de2e29e91148aef3549e261922b85cd9",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "977c89da2e4ac626657917e0e46e96c4",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "313e223d3e787f59937513a2a9cc3897",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "9d75a9162126ab3e2d8ec937436fb434",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "24a9d464d2789c6a0369c72c04111fcf",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "83753c6ddc0980988bb0abdd79c9ea9b",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "1ccf1c8c956e3a397d4b4ebd31300af1",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "e724033b3167f51a1c6318105b5f5574",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "238c95b8af56c9611b25df49032b6c28",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "61206e387443e761fa46c4197fcf582e",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1391fd3e157730234559dc48d5314081",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7e0f966f11cd420b16e42895ff02ed5d",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "6bb147bd152723b1e46110a69a8a1222",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "cb657e60d09dcaf58bc0e0c349590280",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "dbba7d768713c53427d9b49bb5ba9e9c",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "ad18afb1f887d4d4dee0db9c2538cce7",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "e7af98aa3d1f2c926369d8983d07c00b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1ed73cad5f3d00b63fe65219e970ca92",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "18be16298012126a59a535759b6b1928",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "2d1031d09217cdf929ab78cf22712a6b",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "e624efc2e568f7888482fd319c5a69ba",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0c9c33748e5df0f512da11c5639b14d8",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3565acaff064c07d2b771b19c6378d08",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "5e85124bcdf4cc6586d31b0a34d39834",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "fff504fd8dc37634802c86e523573a3b",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "81208279ec7630bc1768195f90f26787",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "ad083eed3986fdd9e9b9d9ad0c997384",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "c2793f7a871bd4d1a4ba9b819684bf08",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "419c7444c231c70cf176ce8c678cfe04",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "20afbdb68a7df61f052a645e48485de3",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "c66cccf1333703b787d4ca305c09f3ca",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "1dbfcdc9640f9cd029654baee735004a",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "64c8ffe2ecfe8b457e2a88154506f2ee",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "143a02d1d8c2f7d62cfc739895413752",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3e3c63b08f54a17e6cde3ebf04ba4822",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "c1c4b88e51546dca2e58b82682c9f826",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "2e984b12df3d26f161dd4215f8a64fef",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b9ed393a6b39e398b7210349d5996d80",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "5f74bae6431418d70f281a58140c2815",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5f29cc9f921002357644d556d4a9fe7c",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "86b5e53c270393d430b9151c78b08c8b",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "f56a3a1db0137391428c575951dfffef",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3dcfa210dd6a95af19de4d9243ec5875",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1465858f408472d3fff75a8f6f0bc1b7",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "5712c4d54b47a49767d2535b4fea9cbf",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5395dcc8d2363375172aa56a57d3bf17",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "a647484ba20960a0f919ae4dda61e38b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "43a401bdfb83cdedf890a3d949798b1b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "eb3c64822bea145b4bc78dde6a895c40",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a28f8c4d669d3b77b2efb1d54ca2a137",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "13f59363c8c6428021874634240a2af8",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "13213282ab5a250307ed30ab2681850c",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3c2392d6fc47189dd75242005c5f44a5",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "eb713577fd659647578c7e5e953dc593",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "f42b3fe5074b19eaee5e4dc3d5f5bf1e",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "461e934614525d7d3feb30d86425fd00",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5ae2fd4e3a86a712d53268a4ffdc662b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "cd51225e885bd202c66937b27a13d430",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "9e9c5d429a4f2f4988480f963305dd57",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "e06b06a995b6d3d0040c46741eb43e3b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "0e952b222cacb608805641a1a4d9d4ae",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "52d7a9d828b9ac8f6328ccb4f5f63d98",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "3b3ffea164123b457ca54fbe065eeebc",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1ea1db2a9b74efc70c315161224f4892",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "4b5f846b09abb0edc14c307ae1f6b942",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7512b2a5bc69f303f3f1a6fa0f3229be",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "40bdd294089d6928f73095151dde1369",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "daf21632e806fdb7f02476d6d686da1e",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b71bdf8ed5accd688d379e086ba04b2f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "46c0585b3edfce54c78821e9d50bf015",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "989789cc5cef8c902d1fda4b31be5e36",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "448e42d63fa2b405753f544aa28fa4e5",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "051bffda46c70d409ef65e1aca0fe716",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0dbf6ee5a145d890f568361ed77d5f4b",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0ad8adc441126af34770058061941152",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "4e71f1f4da2f46c9502d216251126eda",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "ba5d64f710a7d6dd3e9390d974fd24eb",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "bec853afb3fb3ed8963035cd82394bf9",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b0eed7daf548c9033420b30eba1e1909",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "dcf1d741adf125c2a1f51c745b59e0bf",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3f1d862580d924c2637046531b30b63a",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "960b14c1a227cfe1a96d5d618ecd704e",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "4b9c97c7a9adfa22830244d8bc357877",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "9dbec556d31a6b8b8a67c24674ce7110",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "6c5dc61dc45025c3c659e58c3b2e4ba6",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "67067a99dad1098f4d69b2bb188e9e9e",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "cc4c70e950a0471c43739ea934255150",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7177ad31a15c4de7e6e2e49b230a4251",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "c673880401142d45e099903c11909a6b",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "06939996b560cc75a373423d421c913e",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "9862ae82d9d04c7f4afe219743bff51f",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "e64c979ea4eaae011295b94793e8b0af",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "af85b61040e1f00dddcc6bb505a5d847",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d6e5e345c95c5b4be637371da51d98b6",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1516970076cf70168dd4c1fcc1d033c2",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "ab2e1d4a1e51e92f9fef77098b551f45",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d407c5f109c94289756783a8ef1dfea5",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "03f41be7ecc5779c709bbb67793f5dd5",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "76f7e80ab17b80256c47236b272ff841",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a061b6b6e5dbf8fa549651a200bbc619",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b39d84bf9eda57cf0901e4cd83d150a7",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "cbf85769d2c96941d09e46c5be36d806",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "4274fbee0ce7dc9061a27957e51e8db5",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "469d3acb8322afbc7718a5aeaecfdffd",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "026f7b6c2d891106b8248dae30dc9b16",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "61b038d9a56822031c665d227bc0ce86",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "e16ae5a2663abc79720dd1c844989a59",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d0f5fc5085ab4f3cd92cf014fa1e2101",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "6ab0ad0ead82be55fc1da1f23850477d",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "c704536c1091cb17a6d27b251a135ebb",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "ee9eb265000735983631d5cb6ff5009a",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "49df4d914faaa7cc79e63d7409277c1a",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "aa11a9ac305fc4e6b1f22d2424ad032f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "9ec52dacb675bd87e0d7c61e6ccc7608",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "97ae7fcbfec08f9c46cc2bc1a62a20c2",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "68f91bf1a635753163b46562308a5f39",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "9ce7a3370a1ef433fd162ae2531e1295",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "6c1d03d904f79fc30e09862d6a688df0",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "ba5622f33301b75e0bfadf6710b24abf",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "73111b102105a8ba2e2dadf4a5f88928",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "45856a1df32c21ec1c9004a1ad73801e",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "2821b1612e2d4142dc57406ec233583f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "1bb7089655bc2af750d1743939e526b8",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "84fa30ed6091064249badb9759c12e3f",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b4170a3ca56169ca8d230dc6c0a41d9c",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "e17277c108897f9bf2c0061002a1dcb2",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "dbf20e40f4ab91e4dec82262d62dfc25",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "89401133ae9c8c57b9b6cae2937fef16",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "8b59bd676795bff3281b3045cbe217c9",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "250342f338dafb052b38ed390c4efd02",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "07bce330d02a3a552e8beeeb37335b5b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "8510fe4370a4f432f181c76581018ad3",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b8abcb611c530040094d2b4bf3ca08c8",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "db880e6523b30e39152a607ad25d4928",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "ddfd48bd058868b3fb294564ca0d8335",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "24dd55fd0bb2fb7bd9e87b12e19be7de",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "29b978ed95e101277e44b1101d378d26",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0a009d8e4244a8cb0f3595b84365229b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "59bc51b6f462a734bdd321ee725d6aad",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "32d6f7ab60e16904d6db37e5b5ad2de7",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "efc42f6bbd121e03bcd93f960363b65a",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "c8d33937d6b92d3abaf6d96c55353d44",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "52774c45ca5a0f902db5d0e976676cda",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "3989424004ab6106276b54bee99c3d10",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "545ea1be1cbf9a5ed1db5ff378cd07b5",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "36fb0e7c51647e625feca63a1a3e743d",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "387882881ff0a8c8ab9ec03bfac3fb03",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "fbdc39fefad7577638d4ea1acdce8753",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "59ce661c9524612656939cd8da96702b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "afcaf21be68c9f69b9c19307c9bfd137",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "f62b0e8f69b7f6b965732d6d0541ca48",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "8eb559f6e3c4139e31bec72cc56fc379",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "366ccc5ef4b68b9f535d437f5e34142d",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "0145ecf771b05fd92211f74f8a15d33a",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "cec47b1744f81963004a04915a1f0a86",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "8e752d347f08c75f5125da08c6721571",
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3a05db6da43726062691640bd98e0ed3",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "2732a9cc0d5e9b56ea1d3a1770f5b89a",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "7e755b769158bcbce409b1cc9f1ec717",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "617ca0554617d42e4ffd2cf9f8231c96",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "a8657deab8f98a9db4bb123d066a96c5",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "b041ddcfe64b89741842035f780f7c05",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "754b2b4284c31374e3d851f90877dee9",
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "d87e3bd7a9db88a22fa9f78883fe88b9",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "f1af500eb6af9656ef7a9195c9c4cc18",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "f1864615ded739ab0c89bca096062872",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "dab3908a073ae16e2732fbd6110e2f51",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "74e5d4ee73adb9273079a51b1a8739f7",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "27ce0d66fd6226ad0a27274ab89705c6",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "142ce407aabaef368af56fd4454f3686",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "133651952591a5cbdcd34b4677ce49b1",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5fb7c4dcf8acd31d2686a6d2baaa533e",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "d05e724fcc830a10ab7ce76f44f5728a",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "d7ddc9a6246ac62613a26d1a83009a47",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "97d18d628c1f031bf3c27a200e43a192",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "22ceb63ed089a6a4520420447dca4452",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "583c34a4c008ea7d2e51e6bbd33c4136",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "c5d4fc0b387a892ddb2b4092407e0c51",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "aec7aae8133c42f0090156e9f4f1f50b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "5733ac9cca428cc406ae2e465853b064",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "e9356e2a72a2a70bcb26838415d59398",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "aae2fe5841033ec95c403f8c2edc8e49",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "3a6a89df6ef24aba64dc7b4b4ace16bd",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "248f40261691884f7f03c353c50af926",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "8a403ef7c8851c840cf46ffd04e25d62",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "c0d053c08f2760e3c3cd0bba15a3772b",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "9e25bdecf5e3762ffcf1fc2598d97001",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "54381496fb61e355d30e61611f87152d",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "1966bfa716ece833434912b7d5ef459e",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "61a9bc9a2329709b05cdecc78f2a1a7f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "129fa9708cb28753dc6cf4f5b2caa39c",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "b41c84f642848313ce1c002a9caea709",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "2560aeeebf15cc817b52f951600a3b86",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "da4af1e53106479b783fd6d2e92f51a1",
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "fever",
+      "id": "3e350b2b6d3374f7e40934c3951c1b3c",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "fever",
+      "id": "7072973a4d0d5e3d077117a34c7dfc0f",
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 93,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 394,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1224,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 251,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1181,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1132,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 378,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 261,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 626,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1224,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1352,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 52,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 160,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 729,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 923,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 179,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 86,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 100,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 576,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 55,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 780,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 220,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1005,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1227,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 67,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 179,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 919,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1289,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 432,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1258,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1371,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 210,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1248,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1119,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 50,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 737,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 12,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 152,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 34,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1031,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 239,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 266,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 241,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 694,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 482,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 746,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 347,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1372,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 148,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 200,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 184,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 999,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1290,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 902,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1322,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1379,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 155,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 416,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1381,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1311,
+      "status": "abstained",
+      "relation_type": null,
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1297,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 841,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 738,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 335,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 275,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 601,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 143,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 742,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1171,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 971,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1177,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 172,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 766,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 280,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1393,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1276,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 832,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1273,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 22,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 883,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 426,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 901,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 734,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1271,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 936,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 455,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 653,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 378,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 962,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 111,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 860,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1055,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1404,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 589,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 624,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1229,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 9,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1356,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 529,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 724,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1028,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 68,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 979,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 744,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 445,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 565,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 597,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 962,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 495,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "b_to_a"
+    },
+    {
+      "source": "scifact",
+      "id": 236,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "b_to_a"
+    },
+    {
+      "source": "scifact",
+      "id": 640,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1361,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1119,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 822,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 955,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 805,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1054,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 458,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 933,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 569,
+      "status": "abstained",
+      "relation_type": null,
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1335,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 667,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 436,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1231,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 164,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1182,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1269,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 243,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 846,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 70,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 812,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1086,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1020,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 292,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 137,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 614,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1379,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 340,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 333,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1341,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "b_to_a"
+    },
+    {
+      "source": "scifact",
+      "id": 625,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 929,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 382,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 985,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1009,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 597,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1036,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 636,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1298,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 803,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1266,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "b_to_a"
+    },
+    {
+      "source": "scifact",
+      "id": 957,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1121,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 159,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1109,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 955,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 167,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 539,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 305,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1114,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1072,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 78,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1328,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 942,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 525,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 298,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 967,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 867,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 248,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 375,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 133,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 971,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 673,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 795,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1084,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 770,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 661,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 738,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1097,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 108,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 668,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1134,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 483,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 56,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1274,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 108,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1334,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 386,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 41,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 528,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1209,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 965,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 114,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 286,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 120,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 804,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1241,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 488,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 505,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "b_to_a"
+    },
+    {
+      "source": "scifact",
+      "id": 49,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 779,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 992,
+      "status": "abstained",
+      "relation_type": null,
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 911,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 780,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 463,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 564,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 818,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 837,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 980,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 385,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 201,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 279,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 904,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 367,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 334,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 971,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 230,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 146,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1056,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1392,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1391,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1028,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1043,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1169,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 953,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1180,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 533,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 165,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1404,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 562,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "b_to_a"
+    },
+    {
+      "source": "scifact",
+      "id": 1319,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 751,
+      "status": "resolved",
+      "relation_type": "contradicts",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 791,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 723,
+      "status": "resolved",
+      "relation_type": "equivalent",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 536,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 808,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 44,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 973,
+      "status": "abstained",
+      "relation_type": null,
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 641,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 549,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1069,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 1389,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1015,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 529,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 309,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 597,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1255,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 935,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 444,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 584,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1324,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 736,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 749,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 181,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 381,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 591,
+      "status": "resolved",
+      "relation_type": "supports",
+      "direction": "a_to_b"
+    },
+    {
+      "source": "scifact",
+      "id": 613,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 261,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1202,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 788,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 1018,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 157,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 378,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 839,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    },
+    {
+      "source": "scifact",
+      "id": 737,
+      "status": "resolved",
+      "relation_type": "neutral",
+      "direction": "symmetric"
+    }
+  ]
+}

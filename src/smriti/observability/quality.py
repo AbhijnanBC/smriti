@@ -10,14 +10,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, List, Optional
 
 
 class ViolationPolicy(str, Enum):
-    LOG_ONLY  = "log_only"    # Log violation; continue
-    DEGRADE   = "degrade"     # Switch to degraded mode
-    ALERT     = "alert"       # Emit an operational alert
-    TERMINATE = "terminate"   # Halt (reserved for critical invariants)
+    LOG_ONLY = "log_only"  # Log violation; continue
+    DEGRADE = "degrade"  # Switch to degraded mode
+    ALERT = "alert"  # Emit an operational alert
+    TERMINATE = "terminate"  # Halt (reserved for critical invariants)
 
 
 @dataclass(frozen=True)
@@ -25,11 +24,12 @@ class QualityObjective:
     """
     A single operational quality KPI with measurable targets.
     """
-    name:             str
-    definition:       str
-    target_value:     float
-    unit:             str
-    measurement:      str
+
+    name: str
+    definition: str
+    target_value: float
+    unit: str
+    measurement: str
     violation_policy: ViolationPolicy
     warning_threshold: float
     critical_threshold: float
@@ -50,7 +50,6 @@ class QualityModel:
     """
 
     OBJECTIVES: tuple[QualityObjective, ...] = (
-
         QualityObjective(
             name="startup_time",
             definition="Wall-clock time from process start to ACTIVE state",
@@ -61,7 +60,6 @@ class QualityModel:
             warning_threshold=5.0,
             critical_threshold=15.0,
         ),
-
         QualityObjective(
             name="query_p95_latency",
             definition="95th-percentile latency for knowledge queries",
@@ -72,7 +70,6 @@ class QualityModel:
             warning_threshold=200.0,
             critical_threshold=1000.0,
         ),
-
         QualityObjective(
             name="recovery_time",
             definition="Time from DEGRADED entry to ACTIVE restoration",
@@ -83,7 +80,6 @@ class QualityModel:
             warning_threshold=10.0,
             critical_threshold=60.0,
         ),
-
         QualityObjective(
             name="cache_hit_ratio",
             definition="Ratio of cache hits to total cache lookups",
@@ -94,7 +90,6 @@ class QualityModel:
             warning_threshold=0.60,
             critical_threshold=0.30,
         ),
-
         QualityObjective(
             name="memory_ceiling",
             definition="Maximum resident set size during operation",
@@ -105,7 +100,6 @@ class QualityModel:
             warning_threshold=512.0,
             critical_threshold=1024.0,
         ),
-
         QualityObjective(
             name="operational_correctness",
             definition="Rate of responses with no validation errors",
@@ -119,7 +113,7 @@ class QualityModel:
     )
 
     @classmethod
-    def get(cls, name: str) -> Optional[QualityObjective]:
+    def get(cls, name: str) -> QualityObjective | None:
         for obj in cls.OBJECTIVES:
             if obj.name == name:
                 return obj
