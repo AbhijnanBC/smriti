@@ -5,15 +5,14 @@ search_view.py — SearchView: renders search panel and dispatches SubmitSearchC
 from __future__ import annotations
 
 import streamlit as st
-
-from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.commands.commands import (
-    SubmitSearchCommand,
     ApplyFilterCommand,
     ClearFiltersCommand,
+    SubmitSearchCommand,
 )
 from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
-from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
+from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
+from smriti.dashboard.views.base_view import BaseView
 
 
 class SearchView(BaseView):
@@ -89,15 +88,26 @@ class SearchView(BaseView):
             apply_col, clear_col = st.columns(2)
             with apply_col:
                 if st.button("Apply Filters", use_container_width=True):
+                    session_id = self._dispatcher._sm._session_id
                     if label_filter:
                         self._dispatcher.dispatch(
-                            ApplyFilterCommand("calibration_label", label_filter)
+                            ApplyFilterCommand(
+                                session_id=session_id,
+                                field="calibration_label",
+                                value=label_filter,
+                            )
                         )
                     if role_filter:
                         self._dispatcher.dispatch(
-                            ApplyFilterCommand("semantic_role", role_filter)
+                            ApplyFilterCommand(
+                                session_id=session_id,
+                                field="semantic_role",
+                                value=role_filter,
+                            )
                         )
 
             with clear_col:
                 if st.button("Clear Filters", use_container_width=True):
-                    self._dispatcher.dispatch(ClearFiltersCommand())
+                    self._dispatcher.dispatch(
+                        ClearFiltersCommand(session_id=self._dispatcher._sm._session_id)
+                    )

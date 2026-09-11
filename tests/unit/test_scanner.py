@@ -6,7 +6,6 @@ These tests never touch hashing, validation, or manifests.
 """
 
 import pytest
-from pathlib import Path
 from smriti.discovery.scanner import discover_files
 
 

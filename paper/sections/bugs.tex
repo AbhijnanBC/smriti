@@ -3,7 +3,11 @@ small, hand-crafted fixtures used in the existing unit test suite ---
 surfaced three defects that had not been previously detected, all directly
 attributable to properties the corpus was designed to exercise. A
 subsequent audit of the system's own evaluation and reliability layers,
-motivated by an external review, surfaced four more.
+motivated by an audit round, surfaced five more. A second
+adversarial-audit round focused specifically on the relationship
+resolver's directionality surfaced three additional defects, described
+below as Defects 9--11, discovered and fixed during the bidirectional-NLI
+rewrite this same audit round prompted.
 
 \paragraph{Defect 1: console encoding crash on non-ASCII input.} SMRITI's
 structured logger wrote to the process's default console stream without
@@ -117,3 +121,83 @@ previously-failing static dependency-matrix test) and calling
 directly. Both are fixed to follow the same dispatcher-based pattern
 already used correctly by \texttt{SearchView}, with new unit tests added
 since neither view had prior coverage.
+
+\paragraph{Defect 9: calibration silently discarded all bidirectional NLI
+evidence on every real run.} Introducing the bidirectional-NLI rewrite
+(\S\ref{sec:system}) added a new field,
+\texttt{RelationshipEvidence.nli\_scores\_b\_to\_a}, carrying the reverse-
+direction NLI scores every downstream decision depends on. The confidence
+calibrator (\texttt{classification/calibration.py}), written before this
+field existed, reconstructed \texttt{RelationshipEvidence} without it on
+every call --- and calibration runs on every real pipeline execution,
+not just some. This made the entire bidirectional rewrite a silent no-op
+in production: isolated evidence-generation unit tests passed (they never
+call the calibrator), while any real end-to-end run would discard the
+reverse-direction scores immediately after generating them. Caught by an
+integration test
+(\url{test_bidirectional_entailment_both_ways_discovers_equivalent})
+that asserts on full pipeline output rather than
+one layer in isolation --- precisely the reason integration tests, not
+only unit tests, are part of this paper's own test suite discipline.
+Fixed by passing the field through explicitly.
+
+\paragraph{Defect 10: EQUIVALENT support created a self-counting cycle in
+evidence aggregation.} EQUIVALENT is genuinely symmetric (\S\ref{sec:system}),
+so Phase 7's evidence aggregation mirrors each EQUIVALENT edge in both
+directions so that both claims see each other as supporters. This creates
+a two-node cycle in a breadth-first traversal originally written for a
+strictly directed SUPPORTS/REFINES DAG, where no such cycle could
+previously exist. Walking the cycle rediscovers the origin node as its
+own ``transitive supporter,'' inflating \texttt{support\_count} by one
+and letting a claim count as evidence for itself. Caught by a unit test
+(\url{test_equivalent_support_does_not_double_count_via_mirrored_edge})
+asserting an EQUIVALENT pair's support count, which
+failed with the node appearing in its own supporter list. Fixed with an
+explicit self-exclusion check (\texttt{source\_id != node\_id}) in the
+BFS loop.
+
+\paragraph{Defect 11: the REFINES no-entailment fallback hardcoded
+direction, unaffected by the bidirectional-NLI rewrite it should have
+inherited.} When neither direction's entailment score clears the strict
+margin test, the resolver falls through to a secondary heuristic
+(high cosine similarity, neutral-dominant, low contradiction) that still
+resolves to REFINES --- and this branch hardcoded direction
+\texttt{A\_TO\_B} unconditionally, an unmodified holdover from the
+single-direction resolver, where only one direction was ever computed
+and direction genuinely could not vary. Under bidirectional NLI this is a
+real defect, not a legacy no-op: both \texttt{e\_ab} and \texttt{e\_ba}
+are available in this branch, so hardcoding one of them silently
+reintroduces exactly the ``direction as an artifact, not a semantic
+decision'' problem the rewrite exists to eliminate. Discovered not by
+inspecting the code but by the fresh SMRITI-Reference direction-accuracy
+annotation (\S\ref{sec:results-annotation}), which measured 0/9 direction
+accuracy --- a result improbable enough under chance
+($p \approx 2^{-9}$) to prompt inspecting the resolver directly, where
+the hardcoded constant was found. No existing unit test exercised
+$e_{ab} \neq e_{ba}$ specifically inside this fallback branch, so it
+passed all 913+ pre-existing tests despite being wrong on real data.
+Fixed to use whichever direction's entailment reading is stronger (a
+genuine, if weaker than a margin-passing verdict, NLI-derived signal);
+re-measured post-fix direction accuracy is 44.4\% (4/9) --- a real
+improvement, not a claimed fix, since the underlying task (deciding
+direction when NLI would not confidently commit to either reading) is
+genuinely hard.
+
+\textbf{Superseded (adversarial ``reality check'' audit round 3, P0-4).} A
+later audit round found the entire branch this defect lived in
+was itself semantically wrong, not merely its hardcoded direction: ``high
+similarity, no entailment in either direction'' is not a refinement under
+this ontology's own definition (\S\ref{sec:phase7}'s neighbor,
+\S\ref{sec:system} --- REFINES requires established one-way entailment).
+The branch (and the direction-selection fix described above, along with
+its two pinning regression tests) is retired outright, not further
+patched: such pairs now correctly fall through to NEUTRAL, whose own
+condition they already satisfied. REFINES is now produced exclusively by
+the specificity gate reclassifying a genuine one-way SUPPORTS decision.
+This retirement, plus a second bug the same review found in that
+specificity gate itself (an evidentiary-attribution phrase like
+``independent benchmarks confirm that X'' was inflating the token-count
+specificity heuristic past its margin, misclassifying genuine SUPPORTS
+pairs as REFINES), changes the real-corpus numbers reported in
+\S\ref{sec:results-annotation} substantially from the 44.4\% figure
+above --- see that section for the current, post-both-fixes measurement.

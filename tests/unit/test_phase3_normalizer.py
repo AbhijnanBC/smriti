@@ -2,10 +2,9 @@
 Unit tests for extraction/normalizer.py.
 """
 
-import pytest
-from smriti.extraction.scanner import BlockType, ScannerEvent
-from smriti.extraction.normalizer import normalize_event
 from smriti.core.models import SegmentationWarning
+from smriti.extraction.normalizer import normalize_event
+from smriti.extraction.scanner import BlockType, ScannerEvent
 
 
 def make_event(block_type, text, heading_level=None, lines=None):

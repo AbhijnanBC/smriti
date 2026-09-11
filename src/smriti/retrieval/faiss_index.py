@@ -14,11 +14,10 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List, Optional, Dict
 import structlog
 
+from smriti.exceptions import FAISSNotAvailableError, IndexBuildError
 from smriti.retrieval.index import EmbeddingIndex, SearchResult
-from smriti.exceptions import IndexBuildError, FAISSNotAvailableError
 
 logger = structlog.get_logger(__name__)
 
@@ -35,13 +34,14 @@ class FAISSIndex(EmbeddingIndex):
 
     def __init__(self, dimension: int) -> None:
         self._dimension = dimension
-        self._claim_ids: List[str] = []
-        self._id_to_idx: Dict[str, int] = {}
+        self._claim_ids: list[str] = []
+        self._id_to_idx: dict[str, int] = {}
         self._index = self._create_index(dimension)
 
     def _create_index(self, dimension: int):
         try:
             import faiss
+
             index = faiss.IndexFlatIP(dimension)
             logger.info("faiss index created", dimension=dimension)
             return index
@@ -58,7 +58,7 @@ class FAISSIndex(EmbeddingIndex):
     def size(self) -> int:
         return len(self._claim_ids)
 
-    def add(self, claim_ids: List[str], vectors: List[List[float]]) -> None:
+    def add(self, claim_ids: list[str], vectors: list[list[float]]) -> None:
         import numpy as np
 
         if not vectors:
@@ -67,8 +67,7 @@ class FAISSIndex(EmbeddingIndex):
         for i, v in enumerate(vectors):
             if len(v) != self._dimension:
                 raise IndexBuildError(
-                    f"Vector at position {i} has dimension {len(v)}, "
-                    f"expected {self._dimension}"
+                    f"Vector at position {i} has dimension {len(v)}, " f"expected {self._dimension}"
                 )
 
         try:
@@ -86,10 +85,10 @@ class FAISSIndex(EmbeddingIndex):
     def search(
         self,
         query_id: str,
-        query_vector: List[float],
+        query_vector: list[float],
         k: int,
-        exclude_ids: Optional[List[str]] = None,
-    ) -> List[SearchResult]:
+        exclude_ids: list[str] | None = None,
+    ) -> list[SearchResult]:
         import numpy as np
 
         if self.size == 0:
@@ -112,7 +111,7 @@ class FAISSIndex(EmbeddingIndex):
 
         results = []
         rank = 1
-        for score, idx in zip(scores, indices):
+        for score, idx in zip(scores, indices, strict=False):
             if idx < 0 or idx >= len(self._claim_ids):
                 continue
             neighbor_id = self._claim_ids[idx]

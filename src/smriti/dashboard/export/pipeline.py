@@ -24,12 +24,10 @@ Rules:
 
 from __future__ import annotations
 
-from typing import Optional
 import structlog
-
-from smriti.dashboard.export.models import ExportResult
-from smriti.dashboard.export.json_exporter import JSONExporter
 from smriti.dashboard.export.csv_exporter import CSVExporter
+from smriti.dashboard.export.json_exporter import JSONExporter
+from smriti.dashboard.export.models import ExportResult
 from smriti.dashboard.policies.policies import PolicyEngine
 from smriti.exceptions import ExportPipelineError
 
@@ -49,10 +47,11 @@ class ExportPipeline:
         self._json_exporter = JSONExporter(service_client)
         self._csv_exporter = CSVExporter(service_client)
 
-    def export(self, fmt: str) -> Optional[ExportResult]:
+    def export(self, fmt: str) -> ExportResult:
         """
         Run the export pipeline for a given format.
-        Returns ExportResult on success, None on failure.
+        Returns ExportResult on success; raises ExportPipelineError on failure
+        (policy rejection, unknown format, or an underlying exporter error).
         """
         # Policy check first
         allowed, reason = self._policy.validate_export(fmt)

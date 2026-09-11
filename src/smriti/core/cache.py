@@ -14,16 +14,14 @@ Safe to delete at any time with: .\\Makefile.ps1 clean-cache
 
 import pickle
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any
+
 import structlog
 
 from smriti.core.paths import (
     EMBEDDINGS_CACHE_DIR,
-    PARSED_CACHE_DIR,
-    RETRIEVAL_CACHE_DIR,
     NLI_CACHE_DIR,
 )
-
 
 logger = structlog.get_logger(__name__)
 
@@ -38,7 +36,7 @@ class CacheManager:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Retrieve a cached object by key. Returns None on miss."""
         cache_file = self.cache_dir / f"{key}.pkl"
         if not cache_file.exists():
@@ -71,6 +69,7 @@ class CacheManager:
     def clear(self) -> None:
         """Clear this entire cache namespace."""
         import shutil
+
         shutil.rmtree(self.cache_dir, ignore_errors=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("cache namespace cleared", dir=self.cache_dir.name)
@@ -78,13 +77,14 @@ class CacheManager:
 
 # ── Specialised caches ────────────────────────────────────────────────────────
 
+
 class EmbeddingCache(CacheManager):
     """Cache for embedding vectors (Phase 4)."""
 
     def __init__(self):
         super().__init__(EMBEDDINGS_CACHE_DIR)
 
-    def get_batch(self, claim_ids: list) -> Dict[str, list]:
+    def get_batch(self, claim_ids: list) -> dict[str, list]:
         """Retrieve multiple embeddings at once."""
         return {cid: v for cid in claim_ids if (v := self.get(cid)) is not None}
 
@@ -101,8 +101,8 @@ class NLICache(CacheManager):
         a, b = sorted([claim_a_id, claim_b_id])
         return f"{a}__{b}"
 
-    def get_pair(self, claim_a_id: str, claim_b_id: str) -> Optional[Dict]:
+    def get_pair(self, claim_a_id: str, claim_b_id: str) -> dict | None:
         return self.get(self._pair_key(claim_a_id, claim_b_id))
 
-    def set_pair(self, claim_a_id: str, claim_b_id: str, result: Dict) -> None:
+    def set_pair(self, claim_a_id: str, claim_b_id: str, result: dict) -> None:
         self.set(self._pair_key(claim_a_id, claim_b_id), result)

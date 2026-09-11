@@ -1,21 +1,27 @@
 """Unit tests for scoring/fusion.py — generic fusion + monotonicity + constraints."""
 
 import pytest
-from smriti.core.models import SignalVector, ContributionCandidate, ContributionSet
-from smriti.scoring.policies import load_policy, FusionPolicy
-from smriti.scoring.fusion import compute_reliability, compute_reliability_from_signal_vector
+from smriti.core.models import ContributionCandidate, ContributionSet, SignalVector
+from smriti.scoring.fusion import compute_reliability
+from smriti.scoring.policies import load_policy
 
 
 @pytest.fixture
-def policy(): return load_policy()
+def policy():
+    return load_policy()
 
 
 def make_sv(**kwargs):
-    defaults = dict(
-        evidence_strength=0.5, evidence_independence=0.7, source_diversity=0.5,
-        topology_strength=0.4, conflict_pressure=0.2, temporal_stability=0.6,
-        evidence_completeness=1.0, statuses={},
-    )
+    defaults = {
+        "evidence_strength": 0.5,
+        "evidence_independence": 0.7,
+        "source_diversity": 0.5,
+        "topology_strength": 0.4,
+        "conflict_pressure": 0.2,
+        "temporal_stability": 0.6,
+        "evidence_completeness": 1.0,
+        "statuses": {},
+    }
     defaults.update(kwargs)
     return SignalVector(**defaults)
 
@@ -36,15 +42,24 @@ def make_cs(policy, **sv_kwargs):
         "bridge_score": 0.0,
     }.items():
         if fp.get_weight(name) > 0:
-            candidates.append(ContributionCandidate(
-                signal_id=name, normalized_value=value,
-                policy_weight=fp.get_weight(name),
-                direction=fp.get_direction(name),
-                label=name, raw_value=value,
-            ))
-    return ContributionSet(
-        candidates=tuple(candidates), evidence_completeness=sv.evidence_completeness, claim_id="c001"
-    ), sv
+            candidates.append(
+                ContributionCandidate(
+                    signal_id=name,
+                    normalized_value=value,
+                    policy_weight=fp.get_weight(name),
+                    direction=fp.get_direction(name),
+                    label=name,
+                    raw_value=value,
+                )
+            )
+    return (
+        ContributionSet(
+            candidates=tuple(candidates),
+            evidence_completeness=sv.evidence_completeness,
+            claim_id="c001",
+        ),
+        sv,
+    )
 
 
 def test_basic_reliability_in_range(policy):
@@ -133,6 +148,7 @@ def test_fusion_receives_contribution_set_not_signal_vector(policy):
     ri, unc, comps, dr = compute_reliability(cs, policy, sv)
     assert 0.0 <= ri <= 100.0
     from smriti.core.models import ContributionSet
+
     # Verify the function signature accepts ContributionSet
     assert isinstance(cs, ContributionSet)
 
@@ -140,6 +156,7 @@ def test_fusion_receives_contribution_set_not_signal_vector(policy):
 def test_decision_record_produced(policy):
     """RECTIFIED (P0-5): compute_reliability must return a ReliabilityDecisionRecord."""
     from smriti.core.models import ReliabilityDecisionRecord
+
     cs, sv = make_cs(policy)
     ri, unc, comps, dr = compute_reliability(cs, policy, sv)
     assert isinstance(dr, ReliabilityDecisionRecord)
@@ -158,3 +175,44 @@ def test_decision_record_constraints_logged(policy):
         "No-evidence constraint must be recorded in ReliabilityDecisionRecord "
         "when evidence_strength is 0.0."
     )
+
+
+# ── P1-4: reliability vs. graph importance split (external "reality check" review) ──
+
+
+def test_topology_without_evidence_constraint_no_longer_fires_by_default(policy):
+    """RECTIFIED (P1-4): TopologyWithoutEvidenceConstraint (a graph-structure
+    signal capping an evidence-based score -- exactly the conflation the
+    review flagged) is retired from the default pipeline. evidence_strength
+    is low and topology_strength is high, but the specific
+    'topology_without_evidence_cap' constraint must never fire; only
+    NoEvidenceConstraint (a legitimate evidence-native constraint) may."""
+    cs, sv = make_cs(policy, evidence_strength=0.05, topology_strength=0.95, conflict_pressure=0.0)
+    _, _, _, dr = compute_reliability(cs, policy, sv)
+    assert not any("topology_without_evidence_cap" in c for c in dr.constraints_activated)
+
+
+def test_custom_constraint_pipeline_overrides_default(policy):
+    """compute_reliability must actually honor an explicit constraint_pipeline
+    argument rather than always falling back to the legacy default."""
+    from smriti.scoring.constraints import IMPORTANCE_CONSTRAINT_PIPELINE
+
+    cs, sv = make_cs(policy, evidence_strength=0.0, conflict_pressure=1.0)
+    _, _, _, dr = compute_reliability(
+        cs, policy, sv, constraint_pipeline=IMPORTANCE_CONSTRAINT_PIPELINE
+    )
+    # IMPORTANCE_CONSTRAINT_PIPELINE is empty -- no constraint may fire,
+    # even though evidence_strength=0.0 and conflict_pressure=1.0 would
+    # trigger both evidence-native constraints under the default pipeline.
+    assert dr.constraints_activated == ()
+
+
+def test_evidence_constraint_pipeline_is_the_new_default(policy):
+    from smriti.scoring.constraints import EVIDENCE_CONSTRAINT_PIPELINE
+
+    cs, sv = make_cs(policy, evidence_strength=0.0, conflict_pressure=0.0)
+    _, _, _, dr_default = compute_reliability(cs, policy, sv)
+    _, _, _, dr_explicit = compute_reliability(
+        cs, policy, sv, constraint_pipeline=EVIDENCE_CONSTRAINT_PIPELINE
+    )
+    assert dr_default.constraints_activated == dr_explicit.constraints_activated

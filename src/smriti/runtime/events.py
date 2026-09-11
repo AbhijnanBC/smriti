@@ -28,7 +28,7 @@ Events defined:
     CapabilityChanged         → a capability was enabled/disabled
     SchedulerTick             → periodic scheduler fired
 
-Event Schema Versioning (NEW): 
+Event Schema Versioning (NEW):
     Each ArchitectureEvent carries `event_schema_version` to allow
     downstream systems to parse event payloads across versions.
 """
@@ -38,9 +38,11 @@ from __future__ import annotations
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -48,23 +50,24 @@ logger = structlog.get_logger(__name__)
 
 class ArchitectureEventType(str, Enum):
     """All recognized Phase 11 architecture event types."""
-    LIFECYCLE_STARTED       = "LifecycleStarted"
-    CONFIGURATION_LOADED    = "ConfigurationLoaded"
-    RUNTIME_ACTIVATED       = "RuntimeActivated"
-    DEPENDENCY_VALIDATED    = "DependencyValidated"
-    RECOVERY_STARTED        = "RecoveryStarted"
-    RECOVERY_FINISHED       = "RecoveryFinished"
-    SHUTDOWN_INITIATED      = "ShutdownInitiated"
-    COMPLIANCE_VIOLATION    = "ComplianceViolation"
-    INVARIANT_VIOLATION     = "InvariantViolation"
-    MANIFEST_WRITTEN        = "ManifestWritten"
-    CAPABILITY_CHANGED      = "CapabilityChanged"
-    SCHEDULER_TICK          = "SchedulerTick"
-    HEALTH_CHECK_COMPLETED  = "HealthCheckCompleted"
-    RESOURCE_ALLOCATED      = "ResourceAllocated"
-    RESOURCE_RELEASED       = "ResourceReleased"
-    SERVICE_REGISTERED      = "ServiceRegistered"
-    SERVICE_RETIRED         = "ServiceRetired"
+
+    LIFECYCLE_STARTED = "LifecycleStarted"
+    CONFIGURATION_LOADED = "ConfigurationLoaded"
+    RUNTIME_ACTIVATED = "RuntimeActivated"
+    DEPENDENCY_VALIDATED = "DependencyValidated"
+    RECOVERY_STARTED = "RecoveryStarted"
+    RECOVERY_FINISHED = "RecoveryFinished"
+    SHUTDOWN_INITIATED = "ShutdownInitiated"
+    COMPLIANCE_VIOLATION = "ComplianceViolation"
+    INVARIANT_VIOLATION = "InvariantViolation"
+    MANIFEST_WRITTEN = "ManifestWritten"
+    CAPABILITY_CHANGED = "CapabilityChanged"
+    SCHEDULER_TICK = "SchedulerTick"
+    HEALTH_CHECK_COMPLETED = "HealthCheckCompleted"
+    RESOURCE_ALLOCATED = "ResourceAllocated"
+    RESOURCE_RELEASED = "ResourceReleased"
+    SERVICE_REGISTERED = "ServiceRegistered"
+    SERVICE_RETIRED = "ServiceRetired"
 
 
 @dataclass(frozen=True)
@@ -85,13 +88,14 @@ class ArchitectureEvent:
         event_schema_version:  Version of the event payload schema (e.g., "1.0")
         payload:               Event-specific context (type-safe but flexible)
     """
+
     event_id: str
     event_type: ArchitectureEventType
     source: str
     run_id: str
     timestamp: float
-    event_schema_version: str = "1.0"          # NEW: schema version for consumers
-    payload: Dict[str, Any] = field(default_factory=dict)
+    event_schema_version: str = "1.0"  # NEW: schema version for consumers
+    payload: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def create(
@@ -101,7 +105,7 @@ class ArchitectureEvent:
         run_id: str = "",
         event_schema_version: str = "1.0",
         **payload: Any,
-    ) -> "ArchitectureEvent":
+    ) -> ArchitectureEvent:
         """
         Factory method for creating an ArchitectureEvent.
 
@@ -121,7 +125,7 @@ class ArchitectureEvent:
             source=source,
             run_id=run_id,
             timestamp=time.monotonic(),
-            event_schema_version=event_schema_version,   # NEW: version field set
+            event_schema_version=event_schema_version,  # NEW: version field set
             payload=dict(payload),
         )
 
@@ -145,8 +149,8 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._subscribers: Dict[ArchitectureEventType, List[EventSubscriber]] = {}
-        self._wildcard_subscribers: List[EventSubscriber] = []
+        self._subscribers: dict[ArchitectureEventType, list[EventSubscriber]] = {}
+        self._wildcard_subscribers: list[EventSubscriber] = []
         self._lock = threading.Lock()
         self._enabled = True
         self._event_count = 0
@@ -154,7 +158,7 @@ class EventBus:
     def subscribe(
         self,
         subscriber: EventSubscriber,
-        event_type: Optional[ArchitectureEventType] = None,
+        event_type: ArchitectureEventType | None = None,
     ) -> None:
         """
         Subscribe to events.
@@ -204,7 +208,7 @@ class EventBus:
 
 
 # Process-level singleton EventBus
-_event_bus: Optional[EventBus] = None
+_event_bus: EventBus | None = None
 _bus_lock = threading.Lock()
 
 

@@ -1,0 +1,158 @@
+{
+  "release_id": "release_20260911T154817Z",
+  "git_commit": "155139f182f7e17ba8be6cbef41df2af6e267976",
+  "git_dirty": true,
+  "python": "3.12.6",
+  "dependency_lock_hash": {
+    "hash": "acc3e69a75f15bd2441600be252eb89dd5f3ec450223e5d508a33fb6c91e6d4e",
+    "path": "poetry.lock"
+  },
+  "datasets": {
+    "reference": {
+      "hash": "45970689528af17e65c7fcd62f733cdd8eafceb06ad6e419887bd15d1375be2f",
+      "path": "artifacts\\run_20260911_125340\\phase4\\dataset.json"
+    },
+    "controlled_v2": {
+      "hash": "289c25eb3f16fcbf1ea21325bb00d9f530dcaa667a485f885fbe0a084e7a0915",
+      "path": "evaluation\\controlled\\v2\\construction_manifest.json"
+    },
+    "closed_world_v1": {
+      "hash": "8637bdfd96603b28bfaba77a811191cadf0986c6566fe65902b82ff2dd7443d6",
+      "path": "evaluation\\closed_world\\v1\\construction_manifest.json"
+    },
+    "claim_validity_v1": {
+      "hash": "3cc30d7306623731962ca5225654a44270fa7beb808577ca74b6c7347334a4f8",
+      "path": "evaluation\\claim_validity\\v1\\benchmark.json"
+    },
+    "fever": {
+      "hash": "c595a19bfc93d61d3bad5543b88ab4cab034c67c59804891236208f65774784f",
+      "path": "evaluation\\fever\\v1\\sample.json"
+    },
+    "scifact": {
+      "hash": "81cd12d4038f95e9c3b18380ea369a7d7c288ea29f9325d8ae3d7b172cb1056b",
+      "path": "evaluation\\scifact\\v1\\sample.json"
+    },
+    "scifact_open": {
+      "hash": "58b103e9701e6442e9a980b44e526b625cd8cc2fbdfccf53f6f8795d28e7c2c5",
+      "path": "evaluation\\scifact_open\\v1\\sample.json"
+    }
+  },
+  "models": {
+    "embedding": {
+      "provider": "sentence-transformers",
+      "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "signature": "acd046f58b626ce41b7b20b0566191aa",
+      "device": "cpu"
+    },
+    "nli": {
+      "model_name": "cross-encoder/nli-deberta-v3-small",
+      "model_revision": "fa2804872c3b4bd748f38c0185cc85775361e735"
+    },
+    "source_run_manifest": "artifacts/run_20260911_081039/run_manifest.json"
+  },
+  "runs": {
+    "controlled_v2": {
+      "run_id": "20260911_081039",
+      "source": null,
+      "results_path": "evaluation\\controlled\\v2\\results.json"
+    },
+    "closed_world_v1": {
+      "run_id": "20260911_152535",
+      "source": null,
+      "results_path": "evaluation\\closed_world\\v1\\results.json"
+    },
+    "reference_baselines": {
+      "run_id": null,
+      "source": "artifacts/run_20260911_125340/phase4/dataset.json (hardcoded PHASE4_DATASET path in scripts/run_baselines.py, no run_id field in its own output)",
+      "results_path": "evaluation\\baselines\\run_summary.json"
+    },
+    "claim_validity_v1": {
+      "run_id": null,
+      "source": "pure construction-defined benchmark scored directly against the AssertionClassifier -- no pipeline run applies",
+      "results_path": "evaluation\\claim_validity\\v1\\results.json"
+    },
+    "fever_v1": {
+      "run_id": null,
+      "source": "copenlu/fever_gold_evidence (validation split)",
+      "results_path": "evaluation\\fever\\v1\\results.json"
+    },
+    "scifact_v1": {
+      "run_id": null,
+      "source": "allenai/scifact_entailment (train+validation pooled)",
+      "results_path": "evaluation\\scifact\\v1\\results.json"
+    },
+    "scifact_open_v1": {
+      "run_id": null,
+      "source": "umbc-scify/scifact-open (test config + a 2000-doc sample of the distractors config)",
+      "results_path": "evaluation\\scifact_open\\v1\\results.json"
+    },
+    "direction_v1": {
+      "run_id": null,
+      "source": "FEVER + SciFact gold-SUPPORT pairs (gold direction = A_TO_B by task definition)",
+      "results_path": "evaluation\\direction\\v1\\results.json"
+    },
+    "nli_comparison_v1": {
+      "run_id": null,
+      "source": "FEVER validation sample (900 pairs, evaluation/fever/v1/sample.json)",
+      "results_path": "evaluation\\nli_comparison\\v1\\results.json"
+    },
+    "calibration_v1": {
+      "run_id": "20260911_081039",
+      "source": null,
+      "results_path": "evaluation\\calibration\\v1\\results.json"
+    },
+    "risk_coverage_v1": {
+      "run_id": "20260911_081039",
+      "source": null,
+      "results_path": "evaluation\\calibration\\v1\\risk_coverage_results.json"
+    },
+    "recall_at_k_v1": {
+      "run_id": "20260911_081039",
+      "source": null,
+      "results_path": "evaluation\\recall_at_k\\v1\\results.json"
+    },
+    "abstention_diagnostic_v2": {
+      "run_id": "20260911_081039",
+      "source": null,
+      "results_path": "evaluation\\controlled\\v2\\abstention_confidence_diagnostic_results.json"
+    },
+    "partitioning": {
+      "run_id": "20260911_125340",
+      "source": null,
+      "results_path": "evaluation\\partitioning\\results.json"
+    },
+    "ablation": {
+      "run_id": "20260911_125340",
+      "source": null,
+      "results_path": "evaluation\\ablation\\results.json"
+    },
+    "signal_diagnostic": {
+      "run_id": "20260911_125340",
+      "source": null,
+      "results_path": "evaluation\\ablation\\signal_diagnostic_results.json"
+    },
+    "reconstruction_v1": {
+      "run_id": "20260911_125340",
+      "source": null,
+      "results_path": "evaluation\\reconstruction\\v1\\results.json"
+    }
+  },
+  "paper_generation": {
+    "generated_at": "2026-09-11T15:48:17.606730+00:00",
+    "generator": "scripts/generate_paper_results.py",
+    "source_hashes": {
+      "controlled_v2_results": "7d6b60bb66226175d84bdc8cae88a4aa98193cb329e06ed8615403ac6f486961",
+      "closed_world_v1_results": "69a79c2a7f0d8dcccdc332c8c7ea918cb7ec39592dfd3c4c47a7b09fa61a9e32",
+      "claim_validity_v1_results": "e94e14af0ec9a80adef8fd2f5d88ac4f8642ab2b03d259d14a4a59c1ff29062f",
+      "fever_v1_results": "0ccfa2506f59d02cf7d9e8b9f61153aaed6afaee6d63ba127570757ae15a9f76",
+      "scifact_v1_results": "20d6e354355bb0a3ac69c4b886f1810379fe4c5da5d15dbabf437a4610a34f53",
+      "scifact_open_v1_results": "efd519a8d846c2fccc64a4737c0bb68417ec698e80d4ada8655f57f7db2f8a70",
+      "calibration_v1_results": "936273a94a3932bd2e7e46fb4b78d1d44decc2f83b59559fbc957c0a7d7d5e91",
+      "risk_coverage_v1_results": "8d8c027b40e370534672eae549c102c6621b3839b9635c634065c95aaaadeb3a",
+      "partitioning_results": "83d54efc07919313c8683b271034c99d10ecaefc01b9f379bf09288b84e5226c",
+      "ablation_results": "d45c8e254bf24a68d6e92463e0f121eb8e0a77a5e843108b8bee4a461326ee11",
+      "reconstruction_v1_results": "902495e26e13a1625d24285eca6628647248696a6af67833271a66aafd2c5874"
+    }
+  }
+}

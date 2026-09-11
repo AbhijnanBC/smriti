@@ -21,8 +21,9 @@ from __future__ import annotations
 
 import threading
 import time
-from dataclasses import dataclass, field
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
+from dataclasses import dataclass
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -31,11 +32,12 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class ScheduledTask:
     """Definition of one periodic task."""
-    name:             str
+
+    name: str
     interval_seconds: float
-    task:             Callable[[], None]
-    last_run:         Optional[float] = None
-    run_count:        int = 0
+    task: Callable[[], object]
+    last_run: float | None = None
+    run_count: int = 0
 
 
 class RuntimeScheduler:
@@ -52,9 +54,9 @@ class RuntimeScheduler:
     """
 
     def __init__(self, tick_interval: float = 1.0) -> None:
-        self._tasks: Dict[str, ScheduledTask] = {}
+        self._tasks: dict[str, ScheduledTask] = {}
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._tick_interval = tick_interval
         self._lock = threading.Lock()
 
@@ -62,9 +64,20 @@ class RuntimeScheduler:
         self,
         name: str,
         interval_seconds: float,
-        task: Callable[[], None],
+        task: Callable[[], object],
     ) -> None:
-        """Register a periodic task."""
+        """
+        Register a periodic task.
+
+        RECTIFIED (publication-readiness audit): `task` was typed
+        `Callable[[], None]`, but the scheduler discards whatever a task
+        returns (see `_run_loop`) and at least one real caller
+        (`pipeline/runner.py`'s health-check registration) passes a task
+        that returns `dict[str, bool]`, which mypy correctly flagged as
+        an incompatible-type error against the old, too-strict signature.
+        Widened to `Callable[[], object]` to match actual behavior
+        instead of narrowing the caller.
+        """
         with self._lock:
             self._tasks[name] = ScheduledTask(
                 name=name,
@@ -92,15 +105,18 @@ class RuntimeScheduler:
         logger.info("runtime_scheduler_stopped")
 
     def _run_loop(self) -> None:
-        from smriti.runtime.events import publish, ArchitectureEventType
+        from smriti.runtime.events import ArchitectureEventType, publish
+
         while self._running:
             now = time.monotonic()
             with self._lock:
                 tasks = dict(self._tasks)
 
             for name, task_def in tasks.items():
-                if (task_def.last_run is None or
-                        now - task_def.last_run >= task_def.interval_seconds):
+                if (
+                    task_def.last_run is None
+                    or now - task_def.last_run >= task_def.interval_seconds
+                ):
                     try:
                         task_def.task()
                         task_def.last_run = now

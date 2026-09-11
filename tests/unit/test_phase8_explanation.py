@@ -1,20 +1,26 @@
 """Unit tests for scoring/explanation.py."""
 
-import pytest
 from smriti.core.models import ComponentScore
 from smriti.scoring.explanation import build_explanation
 
 
 def make_component(name: str, contribution: float, direction: str = "positive") -> ComponentScore:
     return ComponentScore(
-        signal_id=name, normalized_value=0.8, policy_weight=0.25,
-        adjusted_value=0.8, contribution=contribution, direction=direction,
+        signal_id=name,
+        normalized_value=0.8,
+        policy_weight=0.25,
+        adjusted_value=0.8,
+        contribution=contribution,
+        direction=direction,
         explanation="Test explanation",
     )
 
 
 def test_explanation_has_summary():
-    comps = [make_component("evidence_strength", 18.0), make_component("conflict_pressure", -8.0, "negative")]
+    comps = [
+        make_component("evidence_strength", 18.0),
+        make_component("conflict_pressure", -8.0, "negative"),
+    ]
     explanation = build_explanation(75.0, comps)
     assert explanation.summary and len(explanation.summary) > 0
 

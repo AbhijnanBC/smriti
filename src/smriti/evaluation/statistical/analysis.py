@@ -20,21 +20,18 @@ from __future__ import annotations
 
 import math
 import statistics
-from typing import Dict, List, Optional, Tuple
 
 from smriti.core.models import (
-    StatisticalAnalysis,
     EffectSize,
     ReproducibilityAssessment,
+    StatisticalAnalysis,
     ThreatToValidity,
-    ExperimentResult,
-    VerificationStatus,
 )
 
 
 def compute_statistical_analysis(
     metric_name: str,
-    values: List[float],
+    values: list[float],
     confidence_level: float = 0.95,
 ) -> StatisticalAnalysis:
     """
@@ -52,9 +49,13 @@ def compute_statistical_analysis(
         return StatisticalAnalysis(
             metric_name=metric_name,
             values=(),
-            mean=0.0, std_dev=0.0, median=0.0,
-            min_value=0.0, max_value=0.0,
-            ci_lower=0.0, ci_upper=0.0,
+            mean=0.0,
+            std_dev=0.0,
+            median=0.0,
+            min_value=0.0,
+            max_value=0.0,
+            ci_lower=0.0,
+            ci_upper=0.0,
             coefficient_of_variation=0.0,
             n_samples=0,
         )
@@ -107,9 +108,9 @@ def compute_statistical_analysis(
 def compute_effect_size(
     metric_name: str,
     condition_a: str,
-    values_a: List[float],
+    values_a: list[float],
     condition_b: str,
-    values_b: List[float],
+    values_b: list[float],
 ) -> EffectSize:
     """
     Compute Cohen's d effect size between two conditions.
@@ -137,9 +138,7 @@ def compute_effect_size(
 
     # Pooled standard deviation
     n_a, n_b = len(values_a), len(values_b)
-    pooled_std = math.sqrt(
-        ((n_a - 1) * std_a ** 2 + (n_b - 1) * std_b ** 2) / max(1, n_a + n_b - 2)
-    )
+    pooled_std = math.sqrt(((n_a - 1) * std_a**2 + (n_b - 1) * std_b**2) / max(1, n_a + n_b - 2))
 
     cohens_d = (mean_a - mean_b) / max(pooled_std, 1e-10)
     abs_d = abs(cohens_d)
@@ -165,7 +164,7 @@ def compute_effect_size(
 def assess_reproducibility(
     experiment_id: str,
     metric_name: str,
-    values: List[float],
+    values: list[float],
     cv_threshold: float = 0.10,
 ) -> ReproducibilityAssessment:
     """
@@ -220,7 +219,7 @@ def assess_reproducibility(
 
 # ── Threats to validity catalogue (Section 12.4) ─────────────────────────────
 
-STANDARD_THREATS: List[ThreatToValidity] = [
+STANDARD_THREATS: list[ThreatToValidity] = [
     ThreatToValidity(
         threat_id="THR-001",
         category="internal",

@@ -22,17 +22,16 @@ Builder performs:
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
+
 import structlog
 
-from smriti.core.models import (
-    Claim,
-    ClaimProvenance,
-    ExtractionMode,
-    AssertionMetadata,  # <-- ADDED
-)
 from smriti.claims.models import ValidatedAssertion
 from smriti.claims.rules import CLAIM_SCHEMA_VERSION, RULE_VERSION
+from smriti.core.models import (
+    AssertionMetadata,  # <-- ADDED
+    Claim,
+    ClaimProvenance,
+)
 
 logger = structlog.get_logger(__name__)
 

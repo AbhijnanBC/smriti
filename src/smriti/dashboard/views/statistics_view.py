@@ -1,19 +1,23 @@
 """statistics_view.py — StatisticsView: distribution charts and summary metrics."""
+
 from __future__ import annotations
-from typing import Optional
+
 import streamlit as st
-from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.models.presentation import StatisticsPresentationModel
 from smriti.dashboard.components.statistics_panel import render_statistics_panel_from_pm
+from smriti.dashboard.models.presentation import StatisticsPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class StatisticsView(BaseView):
     """Renders global statistics from StatisticsPresentationModel."""
 
-    def __init__(self, stats: Optional[StatisticsPresentationModel] = None) -> None:
+    def __init__(self, stats: StatisticsPresentationModel | None = None) -> None:
         self._stats = stats
 
-    def refresh(self, stats: Optional[StatisticsPresentationModel] = None) -> None:
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(self, stats: StatisticsPresentationModel | None = None) -> None:  # type: ignore[override]
         self._stats = stats
 
     def supports(self, context) -> bool:

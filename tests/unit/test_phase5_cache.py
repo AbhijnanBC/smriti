@@ -3,10 +3,11 @@ Unit tests for embedding/cache.py.
 Includes schema_version validation (critical fix).
 """
 
-import pytest
 import pickle
+
+import pytest
+from smriti.embedding.cache import CACHE_SCHEMA_VERSION, EmbeddingCachePolicy
 from smriti.embedding.models import EmbeddingStatus
-from smriti.embedding.cache import EmbeddingCachePolicy, CACHE_SCHEMA_VERSION
 
 
 @pytest.fixture
@@ -57,10 +58,10 @@ def test_stale_on_schema_version_mismatch(cache, tmp_path):
 
     # Write an entry with an old schema_version directly
     old_entry = {
-        "vector":         [0.1, 0.2, 0.3],
-        "model_sig":      "sig_A",
-        "config_hash":    "hash_X",
-        "schema_version": "4.0",   # Old schema — incompatible
+        "vector": [0.1, 0.2, 0.3],
+        "model_sig": "sig_A",
+        "config_hash": "hash_X",
+        "schema_version": "4.0",  # Old schema — incompatible
     }
     cache_file = cache_dir / "key_old.pkl"
     with open(cache_file, "wb") as f:

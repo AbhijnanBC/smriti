@@ -7,7 +7,9 @@ based on health check results.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Any, Optional
+from collections.abc import Callable
+from typing import Any
+
 import structlog
 
 from smriti.runtime.composition import DependencyGraph, DependencyHealth
@@ -22,17 +24,17 @@ class HealthCoordinator:
     RECTIFIED: Wired to DependencyGraph to reflect subsystem health.
     """
 
-    def __init__(self, dependency_graph: Optional[DependencyGraph] = None) -> None:
-        self._checks: Dict[str, Callable[[], bool]] = {}
+    def __init__(self, dependency_graph: DependencyGraph | None = None) -> None:
+        self._checks: dict[str, Callable[[], bool]] = {}
         # Map check name -> dependency node name (if applicable)
-        self._check_to_node: Dict[str, str] = {}
+        self._check_to_node: dict[str, str] = {}
         self._graph = dependency_graph
 
     def register(
         self,
         name: str,
         check: Callable[[], bool],
-        dependency_node: Optional[str] = None,
+        dependency_node: str | None = None,
     ) -> None:
         """
         Register a health check.
@@ -48,12 +50,12 @@ class HealthCoordinator:
             self._check_to_node[name] = dependency_node
         logger.debug("health_check_registered", name=name, node=dependency_node)
 
-    def run_all(self) -> Dict[str, bool]:
+    def run_all(self) -> dict[str, bool]:
         """
         Execute all checks and update dependency graph health accordingly.
         Returns a dict of check name -> healthy (bool).
         """
-        results: Dict[str, bool] = {}
+        results: dict[str, bool] = {}
         for name, check in self._checks.items():
             try:
                 healthy = bool(check())
@@ -61,7 +63,9 @@ class HealthCoordinator:
                 # Update dependency graph if mapped
                 node_name = self._check_to_node.get(name)
                 if node_name and self._graph:
-                    new_health = DependencyHealth.HEALTHY if healthy else DependencyHealth.UNAVAILABLE
+                    new_health = (
+                        DependencyHealth.HEALTHY if healthy else DependencyHealth.UNAVAILABLE
+                    )
                     self._graph.set_health(node_name, new_health)
             except Exception as exc:
                 results[name] = False
@@ -74,7 +78,7 @@ class HealthCoordinator:
     def all_healthy(self) -> bool:
         return all(self.run_all().values())
 
-    def status(self) -> Dict[str, Any]:
+    def status(self) -> dict[str, Any]:
         return self.run_all()
 
     def bind_graph(self, graph: DependencyGraph) -> None:

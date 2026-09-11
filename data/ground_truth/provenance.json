@@ -1,9 +1,0 @@
-[
-  {
-    "claim_id": "C002",
-    "expected_source": "Solar_System.md",
-    "expected_heading": "The Solar System",
-    "expected_line_range": [14, 16],
-    "expected_context": "> \"The Sun contains 99.8% of the system's known mass.\""
-  }
-]

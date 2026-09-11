@@ -1,16 +1,22 @@
 """Unit tests for classification/calibration.py."""
 
-import pytest
 from smriti.core.models import (
-    CandidatePair, RelationshipEvidence, NLIScores, InferenceMetadata, LifecycleStage,
+    CandidatePair,
+    InferenceMetadata,
+    LifecycleStage,
+    NLIScores,
+    RelationshipEvidence,
 )
 from smriti.retrieval.classification.calibration import (
-    ConfidenceCalibrator, CalibrationStrategy,
+    CalibrationStrategy,
+    ConfidenceCalibrator,
 )
 
 
 def make_evidence(entailment=0.1, neutral=0.05, contradiction=0.85, cosine=0.80):
-    pair = CandidatePair(claim_id_a="c001", claim_id_b="c002", cosine_similarity=cosine, candidate_rank=1)
+    pair = CandidatePair(
+        claim_id_a="c001", claim_id_b="c002", cosine_similarity=cosine, candidate_rank=1
+    )
     nli_scores = NLIScores(
         entailment_score=entailment,
         neutral_score=neutral,
@@ -40,7 +46,7 @@ def test_temperature_calibration_softens_high_confidence():
     calibrator = ConfidenceCalibrator(
         model_name="test",
         strategy=CalibrationStrategy.TEMPERATURE,
-        temperature=2.0,   # Higher temperature → softer distribution
+        temperature=2.0,  # Higher temperature → softer distribution
     )
     evidence = make_evidence(contradiction=0.95, entailment=0.03, neutral=0.02)
     result = calibrator.calibrate(evidence)
@@ -63,7 +69,7 @@ def test_nli_scores_unchanged_after_calibration():
     )
     evidence = make_evidence(contradiction=0.90)
     result = calibrator.calibrate(evidence)
-    assert result.nli_scores.contradiction_score == 0.90   # Raw scores untouched
+    assert result.nli_scores.contradiction_score == 0.90  # Raw scores untouched
     assert result.nli_scores.predicted_label == "contradiction"
 
 

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class ExportResult:
     """Result of a successful export operation."""
+
     content: str
     mime_type: str
     filename: str

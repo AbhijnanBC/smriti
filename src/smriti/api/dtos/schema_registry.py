@@ -9,12 +9,12 @@ When schema evolves (e.g., 9.0 → 9.1), only this file changes.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass(frozen=True)
 class SchemaVersion:
     """Version metadata for one DTO type."""
+
     major: int
     minor: int
     description: str
@@ -30,12 +30,12 @@ class SchemaRegistry:
     Single source of truth for all versioning decisions.
     """
 
-    _VERSIONS: Dict[str, SchemaVersion] = {
-        "ClaimDTO":        SchemaVersion(9, 0, "Phase 9.0 claim projection schema"),
-        "ExplanationDTO":  SchemaVersion(9, 0, "Phase 9.0 explainability schema"),
-        "StatisticsDTO":   SchemaVersion(9, 0, "Phase 9.0 statistics schema"),
-        "GraphDTO":        SchemaVersion(9, 0, "Phase 9.0 traversal result schema"),
-        "ResponseMeta":    SchemaVersion(9, 0, "Phase 9.0 response metadata schema"),
+    _VERSIONS: dict[str, SchemaVersion] = {
+        "ClaimDTO": SchemaVersion(9, 0, "Phase 9.0 claim projection schema"),
+        "ExplanationDTO": SchemaVersion(9, 0, "Phase 9.0 explainability schema"),
+        "StatisticsDTO": SchemaVersion(9, 0, "Phase 9.0 statistics schema"),
+        "GraphDTO": SchemaVersion(9, 0, "Phase 9.0 traversal result schema"),
+        "ResponseMeta": SchemaVersion(9, 0, "Phase 9.0 response metadata schema"),
     }
 
     @classmethod
@@ -48,7 +48,7 @@ class SchemaRegistry:
         return cls.get_version(dto_type).version_string
 
     @classmethod
-    def all_versions(cls) -> Dict[str, str]:
+    def all_versions(cls) -> dict[str, str]:
         return {k: v.version_string for k, v in cls._VERSIONS.items()}
 
 

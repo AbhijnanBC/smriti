@@ -2,9 +2,9 @@
 Unit tests for parsing/loader.py.
 """
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
 from smriti.core.models import FileFormat, SourceDocument
 from smriti.parsing.loader import load_document
 
@@ -18,7 +18,7 @@ def make_source(path: Path, fmt: FileFormat, doc_id: str = "a" * 64) -> SourceDo
         format=fmt,
         content_hash=doc_id,
         size_bytes=path.stat().st_size if path.exists() else 0,
-        modified_at=datetime.now(tz=timezone.utc),
+        modified_at=datetime.now(tz=UTC),
     )
 
 

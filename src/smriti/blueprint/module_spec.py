@@ -19,8 +19,7 @@ Module Specification fields:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, FrozenSet, List
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -33,23 +32,24 @@ class ModuleSpecification:
         - Documentation generation
         - Compliance engine (verify dependency declarations match imports)
     """
-    module_path:          str
-    purpose:              str
-    inputs:               FrozenSet[str]
-    outputs:              FrozenSet[str]
-    dependencies:         FrozenSet[str]
-    public_interfaces:    FrozenSet[str]
-    internal_components:  FrozenSet[str]
-    owner:                str
-    replaceability:       bool
-    lifecycle:            str
+
+    module_path: str
+    purpose: str
+    inputs: frozenset[str]
+    outputs: frozenset[str]
+    dependencies: frozenset[str]
+    public_interfaces: frozenset[str]
+    internal_components: frozenset[str]
+    owner: str
+    replaceability: bool
+    lifecycle: str
 
 
 class ModuleRegistry:
     """Registry of all formal module specifications."""
 
     def __init__(self) -> None:
-        self._specs: Dict[str, ModuleSpecification] = {}
+        self._specs: dict[str, ModuleSpecification] = {}
         self._register_defaults()
 
     def _register_defaults(self) -> None:
@@ -59,7 +59,9 @@ class ModuleRegistry:
                 purpose="Govern the operational lifecycle and state transitions of the SMRITI platform.",
                 inputs=frozenset({"run_id", "ConfigurationContext"}),
                 outputs=frozenset({"RuntimeContext", "HealthStatus", "RuntimeManifest"}),
-                dependencies=frozenset({"smriti.core.config", "smriti.core.paths", "smriti.exceptions"}),
+                dependencies=frozenset(
+                    {"smriti.core.config", "smriti.core.paths", "smriti.exceptions"}
+                ),
                 public_interfaces=frozenset({"RuntimeCoordinator", "RuntimeState", "get_runtime"}),
                 internal_components=frozenset({"_coordinator", "_state_machine", "_lifecycle"}),
                 owner="runtime",
@@ -72,7 +74,9 @@ class ModuleRegistry:
                 inputs=frozenset({"RuntimeContext", "MetricsCollector"}),
                 outputs=frozenset({"HealthReport", "MetricsSnapshot", "TelemetryEvent"}),
                 dependencies=frozenset({"smriti.core.config", "smriti.exceptions"}),
-                public_interfaces=frozenset({"HealthMonitor", "MetricsCollector", "TelemetryCollector"}),
+                public_interfaces=frozenset(
+                    {"HealthMonitor", "MetricsCollector", "TelemetryCollector"}
+                ),
                 internal_components=frozenset({"_events", "_metrics", "_spans"}),
                 owner="observability",
                 replaceability=True,
@@ -87,7 +91,7 @@ class ModuleRegistry:
                 public_interfaces=frozenset({"ComplianceEngine", "ADRRegistry", "RiskRegister"}),
                 internal_components=frozenset({"_rules", "_adrs", "_risks"}),
                 owner="governance",
-                replaceability=False,    # Governance must be architecturally stable
+                replaceability=False,  # Governance must be architecturally stable
                 lifecycle="indefinite",
             ),
             ModuleSpecification(
@@ -95,8 +99,12 @@ class ModuleRegistry:
                 purpose="Provide operational infrastructure (resources, trust, provenance, ownership).",
                 inputs=frozenset({"ConfigurationContext", "run_id"}),
                 outputs=frozenset({"RuntimeManifest", "ResourceHandle", "OwnershipTable"}),
-                dependencies=frozenset({"smriti.core.config", "smriti.core.paths", "smriti.exceptions"}),
-                public_interfaces=frozenset({"ResourceGovernor", "ProvenanceBuilder", "OwnershipRegistry"}),
+                dependencies=frozenset(
+                    {"smriti.core.config", "smriti.core.paths", "smriti.exceptions"}
+                ),
+                public_interfaces=frozenset(
+                    {"ResourceGovernor", "ProvenanceBuilder", "OwnershipRegistry"}
+                ),
                 internal_components=frozenset({"_handles", "_policies"}),
                 owner="infrastructure",
                 replaceability=True,
@@ -112,5 +120,5 @@ class ModuleRegistry:
     def get(self, module_path: str) -> ModuleSpecification | None:
         return self._specs.get(module_path)
 
-    def all_specs(self) -> List[ModuleSpecification]:
+    def all_specs(self) -> list[ModuleSpecification]:
         return list(self._specs.values())

@@ -12,17 +12,17 @@ behaviorally: that dispatching the relevant Command through the view's
 dispatcher produces the correct state transition, exactly as a real button
 click inside render() would.
 """
-import pytest
 
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
-from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
-from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+import pytest
 from smriti.dashboard.commands.commands import (
     NavigateBackCommand,
     NavigateToCommand,
     SelectClaimCommand,
     SetPageCommand,
 )
+from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
+from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 from smriti.dashboard.views.navigation_view import NavigationView
 from smriti.dashboard.views.result_list_view import ResultListView
 

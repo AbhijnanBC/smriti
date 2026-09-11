@@ -1,28 +1,32 @@
 """audit_view.py — AuditView: renders 4-level explainability from AuditPresentationModel."""
+
 from __future__ import annotations
 
-from typing import Optional
-
 import streamlit as st
-
-from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.models.presentation import AuditPresentationModel
 from smriti.core.models import ExplainabilityLevel
+from smriti.dashboard.models.presentation import AuditPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class AuditView(BaseView):
     """Renders audit trail at any explainability level."""
 
-    def __init__(self, audit: Optional[AuditPresentationModel] = None) -> None:
+    def __init__(self, audit: AuditPresentationModel | None = None) -> None:
         self._audit = audit
 
-    def refresh(self, audit: Optional[AuditPresentationModel] = None) -> None:
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(self, audit: AuditPresentationModel | None = None) -> None:  # type: ignore[override]
         self._audit = audit
 
     def supports(self, context) -> bool:
         return self._audit is not None
 
-    def render(self) -> None:
+    # Straight-line Streamlit layout code (many independent st.* calls and
+    # small conditional sections); splitting it up would scatter one visual
+    # layout across helper functions with no natural seams.
+    def render(self) -> None:  # noqa: C901
         if not self._audit:
             st.info("Select a claim to view its complete audit trail.")
             return
@@ -50,13 +54,15 @@ class AuditView(BaseView):
             st.divider()
             st.subheader("Signal Measurements")
             # Guard against None signals
-            for sig in (pm.signals or []):
+            for sig in pm.signals or []:
                 st.progress(float(sig.value), text=f"{sig.label}: {sig.formatted}")
 
             st.subheader("Component Contributions")
             # Guard against None component_scores
-            for comp in (pm.component_scores or []):
-                st.markdown(f"{comp.icon} **{comp.display_name}:** `{comp.formatted_contribution}` — {comp.explanation}")
+            for comp in pm.component_scores or []:
+                st.markdown(
+                    f"{comp.icon} **{comp.display_name}:** `{comp.formatted_contribution}` — {comp.explanation}"
+                )
 
         if level >= ExplainabilityLevel.FULL_AUDIT:
             st.divider()
@@ -67,7 +73,7 @@ class AuditView(BaseView):
             if pm.recommendations:
                 st.subheader("Recommendations")
                 # Guard against None recommendations (though it should be a list)
-                for rec in (pm.recommendations or []):
+                for rec in pm.recommendations or []:
                     st.markdown(f"💡 {rec}")
 
             if pm.policy_snapshot:

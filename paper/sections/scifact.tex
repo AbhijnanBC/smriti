@@ -1,0 +1,75 @@
+\input{generated/scifact_table.tex}
+
+SciFact \citep{wadden2020fact} is a public scientific claim-verification
+benchmark: claims paraphrased from citation contexts, each verified
+against a cited research abstract as SUPPORT, CONTRADICT, or NEI (not
+enough information). We evaluate SMRITI's resolver zero-shot against a
+795-pair balanced sample (\texttt{allenai/scifact\_entailment}, train and
+validation splits pooled; 265 per label --- every CONTRADICT-labeled
+example available, the natural bottleneck; \texttt{evaluation/scifact/v1/}),
+using the identical methodology as \S\ref{sec:fever}: SMRITI's resolver
+and NLI model, completely unmodified, scored directly against each
+(evidence, claim) pair, with the same five-way-plus-ABSTAINED $\to$
+three-way label collapse (SUPPORTS/REFINES/EQUIVALENT $\to$ SUPPORT,
+CONTRADICTS $\to$ CONTRADICT, NEUTRAL/ABSTAINED $\to$ NEI). For
+SUPPORT/CONTRADICT claims, evidence\_text is the abstract's specific
+gold rationale sentences (SciFact's own annotated evidence spans); for
+NEI claims, SciFact's own construction provides no rationale at all (the
+verdict is precisely that the cited abstract does not resolve the claim),
+so evidence\_text is the full cited abstract instead ---
+\texttt{evaluation/scifact/v1/build\_sample.py} documents this choice.
+
+\textbf{(1) Zero-shot transfer accuracy is 48.2\% (macro-F1 44.4\%) ---
+still above chance (33.3\%), but a substantially larger drop than
+FEVER's.} Where FEVER's transfer accuracy (61.1\%, \S\ref{sec:fever}) was
+a moderate step down from this paper's own corpora, SciFact's is a much
+steeper one. SUPPORT and CONTRADICT both show the same
+precision-favoring, recall-starved profile seen on FEVER, but more
+extreme: 73--78\% precision against only 23--29\% recall (FEVER: 72--83\%
+precision, 52--56\% recall). NEI recall is 92.5\%, the highest of any
+class reported anywhere in this paper on any corpus --- the resolver
+defaults to NEI on genuinely SUPPORT and CONTRADICT scientific claims
+far more readily than it does on FEVER's Wikipedia claims or on this
+paper's own corpora.
+
+\textbf{(2) The same NEUTRAL-defaulting failure mode identified on FEVER
+is present here too, and more severe: 593 of 795 pairs (74.6\%) resolve
+to SMRITI's native NEUTRAL relation type, regardless of gold label
+(178/265 SUPPORT, 173/265 CONTRADICT, 242/265 NEI).} Formal abstention
+fires on only 18 of 795 pairs (2.3\%, essentially the same rate as
+FEVER's 2.6\%) --- the under-commitment is almost entirely the NEUTRAL
+relation type, not \texttt{ResolutionStatus.ABSTAINED}, the same E10
+selective-prediction gap this paper documents on three corpora now
+(SMRITI-Controlled-v2, FEVER, SciFact). Scientific abstract prose ---
+dense, hedged, multi-clause, laden with domain-specific terminology --- is
+plausibly a harder surface for a general-purpose NLI cross-encoder than
+either Wikipedia prose or this paper's own templated or SVO-decomposed
+claim text, and the size of the gap (74.6\% vs.\ FEVER's 51.2\% vs.\
+SMRITI-Controlled-v2's near-zero neutral-default rate on its own core
+categories) is monotonic with what impressionistically looks like
+increasing syntactic and domain complexity across these three corpora,
+though we did not design an experiment to isolate which specific
+property of the text drives it, and we do not claim this ordering would
+replicate on a different sample or a different NLI model.
+
+\textbf{(3) When SMRITI does commit to CONTRADICT or SUPPORT on SciFact,
+it is usually right, consistent with the precision-favoring profile seen
+throughout this paper.} 62 of 81 committed CONTRADICT calls (76.5\%) and
+76 of 83 committed SUPPORT calls (91.6\%, including 8 EQUIVALENT calls
+correctly folded into SUPPORT) are correct given commitment --- SMRITI's
+long-standing precision-over-recall profile on contradiction and support
+classification (\S\ref{sec:results}, \S\ref{sec:controlled}) transfers to
+a genuinely external, out-of-domain scientific corpus, even though the
+\emph{rate} of commitment collapses on this domain.
+
+We read this SciFact evaluation as strengthening, not merely repeating,
+the finding from \S\ref{sec:fever}: two independent public benchmarks,
+in two different domains (encyclopedic Wikipedia prose and scientific
+abstract prose), both show the same qualitative pattern --- well-above-
+chance, precision-favoring classification when SMRITI commits, and
+substantial under-commitment (mostly NEUTRAL, rarely formal ABSTAINED)
+on naturalistic prose relative to this paper's own corpora --- with the
+scientific-domain benchmark showing a larger version of the same gap
+rather than a different failure mode. As with FEVER, no threshold is
+tuned against SciFact before or after this number is reported; this is a
+single, frozen, zero-shot measurement.

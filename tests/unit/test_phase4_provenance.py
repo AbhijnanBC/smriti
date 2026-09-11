@@ -8,16 +8,16 @@ coordinated-predicate/object split combines a shared subject+verb run with
 only ONE of the two conjuncts.
 """
 
-import pytest
 from pathlib import Path
 
-from smriti.core.models import SemanticSentence, BoundaryReason
-from smriti.claims.parser import SpaCyParser
-from smriti.claims.boundaries import BoundaryDetector
-from smriti.claims.structure import StructureExtractor
+import pytest
 from smriti.claims.annotation import AssertionAnnotator
-from smriti.claims.degradation import DegradationHandler
+from smriti.claims.boundaries import BoundaryDetector
 from smriti.claims.builder import build_claim
+from smriti.claims.degradation import DegradationHandler
+from smriti.claims.parser import SpaCyParser
+from smriti.claims.structure import StructureExtractor
+from smriti.core.models import BoundaryReason, SemanticSentence
 
 
 @pytest.fixture(scope="module")
@@ -62,6 +62,7 @@ def run_full_pipeline(parser, candidate):
 
 # ── Simple single-assertion case ──────────────────────────────────────────────
 
+
 def test_single_assertion_has_one_full_sentence_span(parser, detector):
     """A simple sentence with no coordination: one span covering the whole text."""
     text = "Earth orbits the Sun."
@@ -89,11 +90,12 @@ def test_single_assertion_spans_reconstruct_original_text(parser, detector):
     sent = make_sentence(text)
     parsed = parser.parse(sent)
     candidate = detector.detect(parsed)[0]
-    for (start, end) in candidate.source_char_spans:
+    for start, end in candidate.source_char_spans:
         assert text[start:end] in text
 
 
 # ── Coordinated-predicate/object split ────────────────────────────────────────
+
 
 def test_coordinated_predicate_object_split_has_two_spans(parser, detector):
     """
@@ -158,7 +160,7 @@ def test_coordinated_predicate_spans_are_sorted_and_nonoverlapping(parser, detec
 
     for c in candidates:
         spans = c.source_char_spans
-        for (start, end) in spans:
+        for start, end in spans:
             assert start <= end
         # Spans must be in increasing order and non-overlapping.
         for i in range(1, len(spans)):
@@ -166,6 +168,7 @@ def test_coordinated_predicate_spans_are_sorted_and_nonoverlapping(parser, detec
 
 
 # ── Parse failure fallback ────────────────────────────────────────────────────
+
 
 def test_parse_failure_has_no_token_ids_but_full_text_span(parser, detector):
     sent = make_sentence("   ")

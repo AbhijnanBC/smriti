@@ -17,32 +17,31 @@ Responsibilities:
 from __future__ import annotations
 
 import streamlit as st
-
-from smriti.core.models import WorkspaceType, ExplainabilityLevel
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
+from smriti.core.models import ExplainabilityLevel, WorkspaceType
 from smriti.dashboard.policies.policies import PolicyEngine
+from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 
 WORKSPACE_DISPLAY = {
-    WorkspaceType.RESEARCH:    "🔍 Research",
+    WorkspaceType.RESEARCH: "🔍 Research",
     WorkspaceType.RELIABILITY: "📊 Reliability",
-    WorkspaceType.CONFLICT:    "⚡ Conflict",
-    WorkspaceType.AUDIT:       "🔎 Audit",
-    WorkspaceType.PROVENANCE:  "📜 Provenance",
-    WorkspaceType.STATISTICS:  "📈 Statistics",
-    WorkspaceType.TOPOLOGY:    "🕸️ Topology",
+    WorkspaceType.CONFLICT: "⚡ Conflict",
+    WorkspaceType.AUDIT: "🔎 Audit",
+    WorkspaceType.PROVENANCE: "📜 Provenance",
+    WorkspaceType.STATISTICS: "📈 Statistics",
+    WorkspaceType.TOPOLOGY: "🕸️ Topology",
 }
 
 EXPLAINABILITY_LABELS = {
-    ExplainabilityLevel.NONE:       "None (fastest)",
-    ExplainabilityLevel.SUMMARY:    "Summary",
-    ExplainabilityLevel.DETAILED:   "Detailed",
+    ExplainabilityLevel.NONE: "None (fastest)",
+    ExplainabilityLevel.SUMMARY: "Summary",
+    ExplainabilityLevel.DETAILED: "Detailed",
     ExplainabilityLevel.FULL_AUDIT: "Full Audit",
 }
 
 SORT_OPTIONS = {
     "reliability_index": "Reliability (highest first)",
     "uncertainty_score": "Uncertainty (highest first)",
-    "support_count":     "Evidence Count",
+    "support_count": "Evidence Count",
     "conflict_pressure": "Conflict Pressure",
 }
 
@@ -65,7 +64,7 @@ class SidebarController:
         # ── Workspace selector ────────────────────────────────────────────────
         st.sidebar.subheader("Workspace")
         workspace_labels = list(WORKSPACE_DISPLAY.values())
-        workspace_types  = list(WORKSPACE_DISPLAY.keys())
+        workspace_types = list(WORKSPACE_DISPLAY.keys())
         current_idx = workspace_types.index(state.workspace_type)
         selected_idx = st.sidebar.radio(
             "Select workspace",
@@ -86,7 +85,7 @@ class SidebarController:
         selected_level = st.sidebar.selectbox(
             "Explainability depth",
             options=list(EXPLAINABILITY_LABELS.keys()),
-            format_func=lambda l: EXPLAINABILITY_LABELS[l],
+            format_func=lambda level: EXPLAINABILITY_LABELS[level],
             index=current_level,
             label_visibility="collapsed",
         )
@@ -103,8 +102,9 @@ class SidebarController:
             "Sort field",
             options=list(SORT_OPTIONS.keys()),
             format_func=lambda k: SORT_OPTIONS[k],
-            index=list(SORT_OPTIONS.keys()).index(current_sort)
-            if current_sort in SORT_OPTIONS else 0,
+            index=(
+                list(SORT_OPTIONS.keys()).index(current_sort) if current_sort in SORT_OPTIONS else 0
+            ),
             label_visibility="collapsed",
         )
         if selected_sort != current_sort:

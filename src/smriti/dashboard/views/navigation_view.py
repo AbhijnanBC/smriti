@@ -1,9 +1,11 @@
 """navigation_view.py — NavigationView: breadcrumb bar and back button."""
+
 from __future__ import annotations
+
 import streamlit as st
-from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.commands.commands import NavigateBackCommand
 from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+from smriti.dashboard.views.base_view import BaseView
 
 
 class NavigationView(BaseView):
@@ -18,7 +20,7 @@ class NavigationView(BaseView):
         if dispatcher is not None:
             self._dispatcher = dispatcher
         elif state_manager is not None:
-            from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
+            from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
 
             self._dispatcher = InteractionDispatcher(
                 state_manager=state_manager,

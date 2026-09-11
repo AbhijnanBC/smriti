@@ -12,11 +12,14 @@ reuse precomputed metadata from context rather than re-traversing.
 from __future__ import annotations
 
 import hashlib
-from typing import Dict
+
 import structlog
 
 from smriti.core.models import (
-    KnowledgeGraph, GraphStatistics, RelationshipType, TemporalStatus,
+    GraphStatistics,
+    KnowledgeGraph,
+    RelationshipType,
+    TemporalStatus,
 )
 from smriti.evolution.context import SemanticReasoningContext
 
@@ -46,35 +49,44 @@ class StatisticsBuilder:
         partitions = ctx.partitions
 
         contradiction_count = sum(
-            1 for e in edges.values()
-            if e.relationship_type == RelationshipType.CONTRADICTS
+            1 for e in edges.values() if e.relationship_type == RelationshipType.CONTRADICTS
         )
         supports_count = sum(
-            1 for e in edges.values()
-            if e.relationship_type == RelationshipType.SUPPORTS
+            1 for e in edges.values() if e.relationship_type == RelationshipType.SUPPORTS
         )
         refines_count = sum(
-            1 for e in edges.values()
-            if e.relationship_type == RelationshipType.REFINES
+            1 for e in edges.values() if e.relationship_type == RelationshipType.REFINES
+        )
+        equivalent_count = sum(
+            1 for e in edges.values() if e.relationship_type == RelationshipType.EQUIVALENT
         )
 
         # Reuse precomputed topology metrics (no re-traversal)
         isolated = sum(
-            1 for nid in nodes
+            1
+            for nid in nodes
             if ctx.topology_metrics.get(nid) and ctx.topology_metrics[nid].degree == 0
         )
         bridges = sum(1 for m in ctx.topology_metrics.values() if m.is_bridge)
         hubs = sum(1 for m in ctx.topology_metrics.values() if m.is_hub)
 
         # Reuse precomputed temporal metadata (no re-traversal)
-        evolution_chains = sum(
-            1 for t in ctx.temporal_metadata.values()
-            if t and t.status == TemporalStatus.EVOLUTION_CHAIN
-        ) // 2
-        unresolved = sum(
-            1 for t in ctx.temporal_metadata.values()
-            if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
-        ) // 2
+        evolution_chains = (
+            sum(
+                1  # type: ignore[misc]  # mypy sum()/Iterable[bool] overload quirk; see evolution/__init__.py
+                for t in ctx.temporal_metadata.values()
+                if t and t.status == TemporalStatus.EVOLUTION_CHAIN
+            )
+            // 2
+        )
+        unresolved = (
+            sum(
+                1  # type: ignore[misc]
+                for t in ctx.temporal_metadata.values()
+                if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
+            )
+            // 2
+        )
 
         return GraphStatistics(
             node_count=len(nodes),
@@ -90,6 +102,7 @@ class StatisticsBuilder:
             unresolved_conflicts=unresolved,
             construction_time_seconds=round(construction_time, 4),
             enrichment_time_seconds=round(enrichment_time, 4),
+            equivalent_count=equivalent_count,
         )
 
 
@@ -98,12 +111,18 @@ def build_knowledge_graph(
     validation_report,
     construction_time: float,
     enrichment_time: float,
+    document_provenance: dict | None = None,
 ) -> KnowledgeGraph:
     """
     Assemble the final KnowledgeGraph from a fully enriched context.
 
     Delegates statistics computation to StatisticsBuilder (P2-1).
     Pure construction — no reasoning, no validation, no inference.
+
+    document_provenance (external review, P1-1): document_id -> keyed
+    disclosed source identity, threaded in by the pipeline runner from
+    Phase 2's own output (never fabricated here). Defaults to {} so every
+    existing caller that predates this parameter keeps working unchanged.
     """
     stats = StatisticsBuilder.build(ctx, construction_time, enrichment_time)
     graph_id = _compute_graph_id(ctx.run_id, ctx.config_hash)
@@ -118,6 +137,7 @@ def build_knowledge_graph(
         run_id=ctx.run_id,
         config_hash=ctx.config_hash,
         schema_version=PHASE7_SCHEMA_VERSION,
+        document_provenance=document_provenance or {},
     )
 
     logger.info(

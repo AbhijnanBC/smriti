@@ -13,8 +13,9 @@ LifecycleManager owns:
 
 from __future__ import annotations
 
-from smriti.runtime.lifecycle import RuntimeLifecycle, LifecyclePhase, LifecycleGate
 import structlog
+
+from smriti.runtime.lifecycle import LifecycleGate, LifecyclePhase, RuntimeLifecycle
 
 logger = structlog.get_logger(__name__)
 

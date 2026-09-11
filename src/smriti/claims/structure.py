@@ -24,18 +24,17 @@ Rules:
 
 from __future__ import annotations
 
-from typing import Optional
 import structlog
 
-from smriti.core.models import (
-    StructuredAssertion,
-    ExtractionMode,
-    ClaimWarning,
-    SemanticSentence,
-)
 from smriti.claims.models import AssertionCandidate, StructuredAssertionCandidate
 from smriti.claims.parser import BaseParser
-from smriti.claims.rules import SUBJECT_DEP_LABELS, OBJECT_DEP_LABELS, VERB_POS_TAGS
+from smriti.claims.rules import OBJECT_DEP_LABELS, SUBJECT_DEP_LABELS, VERB_POS_TAGS
+from smriti.core.models import (
+    ClaimWarning,
+    ExtractionMode,
+    SemanticSentence,
+    StructuredAssertion,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -45,7 +44,9 @@ class StructureExtractor:
     Extracts SVO structure from AssertionCandidates.
     """
 
-    def extract(self, candidate: AssertionCandidate, parser: BaseParser) -> StructuredAssertionCandidate:
+    def extract(
+        self, candidate: AssertionCandidate, parser: BaseParser
+    ) -> StructuredAssertionCandidate:
         """
         Attempt SVO extraction.
 
@@ -115,7 +116,7 @@ class StructureExtractor:
             warnings=warnings,
         )
 
-    def _extract_svo(self, doc) -> Optional[StructuredAssertion]:
+    def _extract_svo(self, doc) -> StructuredAssertion | None:
         """
         Extract Subject, Verb (Predicate), Object from spaCy dependency tree.
 

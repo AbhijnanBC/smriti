@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
-from smriti.core.models import (
-    NavigationMode, ExportFormat, ExplainabilityLevel, RelationshipType,
-)
-from smriti.api.domain.predicates import Predicate, SortSpec, Pagination, Projection
+
+from smriti.api.domain.predicates import Pagination, Projection, SortSpec
 from smriti.core.config import get_config
+from smriti.core.models import (
+    ExplainabilityLevel,
+    ExportFormat,
+    NavigationMode,
+)
 
 
 @dataclass(frozen=True)
@@ -19,6 +21,7 @@ class ExecutionBudget:
     Injected into ExecutionContext so services can check limits without
     hardcoded constants.
     """
+
     max_traversal_depth: int
     max_returned_rows: int
     timeout_ms: float
@@ -44,6 +47,7 @@ class ExecutionBudget:
 @dataclass(frozen=True)
 class KnowledgeRequest:
     """Abstract base for all knowledge requests."""
+
     run_id: str
     projection: Projection = field(default_factory=Projection)
     explainability_level: ExplainabilityLevel = ExplainabilityLevel.NONE
@@ -52,6 +56,7 @@ class KnowledgeRequest:
 @dataclass(frozen=True)
 class ClaimRequest(KnowledgeRequest):
     """Retrieve a single claim by ID."""
+
     claim_id: str = ""
 
 
@@ -63,25 +68,28 @@ class SearchRequest(KnowledgeRequest):
     RECTIFIED (P1-4): Replaces top_claims() and contradicted_claims() convenience methods.
     Everything goes through search with explicit predicates.
     """
-    predicates: tuple = field(default_factory=tuple)   # Tuple[Predicate, ...]
+
+    predicates: tuple = field(default_factory=tuple)  # Tuple[Predicate, ...]
     sort: SortSpec = field(default_factory=lambda: SortSpec("reliability_index"))
     pagination: Pagination = field(default_factory=Pagination)
-    text_contains: Optional[str] = None
+    text_contains: str | None = None
 
 
 @dataclass(frozen=True)
 class TraversalRequest(KnowledgeRequest):
     """Navigate the knowledge graph from a starting node."""
+
     start_claim_id: str = ""
     max_depth: int = 2
     relationship_types: tuple = field(default_factory=tuple)
     navigation_mode: NavigationMode = NavigationMode.LOCAL
-    target_claim_id: Optional[str] = None
+    target_claim_id: str | None = None
 
 
 @dataclass(frozen=True)
 class StatisticsRequest(KnowledgeRequest):
     """Request aggregated statistics about the knowledge graph."""
+
     include_histogram: bool = True
     include_partition_stats: bool = True
     include_signal_distribution: bool = False
@@ -90,6 +98,7 @@ class StatisticsRequest(KnowledgeRequest):
 @dataclass(frozen=True)
 class ExplanationRequest(KnowledgeRequest):
     """Request the complete explainability record for one claim."""
+
     claim_id: str = ""
     explainability_level: ExplainabilityLevel = ExplainabilityLevel.FULL_AUDIT
 
@@ -97,6 +106,7 @@ class ExplanationRequest(KnowledgeRequest):
 @dataclass(frozen=True)
 class ExportRequest(KnowledgeRequest):
     """Export the full scored knowledge graph to a file format."""
+
     export_format: ExportFormat = ExportFormat.JSON
     include_reliability: bool = True
     include_graph_structure: bool = True

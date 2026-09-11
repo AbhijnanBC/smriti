@@ -15,17 +15,17 @@ Supported extension types:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Type
 
 
 class ExtensionType(str, Enum):
-    DOCUMENT_PARSER      = "document_parser"
-    GRAPH_ALGORITHM      = "graph_algorithm"
+    DOCUMENT_PARSER = "document_parser"
+    GRAPH_ALGORITHM = "graph_algorithm"
     INTERACTION_WORKSPACE = "interaction_workspace"
-    RELIABILITY_MODEL    = "reliability_model"
-    POLICY_ENGINE        = "policy_engine"
+    RELIABILITY_MODEL = "reliability_model"
+    POLICY_ENGINE = "policy_engine"
 
 
 @dataclass
@@ -41,15 +41,16 @@ class ExtensionPoint:
         5. Is isolated from other extensions
         6. Declares its compatibility requirements
     """
-    name:               str
-    extension_type:     ExtensionType
-    entry_point:        str              # module.path:ClassName
-    input_contract:     str              # description of required input
-    output_contract:    str              # description of produced output
-    lifecycle:          str              # "request" | "session" | "runtime"
-    compatibility:      str              # minimum SMRITI version
-    is_optional:        bool = True
-    validation_fn:      Optional[Callable] = None
+
+    name: str
+    extension_type: ExtensionType
+    entry_point: str  # module.path:ClassName
+    input_contract: str  # description of required input
+    output_contract: str  # description of produced output
+    lifecycle: str  # "request" | "session" | "runtime"
+    compatibility: str  # minimum SMRITI version
+    is_optional: bool = True
+    validation_fn: Callable | None = None
 
     def validate(self) -> bool:
         """Run the optional validation function."""
@@ -73,18 +74,18 @@ class ExtensionRegistry:
     """
 
     def __init__(self) -> None:
-        self._extensions: Dict[str, ExtensionPoint] = {}
+        self._extensions: dict[str, ExtensionPoint] = {}
 
     def register(self, ext: ExtensionPoint) -> None:
         if ext.name in self._extensions:
             raise ValueError(f"Extension '{ext.name}' already registered.")
         self._extensions[ext.name] = ext
 
-    def get(self, name: str) -> Optional[ExtensionPoint]:
+    def get(self, name: str) -> ExtensionPoint | None:
         return self._extensions.get(name)
 
-    def by_type(self, ext_type: ExtensionType) -> List[ExtensionPoint]:
+    def by_type(self, ext_type: ExtensionType) -> list[ExtensionPoint]:
         return [e for e in self._extensions.values() if e.extension_type == ext_type]
 
-    def validate_all(self) -> Dict[str, bool]:
+    def validate_all(self) -> dict[str, bool]:
         return {name: ext.validate() for name, ext in self._extensions.items()}

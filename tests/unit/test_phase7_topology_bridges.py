@@ -5,13 +5,18 @@ Verifies that bridge detection uses articulation_points (NetworkX),
 NOT the degree-1 heuristic from the original implementation.
 """
 
-import pytest
 from pathlib import Path
-from smriti.core.models import ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection, KnowledgePartition
+
+from smriti.core.models import (
+    ClaimNode,
+    RelationshipDirection,
+    RelationshipEdge,
+    RelationshipType,
+)
 from smriti.evolution.context import SemanticReasoningContext
 from smriti.evolution.networkx_backend import NetworkXBackend
-from smriti.evolution.topology import run_topology_analysis
 from smriti.evolution.partitioning import run_partitioning
+from smriti.evolution.topology import run_topology_analysis
 
 
 def make_ctx_chain(node_ids, edges_list):
@@ -20,23 +25,35 @@ def make_ctx_chain(node_ids, edges_list):
     nodes = {}
     for nid in node_ids:
         nodes[nid] = ClaimNode(
-            node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
-            context="", source_path=Path("test.md"), document_id="d001",
+            node_id=nid,
+            claim_id=nid,
+            claim_text=f"Claim {nid}",
+            context="",
+            source_path=Path("test.md"),
+            document_id="d001",
         )
         backend.add_node(nid)
     edges = {}
     for eid, src, tgt in edges_list:
         edge = RelationshipEdge(
-            edge_id=eid, source_node_id=src, target_node_id=tgt,
+            edge_id=eid,
+            source_node_id=src,
+            target_node_id=tgt,
             relationship_type=RelationshipType.SUPPORTS,
             direction=RelationshipDirection.A_TO_B,
-            calibrated_confidence=0.88, cosine_similarity=0.85,
-            nli_confidence=0.88, candidate_rank=1,
+            calibrated_confidence=0.88,
+            cosine_similarity=0.85,
+            nli_confidence=0.88,
+            candidate_rank=1,
         )
         edges[eid] = edge
         backend.add_edge(src, tgt, eid, "supports", 0.88)
     return SemanticReasoningContext(
-        nodes=nodes, edges=edges, backend=backend, run_id="test", config_hash="test",
+        nodes=nodes,
+        edges=edges,
+        backend=backend,
+        run_id="test",
+        config_hash="test",
     )
 
 
@@ -74,8 +91,7 @@ def test_leaf_node_is_not_bridge():
 
     # C has degree 1 in undirected, but removing it doesn't disconnect the rest
     assert ctx.topology_metrics["C"].is_bridge is False, (
-        "C is a leaf node. Removing C doesn't disconnect A and B. "
-        "C must NOT be a bridge."
+        "C is a leaf node. Removing C doesn't disconnect A and B. " "C must NOT be a bridge."
     )
 
 
@@ -92,6 +108,6 @@ def test_cycle_has_no_bridges():
     run_topology_analysis(ctx)
 
     for node_id, metrics in ctx.topology_metrics.items():
-        assert metrics.is_bridge is False, (
-            f"No node in a cycle should be a bridge. Node {node_id} incorrectly flagged."
-        )
+        assert (
+            metrics.is_bridge is False
+        ), f"No node in a cycle should be a bridge. Node {node_id} incorrectly flagged."

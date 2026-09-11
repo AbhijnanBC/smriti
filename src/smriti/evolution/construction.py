@@ -23,13 +23,16 @@ Rules:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict, Set
+
 import structlog
 
-from smriti.core.config import get_config
 from smriti.core.models import (
-    Claim, Relationship, RelationshipSet, RelationshipType, RelationshipDirection,
-    ClaimNode, RelationshipEdge, SemanticRole, NodeAnnotations,
+    Claim,
+    ClaimNode,
+    Relationship,
+    RelationshipEdge,
+    RelationshipSet,
+    RelationshipType,
 )
 from smriti.evolution.backend import GraphBackend
 from smriti.exceptions import GraphConstructionError
@@ -40,32 +43,39 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class ConstructionResult:
     """Output of the construction sub-pipeline."""
-    nodes: Dict[str, ClaimNode]
-    edges: Dict[str, RelationshipEdge]
+
+    nodes: dict[str, ClaimNode]
+    edges: dict[str, RelationshipEdge]
     backend: GraphBackend
     relationships_ingested: int
     relationships_filtered: int
-    filter_reasons: Dict[str, int]
+    filter_reasons: dict[str, int]
 
 
-ACCEPTED_TYPES = frozenset([
-    RelationshipType.CONTRADICTS,
-    RelationshipType.SUPPORTS,
-    RelationshipType.REFINES,
-])
+ACCEPTED_TYPES = frozenset(
+    [
+        RelationshipType.CONTRADICTS,
+        RelationshipType.SUPPORTS,
+        RelationshipType.REFINES,
+        RelationshipType.EQUIVALENT,
+    ]
+)
 
 
-def run_construction(
+# Orchestrates the full Phase 7 construction pipeline as one linear,
+# order-sensitive sequence; splitting it up would scatter that sequence
+# across helpers with no natural seams.
+def run_construction(  # noqa: C901
     relationship_set: RelationshipSet,
-    claims_map: Dict[str, Claim],
+    claims_map: dict[str, Claim],
     backend: GraphBackend,
     include_neutral: bool = False,
 ) -> ConstructionResult:
     """Execute the 5-stage construction sub-pipeline."""
     # Stage 1: Ingestion & Filtering
     accepted_types = ACCEPTED_TYPES | ({RelationshipType.NEUTRAL} if include_neutral else set())
-    accepted: List[Relationship] = []
-    filter_reasons: Dict[str, int] = {}
+    accepted: list[Relationship] = []
+    filter_reasons: dict[str, int] = {}
 
     for rel in relationship_set.relationships:
         if rel.relationship_type not in accepted_types:
@@ -85,12 +95,12 @@ def run_construction(
     )
 
     # Stage 2: Node Registry Construction
-    claim_id_set: Set[str] = set()
+    claim_id_set: set[str] = set()
     for rel in accepted:
         claim_id_set.add(rel.claim_id_a)
         claim_id_set.add(rel.claim_id_b)
 
-    nodes: Dict[str, ClaimNode] = {}
+    nodes: dict[str, ClaimNode] = {}
     for claim_id in sorted(claim_id_set):
         claim = claims_map.get(claim_id)
         if claim is None:
@@ -106,15 +116,15 @@ def run_construction(
             context=claim.context,
             source_path=claim.source_path,
             document_id=claim.document_id,
-            annotations=None,           # Populated during enrichment
+            annotations=None,  # Populated during enrichment
             schema_version="7.0",
         )
 
     logger.info("node registry constructed", nodes=len(nodes))
 
     # Stage 3: Edge Registry Construction
-    edges: Dict[str, RelationshipEdge] = {}
-    seen_edge_ids: Set[str] = set()
+    edges: dict[str, RelationshipEdge] = {}
+    seen_edge_ids: set[str] = set()
 
     for rel in accepted:
         if rel.relationship_id in seen_edge_ids:
@@ -150,8 +160,9 @@ def run_construction(
             relationship_type=edge.relationship_type.value,
             confidence=edge.calibrated_confidence,
         )
-        # CONTRADICTS is symmetric: add reverse edge for undirected traversal
-        if edge.relationship_type == RelationshipType.CONTRADICTS:
+        # CONTRADICTS and EQUIVALENT are symmetric: add reverse edge for
+        # undirected traversal (SUPPORTS/REFINES stay directed on purpose).
+        if edge.relationship_type in (RelationshipType.CONTRADICTS, RelationshipType.EQUIVALENT):
             backend.add_edge(
                 source=edge.target_node_id,
                 target=edge.source_node_id,

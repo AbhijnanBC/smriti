@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+
 import structlog
 
+from smriti.claims.models import ParsedSentence
 from smriti.core.config import get_config
 from smriti.core.models import SemanticSentence
-from smriti.claims.models import ParsedSentence
 from smriti.exceptions import SpacyNotLoadedError
 
 logger = structlog.get_logger(__name__)
@@ -21,6 +21,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class ParserCapabilities:
     """Defines the supported features of the underlying linguistic parser."""
+
     supports_svo: bool
     supports_negation: bool
     supports_modality: bool
@@ -45,7 +46,7 @@ class BaseParser(ABC):
 class SpaCyParser(BaseParser):
     """spaCy-based implementation of the linguistic parser."""
 
-    def __init__(self, model_name: Optional[str] = None) -> None:
+    def __init__(self, model_name: str | None = None) -> None:
         if model_name is None:
             config = get_config()
             model_name = config.get("extraction", {}).get("spacy_model", "en_core_web_sm")
@@ -65,6 +66,7 @@ class SpaCyParser(BaseParser):
     def _load_model(self):
         try:
             import spacy
+
             return spacy.load(self._model_name)
         except OSError as e:
             raise SpacyNotLoadedError(

@@ -1,5 +1,3 @@
-
-
 """
 index.py — Abstract vector index interface for Phase 6.
 
@@ -26,15 +24,15 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
 
 
 @dataclass(frozen=True)
 class SearchResult:
     """A single nearest-neighbor search result."""
+
     claim_id: str
-    score: float         # Cosine similarity (dot product on L2-normalized vectors)
-    rank: int            # 1 = nearest neighbor
+    score: float  # Cosine similarity (dot product on L2-normalized vectors)
+    rank: int  # 1 = nearest neighbor
 
 
 class EmbeddingIndex(ABC):
@@ -59,7 +57,7 @@ class EmbeddingIndex(ABC):
         ...
 
     @abstractmethod
-    def add(self, claim_ids: List[str], vectors: List[List[float]]) -> None:
+    def add(self, claim_ids: list[str], vectors: list[list[float]]) -> None:
         """
         Add vectors to the index.
 
@@ -76,10 +74,10 @@ class EmbeddingIndex(ABC):
     def search(
         self,
         query_id: str,
-        query_vector: List[float],
+        query_vector: list[float],
         k: int,
-        exclude_ids: Optional[List[str]] = None,
-    ) -> List[SearchResult]:
+        exclude_ids: list[str] | None = None,
+    ) -> list[SearchResult]:
         """
         Find the K nearest neighbors of query_vector.
 

@@ -13,50 +13,57 @@ This means:
 """
 
 from __future__ import annotations
-from smriti.governance import experimental
 
-import time
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import structlog
+
+from smriti.governance import experimental
 
 logger = structlog.get_logger(__name__)
 
 
 class EventSeverity(str, Enum):
-    DEBUG    = "debug"
-    INFO     = "info"
-    WARNING  = "warning"
-    ERROR    = "error"
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
     CRITICAL = "critical"
 
 
 @dataclass
 class TelemetryEvent:
     """Discrete operational event with structured context."""
-    event_id:   str
+
+    event_id: str
     event_type: str
-    severity:   EventSeverity
-    source:     str
-    timestamp:  float
-    context:    Dict[str, Any] = field(default_factory=dict)
-    run_id:     str = ""
+    severity: EventSeverity
+    source: str
+    timestamp: float
+    context: dict[str, Any] = field(default_factory=dict)
+    run_id: str = ""
 
     @classmethod
-    def create(cls, event_type: str, severity: EventSeverity, source: str,
-               run_id: str = "", **context: Any) -> "TelemetryEvent":
+    def create(
+        cls, event_type: str, severity: EventSeverity, source: str, run_id: str = "", **context: Any
+    ) -> TelemetryEvent:
         return cls(
             event_id=str(uuid.uuid4())[:8],
-            event_type=event_type, severity=severity,
-            source=source, timestamp=time.time(),
-            context=context, run_id=run_id,
+            event_type=event_type,
+            severity=severity,
+            source=source,
+            timestamp=time.time(),
+            context=context,
+            run_id=run_id,
         )
 
     @classmethod
-    def from_architecture_event(cls, arch_event) -> "TelemetryEvent":
+    def from_architecture_event(cls, arch_event) -> TelemetryEvent:
         """RECTIFIED (P0-2): Convert ArchitectureEvent → TelemetryEvent."""
         return cls(
             event_id=arch_event.event_id,
@@ -72,29 +79,30 @@ class TelemetryEvent:
 @dataclass
 class MetricPoint:
     metric_name: str
-    value:       float
-    unit:        str
-    timestamp:   float = field(default_factory=time.time)
-    labels:      Dict[str, str] = field(default_factory=dict)
+    value: float
+    unit: str
+    timestamp: float = field(default_factory=time.time)
+    labels: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
 class TraceSpan:
-    trace_id:   str
-    span_id:    str
-    parent_id:  Optional[str]
-    operation:  str
+    trace_id: str
+    span_id: str
+    parent_id: str | None
+    operation: str
     started_at: float
-    ended_at:   Optional[float] = None
+    ended_at: float | None = None
 
     @property
-    def duration_ms(self) -> Optional[float]:
+    def duration_ms(self) -> float | None:
         if self.ended_at:
             return (self.ended_at - self.started_at) * 1000
         return None
 
     def finish(self) -> None:
         self.ended_at = time.monotonic()
+
 
 @experimental("0.1")
 class TelemetryCollector:
@@ -107,11 +115,11 @@ class TelemetryCollector:
     MAX_BUFFER = 10_000
 
     def __init__(self, run_id: str = "") -> None:
-        self._run_id  = run_id
-        self._events: List[TelemetryEvent] = []
-        self._metrics: List[MetricPoint]   = []
-        self._spans:   List[TraceSpan]     = []
-        self._lock    = threading.Lock()
+        self._run_id = run_id
+        self._events: list[TelemetryEvent] = []
+        self._metrics: list[MetricPoint] = []
+        self._spans: list[TraceSpan] = []
+        self._lock = threading.Lock()
 
     def subscribe_to_event_bus(self) -> None:
         """
@@ -119,6 +127,7 @@ class TelemetryCollector:
         Call this once after construction to wire up passive telemetry.
         """
         from smriti.runtime.events import get_event_bus
+
         get_event_bus().subscribe(self._on_architecture_event)
         logger.debug("telemetry_subscribed_to_event_bus", run_id=self._run_id)
 
@@ -140,7 +149,7 @@ class TelemetryCollector:
             if len(self._metrics) < self.MAX_BUFFER:
                 self._metrics.append(point)
 
-    def start_span(self, operation: str, trace_id: Optional[str] = None) -> TraceSpan:
+    def start_span(self, operation: str, trace_id: str | None = None) -> TraceSpan:
         return TraceSpan(
             trace_id=trace_id or str(uuid.uuid4())[:8],
             span_id=str(uuid.uuid4())[:8],
@@ -155,12 +164,12 @@ class TelemetryCollector:
             if len(self._spans) < self.MAX_BUFFER:
                 self._spans.append(span)
 
-    def flush(self) -> Dict[str, List]:
+    def flush(self) -> dict[str, list]:
         with self._lock:
-            data = {
-                "events":  list(self._events),
+            data: dict[str, list[Any]] = {
+                "events": list(self._events),
                 "metrics": list(self._metrics),
-                "spans":   list(self._spans),
+                "spans": list(self._spans),
             }
             self._events.clear()
             self._metrics.clear()

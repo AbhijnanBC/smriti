@@ -6,13 +6,13 @@ in various syntactic structures, and that it uses the BoundaryReason enum
 and produces AssertionCandidate objects without the confidence field.
 """
 
-import pytest
 from pathlib import Path
 
-from smriti.core.models import SemanticSentence, BoundaryReason
-from smriti.claims.parser import SpaCyParser
+import pytest
 from smriti.claims.boundaries import BoundaryDetector
 from smriti.claims.models import AssertionCandidate
+from smriti.claims.parser import SpaCyParser
+from smriti.core.models import BoundaryReason, SemanticSentence
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +48,7 @@ def make_sentence(text: str, sentence_id: str = "s001") -> SemanticSentence:
 
 # ── Basic functionality ───────────────────────────────────────────────────────
 
+
 def test_single_sentence_returns_one_candidate(parser, detector):
     """A simple sentence with no coordination must yield exactly one candidate."""
     sent = make_sentence("Python is a high-level language.")
@@ -73,6 +74,7 @@ def test_parse_failure_returns_whole_sentence(parser, detector):
 
 
 # ── Coordinated predicates (shared subject) ─────────────────────────────────
+
 
 def test_coordinated_predicate_splits(parser, detector):
     """'Python supports X and Y' → two candidates with COORDINATED_PREDICATE."""
@@ -101,6 +103,7 @@ def test_coordinated_predicate_with_shared_subject_works(parser, detector):
 
 # ── Independent clauses ──────────────────────────────────────────────────────
 
+
 def test_independent_clauses_splits(parser, detector):
     """'X is fast and Y is slow' → two independent clause candidates."""
     sent = make_sentence("Python is fast and Java is slow.")
@@ -114,6 +117,7 @@ def test_independent_clauses_splits(parser, detector):
 
 
 # ── Complex cases – no split when not appropriate ───────────────────────────
+
 
 def test_conditional_not_split(parser, detector):
     """Conditional 'if X then Y' should remain as one claim (split_conditionals=False)."""
@@ -135,6 +139,7 @@ def test_relative_clause_not_split(parser, detector):
 
 
 # ── Edge cases ──────────────────────────────────────────────────────────────
+
 
 def test_empty_text(parser, detector):
     """Empty text -> parse_ok=False -> fallback with PARSE_FAILED."""
@@ -164,6 +169,7 @@ def test_detector_never_returns_empty(parser, detector):
 
 
 # ── Configuration: split_conjunctions = False ──────────────────────────────
+
 
 def test_split_disabled_returns_single(parser):
     """When split_conjunctions is False, no splitting occurs."""

@@ -2,10 +2,9 @@
 Unit tests for extraction/statistics.py.
 """
 
-import pytest
-from smriti.extraction.statistics import Phase3StatsCollector
-from smriti.extraction.scanner import BlockType, ScannerEvent
 from smriti.core.models import Phase3Stats, SegmentationWarning
+from smriti.extraction.scanner import BlockType, ScannerEvent
+from smriti.extraction.statistics import Phase3StatsCollector
 
 
 def make_event(block_type: BlockType, text: str = "", heading_level: int = None) -> ScannerEvent:

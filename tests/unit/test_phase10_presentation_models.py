@@ -1,13 +1,11 @@
 """Unit tests for dashboard/models/presentation.py."""
 
-import pytest
 from smriti.dashboard.models.presentation import (
-    DTOTransformer,
-    ClaimPresentationModel,
     AuditPresentationModel,
+    ClaimPresentationModel,
+    DTOTransformer,
     StatisticsPresentationModel,
 )
-
 
 SAMPLE_CLAIM_DTO = {
     "claim_id": "c001",
@@ -30,8 +28,12 @@ SAMPLE_CLAIM_DTO = {
     "conflict_pressure": 0.20,
     "temporal_stability": 0.90,
     "component_scores": [
-        {"signal_name": "evidence_strength", "contribution": 22.0,
-         "direction": "positive", "explanation": "Good support."}
+        {
+            "signal_name": "evidence_strength",
+            "contribution": 22.0,
+            "direction": "positive",
+            "explanation": "Good support.",
+        }
     ],
 }
 
@@ -65,7 +67,7 @@ def test_to_claim_pm_populates_identity_fields():
 
 def test_to_claim_pm_populates_display_helpers():
     pm = DTOTransformer.to_claim_pm(SAMPLE_CLAIM_DTO)
-    assert pm.label_icon == "🔵"        # high → blue
+    assert pm.label_icon == "🔵"  # high → blue
     assert pm.label_display == "High"
     assert pm.ri_formatted == "78.5"
     assert pm.role_display == "Foundational Claim"
@@ -73,7 +75,7 @@ def test_to_claim_pm_populates_display_helpers():
 
 def test_to_claim_pm_builds_signals():
     pm = DTOTransformer.to_claim_pm(SAMPLE_CLAIM_DTO)
-    assert len(pm.signals) == 6       # All 6 signal keys
+    assert len(pm.signals) == 6  # All 6 signal keys
     signal_keys = {s.key for s in pm.signals}
     assert "evidence_strength" in signal_keys
     assert "conflict_pressure" in signal_keys

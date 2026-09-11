@@ -16,12 +16,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Any, Optional
+from typing import Any
 
 
 @dataclass(frozen=True)
 class EdgeTuple:
     """A minimal edge representation returned by GraphBackend."""
+
     source: str
     target: str
     edge_id: str
@@ -47,8 +48,13 @@ class GraphBackend(ABC):
 
     @abstractmethod
     def add_edge(
-        self, source: str, target: str, edge_id: str,
-        relationship_type: str, confidence: float, **attrs: Any,
+        self,
+        source: str,
+        target: str,
+        edge_id: str,
+        relationship_type: str,
+        confidence: float,
+        **attrs: Any,
     ) -> None:
         """Add a directed edge."""
         ...
@@ -60,40 +66,40 @@ class GraphBackend(ABC):
     def has_edge(self, source: str, target: str, edge_id: str) -> bool: ...
 
     @abstractmethod
-    def get_neighbors(self, node_id: str) -> List[str]:
+    def get_neighbors(self, node_id: str) -> list[str]:
         """Return IDs of all adjacent nodes (in + out, deduplicated)."""
         ...
 
     @abstractmethod
-    def predecessors(self, node_id: str) -> List[str]:
+    def predecessors(self, node_id: str) -> list[str]:
         """Return IDs of all nodes with edges pointing TO node_id."""
         ...
 
     @abstractmethod
-    def successors(self, node_id: str) -> List[str]:
+    def successors(self, node_id: str) -> list[str]:
         """Return IDs of all nodes that node_id points TO."""
         ...
 
     @abstractmethod
-    def get_out_edges(self, node_id: str) -> List[EdgeTuple]:
+    def get_out_edges(self, node_id: str) -> list[EdgeTuple]:
         """Return all edges leaving node_id."""
         ...
 
     @abstractmethod
-    def get_in_edges(self, node_id: str) -> List[EdgeTuple]:
+    def get_in_edges(self, node_id: str) -> list[EdgeTuple]:
         """Return all edges entering node_id."""
         ...
 
     @abstractmethod
-    def all_edges(self) -> List[EdgeTuple]: ...
+    def all_edges(self) -> list[EdgeTuple]: ...
 
     @abstractmethod
-    def all_node_ids(self) -> List[str]:
+    def all_node_ids(self) -> list[str]:
         """Return all node IDs in deterministic sorted order."""
         ...
 
     @abstractmethod
-    def connected_components_undirected(self) -> List[List[str]]:
+    def connected_components_undirected(self) -> list[list[str]]:
         """
         Return connected components ignoring edge direction.
         Each component is a sorted list of node IDs.
@@ -102,7 +108,7 @@ class GraphBackend(ABC):
         ...
 
     @abstractmethod
-    def subgraph(self, node_ids: List[str]) -> "GraphBackend":
+    def subgraph(self, node_ids: list[str]) -> GraphBackend:
         """Return a subgraph containing only the specified nodes."""
         ...
 
@@ -116,12 +122,12 @@ class GraphBackend(ABC):
     def degree(self, node_id: str) -> int: ...
 
     @abstractmethod
-    def remove_edges_of_type(self, relationship_type: str) -> "GraphBackend":
+    def remove_edges_of_type(self, relationship_type: str) -> GraphBackend:
         """Return a new backend with all edges of the given type removed."""
         ...
 
     @abstractmethod
-    def articulation_points(self) -> List[str]:
+    def articulation_points(self) -> list[str]:
         """
         Return all articulation points (bridge nodes) in the undirected projection.
         Implemented using NetworkX nx.articulation_points().

@@ -1,13 +1,12 @@
 """result_list_view.py — ResultListView: renders a paginated claim list."""
+
 from __future__ import annotations
 
-from typing import List
 import streamlit as st
-
-from smriti.dashboard.views.base_view import BaseView
-from smriti.dashboard.models.presentation import ClaimPresentationModel
 from smriti.dashboard.commands.commands import SelectClaimCommand, SetPageCommand
 from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+from smriti.dashboard.models.presentation import ClaimPresentationModel
+from smriti.dashboard.views.base_view import BaseView
 
 
 class ResultListView(BaseView):
@@ -18,14 +17,14 @@ class ResultListView(BaseView):
         self,
         dispatcher: InteractionDispatcher | None = None,
         state_manager=None,
-        claims: List[ClaimPresentationModel] = None,
+        claims: list[ClaimPresentationModel] | None = None,
         total: int = 0,
     ) -> None:
         """Accept either a dispatcher or a state_manager (builds a default dispatcher)."""
         if dispatcher is not None:
             self._dispatcher = dispatcher
         elif state_manager is not None:
-            from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
+            from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
 
             self._dispatcher = InteractionDispatcher(
                 state_manager=state_manager,
@@ -36,7 +35,12 @@ class ResultListView(BaseView):
         self._claims = claims or []
         self._total = total
 
-    def refresh(self, claims: List[ClaimPresentationModel] = None, total: int = 0) -> None:
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(  # type: ignore[override]
+        self, claims: list[ClaimPresentationModel] | None = None, total: int = 0
+    ) -> None:
         self._claims = claims or []
         self._total = total
 
@@ -51,7 +55,11 @@ class ResultListView(BaseView):
 
         for pm in self._claims:
             is_selected = pm.claim_id == state.selected_claim_id
-            label = f"{pm.label_icon} {pm.text[:55]}..." if len(pm.text) > 55 else f"{pm.label_icon} {pm.text}"
+            label = (
+                f"{pm.label_icon} {pm.text[:55]}..."
+                if len(pm.text) > 55
+                else f"{pm.label_icon} {pm.text}"
+            )
             if is_selected:
                 label = f"▶ {label}"
             if st.button(label, key=f"claim_{pm.claim_id}", use_container_width=True):
@@ -70,11 +78,15 @@ class ResultListView(BaseView):
             cols = st.columns(3)
             with cols[0]:
                 if st.button("← Previous", disabled=state.page == 0):
-                    self._dispatcher.dispatch(SetPageCommand(session_id=session_id, page=state.page - 1))
+                    self._dispatcher.dispatch(
+                        SetPageCommand(session_id=session_id, page=state.page - 1)
+                    )
                     st.rerun()
             with cols[1]:
                 st.caption(f"Page {state.page + 1} / {max_page + 1}")
             with cols[2]:
                 if st.button("Next →", disabled=state.page >= max_page):
-                    self._dispatcher.dispatch(SetPageCommand(session_id=session_id, page=state.page + 1))
+                    self._dispatcher.dispatch(
+                        SetPageCommand(session_id=session_id, page=state.page + 1)
+                    )
                     st.rerun()

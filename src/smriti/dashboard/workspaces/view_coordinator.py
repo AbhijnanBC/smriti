@@ -14,9 +14,7 @@ Orchestration logic lives here, not in each workspace.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
 import structlog
-
 from smriti.dashboard.views.base_view import BaseView
 from smriti.dashboard.workspaces.context import WorkspaceContext
 
@@ -36,10 +34,10 @@ class ViewCoordinator:
     """
 
     def __init__(self) -> None:
-        self._views: Dict[str, BaseView] = {}
-        self._render_order: List[str] = []
+        self._views: dict[str, BaseView] = {}
+        self._render_order: list[str] = []
 
-    def register(self, name: str, view: BaseView, position: int = None) -> None:
+    def register(self, name: str, view: BaseView, position: int | None = None) -> None:
         """Register a view. Position controls render order."""
         self._views[name] = view
         if name not in self._render_order:
@@ -81,6 +79,7 @@ class ViewCoordinator:
             except Exception as exc:
                 logger.error("view render failed", view=name, error=str(exc))
                 import streamlit as st
+
                 st.error(f"View '{name}' failed to render: {exc}")
 
     def render_named(self, name: str, context: WorkspaceContext) -> None:
@@ -102,5 +101,5 @@ class ViewCoordinator:
         self._views.clear()
         self._render_order.clear()
 
-    def get(self, name: str) -> Optional[BaseView]:
+    def get(self, name: str) -> BaseView | None:
         return self._views.get(name)

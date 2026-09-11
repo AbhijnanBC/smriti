@@ -12,9 +12,7 @@ Design:
 
 from __future__ import annotations
 
-from typing import Dict, List
-
-from smriti.core.models import AssertionType, ExtractionMode, ClaimWarning, Phase4Stats
+from smriti.core.models import AssertionType, ClaimWarning, ExtractionMode, Phase4Stats
 
 
 class Phase4StatsCollector:
@@ -36,8 +34,8 @@ class Phase4StatsCollector:
         self._modal = 0
         self._attributed = 0
         self._discarded_non_assertions = 0
-        self._discarded_by_type: Dict[str, int] = {}
-        self._warnings: List[ClaimWarning] = []
+        self._discarded_by_type: dict[str, int] = {}
+        self._warnings: list[ClaimWarning] = []
 
     def record_sentence_processed(self) -> None:
         self._sentences += 1
@@ -63,8 +61,9 @@ class Phase4StatsCollector:
         if count > 1:
             self._boundary_splits += 1
 
-    def record_claim(self, mode: ExtractionMode, is_negated: bool,
-                     is_modal: bool, is_attributed: bool) -> None:
+    def record_claim(
+        self, mode: ExtractionMode, is_negated: bool, is_modal: bool, is_attributed: bool
+    ) -> None:
         self._claims += 1
         if mode == ExtractionMode.STRUCTURED:
             self._structured += 1
@@ -82,7 +81,7 @@ class Phase4StatsCollector:
         if is_attributed:
             self._attributed += 1
 
-    def record_warnings(self, warnings: List[ClaimWarning]) -> None:
+    def record_warnings(self, warnings: list[ClaimWarning]) -> None:
         self._warnings.extend(warnings)
 
     def finalize(self) -> Phase4Stats:

@@ -24,13 +24,13 @@ from __future__ import annotations
 import hashlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
+
 import structlog
 
 from smriti.core.config import get_config
+from smriti.core.model_provenance import resolve_checkpoint_sha, resolve_hf_revision
 from smriti.core.models import EmbeddingModelDescriptor
-from smriti.core.model_provenance import resolve_hf_revision, resolve_checkpoint_sha
-from smriti.exceptions import EmbeddingModelError, EmbeddingInferenceError
+from smriti.exceptions import EmbeddingInferenceError, EmbeddingModelError
 
 logger = structlog.get_logger(__name__)
 
@@ -62,6 +62,7 @@ class EmbedderCapabilities:
         supports_long_context:       True if the model handles sequences > 512 tokens
                                      without truncation loss.
     """
+
     supports_batching: bool
     supports_instruction_prefix: bool
     supports_multilingual: bool
@@ -96,7 +97,7 @@ class BaseEmbedder(ABC):
         ...
 
     @abstractmethod
-    def encode_batch(self, texts: List[str]) -> List[List[float]]:
+    def encode_batch(self, texts: list[str]) -> list[list[float]]:
         """
         Encode a batch of text strings into embedding vectors.
 
@@ -160,6 +161,7 @@ class SentenceTransformerEmbedder(BaseEmbedder):
         """Load the sentence-transformers model. Raises EmbeddingModelError on failure."""
         try:
             from sentence_transformers import SentenceTransformer
+
             model = SentenceTransformer(self._model_name, device=self._device)
             return model
         except ImportError as e:
@@ -223,7 +225,7 @@ class SentenceTransformerEmbedder(BaseEmbedder):
             supports_long_context=False,
         )
 
-    def encode_batch(self, texts: List[str]) -> List[List[float]]:
+    def encode_batch(self, texts: list[str]) -> list[list[float]]:
         """
         Encode a batch of texts into embedding vectors.
 

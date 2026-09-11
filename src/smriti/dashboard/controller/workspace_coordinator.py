@@ -12,9 +12,7 @@ This is distinct from the per-workspace ViewCoordinator:
 
 from __future__ import annotations
 
-from typing import Optional
 import structlog
-
 from smriti.core.models import WorkspaceType
 from smriti.dashboard.workspaces.base import BaseWorkspace
 from smriti.dashboard.workspaces.context import WorkspaceContext
@@ -29,8 +27,8 @@ class WorkspaceCoordinator:
     """
 
     def __init__(self) -> None:
-        self._active_workspace: Optional[BaseWorkspace] = None
-        self._active_type: Optional[WorkspaceType] = None
+        self._active_workspace: BaseWorkspace | None = None
+        self._active_type: WorkspaceType | None = None
 
     def transition(
         self,

@@ -7,8 +7,8 @@ Evidence Lifecycle:
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -16,7 +16,7 @@ class EvidenceChainLink:
     level: str
     identifier: str
     description: str
-    artifact_path: Optional[str] = None
+    artifact_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -31,11 +31,11 @@ class EvidenceChain:
 
     @property
     def has_statistical_analysis(self) -> bool:
-        return any(l.level == "statistical_analysis" for l in self.links)
+        return any(link.level == "statistical_analysis" for link in self.links)
 
     @property
     def has_adr(self) -> bool:
-        return any(l.level == "adr" for l in self.links)
+        return any(link.level == "adr" for link in self.links)
 
 
 def build_evidence_chain(

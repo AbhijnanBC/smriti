@@ -1,7 +1,6 @@
 """Shared pytest fixtures."""
 
 import pytest
-from pathlib import Path
 from smriti.core.config import Config
 
 
@@ -9,6 +8,7 @@ from smriti.core.config import Config
 def setup_test_env(tmp_path_factory):
     """Point config to test.yaml for the whole test session."""
     import smriti.core.config as cfg_module
+
     cfg_module._config = Config(env="test")
 
 
@@ -35,9 +35,7 @@ def tmp_notes(tmp_path):
     (notes_dir / "note1.md").write_text(
         "# Note 1\n\nPython is the best language for data science.\n"
     )
-    (notes_dir / "note2.md").write_text(
-        "# Note 2\n\nRust is better than Python for performance.\n"
-    )
+    (notes_dir / "note2.md").write_text("# Note 2\n\nRust is better than Python for performance.\n")
     return notes_dir
 
 

@@ -14,6 +14,8 @@ WHAT DOES NOT BELONG HERE:
       - Log levels            → config/default.yaml (logging.level)
 """
 
+from typing import Any
+
 # === SCHEMA ===
 CACHE_SCHEMA_VERSION = "1.0"
 MANIFEST_SCHEMA_VERSION = "1.0"
@@ -24,12 +26,12 @@ HASH_ALGORITHM = "sha256"
 HASH_CHUNK_SIZE = 8192  # bytes
 
 # === HARD LIMITS (system safety, not tuning) ===
-MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024   # 50 MB — reject files larger than this
-MAX_BATCH_SIZE = 256                      # absolute ceiling, never exceeded
-TIMEOUT_SECONDS = 3600                    # 1 hour per phase
+MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB — reject files larger than this
+MAX_BATCH_SIZE = 256  # absolute ceiling, never exceeded
+TIMEOUT_SECONDS = 3600  # 1 hour per phase
 
 # === PIPELINE MANIFEST TEMPLATE ===
-MANIFEST_TEMPLATE = {
+MANIFEST_TEMPLATE: dict[str, Any] = {
     "schema_version": MANIFEST_SCHEMA_VERSION,
     "run_id": None,
     "phase": None,
@@ -37,7 +39,7 @@ MANIFEST_TEMPLATE = {
     "duration_seconds": None,
     "inputs": None,
     "outputs": None,
-    "status": "pending",    # pending | running | success | failed
+    "status": "pending",  # pending | running | success | failed
     "versions": {},
     "error": None,
 }

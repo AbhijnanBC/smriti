@@ -1,17 +1,23 @@
 """Unit tests for api/planner/."""
 
 import pytest
-from smriti.api.domain.predicates import Predicate, SortSpec, Pagination, Projection
+from smriti.api.domain.predicates import Predicate
 from smriti.api.domain.requests import (
-    ClaimRequest, SearchRequest, TraversalRequest, StatisticsRequest, ExplanationRequest,
+    ClaimRequest,
+    ExplanationRequest,
+    SearchRequest,
+    StatisticsRequest,
+    TraversalRequest,
 )
-from smriti.api.planner.plan import ExecutionStrategy
-from smriti.api.planner.logical_planner import LogicalPlanner
-from smriti.api.planner.optimizer import QueryOptimizer
-from smriti.api.planner.normalizer import QueryNormalizer
 from smriti.api.index.registry import IndexRegistry
 from smriti.api.index.selector import IndexSelector
-from smriti.core.models import ProjectionLevel, NavigationMode, ExplainabilityLevel, PredicateOperator
+from smriti.api.planner.logical_planner import LogicalPlanner
+from smriti.api.planner.normalizer import QueryNormalizer
+from smriti.api.planner.optimizer import QueryOptimizer
+from smriti.api.planner.plan import ExecutionStrategy
+from smriti.core.models import (
+    PredicateOperator,
+)
 
 
 @pytest.fixture
@@ -23,10 +29,10 @@ def index_registry():
     return reg
 
 
-
 @pytest.fixture
 def index_selector(index_registry):
     from smriti.api.index.statistics import IndexStatistics
+
     stats = IndexStatistics().compute(index_registry)
     return IndexSelector(registry=index_registry, statistics=stats)
 
@@ -153,14 +159,15 @@ def test_query_normalizer_makes_order_independent_plan_ids(normalizer, planner):
     norm2 = normalizer.normalize(req2)
     plan1, _ = planner.plan(norm1)
     plan2, _ = planner.plan(norm2)
-    assert plan1.plan_id == plan2.plan_id, (
-        "Same predicates in different order must produce the same plan_id after normalization."
-    )
+    assert (
+        plan1.plan_id == plan2.plan_id
+    ), "Same predicates in different order must produce the same plan_id after normalization."
 
 
 def test_logical_and_physical_plans_are_separate_objects(planner, optimizer):
     """RECTIFIED (P0-2): LogicalPlan and PhysicalPlan must be separate types."""
     from smriti.api.planner.plan import LogicalPlan, PhysicalPlan
+
     req = ClaimRequest(run_id="run1", claim_id="c001")
     logical, _ = planner.plan(req)
     physical = optimizer.optimize(logical, req)

@@ -1,9 +1,12 @@
 """Unit tests for evolution/partitioning.py — constraint-based algorithm."""
 
-import pytest
 from pathlib import Path
+
 from smriti.core.models import (
-    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection, SemanticRole,
+    ClaimNode,
+    RelationshipDirection,
+    RelationshipEdge,
+    RelationshipType,
 )
 from smriti.evolution.context import SemanticReasoningContext
 from smriti.evolution.networkx_backend import NetworkXBackend
@@ -15,24 +18,37 @@ def make_ctx(node_ids, edges_list):
     nodes = {}
     for nid in node_ids:
         nodes[nid] = ClaimNode(
-            node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
-            context="", source_path=Path("test.md"), document_id="d001",
+            node_id=nid,
+            claim_id=nid,
+            claim_text=f"Claim {nid}",
+            context="",
+            source_path=Path("test.md"),
+            document_id="d001",
         )
         backend.add_node(nid)
     edges = {}
     for eid, src, tgt, rtype in edges_list:
         edge = RelationshipEdge(
-            edge_id=eid, source_node_id=src, target_node_id=tgt,
-            relationship_type=rtype, direction=RelationshipDirection.SYMMETRIC,
-            calibrated_confidence=0.88, cosine_similarity=0.85,
-            nli_confidence=0.88, candidate_rank=1,
+            edge_id=eid,
+            source_node_id=src,
+            target_node_id=tgt,
+            relationship_type=rtype,
+            direction=RelationshipDirection.SYMMETRIC,
+            calibrated_confidence=0.88,
+            cosine_similarity=0.85,
+            nli_confidence=0.88,
+            candidate_rank=1,
         )
         edges[eid] = edge
         backend.add_edge(src, tgt, eid, rtype.value, 0.88)
         if rtype == RelationshipType.CONTRADICTS:
             backend.add_edge(tgt, src, f"{eid}_rev", rtype.value, 0.88)
     return SemanticReasoningContext(
-        nodes=nodes, edges=edges, backend=backend, run_id="test", config_hash="test",
+        nodes=nodes,
+        edges=edges,
+        backend=backend,
+        run_id="test",
+        config_hash="test",
     )
 
 
@@ -53,8 +69,10 @@ def test_contradiction_creates_two_partitions():
 def test_every_node_assigned_to_partition():
     ctx = make_ctx(
         ["c001", "c002", "c003"],
-        [("e1", "c001", "c002", RelationshipType.CONTRADICTS),
-         ("e2", "c002", "c003", RelationshipType.SUPPORTS)],
+        [
+            ("e1", "c001", "c002", RelationshipType.CONTRADICTS),
+            ("e2", "c002", "c003", RelationshipType.SUPPORTS),
+        ],
     )
     run_partitioning(ctx)
     for node_id in ctx.nodes:
@@ -72,6 +90,7 @@ def test_isolated_node_gets_own_partition():
 def test_partition_ids_are_deterministic():
     def build_ctx():
         return make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.CONTRADICTS)])
+
     ctx1, ctx2 = build_ctx(), build_ctx()
     run_partitioning(ctx1)
     run_partitioning(ctx2)
@@ -81,8 +100,10 @@ def test_partition_ids_are_deterministic():
 def test_partition_does_not_contain_contradicts_internal_edges():
     ctx = make_ctx(
         ["c001", "c002", "c003"],
-        [("e1", "c001", "c002", RelationshipType.CONTRADICTS),
-         ("e2", "c001", "c003", RelationshipType.SUPPORTS)],
+        [
+            ("e1", "c001", "c002", RelationshipType.CONTRADICTS),
+            ("e2", "c001", "c003", RelationshipType.SUPPORTS),
+        ],
     )
     run_partitioning(ctx)
     for partition in ctx.partitions.values():
@@ -128,9 +149,9 @@ def test_shared_support_target_does_not_merge_contradicting_nodes():
     )
     run_partitioning(ctx)
 
-    partition_of_A = ctx.node_to_partition["A"]
-    partition_of_C = ctx.node_to_partition["C"]
-    assert partition_of_A != partition_of_C, (
+    partition_of_a = ctx.node_to_partition["A"]
+    partition_of_c = ctx.node_to_partition["C"]
+    assert partition_of_a != partition_of_c, (
         "A and C contradict each other and must be in different partitions, "
         "even though they both support X."
     )
@@ -144,6 +165,42 @@ def test_stable_partition_label_present():
         assert partition.stable_partition_label is not None
         assert isinstance(partition.stable_partition_label, tuple)
         assert len(partition.stable_partition_label) > 0
+
+
+# ── EQUIVALENT (bidirectional-NLI rewrite) ──────────────────────────────────
+
+
+def test_equivalent_edge_merges_nodes_into_same_partition():
+    """EQUIVALENT claims say the same thing and must be co-located, same
+    as SUPPORTS/REFINES."""
+    ctx = make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.EQUIVALENT)])
+    run_partitioning(ctx)
+    assert len(ctx.partitions) == 1
+    assert ctx.node_to_partition["c001"] == ctx.node_to_partition["c002"]
+
+
+def test_equivalent_edge_counted_in_partition_stats():
+    ctx = make_ctx(["c001", "c002"], [("e1", "c001", "c002", RelationshipType.EQUIVALENT)])
+    run_partitioning(ctx)
+    partition = next(iter(ctx.partitions.values()))
+    assert partition.equivalent_count == 1
+    assert partition.supports_count == 0
+
+
+def test_contradiction_still_prevents_merge_even_with_equivalent_neighbor():
+    """A EQUIVALENT B, A CONTRADICTS C: A and B must be co-located, but C
+    must land in a different partition -- EQUIVALENT does not weaken the
+    CONTRADICTS invariant."""
+    ctx = make_ctx(
+        ["a", "b", "c"],
+        [
+            ("e1", "a", "b", RelationshipType.EQUIVALENT),
+            ("e2", "a", "c", RelationshipType.CONTRADICTS),
+        ],
+    )
+    run_partitioning(ctx)
+    assert ctx.node_to_partition["a"] == ctx.node_to_partition["b"]
+    assert ctx.node_to_partition["a"] != ctx.node_to_partition["c"]
 
 
 def test_directed_density_formula():

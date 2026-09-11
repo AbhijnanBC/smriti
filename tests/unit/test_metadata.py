@@ -2,9 +2,10 @@
 Unit tests for discovery/metadata.py.
 """
 
+import dataclasses
+from datetime import UTC
+
 import pytest
-from datetime import timezone
-from pathlib import Path
 from smriti.discovery.metadata import extract_metadata
 
 
@@ -32,7 +33,7 @@ def test_metadata_modified_time_is_utc(tmp_path):
     f.write_text("content")
     meta = extract_metadata(f)
     assert meta.modified_at.tzinfo is not None
-    assert meta.modified_at.tzinfo == timezone.utc
+    assert meta.modified_at.tzinfo == UTC
 
 
 def test_metadata_is_immutable(tmp_path):
@@ -40,5 +41,5 @@ def test_metadata_is_immutable(tmp_path):
     f = tmp_path / "note.md"
     f.write_text("content")
     meta = extract_metadata(f)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         meta.size_bytes = 999

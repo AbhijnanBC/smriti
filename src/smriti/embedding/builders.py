@@ -28,12 +28,12 @@ Rules:
 from __future__ import annotations
 
 import math
-from typing import List
+
 import structlog
 
 from smriti.core.models import (
-    Embedding,
     EmbeddedClaim,
+    Embedding,
     EmbeddingModelDescriptor,
     EmbeddingProvenance,
     EmbeddingQuality,
@@ -45,7 +45,7 @@ logger = structlog.get_logger(__name__)
 
 
 def build_vector(
-    values: List[float],
+    values: list[float],
     expected_dimension: int,
     dtype: VectorDType = VectorDType.FLOAT64,
     normalized: bool = False,
@@ -71,8 +71,7 @@ def build_vector(
     """
     # Defensive assertion — cheap, catches any latent dimension mismatch
     assert expected_dimension == len(values), (
-        f"build_vector: descriptor.dimension={expected_dimension} "
-        f"!= len(values)={len(values)}"
+        f"build_vector: descriptor.dimension={expected_dimension} " f"!= len(values)={len(values)}"
     )
 
     vector = Vector(
@@ -151,9 +150,7 @@ def build_embedding_quality(
         Immutable EmbeddingQuality.
     """
     # Check finiteness — redundant after validation but useful as a diagnostic fact
-    finite = all(
-        math.isfinite(v) for v in vector.values
-    )
+    finite = all(math.isfinite(v) for v in vector.values)
 
     quality = EmbeddingQuality(
         dimension_ok=(vector.dimension == descriptor.dimension),

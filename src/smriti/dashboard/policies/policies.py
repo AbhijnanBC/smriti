@@ -15,6 +15,7 @@ the performance limit on pagination offset.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -61,9 +62,10 @@ class PerformancePolicy:
     Architectural invariants protecting system resources.
     Acts as a hard circuit-breaker against DOS attacks or accidental overload.
     """
+
     maximum_rendered_nodes: int = 500
     maximum_traversal_depth: int = 5
-    maximum_pagination_offset: int = 10000   # Prevent deep pagination DOS
+    maximum_pagination_offset: int = 10000  # Prevent deep pagination DOS
     lazy_loading_threshold_ms: float = 200.0
     cache_ttl_seconds: int = 3600
 
@@ -71,18 +73,19 @@ class PerformancePolicy:
 @dataclass(frozen=True)
 class InteractionPolicy:
     """Complete policy configuration for one interaction session."""
-    visualization:   VisualizationPolicy   = field(default_factory=VisualizationPolicy)
-    navigation:      NavigationPolicy      = field(default_factory=NavigationPolicy)
-    comparison:      ComparisonPolicy      = field(default_factory=ComparisonPolicy)
-    explainability:  ExplainabilityPolicy  = field(default_factory=ExplainabilityPolicy)
-    export:          ExportPolicy          = field(default_factory=ExportPolicy)
-    performance:     PerformancePolicy     = field(default_factory=PerformancePolicy)
+
+    visualization: VisualizationPolicy = field(default_factory=VisualizationPolicy)
+    navigation: NavigationPolicy = field(default_factory=NavigationPolicy)
+    comparison: ComparisonPolicy = field(default_factory=ComparisonPolicy)
+    explainability: ExplainabilityPolicy = field(default_factory=ExplainabilityPolicy)
+    export: ExportPolicy = field(default_factory=ExportPolicy)
+    performance: PerformancePolicy = field(default_factory=PerformancePolicy)
 
 
 class PolicyEngine:
     """Validates interactions against InteractionPolicy. Returns (allowed, reason)."""
 
-    def __init__(self, policy: InteractionPolicy = None) -> None:
+    def __init__(self, policy: InteractionPolicy | None = None) -> None:
         self._policy = policy or InteractionPolicy()
 
     def validate_graph_size(self, node_count: int) -> tuple:
@@ -155,6 +158,7 @@ def load_interaction_policy() -> InteractionPolicy:
     """Load interaction policy from config/default.yaml."""
     try:
         from smriti.core.config import get_config
+
         config = get_config()
         p10_cfg = config.get("interaction", {})
 

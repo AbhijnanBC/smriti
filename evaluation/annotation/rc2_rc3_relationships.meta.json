@@ -1,0 +1,18 @@
+{
+  "_purpose": "Metadata for evaluation/annotation/rc2_rc3_relationships_blind.json (the sample annotators were given) and rc2_rc3_relationships_answer_key.json (SMRITI's own predictions for the same sample, used for scoring, never shown to annotators before their judgment). RECTIFIED (external \"reality check\" review round 3, P0-10/P1 annotation metadata) -- this file did not exist before this pass; fields are back-filled from what is genuinely recoverable, with honest nulls elsewhere rather than fabricated values.",
+  "protocol_version": "1.1",
+  "protocol_version_note": "The protocol version in effect when this sample was drawn and annotated, not the current protocol.md version (2.0) -- this round predates the v2.0 axis-based direction/EQUIVALENT-strengthening schema formalization and used the compound A_CONFIRMS_B/B_CONFIRMS_A direction labels score.py now maps onto the A_TO_B/B_TO_A axis internally.",
+  "source_run_id": "20260910_124212",
+  "source_run_id_note": "The Phase 6 pipeline run whose candidate pairs and raw NLI scores this 228-pair sample was drawn from. Recorded per-entry in rc2_rc3_relationships_answer_key.json's own source_run_id field, which is where this value is copied from.",
+  "sample_seed": null,
+  "sample_seed_note": "Not recorded at sampling time. The stratified sampling procedure (every candidate pair touching a deliberately-contradictory document plus a stratified sample of other predicted types) is described in paper/sections/annotation_protocol.tex, but no RNG seed was captured for the specific draw, so the exact 228-pair sample cannot be mechanically reproduced from a seed alone -- only reconstructed from the blind/answer-key files themselves, which are retained for exactly this reason.",
+  "n_sampled": 228,
+  "predictions_rederived": {
+    "rederived_at": "2026-09-11",
+    "rederived_by": "scripts/rederive_relationship_answer_key.py",
+    "reason": "A further external review found and fixed resolver-level bugs (retired no-entailment REFINES heuristic, directional-confidence fix, specificity-gate attribution-cue fix) after this sample was originally scored. predicted_label/direction/calibrated_confidence in rc2_rc3_relationships_answer_key.json were regenerated from the SAME cached raw NLI scores (no re-inference -- the model and its inputs are unchanged, only how the scores are resolved is), so this is a like-for-like re-scoring of the identical sample, not a new draw.",
+    "n_predictions_changed": 28
+  },
+  "blind_status": true,
+  "blind_status_note": "rc2_rc3_relationships_blind.json (given to annotators) never included SMRITI's predicted_label/direction/confidence fields -- confirmed by inspecting the file's own schema (relationship_id, claim_a_text, claim_a_doc, claim_b_text, claim_b_doc only)."
+}

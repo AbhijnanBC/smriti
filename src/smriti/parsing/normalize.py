@@ -33,17 +33,29 @@ Determinism guarantee:
 
 import re
 import unicodedata
-from typing import List
+from typing import Literal
+
 import structlog
 
 from smriti.core.config import get_config
-from smriti.exceptions import NormalizationError
 from smriti.core.models import NormalizationResult, WarningCode
+from smriti.exceptions import NormalizationError
+
+_VALID_UNICODE_FORMS: tuple[Literal["NFC", "NFD", "NFKC", "NFKD"], ...] = (
+    "NFC",
+    "NFD",
+    "NFKC",
+    "NFKD",
+)
 
 logger = structlog.get_logger(__name__)
 
 
-def normalize_text(raw_text: str) -> NormalizationResult:
+# Applies the full normalization pipeline documented in this module's own
+# docstring above as one linear, strictly-ordered sequence ("NEVER
+# reorder"); splitting it into helpers per step would obscure that ordering
+# invariant rather than clarify it.
+def normalize_text(raw_text: str) -> NormalizationResult:  # noqa: C901
     """
     Apply the full normalization pipeline to raw extracted text.
 
@@ -63,11 +75,17 @@ def normalize_text(raw_text: str) -> NormalizationResult:
     config = get_config()
     parsing_cfg = config.get("parsing", {})
 
-    unicode_form: str = parsing_cfg.get("unicode_normalization", "NFC")
+    unicode_form_raw = parsing_cfg.get("unicode_normalization", "NFC")
+    if unicode_form_raw not in _VALID_UNICODE_FORMS:
+        raise NormalizationError(
+            f"Invalid parsing.unicode_normalization config value: {unicode_form_raw!r}; "
+            f"must be one of {_VALID_UNICODE_FORMS}"
+        )
+    unicode_form: Literal["NFC", "NFD", "NFKC", "NFKD"] = unicode_form_raw
     collapse_blank_lines: int = parsing_cfg.get("collapse_blank_lines", 2)
     remove_trailing_ws: bool = parsing_cfg.get("remove_trailing_whitespace", True)
 
-    warnings: List[WarningCode] = []
+    warnings: list[WarningCode] = []
     text = raw_text
 
     try:

@@ -15,7 +15,10 @@ Problem:
 Policies (see models.py ConflictResolutionPolicy):
     LATEST_WINS:         Most recent run's classification wins.
     HIGHEST_CONFIDENCE:  Classification with highest calibrated_confidence wins.
-    MOST_SPECIFIC:       Priority: CONTRADICTS > REFINES > SUPPORTS > NEUTRAL > UNKNOWN.
+    MOST_SPECIFIC:       Priority: CONTRADICTS > EQUIVALENT > REFINES > SUPPORTS > NEUTRAL > UNKNOWN.
+                         EQUIVALENT ranks just below CONTRADICTS because it requires
+                         BOTH directions of entailment to independently pass, strictly
+                         more evidence than the one-way entailment SUPPORTS/REFINES need.
     CONSERVATIVE:        Only keep if all runs agree on the type.
 
 Rules:
@@ -27,10 +30,8 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Tuple
 import structlog
-
-from smriti.core.models import Relationship, RelationshipType, ConflictResolutionPolicy
+from smriti.core.models import ConflictResolutionPolicy, Relationship, RelationshipType
 from smriti.exceptions import ConflictResolutionError
 
 logger = structlog.get_logger(__name__)
@@ -38,10 +39,11 @@ logger = structlog.get_logger(__name__)
 # Priority order for MOST_SPECIFIC policy (higher index = lower priority)
 _SPECIFICITY_ORDER = {
     RelationshipType.CONTRADICTS: 0,
-    RelationshipType.REFINES:     1,
-    RelationshipType.SUPPORTS:    2,
-    RelationshipType.NEUTRAL:     3,
-    RelationshipType.UNKNOWN:     4,
+    RelationshipType.EQUIVALENT: 1,
+    RelationshipType.REFINES: 2,
+    RelationshipType.SUPPORTS: 3,
+    RelationshipType.NEUTRAL: 4,
+    RelationshipType.UNKNOWN: 5,
 }
 
 
@@ -57,8 +59,8 @@ class ConflictResolver:
 
     def resolve_conflicts(
         self,
-        relationships: List[Relationship],
-    ) -> List[Relationship]:
+        relationships: list[Relationship],
+    ) -> list[Relationship]:
         """
         Given a list of relationships (potentially with conflicts for the same pair),
         return a deduplicated list according to the conflict policy.
@@ -71,12 +73,12 @@ class ConflictResolver:
             Deduplicated list with at most one Relationship per pair_key.
         """
         # Group by pair_key
-        by_pair: Dict[str, List[Relationship]] = {}
+        by_pair: dict[str, list[Relationship]] = {}
         for rel in relationships:
             key = rel.evidence.pair.pair_key()
             by_pair.setdefault(key, []).append(rel)
 
-        resolved: List[Relationship] = []
+        resolved: list[Relationship] = []
         for pair_key, candidates in by_pair.items():
             if len(candidates) == 1:
                 resolved.append(candidates[0])
@@ -89,9 +91,7 @@ class ConflictResolver:
             "conflict resolution complete",
             input_count=len(relationships),
             output_count=len(resolved),
-            pairs_with_conflicts=sum(
-                1 for c in by_pair.values() if len(c) > 1
-            ),
+            pairs_with_conflicts=sum(1 for c in by_pair.values() if len(c) > 1),
         )
 
         return resolved
@@ -99,8 +99,8 @@ class ConflictResolver:
     def _apply_policy(
         self,
         pair_key: str,
-        candidates: List[Relationship],
-    ) -> Optional[Relationship]:
+        candidates: list[Relationship],
+    ) -> Relationship | None:
         """Apply the conflict policy to select one winner from conflicting relationships."""
         if self._policy == ConflictResolutionPolicy.LATEST_WINS:
             return max(candidates, key=lambda r: r.provenance.run_id)
@@ -109,24 +109,19 @@ class ConflictResolver:
             return max(candidates, key=lambda r: r.evidence.calibrated_confidence)
 
         elif self._policy == ConflictResolutionPolicy.MOST_SPECIFIC:
-            return min(
-                candidates,
-                key=lambda r: _SPECIFICITY_ORDER.get(r.relationship_type, 999)
-            )
+            return min(candidates, key=lambda r: _SPECIFICITY_ORDER.get(r.relationship_type, 999))
 
         elif self._policy == ConflictResolutionPolicy.CONSERVATIVE:
             types = {r.relationship_type for r in candidates}
             if len(types) == 1:
-                return candidates[0]   # All agree
+                return candidates[0]  # All agree
             else:
                 logger.debug(
                     "conservative policy: conflicting types, dropping pair",
                     pair_key=pair_key,
                     types=[t.value for t in types],
                 )
-                return None   # Disagreement — drop the pair
+                return None  # Disagreement — drop the pair
 
         else:
-            raise ConflictResolutionError(
-                f"Unknown conflict resolution policy: {self._policy}"
-            )
+            raise ConflictResolutionError(f"Unknown conflict resolution policy: {self._policy}")

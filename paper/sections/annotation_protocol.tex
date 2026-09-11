@@ -24,7 +24,16 @@ pair between a deliberately-contradictory document and its stated target,
 a sample of candidate pairs between a deliberately-contradictory document
 and an unrelated document (to measure spurious cross-domain contradiction
 rate), and a stratified sample of SMRITI's other predicted relationship
-types, labeled SUPPORTS / CONTRADICTS / REFINES / NEUTRAL / UNSURE.
+types, labeled SUPPORTS / CONTRADICTS / REFINES / EQUIVALENT / NEUTRAL /
+UNSURE (UNSURE maps to \texttt{ResolutionStatus.ABSTAINED}, never scored
+as a sixth relation type competing with the other five --
+\S\ref{sec:system}). EQUIVALENT requires the annotator to independently
+verify entailment in \emph{both} directions (each claim, read alone,
+would let you infer the other) -- high textual similarity alone is not
+sufficient. For SUPPORTS/REFINES, annotators also record a direction on
+the same A\_TO\_B/B\_TO\_A axis SMRITI's own bidirectional resolver uses,
+so the two are directly comparable (\texttt{evaluation/annotation/protocol.md}
+gives the full, current label/direction/status/metadata schema).
 Annotators are blind to SMRITI's own predicted labels throughout.
 
 \paragraph{This annotation round was re-run from scratch.} The claim- and

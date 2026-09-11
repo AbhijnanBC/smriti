@@ -16,16 +16,13 @@ Responsibilities:
 from __future__ import annotations
 
 import streamlit as st
-from pathlib import Path
-from typing import Optional
-
-from smriti.dashboard.state.session import initialize_session, SESSION_KEY_INITIALIZED
-from smriti.dashboard.workspaces.registry import build_default_registry
-from smriti.dashboard.policies.policies import load_interaction_policy, PolicyEngine
+from smriti.dashboard.policies.policies import PolicyEngine, load_interaction_policy
 from smriti.dashboard.policies.policy_registry import PolicyRegistry
+from smriti.dashboard.state.session import initialize_session
+from smriti.dashboard.workspaces.registry import build_default_registry
 
-SESSION_KEY_REGISTRY       = "smriti_registry"
-SESSION_KEY_POLICY_ENGINE  = "smriti_policy_engine"
+SESSION_KEY_REGISTRY = "smriti_registry"
+SESSION_KEY_POLICY_ENGINE = "smriti_policy_engine"
 SESSION_KEY_POLICY_REGISTRY = "smriti_policy_registry"
 SESSION_KEY_EXPORT_PIPELINE = "smriti_export_pipeline"
 
@@ -41,8 +38,8 @@ def get_or_load_api():
         return st.session_state["smriti_api"]
 
     try:
-        from smriti.core.paths import ARTIFACTS_DIR
         from smriti.api import build_knowledge_api
+        from smriti.core.paths import ARTIFACTS_DIR
 
         phase8_files = sorted(
             ARTIFACTS_DIR.glob("run_*/phase8/dataset.json"),
@@ -56,6 +53,7 @@ def get_or_load_api():
         run_id = dataset_path.parent.parent.name.replace("run_", "")
 
         from smriti.pipeline.runner import PipelineRunner
+
         runner = PipelineRunner.__new__(PipelineRunner)
         runner.run_id = run_id
 
@@ -100,8 +98,9 @@ def bootstrap(api=None) -> bool:
 
     # Build export pipeline (idempotent)
     if SESSION_KEY_EXPORT_PIPELINE not in st.session_state:
-        from smriti.dashboard.state.session import get_client
         from smriti.dashboard.export.pipeline import ExportPipeline
+        from smriti.dashboard.state.session import get_client
+
         client = get_client()
         policy_engine = st.session_state[SESSION_KEY_POLICY_ENGINE]
         st.session_state[SESSION_KEY_EXPORT_PIPELINE] = ExportPipeline(
@@ -116,8 +115,10 @@ def bootstrap(api=None) -> bool:
 def get_registry():
     return st.session_state[SESSION_KEY_REGISTRY]
 
+
 def get_policy_engine() -> PolicyEngine:
     return st.session_state[SESSION_KEY_POLICY_ENGINE]
+
 
 def get_export_pipeline():
     return st.session_state[SESSION_KEY_EXPORT_PIPELINE]

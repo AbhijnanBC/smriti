@@ -20,10 +20,8 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List
 import structlog
-
-from smriti.api.domain.predicates import Predicate, Pagination
+from smriti.api.domain.predicates import Pagination
 from smriti.api.domain.requests import KnowledgeRequest, SearchRequest
 from smriti.core.config import get_config
 
@@ -54,9 +52,7 @@ class QueryNormalizer:
         max_limit = config.get("knowledge_api", {}).get("max_page_size", 1000)
 
         # Sort predicates canonically (order-independence)
-        sorted_predicates = tuple(
-            sorted(request.predicates, key=lambda p: p.canonical_key())
-        )
+        sorted_predicates = tuple(sorted(request.predicates, key=lambda p: p.canonical_key()))
 
         # Clamp pagination
         clamped_pagination = Pagination(

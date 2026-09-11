@@ -1,0 +1,279 @@
+{
+  "REFINES": {
+    "n_gold": 43,
+    "n_hit": 1,
+    "n_miss": 42,
+    "recall": 0.0233,
+    "taxonomy_counts": {
+      "both_way_entailment_routes_to_equivalent_first": 1,
+      "R8_nli_failed_one_way_entailment": 33,
+      "R9_segmentation_claim_construction_error": 8
+    },
+    "manual_override_rationales": {
+      "7d612a447c7d3f07": "Both directions show high entailment (A->B=0.951, B->A=0.996): the resolver's both-way-entailment rule classifies this EQUIVALENT before the specificity gate that distinguishes REFINES ever runs. Not a REFINES-specificity-subtype miss (R1-R7) and not an NLI failure (R8) -- the model succeeded at entailment in both directions; the classification-priority ordering is what misses REFINES here."
+    },
+    "misses": [
+      {
+        "id": "7d612a447c7d3f07",
+        "predicted": "EQUIVALENT",
+        "category": "both_way_entailment_routes_to_equivalent_first"
+      },
+      {
+        "id": "b3a50b574685ec97",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "1c9441189b13aaea",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "70e154805432d481",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "100b01660cd61414",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "8e53f0cd13b2a437",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "d4c188bd389a7fde",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "ffbb509c26aa391c",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "2df25bfbd0d27b4c",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "2ef377e06f80261a",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "69c757462c0aa821",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "a6e7f4fd86b79137",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "ba2abd615c1ec0d5",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "46c1248df40e31b9",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "25daa1f1dac54c19",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "9f8ad1fb462cd46e",
+        "predicted": "CONTRADICTS",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "57a96d192b25bd2f",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "9061a090d15a2493",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "5ad4a0f7a044c432",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "8ac58d64c81d0468",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "fea7ed59857d5171",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "2b01079af220bf3a",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "530247ef5e79061f",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "9488890e465bb2ea",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "3871a62fd2a1a347",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "7d599bbb889781fb",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "6cc1b4badb7b494e",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "8ff0f6e77e0e1ca4",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "b0a49774adc5e535",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "852e97271299729f",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "b065441ce0c12b76",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "f212ca5f247a19df",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "142155f8311b09cf",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "a5f8ce6e69a63246",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "4527f4a0092ddbe4",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "682bbbcb8d49190c",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "aa6062468acd3722",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "c948d36193ec5f27",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "6dba21e117f36fdd",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "ac2eddb214cbe481",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      },
+      {
+        "id": "289a02fcd3fa7d9e",
+        "predicted": "NEUTRAL",
+        "category": "R9_segmentation_claim_construction_error"
+      },
+      {
+        "id": "e26d5c89a15f5fa6",
+        "predicted": "NEUTRAL",
+        "category": "R8_nli_failed_one_way_entailment"
+      }
+    ]
+  },
+  "CONTRADICTS": {
+    "n_gold": 9,
+    "n_hit": 2,
+    "n_miss": 7,
+    "recall": 0.2222,
+    "taxonomy_counts": {
+      "nli_miss": 5,
+      "malformed_claim_not_in_review_taxonomy": 1,
+      "comparative_scope_not_absolute_contradiction": 1
+    },
+    "manual_override_rationales": {
+      "3dea3b4ca700893a": "A->B entailment is high (0.736) but the claims compare against a specific reference point (\"a slow-braised dish\") rather than making an absolute claim -- closest to a scope-type CONTRADICTS miss: the comparison's scope, not a lexical/numeric/temporal marker, is what the resolver's evidence signals do not capture."
+    },
+    "misses": [
+      {
+        "id": "802e3383e8d87c40",
+        "predicted": "NEUTRAL",
+        "category": "nli_miss"
+      },
+      {
+        "id": "4ce28d97216a6aac",
+        "predicted": "NEUTRAL",
+        "category": "nli_miss"
+      },
+      {
+        "id": "4d88661bf1d2cecf",
+        "predicted": "NEUTRAL",
+        "category": "nli_miss"
+      },
+      {
+        "id": "c4a3af7009c1263b",
+        "predicted": "NEUTRAL",
+        "category": "malformed_claim_not_in_review_taxonomy"
+      },
+      {
+        "id": "fc06e91da63deaa8",
+        "predicted": "NEUTRAL",
+        "category": "nli_miss"
+      },
+      {
+        "id": "3dea3b4ca700893a",
+        "predicted": "NEUTRAL",
+        "category": "comparative_scope_not_absolute_contradiction"
+      },
+      {
+        "id": "a6acd73ed2dbac27",
+        "predicted": "NEUTRAL",
+        "category": "nli_miss"
+      }
+    ]
+  }
+}

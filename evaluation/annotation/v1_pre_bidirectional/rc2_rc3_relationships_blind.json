@@ -1,0 +1,1598 @@
+[
+  {
+    "relationship_id": "f28e13a9e5a4567e",
+    "claim_a_text": "U-Net is a convolutional neural network designed for biomedical image segmentation.",
+    "claim_a_doc": "B5",
+    "claim_b_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "a3a993c8c3247309",
+    "claim_a_text": "Finger- spinners offer superior control, , making them the smarter choice for captains who prioritise consistent run- containment over speculative wicket- hunting.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "Their effectiveness often depends on the support of a good fielding captain who sets aggressive field placements to create pressure.",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "802e3383e8d87c40",
+    "claim_a_text": "If you truly value the dish, invest the time -- the pressure cooker is a shortcut that cuts quality.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_b_doc": "D1"
+  },
+  {
+    "relationship_id": "4ce28d97216a6aac",
+    "claim_a_text": "If you truly value the dish, invest the time -- the pressure cooker is a shortcut that cuts quality.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The pressure cooker is the time-saver here, coaxing tough lamb shoulder to fork-tender in about 20 minutes instead of hours of slow braising.",
+    "claim_b_doc": "D4"
+  },
+  {
+    "relationship_id": "a696cdbaf023c868",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The U-like shape, with skip connections that bridge the encoder and decoder, enables precise localization.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "549a1457a8ace7c1",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "It was still produce accurate segmentations",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "4d88661bf1d2cecf",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U-Net has become the de facto standard for medical image segmentation in tasks such as brain tumor segmentation, lung nodule detection, and cell counting.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "fb5e1f6b97c7c3f8",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The architecture consists of two paths:",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "3a16e6c9d38aeaa6",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "It was developed to work with very few training images ( as low as 30) and .",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "04baf84a88269a6c",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "It reduces the spatial resolution while increasing the number of feature channels.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "a7a3bfb8d5bdaf81",
+    "claim_a_text": "Their effectiveness often depends on the support of a good fielding captain who sets aggressive field placements to create pressure.",
+    "claim_a_doc": "C3",
+    "claim_b_text": "While wrist-spinners often steal the headlines with their \"mystery\" variations and wicket-taking flair, a deeper examination of T20 cricket reveals that finger-spinners are actually more economical, more consistent, and contribute more to team wins in the middle overs.",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "361dfaf436484b10",
+    "claim_a_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "c4a3af7009c1263b",
+    "claim_a_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "The intense, rapid heat and high pressure destroy the collagen structure of lamb in ways that a slow braise never does, resulting in a dry, .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "fc06e91da63deaa8",
+    "claim_a_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "While pressure cookers are marketed as time-saving miracle tools, their use for a dish as delicate as Rogan Josh is a culinary betrayal.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "cc97d7bef3fbd967",
+    "claim_a_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "The traditional method involves sealing the meat with yoghurt and spices, then cooking over a low flame for hours, with intermittent basting.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "32f272799ff90d60",
+    "claim_a_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "Pressure cooking, by contrast, produces a thin, watery sauce that requires lengthy post-cooking reduction, which further dries out the meat.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "c51d584d4c23044e",
+    "claim_a_text": "This recipe uses a pressure cooker to achieve fork-tender lamb in a fraction of the time required for slow braising.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "d8373da16ba5f9ad",
+    "claim_a_text": "The name means \"meat in spicy red sauce,\" referring to the rich, crimson colour derived from Kashmiri chillies and the fragrant spice blend.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "54433a11923e8dee",
+    "claim_a_text": "These adaptations have made U-Net the dominant approach in medical image analysis, outperforming traditional methods and even human experts in many benchmarks.",
+    "claim_a_doc": "B6",
+    "claim_b_text": "The medical imaging community is rapidly moving away from U-Net.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "747211d00b969898",
+    "claim_a_text": "Leg- spinners bowling in the middle overs ( overs 11- 40) of limited- overs cricket enjoy they can use the pitch conditions to their advantage.",
+    "claim_a_doc": "C3",
+    "claim_b_text": "While wrist-spinners often steal the headlines with their \"mystery\" variations and wicket-taking flair, a deeper examination of T20 cricket reveals that finger-spinners are actually more economical, more consistent, and contribute more to team wins in the middle overs.",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "052f60198b3a7c92",
+    "claim_a_text": "While wrist-spinners often steal the headlines with their \"mystery\" variations and wicket-taking flair, a deeper examination of T20 cricket reveals that finger-spinners are actually more economical, more consistent, and contribute more to team wins in the middle overs.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "Leg- spinners bowling in the middle overs ( overs 11- 40) of limited- overs cricket enjoy bowling during these phases because the field restrictions are relaxed, and",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "dea6589746e222b1",
+    "claim_a_text": "While wrist-spinners often steal the headlines with their \"mystery\" variations and wicket-taking flair, a deeper examination of T20 cricket reveals that finger-spinners are actually more economical, more consistent, and contribute more to team wins in the middle overs.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "On surfaces that offer grip, wrist-spinners can be particularly effective, as their variations are harder to read.",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "4b28feb0e8516be6",
+    "claim_a_text": "While wrist-spinners often steal the headlines with their \"mystery\" variations and wicket-taking flair, a deeper examination of T20 cricket reveals that finger-spinners are actually more economical, more consistent, and contribute more to team wins in the middle overs.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "The key role of spinners is to take wickets while keeping the run rate under control.",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "dd2dc2d9df00b464",
+    "claim_a_text": "Use lamb shoulder or leg for best results; avoid lean cuts as they can become tough.",
+    "claim_a_doc": "D4",
+    "claim_b_text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "49498953c179893a",
+    "claim_a_text": "In contrast, finger-spinners rely on subtle changes in pace and trajectory, which are more effective in containing runs even on batting-friendly surfaces.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "On surfaces that offer grip, wrist-spinners can be particularly effective, as their variations are harder to read.",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "65f3e8c61fcbf9ed",
+    "claim_a_text": "While pressure cookers are marketed as time-saving miracle tools, their use for a dish as delicate as Rogan Josh is a culinary betrayal.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The traditional method involves sealing the meat with yoghurt and spices, then cooking over a low flame for hours, with intermittent basting.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "f6dd98242e90be27",
+    "claim_a_text": "U- Net 's skip connections partially mitigate this but .",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U- Net 's skip connections can not fully compensate for the receptive field constraints of small kernels",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "29d1c5331d075c62",
+    "claim_a_text": "With the advent of efficient attention mechanisms (e.g., shifted-window attention), they now process images at comparable speeds to convolutional networks.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Moreover, transformers can be pre-.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "1b6c48854ae314bf",
+    "claim_a_text": "the meat lacks the succulence of a slow- braised dish",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Slow cooking at a gentle simmer (around 85-90C) for 2-3 hours allows collagen to dissolve into gelatin, giving the meat a melt-in-the-mouth quality.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "6d15e71de83b3af9",
+    "claim_a_text": "U-Net, by contrast, requires extensive augmentation to avoid overfitting due to its limited inductive bias.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "This is why U-Net often fails on tasks where structures are large or widely dispersed.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "943fd3015983f92d",
+    "claim_a_text": "U- Net 's skip connections partially mitigate this but .",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U-Net's reliance on local convolutions inherently limits its ability to capture long-range spatial dependencies.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "65b4254811a1ffc8",
+    "claim_a_text": "With the advent of efficient attention mechanisms (e.g., shifted-window attention), they now process images at comparable speeds to convolutional networks.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The future belongs to models that can perceive the whole image at once, not piece it together with local patches.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "d7eb1c2132c88080",
+    "claim_a_text": "The medical imaging community is rapidly moving away from U-Net.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Transformers are also more adaptable.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "75b0f54ae3431f44",
+    "claim_a_text": "they mellowed and deepened",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The sealed environment of a pressure cooker traps volatile aromatics and prevents the natural reduction of the sauce.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "4eb8c6ea761e0a8d",
+    "claim_a_text": "U- Net 's skip connections can not fully compensate for the receptive field constraints of small kernels",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Transformers are also more adaptable.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "4c353a851abefa03",
+    "claim_a_text": "If you truly value the dish, invest the time -- the pressure cooker is a shortcut that cuts quality.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "8e53f0cd13b2a437",
+    "claim_a_text": "the meat lacks the succulence of a slow- braised dish",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The sealed environment of a pressure cooker traps volatile aromatics and prevents the natural reduction of the sauce.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "f3e074642ff99319",
+    "claim_a_text": "U-Net, by contrast, requires extensive augmentation to avoid overfitting due to its limited inductive bias.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U- Net 's skip connections can not fully compensate for the receptive field constraints of small kernels",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "6ebb980e71c037bc",
+    "claim_a_text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "de4c7c65309d96fd",
+    "claim_a_text": "Authentic Kashmiri recipes never use pressure cookers.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The sealed environment of a pressure cooker traps volatile aromatics and prevents the natural reduction of the sauce.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "9c5eb33158fdb5ff",
+    "claim_a_text": "While U-Net has been a workhorse of medical image segmentation for nearly a decade, recent advances in transformer-based architectures have rendered the convolutional approach outdated.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Vision Transformers (ViTs) and their specialised variants (e.g., TransUNet, Swin-UNet) have consistently outperformed U-Net on public benchmarks like the Medical Segmentation Decathlon and Synapse.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "2115d46a14e1bfb0",
+    "claim_a_text": "Finger- spinners offer better economy, and greater reliability",
+    "claim_a_doc": "C11",
+    "claim_b_text": "Finger- spinners can be relied upon to bowl to a fixed plan -- darting the ball into the pitch, varying flight, and keeping the batter guessing with arm balls",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "0591ddd94a7a1ebc",
+    "claim_a_text": "The future belongs to models that can perceive the whole image at once, not piece it together with local patches.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U-Net's reliance on local convolutions inherently limits its ability to capture long-range spatial dependencies.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "29b9baf915951423",
+    "claim_a_text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "they mellowed and deepened",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "156a71149a3ae91e",
+    "claim_a_text": "The medical imaging community is rapidly moving away from U-Net.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U-Net's reliance on local convolutions inherently limits its ability to capture long-range spatial dependencies.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "1a590501c5251497",
+    "claim_a_text": "Any deviation from this time-honoured technique produces a dish that may be edible but is a far cry from the real Rogan Josh.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Slow cooking at a gentle simmer (around 85-90C) for 2-3 hours allows collagen to dissolve into gelatin, giving the meat a melt-in-the-mouth quality.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "12859a0146082e9b",
+    "claim_a_text": "This aggressive heat also causes the meat fibres to contract violently, expelling moisture and leaving the meat tough and fibrous",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "8955d2dd93214246",
+    "claim_a_text": "U-Net, by contrast, requires extensive augmentation to avoid overfitting due to its limited inductive bias.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The medical imaging community is rapidly moving away from U-Net.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "e02a36024442fada",
+    "claim_a_text": "The sealed environment of a pressure cooker traps volatile aromatics and prevents the natural reduction of the sauce.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The intense, rapid heat and high pressure stringy texture that no amount of spice can mask",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "f6bd4b7707d4e104",
+    "claim_a_text": "Teams that have relied heavily on wrist-spinners have often been let down in crunch matches, whereas sides with a solid finger-spin option have displayed greater defensive resilience.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "A wrist-spinner who concedes 8 runs per over while taking a wicket in the 14th over often gives away more runs than a finger-spinner who bowls a tight over for 4 runs without taking a wicket.",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "51b5766c6b4d9dc5",
+    "claim_a_text": "Moreover, transformers can be pre-.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "This is why U-Net often fails on tasks where structures are large or widely dispersed.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "60ba2e014f9643b6",
+    "claim_a_text": "Pressure cooking, by contrast, produces a thin, watery sauce that requires lengthy post-cooking reduction, which further dries out the meat.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "e1b1c88bf84509c5",
+    "claim_a_text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "While pressure cookers are marketed as time-saving miracle tools, their use for a dish as delicate as Rogan Josh is a culinary betrayal.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "e44ea2da3abf5388",
+    "claim_a_text": "Finger- spinners can be relied upon to bowl to a fixed plan -- darting the ball into the pitch, varying flight, and keeping the batter guessing with arm balls",
+    "claim_a_doc": "C11",
+    "claim_b_text": "Wrist-spinners, by contrast, are prone to bowling \"loose\" deliveries -- the odd full-toss or short ball that gets dispatched.",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "e9d170e78c14422f",
+    "claim_a_text": "If you truly value the dish, invest the time -- the pressure cooker is a shortcut that cuts quality.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "the meat lacks the succulence of a slow- braised dish",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "682cf617118350bb",
+    "claim_a_text": "they mellowed and deepened",
+    "claim_a_doc": "D11",
+    "claim_b_text": "This aggressive heat also causes the meat fibres to contract violently, expelling moisture and leaving the meat tough and fibrous",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "38c5bd156fa3c2ab",
+    "claim_a_text": "In tasks such as whole-brain segmentation or organ-at-risk delineation, the global context is crucial.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The medical imaging community is rapidly moving away from U-Net.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "8fb888afab3d8be0",
+    "claim_a_text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The sealed environment of a pressure cooker traps volatile aromatics and prevents the natural reduction of the sauce.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "912982b7db581be0",
+    "claim_a_text": "In a pressure cooker, the temperature exceeds 120C and .",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The intense, rapid heat and high pressure stringy texture that no amount of spice can mask",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "f93a943fc6fae2c7",
+    "claim_a_text": "the temperature is compressed to 20- 30 minutes",
+    "claim_a_doc": "D11",
+    "claim_b_text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "266f00adfa23a534",
+    "claim_a_text": "Moreover, transformers can be pre-.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Newer architectures built on transformers or hybrid convolutional-transformer designs are now the gold standard.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "49c9f5d71681725b",
+    "claim_a_text": "With the advent of efficient attention mechanisms (e.g., shifted-window attention), they now process images at comparable speeds to convolutional networks.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Newer architectures built on transformers or hybrid convolutional-transformer designs are now the gold standard.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "d07b7bd7009f1d07",
+    "claim_a_text": "they mellowed and deepened",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The traditional method involves sealing the meat with yoghurt and spices, then cooking over a low flame for hours, with intermittent basting.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "ac1a22f332dedea5",
+    "claim_a_text": "Teams that have relied heavily on wrist-spinners have often been let down in crunch matches, whereas sides with a solid finger-spin option have displayed greater defensive resilience.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "Finger- spinners can be relied upon to bowl to a fixed plan -- darting the ball into the pitch, varying flight, and keeping the batter guessing with arm balls",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "6e511fafbd7cac18",
+    "claim_a_text": "Claiming that U-Net is still \"state-of-the-art\" is a nostalgic holdover that ignores clear evidence from multiple benchmarks.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Vision Transformers (ViTs) and their specialised variants (e.g., TransUNet, Swin-UNet) have consistently outperformed U-Net on public benchmarks like the Medical Segmentation Decathlon and Synapse.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "fc7ce39e442e32af",
+    "claim_a_text": "These models use self-attention mechanisms to model global correlations, leading to higher Dice scores and better boundary delineation.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Moreover, transformers can be pre-.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "82380e63669e0974",
+    "claim_a_text": "they mellowed and deepened",
+    "claim_a_doc": "D11",
+    "claim_b_text": "A classic Rogan Josh relies on the slow reduction of tomato puree and stock to concentrate flavours, create a thick gravy, and develop the characteristic deep red colour.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "cd70f254f7ec9155",
+    "claim_a_text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Pressure cooking, by contrast, produces a thin, watery sauce that requires lengthy post-cooking reduction, which further dries out the meat.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "7c623e0c8097cdac",
+    "claim_a_text": "they mellowed and deepened",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "952aaa84cdb84f64",
+    "claim_a_text": "Finger- spinners can be relied upon to bowl to a fixed plan -- darting the ball into the pitch, varying flight, and keeping the batter guessing with arm balls",
+    "claim_a_doc": "C11",
+    "claim_b_text": "A wrist-spinner who concedes 8 runs per over while taking a wicket in the 14th over often gives away more runs than a finger-spinner who bowls a tight over for 4 runs without taking a wicket.",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "1778a0de61cae19a",
+    "claim_a_text": "Continuing to rely on U-Net for research or clinical applications is a choice to underperform.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Transformers are also more adaptable.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "b696647f25d49145",
+    "claim_a_text": "The intense, rapid heat and high pressure destroy the collagen structure of lamb in ways that a slow braise never does, resulting in a dry, .",
+    "claim_a_doc": "D11",
+    "claim_b_text": "This aggressive heat also causes the meat fibres to contract violently, expelling moisture and leaving the meat tough and fibrous",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "cb6c3e2bc3743640",
+    "claim_a_text": "the temperature the cooking time",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Despite the appearance of tenderness, the meat often falls apart but .",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "b3a50b574685ec97",
+    "claim_a_text": "If you truly value the dish, invest the time -- the pressure cooker is a shortcut that cuts quality.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The intense, rapid heat and high pressure stringy texture that no amount of spice can mask",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "b1a9c76e5e95d960",
+    "claim_a_text": "U- Net 's skip connections can not fully compensate for the receptive field constraints of small kernels",
+    "claim_a_doc": "B11",
+    "claim_b_text": "U-Net's reliance on local convolutions inherently limits its ability to capture long-range spatial dependencies.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "fa03342f0e48682a",
+    "claim_a_text": "This aggressive heat accelerates collagen breakdown but .",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The intense, rapid heat and high pressure stringy texture that no amount of spice can mask",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "68d5bc45e1595f50",
+    "claim_a_text": "Continuing to rely on U-Net for research or clinical applications is a choice to underperform.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The future belongs to models that can perceive the whole image at once, not piece it together with local patches.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "6eeb4aa313e6c72d",
+    "claim_a_text": "the temperature the cooking time",
+    "claim_a_doc": "D11",
+    "claim_b_text": "This slow process allows the fat to render, the sauce to thicken, and the flavours to meld into a harmonious whole.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "3dba7235d3715e16",
+    "claim_a_text": "With the advent of efficient attention mechanisms (e.g., shifted-window attention), they now process images at comparable speeds to convolutional networks.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "This is why U-Net often fails on tasks where structures are large or widely dispersed.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "5f4179a7d098886a",
+    "claim_a_text": "Wrist-spinners, by contrast, are prone to bowling \"loose\" deliveries -- the odd full-toss or short ball that gets dispatched.",
+    "claim_a_doc": "C11",
+    "claim_b_text": "The narrative that wrist-spinners are \"wicket-takers\" is statistically misleading.",
+    "claim_b_doc": "C11"
+  },
+  {
+    "relationship_id": "6a42a3312d5ab03c",
+    "claim_a_text": "Any deviation from this time-honoured technique produces a dish that may be edible but is a far cry from the real Rogan Josh.",
+    "claim_a_doc": "D11",
+    "claim_b_text": "The traditional method involves sealing the meat with yoghurt and spices, then cooking over a low flame for hours, with intermittent basting.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "cc6faf7289654289",
+    "claim_a_text": "the temperature the cooking time",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Pressure cooking, by contrast, produces a thin, watery sauce that requires lengthy post-cooking reduction, which further dries out the meat.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "4a720ebcaff7c1e6",
+    "claim_a_text": "The medical imaging community is rapidly moving away from U-Net.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "The future belongs to models that can perceive the whole image at once, not piece it together with local patches.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "4e30419d878a002d",
+    "claim_a_text": "U-Net's reliance on local convolutions inherently limits its ability to capture long-range spatial dependencies.",
+    "claim_a_doc": "B11",
+    "claim_b_text": "Transformers are also more adaptable.",
+    "claim_b_doc": "B11"
+  },
+  {
+    "relationship_id": "b47be125fe10bda8",
+    "claim_a_text": "the temperature is compressed to 20- 30 minutes",
+    "claim_a_doc": "D11",
+    "claim_b_text": "Slow cooking at a gentle simmer (around 85-90C) for 2-3 hours allows collagen to dissolve into gelatin, giving the meat a melt-in-the-mouth quality.",
+    "claim_b_doc": "D11"
+  },
+  {
+    "relationship_id": "c35bde389f73e9bd",
+    "claim_a_text": "Add the prawns and coconut milk; cover and .",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat remaining coconut oil in a deep pan; add the finely chopped onion and until translucent.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "4e89537656055f0f",
+    "claim_a_text": "VirtualBox provides several networking modes to connect virtual machines to the host and the outside world:",
+    "claim_a_doc": "A10",
+    "claim_b_text": "It can external machines can not initiate connections to the VM.",
+    "claim_b_doc": "A10"
+  },
+  {
+    "relationship_id": "5718949f6ce2520c",
+    "claim_a_text": "Heat coconut oil in a non- stick pan add black peppercorns, and red chillies",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Add salt, heat coconut oil in another non- stick pan, and .",
+    "claim_b_doc": "D10"
+  },
+  {
+    "relationship_id": "554b0b3a308a2da5",
+    "claim_a_text": "Heat coconut oil in a non- stick pan add black peppercorns, and red chillies",
+    "claim_a_doc": "D5",
+    "claim_b_text": "The raw mango adds a tangy sourness that beautifully balances the richness of the coconut milk.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "31998b16aeb86dd2",
+    "claim_a_text": "Heat oil; curry leaves, then saute shallots, ginger, and garlic",
+    "claim_a_doc": "D8",
+    "claim_b_text": "Add salt, heat coconut oil in another non- stick pan, and .",
+    "claim_b_doc": "D10"
+  },
+  {
+    "relationship_id": "3793a9638fa10dcc",
+    "claim_a_text": "the robot 's controller the kinematics model is used in both simulation and real- world odometry to track the robot 's position.",
+    "claim_a_doc": "B10",
+    "claim_b_text": "In a differential-drive robot, the two wheels are independently driven.",
+    "claim_b_doc": "B10"
+  },
+  {
+    "relationship_id": "720d1e4edc9a1f43",
+    "claim_a_text": "1 kg lamb shoulder, cut into chunks.",
+    "claim_a_doc": "D1",
+    "claim_b_text": "Use lamb shoulder or leg for best results; avoid lean cuts as they can become tough.",
+    "claim_b_doc": "D4"
+  },
+  {
+    "relationship_id": "90039130d673e7d8",
+    "claim_a_text": "Earth is the densest and fifth- largest of the eight planets",
+    "claim_a_doc": "E2",
+    "claim_b_text": "Earth is the third planet from the Sun and .",
+    "claim_b_doc": "E2"
+  },
+  {
+    "relationship_id": "1f33a92ff8529740",
+    "claim_a_text": "Pour in the coconut milk and .",
+    "claim_a_doc": "D7",
+    "claim_b_text": "Heat coconut oil; curry leaves",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "00fa656ddab9dcb3",
+    "claim_a_text": "Add coconut milk and enough water; .",
+    "claim_a_doc": "D9",
+    "claim_b_text": "Heat coconut oil; curry leaves",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "517b2411e558b945",
+    "claim_a_text": "Heat oil in a pan add mustard seeds",
+    "claim_a_doc": "D6",
+    "claim_b_text": "Heat oil; add fenugreek seeds and .",
+    "claim_b_doc": "D8"
+  },
+  {
+    "relationship_id": "2776d61fb1ba12bb",
+    "claim_a_text": "It can access external networks, but",
+    "claim_a_doc": "A10",
+    "claim_b_text": "It can external machines can not initiate connections to the VM.",
+    "claim_b_doc": "A10"
+  },
+  {
+    "relationship_id": "ed52cdc5c9c27985",
+    "claim_a_text": "cook until the prawns are cooked and the gravy thickens",
+    "claim_a_doc": "D6",
+    "claim_b_text": "cook for 8- 10 minutes until the mango turns soft",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "23a8c136d85d0248",
+    "claim_a_text": "500 g prawns, peeled and .",
+    "claim_a_doc": "D5",
+    "claim_b_text": "500 g prawns, deveined",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "24b8f3f24d6ce71c",
+    "claim_a_text": "Prawns cooked in South Indian style with coconut oil lending its special flavour.",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat remaining coconut oil in a deep pan; add the finely chopped onion and until translucent.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "ba02a6d0e8ad9aa6",
+    "claim_a_text": "Prawns cooked in South Indian style with coconut oil lending its special flavour.",
+    "claim_a_doc": "D5",
+    "claim_b_text": "The raw mango adds a tangy sourness that beautifully balances the richness of the coconut milk.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "ae4e1a480504eb09",
+    "claim_a_text": "Heat oil in a pan add mustard seeds",
+    "claim_a_doc": "D6",
+    "claim_b_text": "Add salt, heat coconut oil in another non- stick pan, and .",
+    "claim_b_doc": "D10"
+  },
+  {
+    "relationship_id": "f7d90ec82d9ab7e0",
+    "claim_a_text": "cook until the prawns are done",
+    "claim_a_doc": "D8",
+    "claim_b_text": "cook for 8- 10 minutes until the mango turns soft",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "b1f7123ef8201e30",
+    "claim_a_text": "Heat coconut oil; add mustard seeds and .",
+    "claim_a_doc": "D9",
+    "claim_b_text": "Heat coconut oil in a non- stick pan; add coriander seeds, .",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "b106e44cae176201",
+    "claim_a_text": "HDFS has two main layers:",
+    "claim_a_doc": "A4",
+    "claim_b_text": "In the classic HDFS architecture, there is a single Namespace for the entire cluster.",
+    "claim_b_doc": "A4"
+  },
+  {
+    "relationship_id": "ccc655dd5e807f18",
+    "claim_a_text": "Heat coconut oil in a non- stick pan add black peppercorns, and red chillies",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat oil; curry leaves, then saute shallots, ginger, and garlic",
+    "claim_b_doc": "D8"
+  },
+  {
+    "relationship_id": "09813e9f480ef1aa",
+    "claim_a_text": "500 g prawns, peeled and .",
+    "claim_a_doc": "D5",
+    "claim_b_text": "250 g prawns, cleaned.",
+    "claim_b_doc": "D7"
+  },
+  {
+    "relationship_id": "4c252919a6ad0d43",
+    "claim_a_text": "Heat oil in a pan add mustard seeds",
+    "claim_a_doc": "D6",
+    "claim_b_text": "Heat remaining coconut oil in a deep pan; add the finely chopped onion and until translucent.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "2946790a81daa0b0",
+    "claim_a_text": "simmer for 10- 12 minutes until the prawns are cooked and the gravy thickens",
+    "claim_a_doc": "D7",
+    "claim_b_text": "cook for 4- 5 minutes until the prawns are cooked through",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "b541554cc7677c87",
+    "claim_a_text": "The collapse the remaining material formed a protoplanetary disc from which the planets, moons, asteroids, and other bodies assembled.",
+    "claim_a_doc": "E1",
+    "claim_b_text": "The collapse created the Sun at the centre, and",
+    "claim_b_doc": "E1"
+  },
+  {
+    "relationship_id": "9bce388e96687d5a",
+    "claim_a_text": "The raw mango adds a tangy sourness that beautifully balances the richness of the coconut milk.",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Add the prawns and coconut milk; cover and .",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "9dbce86776ad3654",
+    "claim_a_text": "Heat oil in a pan add mustard seeds",
+    "claim_a_doc": "D6",
+    "claim_b_text": "Heat coconut oil in a non- stick pan; add coriander seeds, .",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "256a0bda95af4ba5",
+    "claim_a_text": "saute the prawns for 2- 3 minutes on each side until they turn opaque",
+    "claim_a_doc": "D10",
+    "claim_b_text": "cook for 4- 5 minutes until the prawns are cooked through",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "41229a83f1d6a0dd",
+    "claim_a_text": "The WGAN-GP (Gradient Penalty) variant replaces weight clipping with a gradient penalty term that enforces the Lipschitz constraint more effectively.",
+    "claim_a_doc": "B3",
+    "claim_b_text": "The Wasserstein GAN (WGAN) improved the stability of GAN training by using the Wasserstein distance as the loss function.",
+    "claim_b_doc": "B3"
+  },
+  {
+    "relationship_id": "6a9a6924a789f82d",
+    "claim_a_text": "Heat coconut oil in a non- stick pan add black peppercorns, and red chillies",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat oil; add fenugreek seeds and .",
+    "claim_b_doc": "D8"
+  },
+  {
+    "relationship_id": "61625097a1084841",
+    "claim_a_text": "Heat oil in a pan; add curry leaves and , then add the marinated prawn mixture.",
+    "claim_a_doc": "D6",
+    "claim_b_text": "Heat remaining coconut oil in a deep pan; add the finely chopped onion and until translucent.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "5a0534cda1a74300",
+    "claim_a_text": "Heat coconut oil in a non- stick pan; add coriander seeds, .",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Add salt, heat coconut oil in another non- stick pan, and .",
+    "claim_b_doc": "D10"
+  },
+  {
+    "relationship_id": "550d52e96d86f6a3",
+    "claim_a_text": "If even one of them breaks down mid-season, the back-up options are untested at the IPL level.",
+    "claim_a_doc": "C1",
+    "claim_b_text": "The defending champions, Royal Challengers Bengaluru (RCB), enter the IPL 2026 season with the heavy weight of expectation.",
+    "claim_b_doc": "C1"
+  },
+  {
+    "relationship_id": "d224af4ee65bf8e7",
+    "claim_a_text": "Add the raw mango wedges; cover and .",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Add the prawns and coconut milk; cover and .",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "a2c2304b4e364566",
+    "claim_a_text": "Earth is the densest and fifth- largest of the eight planets",
+    "claim_a_doc": "E2",
+    "claim_b_text": "Of the four rocky planets, Earth is the largest and .",
+    "claim_b_doc": "E6"
+  },
+  {
+    "relationship_id": "6d40bddd1ea69f6d",
+    "claim_a_text": "This variation includes drumsticks (moringa pods) along with raw mango, adding a unique texture and flavour.",
+    "claim_a_doc": "D9",
+    "claim_b_text": "Raw mango -- cut into wedges.",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "4f104ff3ef3463ef",
+    "claim_a_text": "Heat oil; add fenugreek seeds and .",
+    "claim_a_doc": "D8",
+    "claim_b_text": "Add salt, heat coconut oil in another non- stick pan, and .",
+    "claim_b_doc": "D10"
+  },
+  {
+    "relationship_id": "3d63d5d633e0dc39",
+    "claim_a_text": "Pour in the coconut milk and .",
+    "claim_a_doc": "D7",
+    "claim_b_text": "Heat remaining coconut oil in a deep pan; add the finely chopped onion and until translucent.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "a63bd361c4c893dd",
+    "claim_a_text": "A well-timed wrist-spin delivery can swing the momentum, while a disciplined off-spin spell often builds pressure through economical overs.",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Grounds have reduced the gulf between wrist-spinners and finger-spinners; even spinners who cannot turn the ball both ways are thriving.",
+    "claim_b_doc": "C4"
+  },
+  {
+    "relationship_id": "938026cb2be0b4e7",
+    "claim_a_text": "simmer for 10- 12 minutes until the prawns are cooked and the gravy thickens",
+    "claim_a_doc": "D7",
+    "claim_b_text": "simmer until the drumstick is cooked",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "aa6062468acd3722",
+    "claim_a_text": "U-Net is a convolutional neural network designed for biomedical image segmentation.",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It reduces the spatial resolution while increasing the number of feature channels.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "2ca3cf79a1f31d4a",
+    "claim_a_text": "the robot 's controller the kinematics model is used in both simulation and real- world odometry to track the robot 's position.",
+    "claim_a_doc": "B10",
+    "claim_b_text": "In practice, the robot 's controller sends velocity commands, and",
+    "claim_b_doc": "B10"
+  },
+  {
+    "relationship_id": "916c48ec46d950de",
+    "claim_a_text": "Recent IPL seasons have seen a shift in how spinners are used.",
+    "claim_a_doc": "C4",
+    "claim_b_text": "Grounds have reduced the gulf between wrist-spinners and finger-spinners; even spinners who cannot turn the ball both ways are thriving.",
+    "claim_b_doc": "C4"
+  },
+  {
+    "relationship_id": "d876ffacd496c138",
+    "claim_a_text": "The style-based GAN architecture (StyleGAN) introduced a novel generator design that enables unprecedented control over the generated images.",
+    "claim_a_doc": "B1",
+    "claim_b_text": "The improved model sets a new state of the art in unconditional image generation on several benchmark datasets, producing images with superior fidelity and fewer artifacts.",
+    "claim_b_doc": "B1"
+  },
+  {
+    "relationship_id": "8c18746da3510472",
+    "claim_a_text": "It was developed to work with very few training images ( as low as 30) and .",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It reduces the spatial resolution while increasing the number of feature channels.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "0c49d1591b75a872",
+    "claim_a_text": "U-Net is a convolutional neural network designed for biomedical image segmentation.",
+    "claim_a_doc": "B5",
+    "claim_b_text": "U-Net has become the de facto standard for medical image segmentation in tasks such as brain tumor segmentation, lung nodule detection, and cell counting.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "f2e7ce5fb6da0ef9",
+    "claim_a_text": "RDDs are the fundamental building block of Apache Spark.",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "7e21cb274d897872",
+    "claim_a_text": "In industrial fault diagnosis, an improved WGAN-GP is used to generate diverse fault data for dataset augmentation.",
+    "claim_a_doc": "B4",
+    "claim_b_text": "The WGAN- GP learns the distribution of fault signatures and .",
+    "claim_b_doc": "B4"
+  },
+  {
+    "relationship_id": "6e1d7d11083a69de",
+    "claim_a_text": "The U-like shape, with skip connections that bridge the encoder and decoder, enables precise localization.",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It was developed to work with very few training images ( as low as 30) and .",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "251be028ff209912",
+    "claim_a_text": "It was still produce accurate segmentations",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It reduces the spatial resolution while increasing the number of feature channels.",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "5c8f9dd1e05f0aad",
+    "claim_a_text": "Gazebo acts as the primary physics simulation environment for robotic systems.",
+    "claim_a_doc": "A3",
+    "claim_b_text": "The tight coupling between ROS 2 and Gazebo allows for rapid prototyping and continuous integration testing of robotic algorithms, reducing the risk of costly field failures.",
+    "claim_b_doc": "A3"
+  },
+  {
+    "relationship_id": "b422ab898cbd8eaa",
+    "claim_a_text": "Add the whole spices ( cardamom and .",
+    "claim_a_doc": "D3",
+    "claim_b_text": ", cloves, cinnamon)",
+    "claim_b_doc": "D3"
+  },
+  {
+    "relationship_id": "9de02d9d3beb5f45",
+    "claim_a_text": "500 g prawns, deveined",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Add the prawns and coconut milk; cover and .",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "24e6363dc6ab6c32",
+    "claim_a_text": "The architecture consists of two paths:",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It was developed to work with very few training images ( as low as 30) and .",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "97f393250d0aade2",
+    "claim_a_text": "Top performers in IPL spin bowling often combine accuracy with variations.",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Teams that master spin bowling usually have a clear bowling plan: deploy wrist- spinners on turning tracks, .",
+    "claim_b_doc": "C5"
+  },
+  {
+    "relationship_id": "0bf2655bdb9acbd8",
+    "claim_a_text": "It uses a local costmap that incorporates real-time sensor data to avoid dynamic obstacles.",
+    "claim_a_doc": "A1",
+    "claim_b_text": "The separation of global and local costmaps allows the system to balance long-term route planning with short-term obstacle avoidance, making Nav2 a robust choice for both indoor and outdoor robotics applications.",
+    "claim_b_doc": "A1"
+  },
+  {
+    "relationship_id": "e14d2f54e2dd88f8",
+    "claim_a_text": "Apache Flume is a distributed, reliable, and available service for efficiently collecting, aggregating, and moving large amounts of log data.",
+    "claim_a_doc": "A7",
+    "claim_b_text": "Flume is widely used in production environments to ingest streaming event data from web servers, mobile devices, and IoT sensors into Hadoop clusters for batch and stream processing.",
+    "claim_b_doc": "A7"
+  },
+  {
+    "relationship_id": "de245ebdf1243dd8",
+    "claim_a_text": "The core components of Nav2 include:",
+    "claim_a_doc": "A1",
+    "claim_b_text": "The Nav2 stack is the official navigation solution for ROS 2.",
+    "claim_b_doc": "A1"
+  },
+  {
+    "relationship_id": "ca9dc98e1418f3ca",
+    "claim_a_text": "This integration enables developers to simulate robot behavior in realistic environments before deployment on physical hardware.",
+    "claim_a_doc": "A3",
+    "claim_b_text": "Gazebo acts as the primary physics simulation environment for robotic systems.",
+    "claim_b_doc": "A3"
+  },
+  {
+    "relationship_id": "bc02ff9c609d44e7",
+    "claim_a_text": "Their effectiveness often depends on the support of a good fielding captain who sets aggressive field placements to create pressure.",
+    "claim_a_doc": "C3",
+    "claim_b_text": "Leg- spinners bowling in the middle overs ( overs 11- 40) of limited- overs cricket enjoy bowling during these phases because the field restrictions are relaxed, and",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "faa460bc6b95b9c0",
+    "claim_a_text": "As teams become more data-driven, the demand for bowlers who can consistently beat the bat is only increasing.",
+    "claim_a_doc": "C7",
+    "claim_b_text": "The tactical resilience of T20's mystery spinners continues to be a decisive factor in modern cricket.",
+    "claim_b_doc": "C7"
+  },
+  {
+    "relationship_id": "2ce1485c27b0e55f",
+    "claim_a_text": "Top performers in IPL spin bowling often combine accuracy with variations.",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Teams that master spin bowling usually have a clear bowling plan: rely on off- spinners when the surface offers subtle grip, and tweak field placements to amplify the spin effect",
+    "claim_b_doc": "C5"
+  },
+  {
+    "relationship_id": "cddd86ef34951aa1",
+    "claim_a_text": "Heat coconut oil; add mustard seeds and .",
+    "claim_a_doc": "D9",
+    "claim_b_text": "Heat coconut oil; curry leaves",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "61f86c2ba496faba",
+    "claim_a_text": "It is designed to be modular, configurable, and suitable for a wide range of mobile robotic platforms.",
+    "claim_a_doc": "A1",
+    "claim_b_text": "The Nav2 stack is the official navigation solution for ROS 2.",
+    "claim_b_doc": "A1"
+  },
+  {
+    "relationship_id": "ac2eddb214cbe481",
+    "claim_a_text": "WGAN-GP has also been adapted for image restoration tasks.",
+    "claim_a_doc": "B4",
+    "claim_b_text": "A dynamic multi- scale WGAN- GP framework combines colorization and , addressing the limitations of distinct restoration models by learning a joint mapping from degraded images to clean ones.",
+    "claim_b_doc": "B4"
+  },
+  {
+    "relationship_id": "6dba21e117f36fdd",
+    "claim_a_text": "The key has been control.",
+    "claim_a_doc": "C4",
+    "claim_b_text": "In the middle overs, spinners have been especially successful: slower while attacking, and faster while defending, all in their own style.",
+    "claim_b_doc": "C4"
+  },
+  {
+    "relationship_id": "2aecf91c076edaf4",
+    "claim_a_text": "Apache Hive is a data warehouse infrastructure built on top of Apache Hadoop.",
+    "claim_a_doc": "A6",
+    "claim_b_text": "This metadata includes table locations, partition definitions, and statistics, which are essential for query optimization and execution planning",
+    "claim_b_doc": "A6"
+  },
+  {
+    "relationship_id": "c7d7174695e31fe4",
+    "claim_a_text": "Their correct formation requires knowledge of the script 's phonetic rules and .",
+    "claim_a_doc": "B7",
+    "claim_b_text": "Their correct formation requires the shapes of half- consonants",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "9a544b60eabf5efa",
+    "claim_a_text": "The exact shape of the half-form depends on the consonant.",
+    "claim_a_doc": "B8",
+    "claim_b_text": "Some consonants have distinctive half-forms, while others are represented by a special diacritic.",
+    "claim_b_doc": "B8"
+  },
+  {
+    "relationship_id": "9f712ce7c4a09596",
+    "claim_a_text": "The formation of ottaksharas involves two main processes:",
+    "claim_a_doc": "B7",
+    "claim_b_text": "Their correct formation requires the shapes of half- consonants",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "d297ec347009a425",
+    "claim_a_text": "The formation of ottaksharas involves two main processes:",
+    "claim_a_doc": "B7",
+    "claim_b_text": "Their correct formation requires knowledge of the script 's phonetic rules and .",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "643df16c66811ac2",
+    "claim_a_text": "U-Net is a convolutional neural network designed for biomedical image segmentation.",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It was still produce accurate segmentations",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "e364dbb1ee85b7ab",
+    "claim_a_text": "This stabilizes training and .",
+    "claim_a_doc": "B3",
+    "claim_b_text": "The Wasserstein GAN (WGAN) improved the stability of GAN training by using the Wasserstein distance as the loss function.",
+    "claim_b_doc": "B3"
+  },
+  {
+    "relationship_id": "fe48fe573daf4505",
+    "claim_a_text": "It formed about 4.6 billion years ago from the gravitational collapse of a dense region of a molecular cloud.",
+    "claim_a_doc": "E1",
+    "claim_b_text": "The Solar System formed about 4.6 billion years ago when a dense region of a molecular cloud collapsed under its own gravity.",
+    "claim_b_doc": "E4"
+  },
+  {
+    "relationship_id": "8382ec4bc33d8601",
+    "claim_a_text": "A well-timed wrist-spin delivery can swing the momentum, while a disciplined off-spin spell often builds pressure through economical overs.",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Teams that master spin bowling usually have a clear bowling plan: deploy wrist- spinners on turning tracks, .",
+    "claim_b_doc": "C5"
+  },
+  {
+    "relationship_id": "33ff293a938f049a",
+    "claim_a_text": "It was still produce accurate segmentations",
+    "claim_a_doc": "B5",
+    "claim_b_text": "It was developed to work with very few training images ( as low as 30) and .",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "49fcdecf46bd7df1",
+    "claim_a_text": "Heat coconut oil; curry leaves",
+    "claim_a_doc": "D9",
+    "claim_b_text": "simmer until the drumstick is cooked",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "66f2077d47f6f14a",
+    "claim_a_text": "The U-like shape, with skip connections that bridge the encoder and decoder, enables precise localization.",
+    "claim_a_doc": "B5",
+    "claim_b_text": "The architecture consists of two paths:",
+    "claim_b_doc": "B5"
+  },
+  {
+    "relationship_id": "2a52984a38b8d980",
+    "claim_a_text": "The formation of ottaksharas involves two main processes:",
+    "claim_a_doc": "B7",
+    "claim_b_text": "Ottaksharas are essential for writing many Sanskrit loanwords and compound words.",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "76c712c20aec9a09",
+    "claim_a_text": "Gazebo acts as the primary physics simulation environment for robotic systems.",
+    "claim_a_doc": "A3",
+    "claim_b_text": "It is deeply integrated with ROS 2 and .",
+    "claim_b_doc": "A3"
+  },
+  {
+    "relationship_id": "0906023ad4cb1f76",
+    "claim_a_text": "The generator and discriminator are trained adversarially, with the gradient penalty encouraging the discriminator to have gradients of norm 1 everywhere.",
+    "claim_a_doc": "B3",
+    "claim_b_text": "However, it requires clipping the weights of the discriminator, which can lead to undesirable artifacts.",
+    "claim_b_doc": "B3"
+  },
+  {
+    "relationship_id": "202ea48dec8648a6",
+    "claim_a_text": "They can be by transforming existing RDDs",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Spark's ability to cache RDDs in memory is a key differentiator from MapReduce.",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "6a0d8dd1933d2cf9",
+    "claim_a_text": "A Resilient Distributed Dataset (RDD) is an immutable, fault-tolerant collection of elements that can be distributed across multiple cluster nodes and processed in parallel.",
+    "claim_a_doc": "A8",
+    "claim_b_text": "They can be created from data stored in HDFS, local file systems, or .",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "fd6aa9a7141fbe4d",
+    "claim_a_text": "The Kannada script (IAST: Kannada lipi) is an abugida of the Brahmic family, used to write the Kannada and Tulu languages.",
+    "claim_a_doc": "B7",
+    "claim_b_text": "When a consonant is followed by another consonant with no intervening vowel, they combine to form a conjunct (digraph), known as an **ottakshara** (ಒತ್ತಕ್ಷರ) in Kannada.",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "a1a4fa54837bac92",
+    "claim_a_text": "Apache Flume is a distributed, reliable, and available service for efficiently collecting, aggregating, and moving large amounts of log data.",
+    "claim_a_doc": "A7",
+    "claim_b_text": "Flume can be configured with complex topologies, including fan- out, fan- in, and .",
+    "claim_b_doc": "A7"
+  },
+  {
+    "relationship_id": "a6acd73ed2dbac27",
+    "claim_a_text": "Left-arm wrist-spinners are particularly effective against right-handed batters because the ball turns away from them, making it difficult to play against the spin.",
+    "claim_a_doc": "C9",
+    "claim_b_text": "However, both statistics drop significantly against right-handed batters, indicating that match-up tactics are crucial.",
+    "claim_b_doc": "C2"
+  },
+  {
+    "relationship_id": "3ac1c6e271739431",
+    "claim_a_text": "** Actions** ( e.g., ` count `, ` collect `, ` saveAsTextFile ` return a result to the driver program or write data to storage",
+    "claim_a_doc": "A8",
+    "claim_b_text": "RDDs are the fundamental building block of Apache Spark.",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "f93f37f1b14975b0",
+    "claim_a_text": "let the curry simmer for an additional 10 minutes to thicken the gravy",
+    "claim_a_doc": "D3",
+    "claim_b_text": "Once you release the pressure, simmer the curry uncovered to thicken the gravy and concentrate the flavour.",
+    "claim_b_doc": "D4"
+  },
+  {
+    "relationship_id": "fd9fac46541e0afb",
+    "claim_a_text": "Top performers in IPL spin bowling often combine accuracy with variations.",
+    "claim_a_doc": "C5",
+    "claim_b_text": "In the middle overs, spinners have been especially successful: slower while attacking, and faster while defending, all in their own style.",
+    "claim_b_doc": "C4"
+  },
+  {
+    "relationship_id": "33c236084f877d9c",
+    "claim_a_text": "Teams that master spin bowling usually have a clear bowling plan: deploy wrist- spinners on turning tracks, .",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Bowlers like Rashid Khan, Yuzvendra Chahal, and Kuldeep Yadav have consistently been among the top wicket-takers, proving that spin can be a match-winning weapon even on flat pitches.",
+    "claim_b_doc": "C5"
+  },
+  {
+    "relationship_id": "fea7ed59857d5171",
+    "claim_a_text": "Despite a star-studded batting lineup featuring Virat Kohli and Phil Salt, the Bengaluru outfit faces two glaring tactical vulnerabilities that could derail their title defence.",
+    "claim_a_doc": "C1",
+    "claim_b_text": "Relying on a pace attack where the primary strike bowlers are either returning from long layoffs or managing recurring niggles is a high-stakes gamble.",
+    "claim_b_doc": "C1"
+  },
+  {
+    "relationship_id": "b1868893e92b848a",
+    "claim_a_text": "cook until the prawns are done",
+    "claim_a_doc": "D8",
+    "claim_b_text": "Add salt, heat coconut oil in another non- stick pan, and .",
+    "claim_b_doc": "D10"
+  },
+  {
+    "relationship_id": "725f3b304a6b06c4",
+    "claim_a_text": "Apache Flume is a distributed, reliable, and available service for efficiently collecting, aggregating, and moving large amounts of log data.",
+    "claim_a_doc": "A7",
+    "claim_b_text": "Its reliability guarantees are configurable, ranging from best-effort to end-to-end exactly-once semantics.",
+    "claim_b_doc": "A7"
+  },
+  {
+    "relationship_id": "73cc93b62f7a6b96",
+    "claim_a_text": "The formation of ottaksharas involves two main processes:",
+    "claim_a_doc": "B7",
+    "claim_b_text": "Each consonant letter inherently carries the vowel /a/.",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "6eba53f3f683ad22",
+    "claim_a_text": "A dynamic multi- scale WGAN- GP framework combines image denoising",
+    "claim_a_doc": "B4",
+    "claim_b_text": "In industrial fault diagnosis, an improved WGAN-GP is used to generate diverse fault data for dataset augmentation.",
+    "claim_b_doc": "B4"
+  },
+  {
+    "relationship_id": "91cde30cce8cdeed",
+    "claim_a_text": "Each Namespace and its associated block pool form a Namespace Volume, which is a self-contained unit of management.",
+    "claim_a_doc": "A4",
+    "claim_b_text": "HDFS has two main layers:",
+    "claim_b_doc": "A4"
+  },
+  {
+    "relationship_id": "8def9ca8b7b3475a",
+    "claim_a_text": "1/2 cup grated coconut.",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat remaining coconut oil in a deep pan; add the finely chopped onion and until translucent.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "5d2b74fc1af91836",
+    "claim_a_text": "This metadata includes table locations, partition definitions, and statistics, which are essential for query optimization and execution planning",
+    "claim_a_doc": "A6",
+    "claim_b_text": "Hive converts SQL queries into a directed acyclic graph (DAG) of tasks, which are then executed by the Tez execution engine.",
+    "claim_b_doc": "A6"
+  },
+  {
+    "relationship_id": "89f8a7727ec64e86",
+    "claim_a_text": "Hive stores its metadata in a relational database (such as MySQL or PostgreSQL) called the Hive Metastore.",
+    "claim_a_doc": "A6",
+    "claim_b_text": "This metadata includes schema information, .",
+    "claim_b_doc": "A6"
+  },
+  {
+    "relationship_id": "1a1210e03619557c",
+    "claim_a_text": "they are are recorded as a lineage graph",
+    "claim_a_doc": "A8",
+    "claim_b_text": "They can be by transforming existing RDDs",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "606c276968e779ab",
+    "claim_a_text": "The first step is to define coordinate frames:",
+    "claim_a_doc": "B9",
+    "claim_b_text": "Transformation matrices convert points from one frame to another, using rotation and translation.",
+    "claim_b_doc": "B9"
+  },
+  {
+    "relationship_id": "f00162baff329a4b",
+    "claim_a_text": "cook until the prawns are done",
+    "claim_a_doc": "D8",
+    "claim_b_text": "add saute",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "9488890e465bb2ea",
+    "claim_a_text": "`MEMORY_ONLY_SER`: Store RDD as serialized bytes (more memory-efficient but requires deserialization on access).",
+    "claim_a_doc": "A9",
+    "claim_b_text": "Spark's ability to cache RDDs in memory is a key differentiator from MapReduce.",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "5e27f10c946a0d6b",
+    "claim_a_text": "Their styles may be contrasting, but",
+    "claim_a_doc": "C9",
+    "claim_b_text": "Wrist-spinners like Kuldeep Yadav and Noor Ahmad, armed with variations and stifling accuracy, are turning out to be a thriving force.",
+    "claim_b_doc": "C9"
+  },
+  {
+    "relationship_id": "70fae2d83e0eb17b",
+    "claim_a_text": "The configuration is defined by mapping each Namenode to a specific block pool and associating it with a set of Datanodes.",
+    "claim_a_doc": "A5",
+    "claim_b_text": "HDFS Federation introduces several key benefits:",
+    "claim_b_doc": "A5"
+  },
+  {
+    "relationship_id": "f44c26bc9d0821a7",
+    "claim_a_text": "Its reliability guarantees are configurable, ranging from best-effort to end-to-end exactly-once semantics.",
+    "claim_a_doc": "A7",
+    "claim_b_text": "Flume can be multi- hop flows",
+    "claim_b_doc": "A7"
+  },
+  {
+    "relationship_id": "ecc8d7beb91dcdbd",
+    "claim_a_text": "It supports all namespace-related file system operations such as creating, deleting, moving, and renaming files and directories.",
+    "claim_a_doc": "A4",
+    "claim_b_text": "The Hadoop Distributed File System (HDFS) is designed to store very large data sets reliably and to stream those data sets at high bandwidth to user applications.",
+    "claim_b_doc": "A4"
+  },
+  {
+    "relationship_id": "09758665c27624db",
+    "claim_a_text": "Teams that master spin bowling usually have a clear bowling plan: deploy wrist- spinners on turning tracks, .",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Finger-spinners like Ravichandran Ashwin and Ravindra Jadeja have adapted by varying their pace and trajectory, making them equally important in the powerplay and the death overs.",
+    "claim_b_doc": "C4"
+  },
+  {
+    "relationship_id": "5c72e4f4cf48f81a",
+    "claim_a_text": "Relying on a pace attack where the primary strike bowlers are either returning from long layoffs or managing recurring niggles is a high-stakes gamble.",
+    "claim_a_doc": "C1",
+    "claim_b_text": "The defending champions, Royal Challengers Bengaluru (RCB), enter the IPL 2026 season with the heavy weight of expectation.",
+    "claim_b_doc": "C1"
+  },
+  {
+    "relationship_id": "cdf17982f750ba7f",
+    "claim_a_text": "Add water and salt; .",
+    "claim_a_doc": "D8",
+    "claim_b_text": "Add coconut milk and enough water; .",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "040b9b476d1feaf5",
+    "claim_a_text": "Beyond improving image quality, StyleGAN2 also introduced a new concept called the \"style space\" (or W+ space) that provides greater disentanglement of visual attributes.",
+    "claim_a_doc": "B2",
+    "claim_b_text": "This disentanglement is crucial for applications such as image editing, where users want to modify one aspect of an image (e.g., smile) while leaving others unchanged.",
+    "claim_b_doc": "B2"
+  },
+  {
+    "relationship_id": "54ee04d7f02187c0",
+    "claim_a_text": "Gazebo Harmonic is a powerful robot simulation environment that provides high-fidelity physics, realistic sensor rendering, and a rich set of plugins.",
+    "claim_a_doc": "A2",
+    "claim_b_text": "It allows users to inspect and modify parameters in real time.",
+    "claim_b_doc": "A2"
+  },
+  {
+    "relationship_id": "c03e4690f37adac8",
+    "claim_a_text": "Federation is backward compatible, meaning that existing single-Namenode configurations can be migrated to a federated setup without changes to client applications.",
+    "claim_a_doc": "A5",
+    "claim_b_text": "HDFS Federation introduces several key benefits:",
+    "claim_b_doc": "A5"
+  },
+  {
+    "relationship_id": "ae4a66cbd4b8e212",
+    "claim_a_text": "let the curry simmer for an additional 10 minutes to thicken the gravy",
+    "claim_a_doc": "D3",
+    "claim_b_text": "Once cooked, open the lid and .",
+    "claim_b_doc": "D3"
+  },
+  {
+    "relationship_id": "e8b2aadd0bb08468",
+    "claim_a_text": "Gazebo Harmonic provides Simulation Description Format (SDF) world files that define the complete simulation environment, including terrain, obstacles, sensor configurations, and lighting.",
+    "claim_a_doc": "A3",
+    "claim_b_text": "The ROS 2 bridge nodes automatically translate Gazebo's internal data structures into ROS 2 topics, services, and actions, making the simulated robot behave exactly like its real counterpart.",
+    "claim_b_doc": "A3"
+  },
+  {
+    "relationship_id": "83a3bc3be40bd73d",
+    "claim_a_text": "Researchers have found that certain dimensions correspond to specific semantic attributes",
+    "claim_a_doc": "B2",
+    "claim_b_text": "Beyond improving image quality, StyleGAN2 also introduced a new concept called the \"style space\" (or W+ space) that provides greater disentanglement of visual attributes.",
+    "claim_b_doc": "B2"
+  },
+  {
+    "relationship_id": "1e83fccfb587b380",
+    "claim_a_text": "Since fault data are often scarce, the augmented dataset enables more robust training of classification models.",
+    "claim_a_doc": "B4",
+    "claim_b_text": "The WGAN- GP learns the distribution of fault signatures and .",
+    "claim_b_doc": "B4"
+  },
+  {
+    "relationship_id": "bec8e941f7707522",
+    "claim_a_text": "Spark's fault-tolerance mechanism relies on lineage: if a partition is lost, Spark recomputes it using the transformations that created it.",
+    "claim_a_doc": "A9",
+    "claim_b_text": "If the RDD does not fit in memory, some partitions may be recomputed on the fly.",
+    "claim_b_doc": "A9"
+  },
+  {
+    "relationship_id": "22deca58b634c273",
+    "claim_a_text": "Top performers in IPL spin bowling often combine accuracy with variations.",
+    "claim_a_doc": "C5",
+    "claim_b_text": "Grounds have reduced the gulf between wrist-spinners and finger-spinners; even spinners who cannot turn the ball both ways are thriving.",
+    "claim_b_doc": "C4"
+  },
+  {
+    "relationship_id": "1567371823b17f10",
+    "claim_a_text": "These equations assume constant velocities during the time step.",
+    "claim_a_doc": "B10",
+    "claim_b_text": "the robot 's controller the kinematics model is used in both simulation and real- world odometry to track the robot 's position.",
+    "claim_b_doc": "B10"
+  },
+  {
+    "relationship_id": "0244be3a447afa3c",
+    "claim_a_text": "The robot's pose update in discrete time is given by:",
+    "claim_a_doc": "B10",
+    "claim_b_text": "The motion patterns are:",
+    "claim_b_doc": "B10"
+  },
+  {
+    "relationship_id": "572ffd15a7f72074",
+    "claim_a_text": "Heat coconut oil in a non- stick pan add black peppercorns, and red chillies",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat oil in a pan add mustard seeds",
+    "claim_b_doc": "D6"
+  },
+  {
+    "relationship_id": "ba0f956f91ba0193",
+    "claim_a_text": "4 cloves garlic, crushed.",
+    "claim_a_doc": "D7",
+    "claim_b_text": "4 cloves garlic, chopped.",
+    "claim_b_doc": "D5"
+  },
+  {
+    "relationship_id": "976d5210da2d2ce3",
+    "claim_a_text": "1/2 cup grated coconut.",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Coconut -- 1 cup, grated.",
+    "claim_b_doc": "D8"
+  },
+  {
+    "relationship_id": "0f396399fd03f928",
+    "claim_a_text": "Earth is the densest planet in the Solar System, with an average density of 5.51 g/cm3.",
+    "claim_a_doc": "E6",
+    "claim_b_text": "Earth is most massive",
+    "claim_b_doc": "E6"
+  },
+  {
+    "relationship_id": "46e67eb69e364cd1",
+    "claim_a_text": "4 cloves garlic, crushed.",
+    "claim_a_doc": "D7",
+    "claim_b_text": "4 cloves garlic, crushed.",
+    "claim_b_doc": "D1"
+  },
+  {
+    "relationship_id": "ab95d47de4b4cde6",
+    "claim_a_text": "Senior India spinner Yuzvendra Chahal has continued to prove his dominance in the middle overs, underlining the value of wrist spin in T20 cricket.",
+    "claim_a_doc": "C3",
+    "claim_b_text": "The key role of spinners is to take wickets while keeping the run rate under control.",
+    "claim_b_doc": "C3"
+  },
+  {
+    "relationship_id": "6d9edf9a89a9f911",
+    "claim_a_text": "RDDs are \"resilient\" because they remember their lineage (the set of transformations used to build them).",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "c548f0c2f85a938b",
+    "claim_a_text": "Transformations are lazy; they are not executed immediately but .",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "b84f82b2a796fd01",
+    "claim_a_text": "The exact shape of the half-form depends on the consonant.",
+    "claim_a_doc": "B8",
+    "claim_b_text": "Their correct formation requires the shapes of half- consonants",
+    "claim_b_doc": "B7"
+  },
+  {
+    "relationship_id": "fc68f59f01eed6fd",
+    "claim_a_text": "**Transformations** (e.g., `map`, `filter`, `flatMap`) produce a new RDD from an existing one.",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "85b93b11ee89e7e8",
+    "claim_a_text": "They can be created from data stored in HDFS, local file systems, or .",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "f66f957cf8282980",
+    "claim_a_text": "Heat oil; curry leaves, then saute shallots, ginger, and garlic",
+    "claim_a_doc": "D8",
+    "claim_b_text": "Curry leaves.",
+    "claim_b_doc": "D8"
+  },
+  {
+    "relationship_id": "29913c30b1424200",
+    "claim_a_text": "The tight coupling between ROS 2 and Gazebo allows for rapid prototyping and continuous integration testing of robotic algorithms, reducing the risk of costly field failures.",
+    "claim_a_doc": "A3",
+    "claim_b_text": "It is deeply integrated with ROS 2 and .",
+    "claim_b_doc": "A3"
+  },
+  {
+    "relationship_id": "4b355f69b22e8f95",
+    "claim_a_text": "If a partition is lost due to a node failure, Spark can recompute it from its lineage, ensuring fault tolerance without the overhead of replication.",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "ddd6aeb89d86de37",
+    "claim_a_text": "One big reason life can exist on Earth is that Earth has a lot of water on its surface, being the only planet in our Solar System with liquid water.",
+    "claim_a_doc": "E10",
+    "claim_b_text": "Earth's position in the \"habitable zone\" -- where water can exist as a liquid -- is a key factor in its ability to sustain life.",
+    "claim_b_doc": "E10"
+  },
+  {
+    "relationship_id": "b3e07de743f33890",
+    "claim_a_text": "Heat coconut oil in a non- stick pan add black peppercorns, and red chillies",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Heat coconut oil; add mustard seeds and .",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "46c908da5d1f08cf",
+    "claim_a_text": "Add the raw mango wedges; cover and .",
+    "claim_a_doc": "D5",
+    "claim_b_text": "Raw mango -- cut into wedges.",
+    "claim_b_doc": "D9"
+  },
+  {
+    "relationship_id": "97c6ccbfd64f4939",
+    "claim_a_text": "A Resilient Distributed Dataset (RDD) is an immutable, fault-tolerant collection of elements that can be distributed across multiple cluster nodes and processed in parallel.",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "f7380e33aee3dded",
+    "claim_a_text": "The DAG model allows for complex query plans that can be optimized for better resource utilization and faster response times.",
+    "claim_a_doc": "A6",
+    "claim_b_text": "Tez enabling more efficient task scheduling",
+    "claim_b_doc": "A6"
+  },
+  {
+    "relationship_id": "931e259c9f1e774d",
+    "claim_a_text": "Hive converts SQL queries into a directed acyclic graph (DAG) of tasks, which are then executed by the Tez execution engine.",
+    "claim_a_doc": "A6",
+    "claim_b_text": "It provides a SQL-like language called HiveQL, which allows users to write queries that are automatically translated into MapReduce or Tez jobs for execution on the cluster.",
+    "claim_b_doc": "A6"
+  },
+  {
+    "relationship_id": "677b85f1d7852628",
+    "claim_a_text": "** Actions** ( e.g., ` count `, ` collect `, ` saveAsTextFile ` return a result to the driver program or write data to storage",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  },
+  {
+    "relationship_id": "6a5748d4ecd5e2fd",
+    "claim_a_text": "** Actions** ( e.g., ` count `, ` collect `, ` saveAsTextFile `) trigger the execution of the transformation graph and .",
+    "claim_a_doc": "A8",
+    "claim_b_text": "Two types of operations can be performed on RDDs:",
+    "claim_b_doc": "A8"
+  }
+]

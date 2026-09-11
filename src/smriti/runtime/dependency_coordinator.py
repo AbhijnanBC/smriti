@@ -6,9 +6,10 @@ RECTIFIED (P0-3): Owns dependency graph construction and validation.
 
 from __future__ import annotations
 
-from smriti.runtime.composition import DependencyGraph, DependencyNode
-from smriti.exceptions import RuntimeException
 import structlog
+
+from smriti.exceptions import RuntimeException
+from smriti.runtime.composition import DependencyGraph, DependencyNode
 
 logger = structlog.get_logger(__name__)
 
@@ -31,7 +32,7 @@ class DependencyCoordinator:
         except ValueError as exc:
             raise RuntimeException(f"Dependency graph invalid: {exc}") from exc
 
-    def get(self, name: str) -> DependencyNode:
+    def get(self, name: str) -> DependencyNode | None:
         return self._graph.get(name)
 
     def all_initialized(self) -> bool:

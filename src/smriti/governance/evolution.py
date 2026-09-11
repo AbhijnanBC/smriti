@@ -14,9 +14,10 @@ complementing the declarative InterfaceContract registry.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, TypeVar, Callable, Any
+from typing import Any, TypeVar
 
 # Type variable for decorator return
 F = TypeVar("F", bound=Callable[..., Any])
@@ -24,28 +25,36 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 class CompatibilityPolicy(str, Enum):
     BACKWARD_COMPATIBLE = "backward_compatible"  # Old clients still work
-    DEPRECATION_PERIOD  = "deprecation_period"   # Old API works but logs warnings
-    BREAKING_CHANGE     = "breaking_change"       # Requires migration (new ADR required)
+    DEPRECATION_PERIOD = "deprecation_period"  # Old API works but logs warnings
+    BREAKING_CHANGE = "breaking_change"  # Requires migration (new ADR required)
 
 
 class StabilityLevel(str, Enum):
-    STABLE      = "stable"       # No breaking changes without ADR
-    EXPERIMENTAL = "experimental" # May change without notice
-    INTERNAL    = "internal"     # Not a public interface — not governed
-    DEPRECATED  = "deprecated"   # Scheduled for removal; replacement provided
+    STABLE = "stable"  # No breaking changes without ADR
+    EXPERIMENTAL = "experimental"  # May change without notice
+    INTERNAL = "internal"  # Not a public interface — not governed
+    DEPRECATED = "deprecated"  # Scheduled for removal; replacement provided
 
 
 # ── Decorators for runtime stability metadata ────────────────────────────────
+
 
 def stable(version: str) -> Callable[[F], F]:
     """
     Decorator marking an interface as STABLE.
     Breaking changes require an ADR and a deprecation period.
     """
+
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.STABLE
-        cls_or_func.__stability_version__ = version
+        # These decorators deliberately attach stability metadata to an
+        # arbitrary callable/class at runtime (read back elsewhere via
+        # getattr, e.g. architectural rule checks) -- F is intentionally
+        # Callable[..., Any], so mypy cannot and should not be taught a
+        # static shape for these dynamic attributes.
+        cls_or_func.__stability__ = StabilityLevel.STABLE  # type: ignore[attr-defined]
+        cls_or_func.__stability_version__ = version  # type: ignore[attr-defined]
         return cls_or_func
+
     return decorator
 
 
@@ -54,10 +63,12 @@ def experimental(version: str) -> Callable[[F], F]:
     Decorator marking an interface as EXPERIMENTAL.
     May change without notice; early adopters use at their own risk.
     """
+
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.EXPERIMENTAL
-        cls_or_func.__stability_version__ = version
+        cls_or_func.__stability__ = StabilityLevel.EXPERIMENTAL  # type: ignore[attr-defined]
+        cls_or_func.__stability_version__ = version  # type: ignore[attr-defined]
         return cls_or_func
+
     return decorator
 
 
@@ -66,9 +77,11 @@ def internal() -> Callable[[F], F]:
     Decorator marking an interface as INTERNAL.
     Not for public use; may change or disappear at any time.
     """
+
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.INTERNAL
+        cls_or_func.__stability__ = StabilityLevel.INTERNAL  # type: ignore[attr-defined]
         return cls_or_func
+
     return decorator
 
 
@@ -77,37 +90,42 @@ def deprecated(removal_in: str, replacement: str) -> Callable[[F], F]:
     Decorator marking an interface as DEPRECATED.
     The interface will be removed in the specified version; use `replacement` instead.
     """
+
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.DEPRECATED
-        cls_or_func.__removal_in__ = removal_in
-        cls_or_func.__replacement__ = replacement
+        cls_or_func.__stability__ = StabilityLevel.DEPRECATED  # type: ignore[attr-defined]
+        cls_or_func.__removal_in__ = removal_in  # type: ignore[attr-defined]
+        cls_or_func.__replacement__ = replacement  # type: ignore[attr-defined]
         return cls_or_func
+
     return decorator
 
 
 # ── Governance data structures ──────────────────────────────────────────────
 
+
 @dataclass
 class DeprecationRecord:
     """Records the deprecation lifecycle of an interface or module."""
-    target:          str
-    deprecated_in:   str         # Version or phase
-    removal_in:      str         # Version or phase
-    replacement:     str
-    reason:          str
-    deprecated_at:   float = field(default_factory=time.time)
+
+    target: str
+    deprecated_in: str  # Version or phase
+    removal_in: str  # Version or phase
+    replacement: str
+    reason: str
+    deprecated_at: float = field(default_factory=time.time)
 
 
 @dataclass(frozen=True)
 class InterfaceContract:
     """Formal contract for a single public interface."""
-    name:            str
-    module:          str
-    owner:           str
-    stability:       StabilityLevel
-    version:         str
-    compatibility:   CompatibilityPolicy
-    deprecations:    tuple[str, ...]  # List of deprecated features in this interface
+
+    name: str
+    module: str
+    owner: str
+    stability: StabilityLevel
+    version: str
+    compatibility: CompatibilityPolicy
+    deprecations: tuple[str, ...]  # List of deprecated features in this interface
 
 
 class EvolutionStrategy:
@@ -129,7 +147,7 @@ class EvolutionStrategy:
         "(4) removal only after the deprecation period."
     )
 
-    INTERFACE_CONTRACTS: Dict[str, InterfaceContract] = {
+    INTERFACE_CONTRACTS: dict[str, InterfaceContract] = {
         "KnowledgeAccessService": InterfaceContract(
             name="KnowledgeAccessService",
             module="smriti.api",

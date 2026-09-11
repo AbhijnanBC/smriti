@@ -1,8 +1,0 @@
-[
-  {
-    "claim_a": "C004",
-    "claim_b": "C005",
-    "expected_resolution": "contradiction",
-    "notes": "C004 states Earth is flat; C005 (if present in baseline) states Earth is spherical."
-  }
-]

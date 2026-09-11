@@ -2,14 +2,17 @@
 Unit tests for extraction/builder.py.
 """
 
-import pytest
+import dataclasses
 from pathlib import Path
-from smriti.extraction.builder import build_sentence, _compute_sentence_id
+
+import pytest
+from smriti.extraction.builder import build_sentence
 from smriti.extraction.scanner import BlockType
 
 
 def test_build_returns_semantic_sentence():
     from smriti.core.models import SemanticSentence
+
     s = build_sentence(
         text="Python is great.",
         document_id="doc123",
@@ -60,13 +63,15 @@ def test_different_position_different_id():
 def test_semantic_sentence_is_frozen():
     """SemanticSentence must be immutable."""
     s = build_sentence("Python.", "doc1", Path("a.md"), "", 0, 0, 7, BlockType.PARAGRAPH)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         s.text = "Julia."
 
 
 def test_context_stored_separately():
     """Context must be stored as-is, never fused into text."""
-    s = build_sentence("Supports tensors.", "doc1", Path("a.md"), "CUDA", 0, 0, 17, BlockType.PARAGRAPH)
+    s = build_sentence(
+        "Supports tensors.", "doc1", Path("a.md"), "CUDA", 0, 0, 17, BlockType.PARAGRAPH
+    )
     assert s.text == "Supports tensors."
     assert s.context == "CUDA"
     assert "CUDA" not in s.text

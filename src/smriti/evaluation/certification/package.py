@@ -13,15 +13,18 @@ This scales to:
 from __future__ import annotations
 
 import hashlib
-import json
-from datetime import datetime, timezone
-from typing import List
-import structlog
+from datetime import UTC, datetime
 
+import structlog
 from smriti.core.models import (
-    ResearchAssurancePackage, CertificationReport, ExperimentDesign,
-    ScienceEvidence, EvaluationManifest, AssumptionRecord, LimitationRecord,
+    AssumptionRecord,
+    CertificationReport,
+    EvaluationManifest,
     EvidenceConflict,
+    ExperimentDesign,
+    LimitationRecord,
+    ResearchAssurancePackage,
+    ScienceEvidence,
 )
 
 logger = structlog.get_logger(__name__)
@@ -30,12 +33,12 @@ logger = structlog.get_logger(__name__)
 def build_research_assurance_package(
     run_id: str,
     certification_report: CertificationReport,
-    experiments: List[ExperimentDesign],
-    science_evidence: List[ScienceEvidence],
+    experiments: list[ExperimentDesign],
+    science_evidence: list[ScienceEvidence],
     evaluation_manifest: EvaluationManifest,
-    assumption_registry: List[AssumptionRecord],
-    limitation_registry: List[LimitationRecord],
-    evidence_conflicts: List[EvidenceConflict],
+    assumption_registry: list[AssumptionRecord],
+    limitation_registry: list[LimitationRecord],
+    evidence_conflicts: list[EvidenceConflict],
 ) -> ResearchAssurancePackage:
     """
     Assemble the complete Research Assurance Package.
@@ -43,24 +46,24 @@ def build_research_assurance_package(
     The package is the archival artifact. CertificationReport is one component.
     """
     package_id = hashlib.sha256(
-        f"{run_id}:{datetime.now(tz=timezone.utc).isoformat()}".encode()
+        f"{run_id}:{datetime.now(tz=UTC).isoformat()}".encode()
     ).hexdigest()[:12]
 
     # Compute integrity checksums for all artifacts
     integrity_checksums: dict = {
-        "certification_report": hashlib.sha256(
-            certification_report.report_id.encode()
-        ).hexdigest()[:16],
-        "evaluation_manifest": hashlib.sha256(
-            evaluation_manifest.manifest_id.encode()
-        ).hexdigest()[:16],
+        "certification_report": hashlib.sha256(certification_report.report_id.encode()).hexdigest()[
+            :16
+        ],
+        "evaluation_manifest": hashlib.sha256(evaluation_manifest.manifest_id.encode()).hexdigest()[
+            :16
+        ],
         "package": hashlib.sha256(package_id.encode()).hexdigest()[:16],
     }
 
     package = ResearchAssurancePackage(
         package_id=package_id,
         run_id=run_id,
-        created_at=datetime.now(tz=timezone.utc).isoformat(),
+        created_at=datetime.now(tz=UTC).isoformat(),
         certification_report=certification_report,
         experiment_registry=tuple(experiments),
         evidence_ledger=tuple(science_evidence),

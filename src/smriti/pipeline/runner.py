@@ -8,18 +8,22 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
-from unittest import result
-from smriti.core.models import RelationshipSet, KnowledgeGraph, ScoredKnowledgeGraph, CertificationReport
-from smriti.retrieval import discover_relationships
+
 import structlog
 
+from smriti.api import KnowledgeAccessService, run_api_initialization
 from smriti.core.manifest import ManifestManager
+from smriti.core.models import (
+    CertificationReport,
+    KnowledgeGraph,
+    RelationshipSet,
+    ScoredKnowledgeGraph,
+)
 from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
-from smriti.exceptions import PipelineError, Phase5Error
-from smriti.api import KnowledgeAccessService, run_api_initialization
+from smriti.exceptions import Phase5Error, PipelineError
 from smriti.governance import stable
+from smriti.retrieval import discover_relationships
 
 logger = structlog.get_logger(__name__)
 
@@ -27,6 +31,7 @@ logger = structlog.get_logger(__name__)
 def _make_run_id() -> str:
     """Produce a timestamp-based run_id. Unique per execution."""
     return datetime.now().strftime("%Y%m%d_%H%M%S")
+
 
 @stable("1.0")
 class PipelineRunner:
@@ -38,7 +43,7 @@ class PipelineRunner:
         runner.run()
     """
 
-    def __init__(self, input_dirs: List[Path]):
+    def __init__(self, input_dirs: list[Path]):
         self.input_dirs = [Path(d) for d in input_dirs]
         self.run_id = _make_run_id()
         self.manifest_manager = ManifestManager(
@@ -48,10 +53,14 @@ class PipelineRunner:
         self.state_manager = StateManager()
         logger.info("pipeline runner initialized", run_id=self.run_id)
 
-    def run(
+    # Sequences all 12 pipeline phases with resume/skip guards
+    # (start_from/stop_at + "already loaded?" checks per phase); flat by
+    # design so each phase's gating is visible and independently
+    # verifiable, at the cost of a high linear branch count.
+    def run(  # noqa: C901
         self,
         start_from: int = 1,
-        stop_at: Optional[int] = None,
+        stop_at: int | None = None,
         force_full: bool = False,
     ) -> bool:
         """
@@ -115,7 +124,6 @@ class PipelineRunner:
                     phase3_result = self._load_phase3_result()
                 phase4_result = self._run_phase_4(phase3_result)
 
-
             phase5_result = None
             if start_from <= 5 and (stop_at is None or stop_at >= 5):
                 if phase4_result is None:
@@ -142,27 +150,27 @@ class PipelineRunner:
             if start_from <= 8 and (stop_at is None or stop_at >= 8):
                 if phase7_result is None:
                     phase7_result = self._load_phase7_result()
-                phase8_result = self._run_phase_8(phase7_result) 
+                phase8_result = self._run_phase_8(phase7_result)
 
             phase9_api = None
             if start_from <= 9 and (stop_at is None or stop_at >= 9):
                 if phase8_result is None:
                     phase8_result = self._load_phase8_result()
-                phase9_api = self._run_phase_9(phase8_result)   
+                phase9_api = self._run_phase_9(phase8_result)
 
             if start_from <= 10 and (stop_at is None or stop_at >= 10):
-                 self._run_phase_10(phase9_api)
+                self._run_phase_10(phase9_api)
 
             if start_from <= 11 and (stop_at is None or stop_at >= 11):
-                self._run_phase_11()     
+                self._run_phase_11()
 
             if start_from <= 12 and (stop_at is None or stop_at >= 12):
                 if phase9_api is None:
                     phase8_result = self._load_phase8_result()
                     from smriti.api import build_knowledge_api
+
                     phase9_api = build_knowledge_api(phase8_result)
                 self._run_phase_12(phase9_api)
-            
 
         except Exception as e:
             logger.error("pipeline failed", error=str(e), exc_info=True)
@@ -175,7 +183,7 @@ class PipelineRunner:
 
     def _run_phase_1(self, force_full: bool = False):
         """Execute Phase 1: Input Discovery."""
-        from smriti.discovery import run_discovery, DiscoveryResult
+        from smriti.discovery import run_discovery
 
         logger.info("running phase 1")
         result = run_discovery(
@@ -199,9 +207,9 @@ class PipelineRunner:
         Reconstructs SourceDocument list from dataset.json.
         """
         import json
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         from smriti.core.models import FileFormat, SourceDocument
-        from smriti.discovery import DiscoveryResult, DiscoveryStats, DuplicateRegistry
 
         # Find the most recent run's phase1 dataset
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase1" / "dataset.json"
@@ -237,9 +245,13 @@ class PipelineRunner:
             )
 
         # Reconstruct a minimal DiscoveryResult for Phase 2
-        return type("DiscoveryResult", (), {
-            "canonical_documents": source_documents,
-        })()
+        return type(
+            "DiscoveryResult",
+            (),
+            {
+                "canonical_documents": source_documents,
+            },
+        )()
 
     # ── Phase 2 implementation ────────────────────────────────────────────────
 
@@ -263,18 +275,46 @@ class PipelineRunner:
             failed=result.stats.failed,
             total_chars=result.stats.total_characters,
         )
-        return result   # <-- return the result so Phase 3 can consume it
+        return result  # <-- return the result so Phase 3 can consume it
 
     # ── Phase 3 implementation ────────────────────────────────────────────────
 
+    # Placeholders for SourceDocument/Document fields that
+    # ExtractionResult.to_dataset_json() (smriti/parsing/__init__.py) never
+    # persists. Nothing from Phase 3 onward reads these fields (Phase 3 only
+    # reads Document.source_document.path -- see extraction/__init__.py), so
+    # a documented sentinel is safe; it exists to make misuse loud rather
+    # than silently plausible.
+    _PHASE2_RAW_TEXT_PLACEHOLDER = "<raw_text unavailable: not persisted by phase2/dataset.json>"
+    _PHASE2_CONTENT_HASH_PLACEHOLDER = "unavailable_phase2_artifact"
+    _PHASE2_SIZE_BYTES_PLACEHOLDER = -1
+
     def _load_phase2_result(self):
-        """Load Phase 2 dataset from artifact when resuming at Phase 3."""
+        """
+        Load Phase 2 dataset from artifact when resuming at Phase 3.
+
+        ExtractionResult.to_dataset_json() writes "path"/"relative_path"/
+        "format"/"text_statistics"/"extraction_warnings" and deliberately
+        omits raw_text ("too large, not needed by Phase 3"), and never wrote
+        SourceDocument.source_root/content_hash/size_bytes at all. This
+        reconstructs only from fields the serializer actually emits;
+        source_root is recovered from path/relative_path (path ==
+        source_root / relative_path at discovery time -- see
+        discovery/builder.py), and the genuinely-absent fields get the
+        documented placeholders above.
+        """
         import json
+        from datetime import datetime
+
         from smriti.core.models import (
-            Document, SourceDocument, FileFormat, ExtractionMethod,
-            TextStatistics, WarningCode, RawExtractionResult,
+            Document,
+            DocumentProvenance,
+            ExtractionMethod,
+            FileFormat,
+            SourceDocument,
+            TextStatistics,
+            WarningCode,
         )
-        from datetime import datetime, timezone
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase2" / "dataset.json"
         if not dataset_path.exists():
@@ -289,37 +329,62 @@ class PipelineRunner:
                     "Run from Phase 2 first."
                 )
             dataset_path = phase2_dirs[0]
+            logger.info("loading phase2 dataset", path=str(dataset_path))
 
         records = json.loads(dataset_path.read_text(encoding="utf-8"))
         documents = []
         for r in records:
+            path = Path(r["path"])
+            relative_path = Path(r["relative_path"])
+            rel_parts = len(relative_path.parts)
+            source_root = path.parents[rel_parts - 1] if rel_parts > 0 else path.parent
+
             source_doc = SourceDocument(
                 doc_id=r["doc_id"],
-                path=Path(r["path"]),
-                relative_path=Path(r["relative_path"]),
-                source_root=Path(r["source_root"]),
+                path=path,
+                relative_path=relative_path,
+                source_root=source_root,
                 format=FileFormat(r["format"]),
-                content_hash=r["content_hash"],
-                size_bytes=r["size_bytes"],
+                content_hash=self._PHASE2_CONTENT_HASH_PLACEHOLDER,
+                size_bytes=self._PHASE2_SIZE_BYTES_PLACEHOLDER,
                 modified_at=datetime.fromisoformat(r["modified_at"]),
             )
+            stats_data = r["text_statistics"]
             stats = TextStatistics(
-                character_count=r["stats"]["character_count"],
-                word_count=r["stats"]["word_count"],
-                line_count=r["stats"]["line_count"],
-                blank_line_count=r["stats"]["blank_line_count"],
-                paragraph_count=r["stats"]["paragraph_count"],
+                character_count=stats_data["character_count"],
+                word_count=stats_data["word_count"],
+                line_count=stats_data["line_count"],
+                blank_line_count=stats_data["blank_line_count"],
+                paragraph_count=stats_data["paragraph_count"],
             )
-            documents.append(Document(
-                doc_id=r["doc_id"],
-                source_document=source_doc,
-                raw_text=r["raw_text"],
-                normalized_text=r["normalized_text"],
-                extraction_method=ExtractionMethod(r["extraction_method"]),
-                extraction_warnings=tuple(WarningCode(w) for w in r.get("warnings", [])),
-                text_statistics=stats,
-                encoding_used=r.get("encoding_used", "utf-8"),
-            ))
+            prov_data = r.get("provenance") or {}
+            pub_date = prov_data.get("publication_date")
+            provenance = DocumentProvenance(
+                source_id=prov_data.get("source_id"),
+                author=prov_data.get("author"),
+                publisher=prov_data.get("publisher"),
+                domain=prov_data.get("domain"),
+                url=prov_data.get("url"),
+                publication_date=datetime.fromisoformat(pub_date) if pub_date else None,
+                parent_source_id=prov_data.get("parent_source_id"),
+                extraction_method=prov_data.get("extraction_method", "none"),
+            )
+            documents.append(
+                Document(
+                    doc_id=r["doc_id"],
+                    source_document=source_doc,
+                    raw_text=self._PHASE2_RAW_TEXT_PLACEHOLDER,
+                    normalized_text=r["normalized_text"],
+                    extraction_method=ExtractionMethod(r["extraction_method"]),
+                    extraction_warnings=tuple(
+                        WarningCode(w) for w in r.get("extraction_warnings", [])
+                    ),
+                    text_statistics=stats,
+                    encoding_used=r.get("encoding_used", "utf-8"),
+                    schema_version=r.get("schema_version", "2.0"),
+                    provenance=provenance,
+                )
+            )
         return type("Phase2Result", (), {"documents": documents})()
 
     def _run_phase_3(self, phase2_result):
@@ -339,15 +404,16 @@ class PipelineRunner:
             docs_ok=result.successful_documents,
             docs_failed=result.failed_documents,
         )
-        return result   # return for future phases if needed
+        return result  # return for future phases if needed
 
     # ── Phase 4 implementation ────────────────────────────────────────────────
 
     def _load_phase3_result(self):
         """Load Phase 3 dataset from artifact when resuming at Phase 4."""
         import json
-        from smriti.core.models import SemanticSentence
         from pathlib import Path
+
+        from smriti.core.models import SemanticSentence
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase3" / "dataset.json"
         if not dataset_path.exists():
@@ -367,25 +433,26 @@ class PipelineRunner:
         records = json.loads(dataset_path.read_text(encoding="utf-8"))
         sentences = []
         for r in records:
-            sentences.append(SemanticSentence(
-                sentence_id=r["sentence_id"],
-                document_id=r["document_id"],
-                text=r["text"],
-                context=r["context"],
-                position=r["position"],
-                char_start=r["char_start"],
-                char_end=r["char_end"],
-                source_path=Path(r["source_path"]),
-                origin_block_type=r.get("origin_block_type", "paragraph"),
-                schema_version=r.get("schema_version", "3.0"),
-            ))
+            sentences.append(
+                SemanticSentence(
+                    sentence_id=r["sentence_id"],
+                    document_id=r["document_id"],
+                    text=r["text"],
+                    context=r["context"],
+                    position=r["position"],
+                    char_start=r["char_start"],
+                    char_end=r["char_end"],
+                    source_path=Path(r["source_path"]),
+                    origin_block_type=r.get("origin_block_type", "paragraph"),
+                    schema_version=r.get("schema_version", "3.0"),
+                )
+            )
 
         return type("Phase3Result", (), {"all_sentences": sentences})()
 
     def _run_phase_4(self, phase3_result):
         """Execute Phase 4: Claim Construction."""
         from smriti.claims import extract_claims
-        from smriti.claims import Phase4Result
 
         logger.info("running phase 4")
         result = extract_claims(
@@ -401,7 +468,7 @@ class PipelineRunner:
             parser_failures=result.stats.parser_failures,
         )
         return result
-    
+
         # ── Phase 5 implementation ────────────────────────────────────────────────
 
     def _load_phase4_result(self):
@@ -413,12 +480,17 @@ class PipelineRunner:
         """
         import json
         from pathlib import Path
+
         from smriti.core.models import (
-            Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
-            Modality, StructuredAssertion,
+            AssertionMetadata,
+            Claim,
+            ClaimProvenance,
+            ExtractionMode,
+            Modality,
+            StructuredAssertion,
         )
 
-        SUPPORTED_PHASE4_SCHEMA = "4.0"
+        supported_phase4_schema = "4.0"
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase4" / "dataset.json"
         if not dataset_path.exists():
@@ -439,12 +511,12 @@ class PipelineRunner:
 
         # Validate schema_version before deserializing.
         schema_versions = {r.get("schema_version", "unknown") for r in records if records}
-        unsupported = schema_versions - {SUPPORTED_PHASE4_SCHEMA}
+        unsupported = schema_versions - {supported_phase4_schema}
         if unsupported:
             logger.warning(
                 "unexpected schema_version in phase4 dataset",
                 found=sorted(unsupported),
-                expected=SUPPORTED_PHASE4_SCHEMA,
+                expected=supported_phase4_schema,
             )
 
         claims = []
@@ -476,28 +548,29 @@ class PipelineRunner:
                 is_attributed=r.get("is_attributed", False),
                 attributed_to=r.get("attributed_to"),
             )
-            claims.append(Claim(
-                claim_id=r["claim_id"],
-                sentence_id=r["sentence_id"],
-                document_id=r["document_id"],
-                text=r["text"],
-                context=r.get("context", ""),
-                source_path=Path(r.get("source_path", "unknown")),
-                extraction_mode=ExtractionMode(r.get("extraction_mode", "whole_sentence")),
-                structured_assertion=structured,
-                assertion_metadata=metadata,
-                provenance=provenance,
-                schema_version=r.get("schema_version", "4.0"),
-                content_hash=r.get("content_hash", ""),
-                rule_version=r.get("rule_version", "1.0"),
-            ))
+            claims.append(
+                Claim(
+                    claim_id=r["claim_id"],
+                    sentence_id=r["sentence_id"],
+                    document_id=r["document_id"],
+                    text=r["text"],
+                    context=r.get("context", ""),
+                    source_path=Path(r.get("source_path", "unknown")),
+                    extraction_mode=ExtractionMode(r.get("extraction_mode", "whole_sentence")),
+                    structured_assertion=structured,
+                    assertion_metadata=metadata,
+                    provenance=provenance,
+                    schema_version=r.get("schema_version", "4.0"),
+                    content_hash=r.get("content_hash", ""),
+                    rule_version=r.get("rule_version", "1.0"),
+                )
+            )
 
         return type("Phase4Result", (), {"all_claims": claims})()
 
     def _run_phase_5(self, phase4_result):
         """Execute Phase 5: Semantic Embedding."""
         from smriti.embedding import embed_claims
-        from smriti.exceptions import Phase5Error
 
         logger.info("running phase 5")
         try:
@@ -531,12 +604,10 @@ class PipelineRunner:
             cache_hit_rate=f"{result.stats.cache_hit_rate:.1%}",
             throughput=f"{result.stats.vectors_per_second:.1f} vec/s",
         )
-        return result    
-    
+        return result
 
-    def _run_phase_6(self, phase5_result, claims_map) -> "RelationshipSet":
+    def _run_phase_6(self, phase5_result, claims_map) -> RelationshipSet:
         """Execute Phase 6: Semantic Relationship Discovery."""
-        from smriti.retrieval import discover_relationships
 
         logger.info("running phase 6")
         result = discover_relationships(
@@ -553,13 +624,19 @@ class PipelineRunner:
         )
         return result
 
-
     def _load_phase5_result(self):
         """Load Phase 5 dataset from artifact when resuming at Phase 6."""
-        import json, math
+        import json
+        import math
+
         from smriti.core.models import (
-            EmbeddedClaim, Embedding, EmbeddingModelDescriptor,
-            EmbeddingProvenance, EmbeddingQuality, Vector, VectorDType,
+            EmbeddedClaim,
+            Embedding,
+            EmbeddingModelDescriptor,
+            EmbeddingProvenance,
+            EmbeddingQuality,
+            Vector,
+            VectorDType,
         )
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase5" / "dataset.json"
@@ -570,9 +647,7 @@ class PipelineRunner:
                 reverse=True,
             )
             if not phase5_dirs:
-                raise PipelineError(
-                    "Cannot resume at Phase 6: no Phase 5 dataset.json found."
-                )
+                raise PipelineError("Cannot resume at Phase 6: no Phase 5 dataset.json found.")
             dataset_path = phase5_dirs[0]
 
         records = json.loads(dataset_path.read_text(encoding="utf-8"))
@@ -624,14 +699,18 @@ class PipelineRunner:
 
         return type("Phase5Result", (), {"embedded_claims": embedded_claims})()
 
-
     def _load_phase4_result_as_map(self):
         """Load Phase 4 claims as a {claim_id: Claim} dict for Phase 6 text lookup."""
         import json
         from pathlib import Path
+
         from smriti.core.models import (
-            Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
-            Modality, StructuredAssertion,
+            AssertionMetadata,
+            Claim,
+            ClaimProvenance,
+            ExtractionMode,
+            Modality,
+            StructuredAssertion,
         )
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase4" / "dataset.json"
@@ -694,19 +773,101 @@ class PipelineRunner:
             claims_map[claim.claim_id] = claim
 
         return claims_map
-    
 
-    def _run_phase_7(self, phase6_result, claims_map) -> "KnowledgeGraph":
+    def _load_document_provenance_map(self) -> dict:
+        """
+        RECTIFIED (external review, P1-1): build document_id ->
+        DocumentProvenance by reading this run's own phase2/dataset.json
+        artifact. This is the runner reading a persisted, immutable
+        artifact from an earlier phase of the SAME run -- not a phase
+        reaching backward across the phase-isolation boundary (Phase 7's
+        own code never touches Phase 2's data directly; only the
+        orchestrator does, exactly as it already does for run_id/
+        config_hash plumbing elsewhere in this file). Returns {} (not an
+        error) if the artifact is missing or a document has no disclosed
+        provenance -- absence is the common, honest case.
+        """
+        import json
+        from datetime import datetime
+
+        from smriti.core.models import DocumentProvenance
+
+        dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase2" / "dataset.json"
+        if not dataset_path.exists():
+            return {}
+        try:
+            records = json.loads(dataset_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+        provenance_map = {}
+        for r in records:
+            prov = r.get("provenance")
+            if (
+                not prov
+                or not prov.get("extraction_method")
+                or prov.get("extraction_method") == "none"
+            ):
+                continue
+            pub_date = prov.get("publication_date")
+            provenance_map[r["doc_id"]] = DocumentProvenance(
+                source_id=prov.get("source_id"),
+                author=prov.get("author"),
+                publisher=prov.get("publisher"),
+                domain=prov.get("domain"),
+                url=prov.get("url"),
+                publication_date=datetime.fromisoformat(pub_date) if pub_date else None,
+                parent_source_id=prov.get("parent_source_id"),
+                extraction_method=prov.get("extraction_method", "none"),
+            )
+        return provenance_map
+
+    def _enrich_claims_with_timestamps(self, claims_map: dict, document_provenance: dict) -> dict:
+        """
+        RECTIFIED (external review, P1-3 "temporal metadata"):
+        evolution/temporal.py has read Claim.timestamp (falling back to
+        NO_TIMESTAMP when absent) since before that field existed on
+        Claim at all -- every claim in every corpus this project has ever
+        run therefore got NO_TIMESTAMP, never genuine EVOLUTION_CHAIN
+        reasoning. This populates Claim.timestamp from the claim's own
+        source document's disclosed publication_date (P1-1's
+        DocumentProvenance, itself parsed from YAML frontmatter -- never
+        filesystem mtime, which is exactly the semantic-vs-filesystem
+        distinction this field exists to enforce). A claim whose document
+        discloses no date keeps timestamp=None, which is the correct,
+        honest NO_TIMESTAMP case, not an error.
+
+        Done here (the orchestrator), not inside claims/builder.py, for
+        the same reason document_provenance itself is loaded here: Phase
+        4's own construction code has no access to Phase 2 data, and
+        should not need it, but the runner legitimately reads persisted
+        artifacts across phase boundaries.
+        """
+        import dataclasses
+
+        enriched = {}
+        for claim_id, claim in claims_map.items():
+            prov = document_provenance.get(claim.document_id)
+            if prov is not None and prov.publication_date is not None:
+                enriched[claim_id] = dataclasses.replace(claim, timestamp=prov.publication_date)
+            else:
+                enriched[claim_id] = claim
+        return enriched
+
+    def _run_phase_7(self, phase6_result, claims_map) -> KnowledgeGraph:
         """Execute Phase 7: Knowledge Graph Construction."""
         from smriti.evolution import build_knowledge_graph
 
         logger.info("running phase 7")
+        document_provenance = self._load_document_provenance_map()
+        claims_map = self._enrich_claims_with_timestamps(claims_map, document_provenance)
         result = build_knowledge_graph(
             relationship_set=phase6_result,
             claims_map=claims_map,
             run_id=self.run_id,
             manifest_manager=self.manifest_manager,
             state_manager=self.state_manager,
+            document_provenance=document_provenance,
         )
         logger.info(
             "phase 7 complete",
@@ -719,15 +880,23 @@ class PipelineRunner:
         )
         return result
 
-
     def _load_phase6_result(self):
         """Load Phase 6 dataset from artifact when resuming at Phase 7."""
         import json
+
         from smriti.core.models import (
-            RelationshipSet, Relationship, RelationshipType, RelationshipDirection,
-            RelationshipEvidence, RelationshipProvenance, RelationshipQuality,
-            NLIScores, InferenceMetadata, CandidatePair, SchemaVersionInfo,
+            CandidatePair,
+            InferenceMetadata,
             LifecycleStage,
+            NLIScores,
+            Relationship,
+            RelationshipDirection,
+            RelationshipEvidence,
+            RelationshipProvenance,
+            RelationshipQuality,
+            RelationshipSet,
+            RelationshipType,
+            SchemaVersionInfo,
         )
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase6" / "dataset.json"
@@ -770,7 +939,9 @@ class PipelineRunner:
                 pair=pair,
                 cosine_similarity=ev_data["cosine_similarity"],
                 nli_scores=nli_scores,
-                calibrated_confidence=ev_data.get("calibrated_confidence", ev_data.get("confidence", 0.0)),
+                calibrated_confidence=ev_data.get(
+                    "calibrated_confidence", ev_data.get("confidence", 0.0)
+                ),
                 inference_metadata=inference_meta,
                 lifecycle_stage=LifecycleStage.RELATIONSHIP,
             )
@@ -785,26 +956,37 @@ class PipelineRunner:
                 calibrator_version=prov_data.get("calibrator_version", "1.0"),
                 cosine_similarity=prov_data.get("cosine_similarity", 0.0),
                 candidate_rank=prov_data.get("candidate_rank", 1),
-                raw_nli_confidence=prov_data.get("raw_nli_confidence", prov_data.get("nli_confidence", 0.0)),
+                raw_nli_confidence=prov_data.get(
+                    "raw_nli_confidence", prov_data.get("nli_confidence", 0.0)
+                ),
                 calibrated_confidence=prov_data.get("calibrated_confidence", 0.0),
                 config_hash=prov_data.get("config_hash", ""),
                 run_id=prov_data.get("run_id", self.run_id),
             )
             quality = RelationshipQuality(
-                cosine_above_threshold=True, nli_above_threshold=True,
-                evidence_consistent=True, calibration_applied=False,
+                cosine_above_threshold=True,
+                nli_above_threshold=True,
+                evidence_consistent=True,
+                calibration_applied=False,
             )
             version_info = SchemaVersionInfo(
                 schema_version=r.get("schema_version", "6.0"),
-                migration_version="6.0", compatibility_version="6.0",
+                migration_version="6.0",
+                compatibility_version="6.0",
             )
-            relationships.append(Relationship(
-                relationship_id=r["relationship_id"],
-                claim_id_a=r["claim_id_a"], claim_id_b=r["claim_id_b"],
-                relationship_type=RelationshipType(r["relationship_type"]),
-                direction=RelationshipDirection(r["direction"]),
-                evidence=evidence, quality=quality, provenance=provenance, version_info=version_info,
-            ))
+            relationships.append(
+                Relationship(
+                    relationship_id=r["relationship_id"],
+                    claim_id_a=r["claim_id_a"],
+                    claim_id_b=r["claim_id_b"],
+                    relationship_type=RelationshipType(r["relationship_type"]),
+                    direction=RelationshipDirection(r["direction"]),
+                    evidence=evidence,
+                    quality=quality,
+                    provenance=provenance,
+                    version_info=version_info,
+                )
+            )
 
         return RelationshipSet(
             relationships=relationships,
@@ -815,12 +997,11 @@ class PipelineRunner:
             run_id=self.run_id,
         )
 
-
     def _run_phase_8(
         self,
-        phase7_result: "KnowledgeGraph",
+        phase7_result: KnowledgeGraph,
         policy_profile: str = "balanced",
-    ) -> "ScoredKnowledgeGraph":
+    ) -> ScoredKnowledgeGraph:
         """Execute Phase 8: Reliability Evaluation."""
         from smriti.scoring import score_knowledge_graph
         from smriti.scoring.policies import PolicyProfile
@@ -847,23 +1028,34 @@ class PipelineRunner:
         )
         return result
 
-
     def _load_phase7_result(self):
         """Load Phase 7 KnowledgeGraph from artifact when resuming at Phase 8."""
         import json
         from pathlib import Path
+
         from smriti.core.models import (
-            KnowledgeGraph, ClaimNode, RelationshipEdge, KnowledgePartition,
-            RelationshipType, RelationshipDirection, GraphStatistics, ValidationReport,
-            SemanticRole, TopologyMetrics, SupportAggregate, TemporalMetadata,
-            TemporalStatus, NodeAnnotations,
+            ClaimNode,
+            GraphStatistics,
+            KnowledgeGraph,
+            KnowledgePartition,
+            NodeAnnotations,
+            RelationshipDirection,
+            RelationshipEdge,
+            RelationshipType,
+            SemanticRole,
+            SupportAggregate,
+            TemporalMetadata,
+            TemporalStatus,
+            TopologyMetrics,
+            ValidationReport,
         )
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase7" / "dataset.json"
         if not dataset_path.exists():
             phase7_dirs = sorted(
                 ARTIFACTS_DIR.glob("run_*/phase7/dataset.json"),
-                key=lambda p: p.parent.parent.name, reverse=True,
+                key=lambda p: p.parent.parent.name,
+                reverse=True,
             )
             if not phase7_dirs:
                 raise PipelineError("Cannot resume at Phase 8: no Phase 7 dataset.json found.")
@@ -913,7 +1105,8 @@ class PipelineRunner:
                 partition_id=nd.get("partition_id"),
             )
             nodes[claim_id] = ClaimNode(
-                node_id=claim_id, claim_id=claim_id,
+                node_id=claim_id,
+                claim_id=claim_id,
                 claim_text=nd.get("claim_text", ""),
                 context=nd.get("context", ""),
                 source_path=Path(nd.get("source_path", "unknown")),
@@ -940,7 +1133,9 @@ class PipelineRunner:
         for pid, pd in data.get("partitions", {}).items():
             partitions[pid] = KnowledgePartition(
                 partition_id=pid,
-                stable_partition_label=pd.get("stable_partition_label", ""),
+                stable_partition_label=tuple(
+                    filter(None, pd.get("stable_partition_label", "").split(","))
+                ),
                 node_ids=frozenset(pd.get("node_ids", [])),
                 internal_edge_ids=frozenset(),
                 node_count=pd.get("node_count", 0),
@@ -959,30 +1154,42 @@ class PipelineRunner:
             contradiction_count=stats_data.get("contradiction_count", 0),
             supports_count=stats_data.get("supports_count", 0),
             refines_count=stats_data.get("refines_count", 0),
-            isolated_nodes=0, bridge_nodes=0, hub_nodes=0,
+            isolated_nodes=0,
+            bridge_nodes=0,
+            hub_nodes=0,
             evolution_chains=stats_data.get("evolution_chains", 0),
             unresolved_conflicts=stats_data.get("unresolved_conflicts", 0),
-            construction_time_seconds=0.0, enrichment_time_seconds=0.0,
+            construction_time_seconds=0.0,
+            enrichment_time_seconds=0.0,
         )
         val_data = data.get("validation", {})
         validation = ValidationReport(
             is_valid=val_data.get("is_valid", True),
-            node_violations=(), edge_violations=(), graph_violations=(),
+            node_violations=(),
+            edge_violations=(),
+            graph_violations=(),
             semantic_warnings=(),
             validation_time_seconds=0.0,
         )
         return KnowledgeGraph(
-            graph_id=data.get("graph_id", ""), nodes=nodes, edges=edges, partitions=partitions,
-            statistics=stats, validation_report=validation,
+            graph_id=data.get("graph_id", ""),
+            nodes=nodes,
+            edges=edges,
+            partitions=partitions,
+            statistics=stats,
+            validation_report=validation,
             run_id=data.get("run_id", self.run_id),
             config_hash=data.get("config_hash", ""),
             schema_version=data.get("schema_version", "7.0"),
         )
-    
+
     def _load_phase8_result(self):
         """Load Phase 8 ScoredKnowledgeGraph from artifact when resuming at Phase 9."""
         import json
-        from smriti.core.models import ScoredKnowledgeGraph, KnowledgeGraph, ClaimNode, RelationshipEdge, KnowledgePartition, GraphStatistics, ValidationReport, NodeAnnotations
+
+        from smriti.core.models import (
+            ScoredKnowledgeGraph,
+        )
         from smriti.core.paths import ARTIFACTS_DIR
         from smriti.exceptions import PipelineError
 
@@ -1004,31 +1211,33 @@ class PipelineRunner:
 
         data = json.loads(dataset_path.read_text(encoding="utf-8"))
 
-        # Reconstruct KnowledgeGraph from the dataset
-        # Phase 8 dataset contains the graph + reliability overlay
-        # We need to build the KnowledgeGraph first, then the ScoredKnowledgeGraph
-        graph_data = data.get("graph", data)  # Phase 8 dataset may have graph nested
-
-        # For simplicity, call the existing Phase 7 loader (since Phase 8 dataset includes the full graph)
-        # But we need to make sure we load the Phase 7 graph from the Phase 7 artifact
-        # because Phase 8 dataset may not contain the full graph structure in the same format.
-        # Actually, Phase 8 dataset includes reliability but references the graph ID.
-        # The best approach: load the Phase 7 dataset and then overlay reliability from Phase 8.
-
-        # To avoid complexity, we'll load the Phase 7 graph and the Phase 8 reliability separately.
+        # Reconstruct KnowledgeGraph from the dataset. Phase 8 dataset
+        # contains the reliability overlay but references the graph by ID
+        # rather than embedding the full graph structure, so we load the
+        # Phase 7 graph and the Phase 8 reliability data separately.
         phase7_graph = self._load_phase7_result()
-        
+
         # Now load reliability data from Phase 8 dataset
         reliability_data = data.get("reliability", {})
-        
+
         # Reconstruct ScoredKnowledgeGraph
-        from smriti.core.models import ScoredKnowledgeGraph, ReliabilityMetadata, CalibrationLabel, SignalVector, ComponentScore, ReliabilityExplanation, ReliabilityAudit, ReliabilityDecisionRecord, SignalStatus, SignalManifest, EvidenceGrade
-        
+        from smriti.core.models import (
+            CalibrationLabel,
+            ComponentScore,
+            ReliabilityAudit,
+            ReliabilityDecisionRecord,
+            ReliabilityExplanation,
+            ReliabilityMetadata,
+            SignalManifest,
+            SignalStatus,
+            SignalVector,
+        )
+
         reliability_metadata = {}
         for claim_id, meta_data in reliability_data.items():
             # Parse calibration label
             calibration_label = CalibrationLabel(meta_data.get("calibration_label", "very_low"))
-            
+
             # Parse signal vector
             sv_data = meta_data.get("signal_vector", {})
             signal_vector = SignalVector(
@@ -1041,20 +1250,53 @@ class PipelineRunner:
                 evidence_completeness=sv_data.get("evidence_completeness", 0.0),
                 statuses={},
             )
-            
+
             # Parse component scores
             component_scores = []
             for comp in meta_data.get("components", []):
-                component_scores.append(ComponentScore(
-                    signal_id=comp.get("signal", ""),
-                    normalized_value=0.0,
-                    policy_weight=0.0,
-                    adjusted_value=0.0,
-                    contribution=comp.get("contribution", 0.0),
-                    direction=comp.get("direction", "positive"),
-                    explanation=comp.get("explanation", ""),
-                ))
-            
+                component_scores.append(
+                    ComponentScore(
+                        signal_id=comp.get("signal", ""),
+                        normalized_value=0.0,
+                        policy_weight=0.0,
+                        adjusted_value=0.0,
+                        contribution=comp.get("contribution", 0.0),
+                        direction=comp.get("direction", "positive"),
+                        explanation=comp.get("explanation", ""),
+                    )
+                )
+
+            # Parse importance component scores (NEW P1-4)
+            importance_component_scores = []
+            for comp in meta_data.get("importance_components", []):
+                importance_component_scores.append(
+                    ComponentScore(
+                        signal_id=comp.get("signal", ""),
+                        normalized_value=0.0,
+                        policy_weight=0.0,
+                        adjusted_value=0.0,
+                        contribution=comp.get("contribution", 0.0),
+                        direction=comp.get("direction", "positive"),
+                        explanation=comp.get("explanation", ""),
+                    )
+                )
+
+            # Parse importance decision record (NEW P1-4)
+            idr_data = meta_data.get("importance_decision_record")
+            importance_decision_record = None
+            if idr_data:
+                importance_decision_record = ReliabilityDecisionRecord(
+                    claim_id=claim_id,
+                    policy_interactions=tuple(idr_data.get("policy_interactions", [])),
+                    constraints_activated=tuple(idr_data.get("constraints_activated", [])),
+                    contribution_order=tuple(idr_data.get("contribution_order", [])),
+                    raw_reliability=idr_data.get("raw_reliability", 0.0),
+                    constrained_reliability=idr_data.get("constrained_reliability", 0.0),
+                    final_reliability=idr_data.get("final_reliability", 0.0),
+                    uncertainty_components=(),
+                    dominant_adjustment=idr_data.get("dominant_adjustment", ""),
+                )
+
             # Parse explanation
             exp_data = meta_data.get("explanation", {})
             explanation = ReliabilityExplanation(
@@ -1065,7 +1307,7 @@ class PipelineRunner:
                 limiting_signal=exp_data.get("limiting_signal", ""),
                 recommendations=tuple(exp_data.get("recommendations", [])),
             )
-            
+
             # Parse audit
             audit_data = meta_data.get("audit", {})
             audit = ReliabilityAudit(
@@ -1079,7 +1321,7 @@ class PipelineRunner:
                 signal_extractor_versions=audit_data.get("signal_extractor_versions", {}),
                 registry_order=tuple(audit_data.get("registry_order", [])),
             )
-            
+
             # Parse decision record
             dr_data = meta_data.get("decision_record", {})
             decision_record = ReliabilityDecisionRecord(
@@ -1093,32 +1335,40 @@ class PipelineRunner:
                 uncertainty_components=tuple(dr_data.get("uncertainty_components", [])),
                 dominant_adjustment=dr_data.get("dominant_adjustment", ""),
             )
-            
+
             reliability_metadata[claim_id] = ReliabilityMetadata(
                 claim_id=claim_id,
                 reliability_index=meta_data.get("reliability_index", 0.0),
                 uncertainty_score=meta_data.get("uncertainty_score", 0.0),
                 evidence_completeness=meta_data.get("evidence_completeness", 0.0),
                 signal_vector=signal_vector,
-                signal_manifests=tuple([SignalManifest(
-                    signal_id=m.get("signal_id", ""),
-                    extractor_version=m.get("extractor_version", ""),
-                    raw_value=m.get("raw_value", 0.0),
-                    normalized_value=m.get("normalized_value", 0.0),
-                    normalization_strategy=m.get("normalization_strategy", ""),
-                    status=SignalStatus(m.get("status", "measured")),
-                    quality_flags=tuple(m.get("quality_flags", [])),
-                    dependency_list=tuple(m.get("dependency_list", [])),
-                ) for m in meta_data.get("signal_manifests", [])]),
+                signal_manifests=tuple(
+                    [
+                        SignalManifest(
+                            signal_id=m.get("signal_id", ""),
+                            extractor_version=m.get("extractor_version", ""),
+                            raw_value=m.get("raw_value", 0.0),
+                            normalized_value=m.get("normalized_value", 0.0),
+                            normalization_strategy=m.get("normalization_strategy", ""),
+                            status=SignalStatus(m.get("status", "measured")),
+                            quality_flags=tuple(m.get("quality_flags", [])),
+                            dependency_list=tuple(m.get("dependency_list", [])),
+                        )
+                        for m in meta_data.get("signal_manifests", [])
+                    ]
+                ),
                 component_scores=tuple(component_scores),
                 decision_record=decision_record,
                 explanation=explanation,
                 calibration_label=calibration_label,
                 audit=audit,
                 policy_version=meta_data.get("policy_version", ""),
+                importance_index=meta_data.get("importance_index", 0.0),
+                importance_component_scores=tuple(importance_component_scores),
+                importance_decision_record=importance_decision_record,
                 schema_version=meta_data.get("schema_version", "8.0"),
             )
-        
+
         # Build ScoredKnowledgeGraph from Phase 7 graph + reliability
         scored_graph = ScoredKnowledgeGraph(
             graph=phase7_graph,
@@ -1129,13 +1379,12 @@ class PipelineRunner:
             run_id=self.run_id,
             schema_version=data.get("schema_version", "8.0"),
         )
-        
+
         logger.info("phase8 dataset loaded", claims_scored=len(reliability_metadata))
         return scored_graph
 
-    def _run_phase_9(self, phase8_result: "ScoredKnowledgeGraph") -> "KnowledgeAccessService":
+    def _run_phase_9(self, phase8_result: ScoredKnowledgeGraph) -> KnowledgeAccessService:
         """Execute Phase 9: Knowledge Access Layer initialization."""
-        from smriti.api import run_api_initialization
 
         logger.info("running phase 9")
         api = run_api_initialization(
@@ -1150,7 +1399,7 @@ class PipelineRunner:
             api_version=api.api_version,
         )
         return api
-    
+
     def _run_phase_10(self, knowledge_api) -> None:
         """
         Phase 10: Prepare and register the Streamlit dashboard.
@@ -1167,11 +1416,11 @@ class PipelineRunner:
         phase_dir.mkdir(parents=True, exist_ok=True)
 
         dashboard_info = {
-            "run_id":          self.run_id,
-            "api_version":     getattr(knowledge_api, "api_version", "1.0"),
-            "nodes_indexed":   getattr(knowledge_api, "node_count", 0),
+            "run_id": self.run_id,
+            "api_version": getattr(knowledge_api, "api_version", "1.0"),
+            "nodes_indexed": getattr(knowledge_api, "node_count", 0),
             "dashboard_entry": "src/smriti/dashboard/app.py",
-            "command":         "poetry run streamlit run src/smriti/dashboard/app.py",
+            "command": "poetry run streamlit run src/smriti/dashboard/app.py",
         }
         info_path = phase_dir / "dashboard_info.json"
         info_path.write_text(json.dumps(dashboard_info, indent=2))
@@ -1182,7 +1431,7 @@ class PipelineRunner:
             inputs={"knowledge_api_nodes": getattr(knowledge_api, "node_count", 0)},
             outputs={
                 "dashboard_info": str(info_path),
-                "command":        dashboard_info["command"],
+                "command": dashboard_info["command"],
             },
             status="success",
         )
@@ -1194,72 +1443,63 @@ class PipelineRunner:
         print("=" * 60)
         print(f"Run ID: {self.run_id}")
         print(f"Nodes indexed: {getattr(knowledge_api, 'node_count', 0)}")
-        print(f"\nTo launch the dashboard:")
+        print("\nTo launch the dashboard:")
         print(f"  {dashboard_info['command']}")
         print("=" * 60 + "\n")
 
-
-    def _run_phase_11(self) -> None:
+    # Sequences the 9 documented steps below as one linear, order-sensitive
+    # bring-up procedure; splitting it up would scatter that sequence
+    # across helpers with no natural seams.
+    def _run_phase_11(self) -> None:  # noqa: C901
         """
         Execute Phase 11: Operational Runtime & Engineering Infrastructure.
 
-        RECTIFIED: Now uses OperationalContext + EventBus + CapabilityModel + RuntimeScheduler.
+        RECTIFIED: Now uses EventBus + CapabilityModel + RuntimeScheduler.
         Fully integrates DependencyGraph with HealthCoordinator and CapabilityModel.
 
         Steps:
-            1. Build OperationalContext (P0-1)
-            2. Subscribe TelemetryCollector to EventBus (P0-2)
-            3. Activate RuntimeCoordinator (split via sub-coordinators, P0-3)
-            4. Enable CapabilityModel (P0-4)
-            5. Wire DependencyGraph to HealthCoordinator and CapabilityModel
-            6. Start RuntimeScheduler for periodic tasks (P1-2)
-            7. Assert system invariants
-            8. Write RuntimeManifest with architecture version (P1-5)
-            9. Register shutdown handler
+            1. Subscribe TelemetryCollector to EventBus (P0-2)
+            2. Activate RuntimeCoordinator (split via sub-coordinators, P0-3)
+            3. Enable CapabilityModel (P0-4)
+            4. Wire DependencyGraph to HealthCoordinator and CapabilityModel
+            5. Start RuntimeScheduler for periodic tasks (P1-2)
+            6. Assert system invariants
+            7. Write RuntimeManifest with architecture version (P1-5)
+            8. Register shutdown handler
         """
-        from smriti.runtime import get_runtime, OperationalContext
-        from smriti.runtime.events import get_event_bus
-        from smriti.runtime.scheduler import RuntimeScheduler
-        from smriti.runtime.health_coordinator import HealthCoordinator
-        from smriti.infrastructure.provenance import ProvenanceBuilder
-        from smriti.governance.invariants import assert_all_invariants
-        from smriti.observability.telemetry import TelemetryCollector
-        from smriti.core.paths import ARTIFACTS_DIR
-        from smriti.core.config import get_config
-        from smriti.observability.health import HealthStatus  # for check return types
         import hashlib
+
+        from smriti.core.config import get_config
+        from smriti.core.paths import ARTIFACTS_DIR
+        from smriti.governance.invariants import assert_all_invariants
+        from smriti.infrastructure.provenance import ProvenanceBuilder
+        from smriti.observability.telemetry import TelemetryCollector
+        from smriti.runtime import get_runtime
+        from smriti.runtime.scheduler import RuntimeScheduler
 
         logger.info("running phase 11")
         config = get_config()
         cfg11 = config.get("feature_flags", {})
 
-        # ── Step 1: Build OperationalContext (P0-1) ───────────────────────────────
-        ctx = OperationalContext.create(
-            run_id=self.run_id,
-            config_hash="",  # populated after coordinator starts
-            env=config.env,
-        )
-
-        # ── Step 2: Subscribe TelemetryCollector to EventBus (P0-2) ──────────────
+        # ── Step 1: Subscribe TelemetryCollector to EventBus (P0-2) ──────────────
         if cfg11.get("enable_event_bus", True):
             telemetry = TelemetryCollector(run_id=self.run_id)
             telemetry.subscribe_to_event_bus()
 
-        # ── Step 3: Activate RuntimeCoordinator ───────────────────────────────────
+        # ── Step 2: Activate RuntimeCoordinator ───────────────────────────────────
         coordinator = get_runtime()
         coordinator.start(run_id=self.run_id)
 
-        # ── Step 4: Get the dependency graph and wire it ─────────────────────────
+        # ── Step 3: Get the dependency graph and wire it ─────────────────────────
         dep_graph = coordinator.dependency_graph
 
-        # ── Step 5: Wire HealthCoordinator with the graph ────────────────────────
+        # ── Step 4: Wire HealthCoordinator with the graph ────────────────────────
         # Get the HealthCoordinator from the runtime coordinator.
         # (We access the private attribute; consider adding a public property later.)
         health_coordinator = coordinator._health_coordinator
         health_coordinator.bind_graph(dep_graph)
 
         # Register default health checks with node mappings
-        from smriti.core.paths import ARTIFACTS_DIR
 
         def check_config() -> bool:
             try:
@@ -1277,6 +1517,7 @@ class PipelineRunner:
         def check_memory() -> bool:
             try:
                 import psutil
+
                 mem = psutil.virtual_memory()
                 # Consider healthy if memory usage < 90%
                 return mem.percent < 90
@@ -1284,37 +1525,29 @@ class PipelineRunner:
                 return False
 
         # Register checks — no dependency graph mappings (nodes not registered)
+        health_coordinator.register("configuration", check_config, dependency_node=None)
         health_coordinator.register(
-            "configuration",
-            check_config,
-            dependency_node=None
+            "artifacts_directory", check_artifacts_dir, dependency_node=None
         )
-        health_coordinator.register(
-            "artifacts_directory",
-            check_artifacts_dir,
-            dependency_node=None
-        )
-        health_coordinator.register(
-            "memory_pressure",
-            check_memory,
-            dependency_node=None
-        )
+        health_coordinator.register("memory_pressure", check_memory, dependency_node=None)
 
-        # ── Step 6: Capability Model (P0-4) with graph sync ──────────────────────
+        # ── Step 5: Capability Model (P0-4) with graph sync ──────────────────────
         if cfg11.get("enable_capability_model", True):
             capabilities = coordinator.capabilities
             # Initial sync with the graph
             capabilities.sync_with_graph(dep_graph)
             logger.info("capability_model_active", capabilities=capabilities.snapshot())
 
-        # ── Step 7: Start RuntimeScheduler (P1-2) with health coordinator task ──
+        # ── Step 6: Start RuntimeScheduler (P1-2) with health coordinator task ──
         if cfg11.get("enable_scheduler", True):
             scheduler = RuntimeScheduler(tick_interval=1.0)
             sched_cfg = config.get("runtime", {}).get("scheduler", {})
             # Register a task that runs the health coordinator's checks
             scheduler.register(
                 "health_check",
-                interval_seconds=sched_cfg.get("tasks", {}).get("health_check", {}).get("interval_seconds", 30.0),
+                interval_seconds=sched_cfg.get("tasks", {})
+                .get("health_check", {})
+                .get("interval_seconds", 30.0),
                 task=lambda: health_coordinator.run_all(),  # runs checks and updates graph
             )
             # Optionally register a task to sync capabilities from the graph
@@ -1330,18 +1563,19 @@ class PipelineRunner:
             )
             scheduler.start()
 
-        # ── Step 8: Assert invariants ─────────────────────────────────────────────
+        # ── Step 7: Assert invariants ─────────────────────────────────────────────
         if config.get("runtime", {}).get("assert_invariants_on_startup", True):
             try:
                 assert_all_invariants()
             except Exception as exc:
                 logger.error("invariant_assertion_failed", error=str(exc))
 
-        # ── Step 9: Write RuntimeManifest with architecture version (P1-5) ────────
+        # ── Step 8: Write RuntimeManifest with architecture version (P1-5) ────────
         if config.get("runtime", {}).get("write_runtime_manifest", True):
             cfg_ctx = coordinator.config_context
             # Compute ADR set version from accepted ADRs
             from smriti.governance.adr import ADRRegistry
+
             adr_registry = ADRRegistry()
             accepted_ids = "|".join(sorted(a.adr_id for a in adr_registry.all_accepted()))
             adr_version = hashlib.sha256(accepted_ids.encode()).hexdigest()[:8]
@@ -1359,7 +1593,7 @@ class PipelineRunner:
             manifest = builder.build()
             manifest.write_artifact(ARTIFACTS_DIR)
 
-        # ── Step 10: Register shutdown handler ──────────────────────────────────
+        # ── Step 9: Register shutdown handler ──────────────────────────────────
         coordinator._shutdown.register(
             name="pipeline_runner_shutdown",
             handler=lambda: logger.info("pipeline_runner_shutdown_handler_called"),
@@ -1367,12 +1601,12 @@ class PipelineRunner:
         )
 
         self.state_manager.complete_phase(phase=11)
-        logger.info("phase 11 complete", run_id=self.run_id)  
+        logger.info("phase 11 complete", run_id=self.run_id)
 
-    def _run_phase_12(self, knowledge_api) -> "CertificationReport":
-        from smriti.evaluation import run_evaluation
-        from smriti.reporting.exporter import write_certification_artifacts, export_text_summary
+    def _run_phase_12(self, knowledge_api) -> CertificationReport:
         from smriti.core.paths import ARTIFACTS_DIR
+        from smriti.evaluation import run_evaluation
+        from smriti.reporting.exporter import export_text_summary, write_certification_artifacts
 
         logger.info("running phase 12 — scientific validation framework (gate-based)")
         report = run_evaluation(
@@ -1383,8 +1617,10 @@ class PipelineRunner:
         )
         artifacts_dir = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase12"
         write_certification_artifacts(report, artifacts_dir)
-        logger.info("phase 12 complete",
-                    certification_level=report.certification_level.name,
-                    pub_readiness=report.publication_readiness.readiness_level.value)
+        logger.info(
+            "phase 12 complete",
+            certification_level=report.certification_level.name,
+            artifact_readiness=report.artifact_readiness.readiness_level.value,
+        )
         print(export_text_summary(report))
-        return report    
+        return report

@@ -12,19 +12,20 @@ Pipeline:
 from __future__ import annotations
 
 import uuid
-from typing import Dict, List, Optional, Tuple
-import structlog
 
+import structlog
 from smriti.core.models import (
-    EvidenceConflict, ScienceEvidence, ResearchClaim, ExperimentResult,
+    EvidenceConflict,
+    ResearchClaim,
+    ScienceEvidence,
 )
 
 logger = structlog.get_logger(__name__)
 
 
 def detect_evidence_conflicts(
-    science_evidence: List[ScienceEvidence],
-) -> List[EvidenceConflict]:
+    science_evidence: list[ScienceEvidence],
+) -> list[EvidenceConflict]:
     """
     Detect conflicts between evidence items targeting the same claim.
 
@@ -33,11 +34,11 @@ def detect_evidence_conflicts(
         - One item's observed_value >= its threshold (supporting)
         - The other item's observed_value < its threshold (contradicting)
     """
-    by_claim: Dict[str, List[ScienceEvidence]] = {}
+    by_claim: dict[str, list[ScienceEvidence]] = {}
     for ev in science_evidence:
         by_claim.setdefault(ev.supports_claim, []).append(ev)
 
-    conflicts: List[EvidenceConflict] = []
+    conflicts: list[EvidenceConflict] = []
     for claim_id, evidences in by_claim.items():
         if len(evidences) < 2:
             continue
@@ -53,7 +54,7 @@ def detect_evidence_conflicts(
                         evidence_b_id=con.evidence_id,
                         conflict_type="contradicts",
                         resolution="higher_quality_evidence_preferred",
-                        confidence_impact=-0.10,   # Reduce confidence by 10%
+                        confidence_impact=-0.10,  # Reduce confidence by 10%
                         reviewer_note=(
                             f"EXP {sup.experiment_id} supports claim "
                             f"({sup.observed_value:.3f} >= {sup.threshold:.3f}) but "
@@ -73,15 +74,16 @@ def detect_evidence_conflicts(
 
 
 def apply_conflict_adjustments(
-    claims: List[ResearchClaim],
-    conflicts: List[EvidenceConflict],
-) -> List[ResearchClaim]:
+    claims: list[ResearchClaim],
+    conflicts: list[EvidenceConflict],
+) -> list[ResearchClaim]:
     """
     Update claim confidence scores based on resolved conflicts.
     Returns new ResearchClaim list (immutable originals unchanged).
     """
     import dataclasses
-    conflict_map: Dict[str, float] = {}
+
+    conflict_map: dict[str, float] = {}
     for conflict in conflicts:
         conflict_map[conflict.claim_id] = (
             conflict_map.get(conflict.claim_id, 0.0) + conflict.confidence_impact

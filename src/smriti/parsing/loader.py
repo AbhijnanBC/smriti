@@ -28,17 +28,13 @@ Pipeline for each document:
     builder.build_document() → Document
 """
 
-from pathlib import Path
-from typing import Optional, Tuple
 import structlog
 
 from smriti.core.models import (
     Document,
-    ExtractionMethod,
     FileFormat,
     NormalizationResult,
     SourceDocument,
-    WarningCode,
 )
 from smriti.exceptions import (
     BuilderError,
@@ -47,16 +43,15 @@ from smriti.exceptions import (
     LoaderError,
     MarkdownExtractionError,
     NormalizationError,
-    ParsingError,
     PdfExtractionError,
     StatisticsError,
     TextExtractionError,
 )
+from smriti.parsing.builder import build_document
 from smriti.parsing.markdown import MarkdownExtractor
 from smriti.parsing.normalize import normalize_text
 from smriti.parsing.pdf import PdfExtractor
 from smriti.parsing.statistics import compute_statistics
-from smriti.parsing.builder import build_document
 from smriti.parsing.text import TextExtractor
 
 logger = structlog.get_logger(__name__)
@@ -67,7 +62,7 @@ _pdf_extractor = PdfExtractor()
 _text_extractor = TextExtractor()
 
 
-def load_document(source: SourceDocument) -> Tuple[Optional[Document], Optional[str]]:
+def load_document(source: SourceDocument) -> tuple[Document | None, str | None]:
     """
     Execute the full extraction pipeline for a single SourceDocument.
 

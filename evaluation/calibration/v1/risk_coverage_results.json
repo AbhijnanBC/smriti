@@ -1,0 +1,511 @@
+{
+  "run_id": "20260911_081039",
+  "dev_n": 282,
+  "test_n": 164,
+  "dev_aurc": 0.1385,
+  "test_aurc": 0.0603,
+  "dev_risk_at_full_coverage": 0.1915,
+  "test_risk_at_full_coverage": 0.0915,
+  "dev_curve": [
+    {
+      "coverage": 0.05,
+      "risk": 0.0714,
+      "n_kept": 14,
+      "confidence_threshold": 0.9998
+    },
+    {
+      "coverage": 0.1,
+      "risk": 0.25,
+      "n_kept": 28,
+      "confidence_threshold": 0.9997
+    },
+    {
+      "coverage": 0.15,
+      "risk": 0.1905,
+      "n_kept": 42,
+      "confidence_threshold": 0.9996
+    },
+    {
+      "coverage": 0.2,
+      "risk": 0.1429,
+      "n_kept": 56,
+      "confidence_threshold": 0.9996
+    },
+    {
+      "coverage": 0.25,
+      "risk": 0.1143,
+      "n_kept": 70,
+      "confidence_threshold": 0.9995
+    },
+    {
+      "coverage": 0.3,
+      "risk": 0.0941,
+      "n_kept": 85,
+      "confidence_threshold": 0.9994
+    },
+    {
+      "coverage": 0.35,
+      "risk": 0.101,
+      "n_kept": 99,
+      "confidence_threshold": 0.9993
+    },
+    {
+      "coverage": 0.4,
+      "risk": 0.1416,
+      "n_kept": 113,
+      "confidence_threshold": 0.9992
+    },
+    {
+      "coverage": 0.45,
+      "risk": 0.1339,
+      "n_kept": 127,
+      "confidence_threshold": 0.999
+    },
+    {
+      "coverage": 0.5,
+      "risk": 0.1348,
+      "n_kept": 141,
+      "confidence_threshold": 0.9987
+    },
+    {
+      "coverage": 0.55,
+      "risk": 0.1355,
+      "n_kept": 155,
+      "confidence_threshold": 0.9986
+    },
+    {
+      "coverage": 0.6,
+      "risk": 0.1243,
+      "n_kept": 169,
+      "confidence_threshold": 0.9984
+    },
+    {
+      "coverage": 0.65,
+      "risk": 0.1311,
+      "n_kept": 183,
+      "confidence_threshold": 0.9981
+    },
+    {
+      "coverage": 0.7,
+      "risk": 0.1421,
+      "n_kept": 197,
+      "confidence_threshold": 0.9978
+    },
+    {
+      "coverage": 0.75,
+      "risk": 0.1462,
+      "n_kept": 212,
+      "confidence_threshold": 0.9966
+    },
+    {
+      "coverage": 0.8,
+      "risk": 0.146,
+      "n_kept": 226,
+      "confidence_threshold": 0.9958
+    },
+    {
+      "coverage": 0.85,
+      "risk": 0.1375,
+      "n_kept": 240,
+      "confidence_threshold": 0.9947
+    },
+    {
+      "coverage": 0.9,
+      "risk": 0.1417,
+      "n_kept": 254,
+      "confidence_threshold": 0.9921
+    },
+    {
+      "coverage": 0.95,
+      "risk": 0.1604,
+      "n_kept": 268,
+      "confidence_threshold": 0.9485
+    },
+    {
+      "coverage": 1.0,
+      "risk": 0.1915,
+      "n_kept": 282,
+      "confidence_threshold": 0.5679
+    }
+  ],
+  "test_curve": [
+    {
+      "coverage": 0.05,
+      "risk": 0.0,
+      "n_kept": 8,
+      "confidence_threshold": 0.9999
+    },
+    {
+      "coverage": 0.1,
+      "risk": 0.0,
+      "n_kept": 16,
+      "confidence_threshold": 0.9999
+    },
+    {
+      "coverage": 0.15,
+      "risk": 0.0,
+      "n_kept": 25,
+      "confidence_threshold": 0.9998
+    },
+    {
+      "coverage": 0.2,
+      "risk": 0.0,
+      "n_kept": 33,
+      "confidence_threshold": 0.9997
+    },
+    {
+      "coverage": 0.25,
+      "risk": 0.0244,
+      "n_kept": 41,
+      "confidence_threshold": 0.9996
+    },
+    {
+      "coverage": 0.3,
+      "risk": 0.0816,
+      "n_kept": 49,
+      "confidence_threshold": 0.9995
+    },
+    {
+      "coverage": 0.35,
+      "risk": 0.1053,
+      "n_kept": 57,
+      "confidence_threshold": 0.9994
+    },
+    {
+      "coverage": 0.4,
+      "risk": 0.0909,
+      "n_kept": 66,
+      "confidence_threshold": 0.9994
+    },
+    {
+      "coverage": 0.45,
+      "risk": 0.0811,
+      "n_kept": 74,
+      "confidence_threshold": 0.9993
+    },
+    {
+      "coverage": 0.5,
+      "risk": 0.0732,
+      "n_kept": 82,
+      "confidence_threshold": 0.9992
+    },
+    {
+      "coverage": 0.55,
+      "risk": 0.0667,
+      "n_kept": 90,
+      "confidence_threshold": 0.999
+    },
+    {
+      "coverage": 0.6,
+      "risk": 0.0612,
+      "n_kept": 98,
+      "confidence_threshold": 0.9988
+    },
+    {
+      "coverage": 0.65,
+      "risk": 0.0561,
+      "n_kept": 107,
+      "confidence_threshold": 0.9985
+    },
+    {
+      "coverage": 0.7,
+      "risk": 0.0696,
+      "n_kept": 115,
+      "confidence_threshold": 0.9982
+    },
+    {
+      "coverage": 0.75,
+      "risk": 0.0813,
+      "n_kept": 123,
+      "confidence_threshold": 0.9978
+    },
+    {
+      "coverage": 0.8,
+      "risk": 0.084,
+      "n_kept": 131,
+      "confidence_threshold": 0.9969
+    },
+    {
+      "coverage": 0.85,
+      "risk": 0.1007,
+      "n_kept": 139,
+      "confidence_threshold": 0.9965
+    },
+    {
+      "coverage": 0.9,
+      "risk": 0.0946,
+      "n_kept": 148,
+      "confidence_threshold": 0.9954
+    },
+    {
+      "coverage": 0.95,
+      "risk": 0.0897,
+      "n_kept": 156,
+      "confidence_threshold": 0.9943
+    },
+    {
+      "coverage": 1.0,
+      "risk": 0.0915,
+      "n_kept": 164,
+      "confidence_threshold": 0.8799
+    }
+  ],
+  "end_to_end": {
+    "dev_n_total": 419,
+    "dev_n_committed": 282,
+    "dev_n_retrieval_miss": 134,
+    "dev_n_abstained": 3,
+    "dev_max_achievable_coverage": 0.673,
+    "dev_aurc": 0.0934,
+    "dev_curve": [
+      {
+        "target_coverage": 0.05,
+        "coverage": 0.0501,
+        "risk": 0.1429,
+        "n_kept": 21
+      },
+      {
+        "target_coverage": 0.1,
+        "coverage": 0.1002,
+        "risk": 0.1905,
+        "n_kept": 42
+      },
+      {
+        "target_coverage": 0.15,
+        "coverage": 0.1504,
+        "risk": 0.127,
+        "n_kept": 63
+      },
+      {
+        "target_coverage": 0.2,
+        "coverage": 0.2005,
+        "risk": 0.0952,
+        "n_kept": 84
+      },
+      {
+        "target_coverage": 0.25,
+        "coverage": 0.2506,
+        "risk": 0.1238,
+        "n_kept": 105
+      },
+      {
+        "target_coverage": 0.3,
+        "coverage": 0.3007,
+        "risk": 0.1349,
+        "n_kept": 126
+      },
+      {
+        "target_coverage": 0.35,
+        "coverage": 0.3508,
+        "risk": 0.1293,
+        "n_kept": 147
+      },
+      {
+        "target_coverage": 0.4,
+        "coverage": 0.401,
+        "risk": 0.125,
+        "n_kept": 168
+      },
+      {
+        "target_coverage": 0.45,
+        "coverage": 0.4511,
+        "risk": 0.1376,
+        "n_kept": 189
+      },
+      {
+        "target_coverage": 0.5,
+        "coverage": 0.5012,
+        "risk": 0.1476,
+        "n_kept": 210
+      },
+      {
+        "target_coverage": 0.55,
+        "coverage": 0.5489,
+        "risk": 0.1435,
+        "n_kept": 230
+      },
+      {
+        "target_coverage": 0.6,
+        "coverage": 0.599,
+        "risk": 0.1315,
+        "n_kept": 251
+      },
+      {
+        "target_coverage": 0.65,
+        "coverage": 0.6492,
+        "risk": 0.1691,
+        "n_kept": 272
+      },
+      {
+        "target_coverage": 0.7,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      },
+      {
+        "target_coverage": 0.75,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      },
+      {
+        "target_coverage": 0.8,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      },
+      {
+        "target_coverage": 0.85,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      },
+      {
+        "target_coverage": 0.9,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      },
+      {
+        "target_coverage": 0.95,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      },
+      {
+        "target_coverage": 1.0,
+        "coverage": 0.673,
+        "risk": 0.1915,
+        "n_kept": 282
+      }
+    ],
+    "test_n_total": 249,
+    "test_n_committed": 164,
+    "test_n_retrieval_miss": 82,
+    "test_n_abstained": 3,
+    "test_max_achievable_coverage": 0.6586,
+    "test_aurc": 0.0423,
+    "test_curve": [
+      {
+        "target_coverage": 0.05,
+        "coverage": 0.0482,
+        "risk": 0.0,
+        "n_kept": 12
+      },
+      {
+        "target_coverage": 0.1,
+        "coverage": 0.1004,
+        "risk": 0.0,
+        "n_kept": 25
+      },
+      {
+        "target_coverage": 0.15,
+        "coverage": 0.1486,
+        "risk": 0.027,
+        "n_kept": 37
+      },
+      {
+        "target_coverage": 0.2,
+        "coverage": 0.2008,
+        "risk": 0.1,
+        "n_kept": 50
+      },
+      {
+        "target_coverage": 0.25,
+        "coverage": 0.249,
+        "risk": 0.0968,
+        "n_kept": 62
+      },
+      {
+        "target_coverage": 0.3,
+        "coverage": 0.3012,
+        "risk": 0.08,
+        "n_kept": 75
+      },
+      {
+        "target_coverage": 0.35,
+        "coverage": 0.3494,
+        "risk": 0.069,
+        "n_kept": 87
+      },
+      {
+        "target_coverage": 0.4,
+        "coverage": 0.4016,
+        "risk": 0.06,
+        "n_kept": 100
+      },
+      {
+        "target_coverage": 0.45,
+        "coverage": 0.4498,
+        "risk": 0.0714,
+        "n_kept": 112
+      },
+      {
+        "target_coverage": 0.5,
+        "coverage": 0.498,
+        "risk": 0.0887,
+        "n_kept": 124
+      },
+      {
+        "target_coverage": 0.55,
+        "coverage": 0.5502,
+        "risk": 0.0949,
+        "n_kept": 137
+      },
+      {
+        "target_coverage": 0.6,
+        "coverage": 0.5984,
+        "risk": 0.094,
+        "n_kept": 149
+      },
+      {
+        "target_coverage": 0.65,
+        "coverage": 0.6506,
+        "risk": 0.0926,
+        "n_kept": 162
+      },
+      {
+        "target_coverage": 0.7,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      },
+      {
+        "target_coverage": 0.75,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      },
+      {
+        "target_coverage": 0.8,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      },
+      {
+        "target_coverage": 0.85,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      },
+      {
+        "target_coverage": 0.9,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      },
+      {
+        "target_coverage": 0.95,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      },
+      {
+        "target_coverage": 1.0,
+        "coverage": 0.6586,
+        "risk": 0.0915,
+        "n_kept": 164
+      }
+    ]
+  }
+}

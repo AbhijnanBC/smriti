@@ -8,18 +8,19 @@ DTOMapper never constructs views — it only maps View → DTO.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any
 
 
 @dataclass(frozen=True)
 class ClaimView:
     """Internal view of one scored claim. All possible fields are populated by ClaimViewBuilder."""
+
     claim_id: str
     claim_text: str
     context: str
     document_id: str
     source_path: str
-    partition_id: Optional[str]
+    partition_id: str | None
     semantic_role: str
 
     reliability_index: float
@@ -39,7 +40,7 @@ class ClaimView:
 
     temporal_status: str = "unknown"
     temporal_confidence: float = 0.0
-    time_delta_days: Optional[float] = None
+    time_delta_days: float | None = None
 
     evidence_strength: float = 0.0
     evidence_independence: float = 0.0
@@ -64,6 +65,7 @@ class ClaimView:
 @dataclass(frozen=True)
 class EdgeView:
     """Internal view of one relationship edge."""
+
     edge_id: str
     source_claim_id: str
     target_claim_id: str
@@ -77,17 +79,19 @@ class EdgeView:
 @dataclass(frozen=True)
 class GraphView:
     """Internal view of a graph traversal result."""
+
     start_claim_id: str
-    nodes: List[ClaimView]
-    edges: List[EdgeView]
+    nodes: list[ClaimView]
+    edges: list[EdgeView]
     depth_reached: int
     navigation_mode: str
-    relationship_types_traversed: List[str]
+    relationship_types_traversed: list[str]
 
 
 @dataclass(frozen=True)
 class ExplanationView:
     """Internal view of a complete explainability record."""
+
     claim_id: str
     reliability_index: float
     uncertainty_score: float
@@ -109,6 +113,7 @@ class ExplanationView:
 @dataclass(frozen=True)
 class StatisticsView:
     """Internal view of graph-wide statistics."""
+
     run_id: str
     total_claims: int
     total_edges: int
@@ -119,14 +124,15 @@ class StatisticsView:
     high_reliability_count: int
     low_reliability_count: int
     avg_uncertainty: float
-    calibration_distribution: Dict[str, int]
-    reliability_histogram: List[Tuple[str, int]]
-    partition_summaries: List[Dict[str, Any]]
+    calibration_distribution: dict[str, int]
+    reliability_histogram: list[tuple[str, int]]
+    partition_summaries: list[dict[str, Any]]
 
 
 @dataclass(frozen=True)
 class ProvenanceView:
     """Internal view of the provenance chain for one claim."""
+
     claim_id: str
     claim_text: str
     source_path: str
@@ -134,5 +140,5 @@ class ProvenanceView:
     sentence_context: str
     sentence_position: int
     run_id: str
-    supporting_claim_ids: List[str]
-    supporting_documents: List[str]
+    supporting_claim_ids: list[str]
+    supporting_documents: list[str]

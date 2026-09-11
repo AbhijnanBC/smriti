@@ -18,47 +18,45 @@ That is the only function that crosses the phase boundary.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+
 import structlog
 
-from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     Document,
-    SemanticSentence,
     Phase3Stats,
     SegmentationWarning,
+    SemanticSentence,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
-from smriti.core.timing import Timer
-from smriti.exceptions import Phase3Error, SentenceValidationError
-
-from smriti.extraction.scanner import scan_document, BlockType
+from smriti.exceptions import SentenceValidationError
+from smriti.extraction.builder import build_sentence
 from smriti.extraction.context import ContextStack
 from smriti.extraction.normalizer import normalize_event
+from smriti.extraction.scanner import BlockType, scan_document
 from smriti.extraction.segmenter import SentenceSegmenter
-from smriti.extraction.builder import build_sentence
-from smriti.extraction.validator import validate_sentences
 from smriti.extraction.statistics import Phase3StatsCollector
+from smriti.extraction.validator import validate_sentences
 
 logger = structlog.get_logger(__name__)
 
 
 # ── Public result types ───────────────────────────────────────────────────────
 
+
 @dataclass
 class DocumentExtractionResult:
     """
     Phase 3 result for a single Document.
     """
+
     document_id: str
-    sentences: List[SemanticSentence]
+    sentences: list[SemanticSentence]
     stats: Phase3Stats
-    warnings: List[SegmentationWarning]
-    error: Optional[str] = None
+    warnings: list[SegmentationWarning]
+    error: str | None = None
 
     @property
     def sentence_count(self) -> int:
@@ -71,13 +69,14 @@ class ExtractionResult:
     Complete output of Phase 3 — all documents processed.
     This is what Phase 4 receives.
     """
-    document_results: List[DocumentExtractionResult]
+
+    document_results: list[DocumentExtractionResult]
     run_id: str
     rules_version: str = "3.1.0"  # <-- ADDED FINGERPRINT
-    manifest_path: Optional[Path] = None
+    manifest_path: Path | None = None
 
     @property
-    def all_sentences(self) -> List[SemanticSentence]:
+    def all_sentences(self) -> list[SemanticSentence]:
         """Flat list of all sentences across all documents."""
         result = []
         for dr in self.document_results:
@@ -103,22 +102,25 @@ class ExtractionResult:
         """
         records = []
         for sentence in self.all_sentences:
-            records.append({
-                "sentence_id":  sentence.sentence_id,
-                "document_id":  sentence.document_id,
-                "text":         sentence.text,
-                "context":      sentence.context,
-                "position":     sentence.position,
-                "char_start":   sentence.char_start,
-                "char_end":     sentence.char_end,
-                "source_path":  str(sentence.source_path),
-                "origin_block_type": sentence.origin_block_type,  # <-- FIX: Remove .value
-                "schema_version": sentence.schema_version,
-            })
+            records.append(
+                {
+                    "sentence_id": sentence.sentence_id,
+                    "document_id": sentence.document_id,
+                    "text": sentence.text,
+                    "context": sentence.context,
+                    "position": sentence.position,
+                    "char_start": sentence.char_start,
+                    "char_end": sentence.char_end,
+                    "source_path": str(sentence.source_path),
+                    "origin_block_type": sentence.origin_block_type,  # <-- FIX: Remove .value
+                    "schema_version": sentence.schema_version,
+                }
+            )
         return json.dumps(records, indent=2, ensure_ascii=False)
 
 
 # ── Core public function ──────────────────────────────────────────────────────
+
 
 def build_semantic_sentences(document: Document) -> DocumentExtractionResult:
     """
@@ -136,7 +138,6 @@ def build_semantic_sentences(document: Document) -> DocumentExtractionResult:
         On error, returns a result with error set and empty sentences.
     """
     document_id = document.doc_id
-    source_path = document.source_document.path
 
     try:
         sentences, stats, warnings = _process_document(document)
@@ -179,7 +180,7 @@ def build_semantic_sentences(document: Document) -> DocumentExtractionResult:
 
 def _process_document(
     document: Document,
-) -> Tuple[List[SemanticSentence], Phase3Stats, List[SegmentationWarning]]:
+) -> tuple[list[SemanticSentence], Phase3Stats, list[SegmentationWarning]]:
     """
     Internal orchestration of Phase 3 for one Document.
 
@@ -205,8 +206,8 @@ def _process_document(
     segmenter = SentenceSegmenter()
     stats_collector = Phase3StatsCollector()
 
-    sentences: List[SemanticSentence] = []
-    all_warnings: List[SegmentationWarning] = []
+    sentences: list[SemanticSentence] = []
+    all_warnings: list[SegmentationWarning] = []
     position = 0  # Global position counter across all sentences in document
 
     # Step 3: Process each structural event
@@ -285,8 +286,9 @@ def _process_document(
 
 # ── Batch runner (called by PipelineRunner) ───────────────────────────────────
 
+
 def run_extraction(
-    documents: List[Document],
+    documents: list[Document],
     run_id: str,
     manifest_manager: ManifestManager,
     state_manager: StateManager,
@@ -306,7 +308,7 @@ def run_extraction(
     logger.info("phase 3 starting", run_id=run_id, documents=len(documents))
     start_time = manifest_manager.start_phase(phase=3)
 
-    document_results: List[DocumentExtractionResult] = []
+    document_results: list[DocumentExtractionResult] = []
 
     for document in documents:
         if document.is_empty:
@@ -322,7 +324,9 @@ def run_extraction(
     )
 
     # Write dataset artifact
-    phase_dir = manifest_manager.run_dir / "phase3"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+    phase_dir = (
+        manifest_manager.run_dir / "phase3"
+    )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
     dataset_path = phase_dir / "dataset.json"
     dataset_path.write_text(result.to_dataset_json(), encoding="utf-8")

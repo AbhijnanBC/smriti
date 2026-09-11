@@ -29,23 +29,25 @@ st.set_page_config(
 )
 
 # ── Controller imports ────────────────────────────────────────────────────────
-from smriti.dashboard.controller.session_bootstrap import (
+# Deliberately below st.set_page_config(), which Streamlit requires to be the
+# first st.* call in the script -- these imports must not move above it.
+from smriti.dashboard.controller.render_coordinator import RenderCoordinator  # noqa: E402
+from smriti.dashboard.controller.session_bootstrap import (  # noqa: E402
     bootstrap,
-    get_registry,
-    get_policy_engine,
     get_export_pipeline,
+    get_policy_engine,
+    get_registry,
 )
-from smriti.dashboard.controller.sidebar_controller import SidebarController
-from smriti.dashboard.controller.render_coordinator import RenderCoordinator
-from smriti.dashboard.state.session import (
-    get_state_manager,
+from smriti.dashboard.controller.sidebar_controller import SidebarController  # noqa: E402
+from smriti.dashboard.state.session import (  # noqa: E402
     get_client,
     get_notification_center,
+    get_state_manager,
 )
 
 # ── Controllers (stateless — created each cycle, cheap) ───────────────────────
-_sidebar    = SidebarController()
-_renderer   = RenderCoordinator()
+_sidebar = SidebarController()
+_renderer = RenderCoordinator()
 
 
 def main() -> None:
@@ -61,19 +63,16 @@ def main() -> None:
             "Run the SMRITI pipeline first:\n"
             "`poetry run python -m smriti.main`"
         )
-        st.info(
-            "Then launch:\n"
-            "`poetry run streamlit run src/smriti/dashboard/app.py`"
-        )
+        st.info("Then launch:\n" "`poetry run streamlit run src/smriti/dashboard/app.py`")
         return
 
     # Step 2: Retrieve session subsystems
-    state_manager      = get_state_manager()
-    client             = get_client()
-    policy_engine      = get_policy_engine()
+    state_manager = get_state_manager()
+    client = get_client()
+    policy_engine = get_policy_engine()
     notification_center = get_notification_center()
-    registry           = get_registry()
-    export_pipeline    = get_export_pipeline()
+    registry = get_registry()
+    export_pipeline = get_export_pipeline()
 
     # Step 3: Render sidebar
     _sidebar.render(state_manager, policy_engine, export_pipeline)

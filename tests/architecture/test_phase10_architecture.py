@@ -18,10 +18,9 @@ Rules validated here:
 """
 
 import ast
-import importlib
 from pathlib import Path
-import pytest
 
+import pytest
 
 SRC = Path("src/smriti/dashboard")
 
@@ -50,10 +49,15 @@ def _all_dashboard_files():
 
 # ── Layer boundary tests ──────────────────────────────────────────────────────
 
+
 def test_no_dashboard_module_imports_knowledge_graph():
     """Dashboard must never import KnowledgeGraph or ScoredKnowledgeGraph."""
-    forbidden = {"smriti.core.knowledge_graph", "smriti.knowledge_graph",
-                 "smriti.graph", "ScoredKnowledgeGraph"}
+    forbidden = {
+        "smriti.core.knowledge_graph",
+        "smriti.knowledge_graph",
+        "smriti.graph",
+        "ScoredKnowledgeGraph",
+    }
     violations = []
     for f in _all_dashboard_files():
         imports = _get_imports(f)
@@ -114,8 +118,15 @@ def test_workspaces_do_not_import_raw_dict_renderers():
         pytest.skip("workspaces/ directory not yet created")
     # Workspaces that render raw dicts typically import json or call .items() on API resp.
     # We check that every workspace that renders imports DTOTransformer.
-    excluded = {"__init__.py", "base.py", "registry.py", "manager.py",
-                "serializer.py", "context.py", "view_coordinator.py"}
+    excluded = {
+        "__init__.py",
+        "base.py",
+        "registry.py",
+        "manager.py",
+        "serializer.py",
+        "context.py",
+        "view_coordinator.py",
+    }
     violations = []
     for f in workspaces_dir.rglob("*.py"):
         if f.name in excluded:
@@ -129,19 +140,16 @@ def test_workspaces_do_not_import_raw_dict_renderers():
 
 # ── Structural tests ──────────────────────────────────────────────────────────
 
+
 def test_app_py_is_thin():
     """app.py must remain a thin entry point (≤ 70 non-blank, non-comment lines)."""
     app_file = SRC / "app.py"
     if not app_file.exists():
         pytest.skip("app.py not yet created")
     lines = app_file.read_text(encoding="utf-8").splitlines()
-    code_lines = [
-        l for l in lines
-        if l.strip() and not l.strip().startswith("#")
-    ]
+    code_lines = [ln for ln in lines if ln.strip() and not ln.strip().startswith("#")]
     assert len(code_lines) <= 70, (
-        f"app.py has {len(code_lines)} code lines — should stay ≤ 70. "
-        "Move logic to controller/."
+        f"app.py has {len(code_lines)} code lines — should stay ≤ 70. " "Move logic to controller/."
     )
 
 
@@ -154,7 +162,8 @@ def test_service_client_does_not_contain_api_calls():
     # ServiceClient delegates; only the individual service files call _api.*
     # Ensure client.py has no direct self._api.get_claim / self._api.search lines
     direct_api_calls = [
-        line.strip() for line in source.splitlines()
+        line.strip()
+        for line in source.splitlines()
         if "self._api.get_claim" in line
         or "self._api.search(" in line
         or "self._api.statistics(" in line
@@ -162,13 +171,15 @@ def test_service_client_does_not_contain_api_calls():
         or "self._api.export(" in line
         or "self._api.explain(" in line
     ]
-    assert not direct_api_calls, (
-        f"ServiceClient calls Phase 9 API directly — delegate to service modules:\n"
-        + "\n".join(direct_api_calls)
+    assert (
+        not direct_api_calls
+    ), "ServiceClient calls Phase 9 API directly — delegate to service modules:\n" + "\n".join(
+        direct_api_calls
     )
 
 
 # ── Dependency Matrix enforcement ─────────────────────────────────────────────
+
 
 def test_dependency_matrix_enforcement():
     """
@@ -181,7 +192,7 @@ def test_dependency_matrix_enforcement():
         workspaces:   Cannot import scoring, phase8, or graph_construction.
         models:       Must be pure Python — cannot import services, api, or streamlit.
     """
-    DEPENDENCY_MATRIX = {
+    dependency_matrix = {
         "views": ["services", "api", "KnowledgeAPI", "epistemic_state"],
         "components": ["state", "services", "api", "KnowledgeAPI", "workspaces"],
         "workspaces": ["scoring", "phase8", "graph_construction"],
@@ -190,7 +201,7 @@ def test_dependency_matrix_enforcement():
 
     violations = []
 
-    for layer, forbidden_imports in DEPENDENCY_MATRIX.items():
+    for layer, forbidden_imports in dependency_matrix.items():
         layer_dir = SRC / layer
         if not layer_dir.exists():
             continue
@@ -202,13 +213,13 @@ def test_dependency_matrix_enforcement():
                 continue
 
             for node in ast.walk(tree):
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                if isinstance(node, ast.Import | ast.ImportFrom):
                     # Get the module name (for ImportFrom, module can be None)
-                    module_name = getattr(node, 'module', '') or ''
-                    for alias in getattr(node, 'names', []):
+                    module_name = getattr(node, "module", "") or ""
+                    for alias in getattr(node, "names", []):
                         # For relative imports (e.g., from . import x), module_name is ''
                         # We need to reconstruct the full import string.
-                        full_import = f"{module_name}.{alias.name}".lstrip('.')
+                        full_import = f"{module_name}.{alias.name}".lstrip(".")
 
                         for forbidden in forbidden_imports:
                             if forbidden in full_import:
@@ -222,10 +233,11 @@ def test_dependency_matrix_enforcement():
 
 # ── Determinism tests ─────────────────────────────────────────────────────────
 
+
 def test_same_state_same_serialize():
     """Same EpistemicState always produces identical serialization."""
-    from smriti.dashboard.state.epistemic_state import EpistemicStateManager
     from smriti.core.models import WorkspaceType
+    from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 
     mgr1 = EpistemicStateManager(run_id="r1")
     mgr2 = EpistemicStateManager(run_id="r1")
@@ -240,18 +252,19 @@ def test_same_state_same_serialize():
 
     # Both snapshots must agree on all deterministic fields
     assert snap1["workspace_type"] == snap2["workspace_type"]
-    assert snap1["active_lens"]    == snap2["active_lens"]
+    assert snap1["active_lens"] == snap2["active_lens"]
     assert snap1["active_filters"] == snap2["active_filters"]
     assert snap1["selected_claim_id"] == snap2["selected_claim_id"]
 
 
 # ── Workspace serializer tests ────────────────────────────────────────────────
 
+
 def test_workspace_serializer_round_trip():
     """WorkspaceSerializer must survive a round-trip."""
+    from smriti.core.models import WorkspaceType
     from smriti.dashboard.state.epistemic_state import EpistemicStateManager
     from smriti.dashboard.workspaces.serializer import WorkspaceSerializer
-    from smriti.core.models import WorkspaceType
 
     mgr = EpistemicStateManager(run_id="r1")
     mgr.activate_workspace(WorkspaceType.RELIABILITY)
@@ -267,16 +280,17 @@ def test_workspace_serializer_round_trip():
 
 # ── Interaction pipeline tests ────────────────────────────────────────────────
 
+
 def test_click_to_state_pipeline():
     """
     Full pipeline: Command → Dispatcher → State Transition → Event Log.
     Simulates a user clicking a claim, without Streamlit.
     """
-    from smriti.dashboard.state.epistemic_state import EpistemicStateManager
-    from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy
-    from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
-    from smriti.dashboard.commands.commands import SelectClaimCommand
     from smriti.core.models import InteractionEventType
+    from smriti.dashboard.commands.commands import SelectClaimCommand
+    from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+    from smriti.dashboard.policies.policies import InteractionPolicy, PolicyEngine
+    from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 
     mgr = EpistemicStateManager(run_id="test")
     engine = PolicyEngine(InteractionPolicy())
@@ -291,7 +305,5 @@ def test_click_to_state_pipeline():
     # Event emitted
     events = mgr.event_log
     assert any(e.event_type == InteractionEventType.CLAIM_SELECTED for e in events)
-    select_event = next(
-        e for e in events if e.event_type == InteractionEventType.CLAIM_SELECTED
-    )
+    select_event = next(e for e in events if e.event_type == InteractionEventType.CLAIM_SELECTED)
     assert select_event.payload["claim_id"] == "c_pipeline_test"

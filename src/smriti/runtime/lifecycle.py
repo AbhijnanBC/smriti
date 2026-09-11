@@ -9,9 +9,10 @@ RECTIFIED (P2-5): OperationalTimeline records Bootstrap→Configuration→Activa
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional
+
 import structlog
 
 from smriti.exceptions import RuntimeException
@@ -20,18 +21,18 @@ logger = structlog.get_logger(__name__)
 
 
 class LifecyclePhase(str, Enum):
-    SYSTEM_INSTALLATION           = "SYSTEM_INSTALLATION"
-    BOOTSTRAP                     = "BOOTSTRAP"
-    CONFIGURATION_LOADING         = "CONFIGURATION_LOADING"
-    DEPENDENCY_CONSTRUCTION       = "DEPENDENCY_CONSTRUCTION"
+    SYSTEM_INSTALLATION = "SYSTEM_INSTALLATION"
+    BOOTSTRAP = "BOOTSTRAP"
+    CONFIGURATION_LOADING = "CONFIGURATION_LOADING"
+    DEPENDENCY_CONSTRUCTION = "DEPENDENCY_CONSTRUCTION"
     INFRASTRUCTURE_INITIALIZATION = "INFRASTRUCTURE_INITIALIZATION"
-    RUNTIME_READY                 = "RUNTIME_READY"
-    OPERATIONAL_EXECUTION         = "OPERATIONAL_EXECUTION"
-    GRACEFUL_SHUTDOWN             = "GRACEFUL_SHUTDOWN"
-    PERSISTENT_CLEANUP            = "PERSISTENT_CLEANUP"
+    RUNTIME_READY = "RUNTIME_READY"
+    OPERATIONAL_EXECUTION = "OPERATIONAL_EXECUTION"
+    GRACEFUL_SHUTDOWN = "GRACEFUL_SHUTDOWN"
+    PERSISTENT_CLEANUP = "PERSISTENT_CLEANUP"
 
 
-_PHASE_ORDER: List[LifecyclePhase] = [
+_PHASE_ORDER: list[LifecyclePhase] = [
     LifecyclePhase.SYSTEM_INSTALLATION,
     LifecyclePhase.BOOTSTRAP,
     LifecyclePhase.CONFIGURATION_LOADING,
@@ -43,14 +44,14 @@ _PHASE_ORDER: List[LifecyclePhase] = [
     LifecyclePhase.PERSISTENT_CLEANUP,
 ]
 
-_PHASE_INDEX: Dict[LifecyclePhase, int] = {p: i for i, p in enumerate(_PHASE_ORDER)}
+_PHASE_INDEX: dict[LifecyclePhase, int] = {p: i for i, p in enumerate(_PHASE_ORDER)}
 
 
 @dataclass
 class LifecycleGate:
-    phase:       LifecyclePhase
+    phase: LifecyclePhase
     description: str
-    check:       Callable[[], bool]
+    check: Callable[[], bool]
 
     def evaluate(self) -> bool:
         try:
@@ -61,14 +62,14 @@ class LifecycleGate:
 
 @dataclass
 class LifecycleRecord:
-    phase:      LifecyclePhase
+    phase: LifecyclePhase
     entered_at: float = field(default_factory=time.monotonic)
-    exited_at:  Optional[float] = None
-    success:    bool = True
-    notes:      str = ""
+    exited_at: float | None = None
+    success: bool = True
+    notes: str = ""
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         if self.exited_at is not None:
             return self.exited_at - self.entered_at
         return None
@@ -76,25 +77,28 @@ class LifecycleRecord:
 
 # ── OperationalTimeline (NEW P2-5) ────────────────────────────────────────────
 
+
 class TimelineStage(str, Enum):
     """High-level stages for the operational timeline."""
-    BOOTSTRAP      = "bootstrap"
-    CONFIGURATION  = "configuration"
-    ACTIVATION     = "activation"
-    RECOVERY       = "recovery"
-    SHUTDOWN       = "shutdown"
+
+    BOOTSTRAP = "bootstrap"
+    CONFIGURATION = "configuration"
+    ACTIVATION = "activation"
+    RECOVERY = "recovery"
+    SHUTDOWN = "shutdown"
 
 
 @dataclass
 class TimelineEntry:
     """One entry in the operational timeline."""
-    stage:      TimelineStage
+
+    stage: TimelineStage
     entered_at: float = field(default_factory=time.monotonic)
-    exited_at:  Optional[float] = None
-    notes:      str = ""
+    exited_at: float | None = None
+    notes: str = ""
 
     @property
-    def duration_ms(self) -> Optional[float]:
+    def duration_ms(self) -> float | None:
         if self.exited_at is not None:
             return (self.exited_at - self.entered_at) * 1000
         return None
@@ -109,8 +113,8 @@ class OperationalTimeline:
     """
 
     def __init__(self) -> None:
-        self._entries: List[TimelineEntry] = []
-        self._current: Optional[TimelineEntry] = None
+        self._entries: list[TimelineEntry] = []
+        self._current: TimelineEntry | None = None
 
     def enter(self, stage: TimelineStage, notes: str = "") -> None:
         """Record entry into a timeline stage."""
@@ -129,16 +133,16 @@ class OperationalTimeline:
     def to_dict(self) -> list:
         return [
             {
-                "stage":       e.stage.value,
-                "entered_at":  e.entered_at,
+                "stage": e.stage.value,
+                "entered_at": e.entered_at,
                 "duration_ms": e.duration_ms,
-                "notes":       e.notes,
+                "notes": e.notes,
             }
             for e in self._entries
         ]
 
     @property
-    def all_entries(self) -> List[TimelineEntry]:
+    def all_entries(self) -> list[TimelineEntry]:
         return list(self._entries)
 
 
@@ -147,9 +151,9 @@ class RuntimeLifecycle:
 
     def __init__(self, run_id: str = "") -> None:
         self._current: LifecyclePhase = LifecyclePhase.SYSTEM_INSTALLATION
-        self._records: List[LifecycleRecord] = []
-        self._gates: Dict[LifecyclePhase, List[LifecycleGate]] = {}
-        self._active_record: Optional[LifecycleRecord] = None
+        self._records: list[LifecycleRecord] = []
+        self._gates: dict[LifecyclePhase, list[LifecycleGate]] = {}
+        self._active_record: LifecycleRecord | None = None
         self._run_id = run_id
         self.timeline = OperationalTimeline()
 
@@ -176,20 +180,21 @@ class RuntimeLifecycle:
 
         # Update operational timeline (RECTIFIED P2-5)
         stage_map = {
-            LifecyclePhase.BOOTSTRAP:                   TimelineStage.BOOTSTRAP,
-            LifecyclePhase.CONFIGURATION_LOADING:       TimelineStage.CONFIGURATION,
-            LifecyclePhase.DEPENDENCY_CONSTRUCTION:     TimelineStage.CONFIGURATION,
+            LifecyclePhase.BOOTSTRAP: TimelineStage.BOOTSTRAP,
+            LifecyclePhase.CONFIGURATION_LOADING: TimelineStage.CONFIGURATION,
+            LifecyclePhase.DEPENDENCY_CONSTRUCTION: TimelineStage.CONFIGURATION,
             LifecyclePhase.INFRASTRUCTURE_INITIALIZATION: TimelineStage.ACTIVATION,
-            LifecyclePhase.RUNTIME_READY:               TimelineStage.ACTIVATION,
-            LifecyclePhase.OPERATIONAL_EXECUTION:       TimelineStage.ACTIVATION,
-            LifecyclePhase.GRACEFUL_SHUTDOWN:           TimelineStage.SHUTDOWN,
-            LifecyclePhase.PERSISTENT_CLEANUP:          TimelineStage.SHUTDOWN,
+            LifecyclePhase.RUNTIME_READY: TimelineStage.ACTIVATION,
+            LifecyclePhase.OPERATIONAL_EXECUTION: TimelineStage.ACTIVATION,
+            LifecyclePhase.GRACEFUL_SHUTDOWN: TimelineStage.SHUTDOWN,
+            LifecyclePhase.PERSISTENT_CLEANUP: TimelineStage.SHUTDOWN,
         }
         if phase in stage_map:
             self.timeline.enter(stage_map[phase], notes=notes)
 
         # Publish ArchitectureEvent (RECTIFIED P0-2)
-        from smriti.runtime.events import publish, ArchitectureEventType
+        from smriti.runtime.events import ArchitectureEventType, publish
+
         publish(
             ArchitectureEventType.LIFECYCLE_STARTED,
             source="runtime.lifecycle",
@@ -216,7 +221,7 @@ class RuntimeLifecycle:
         return self._current
 
     @property
-    def history(self) -> List[LifecycleRecord]:
+    def history(self) -> list[LifecycleRecord]:
         return list(self._records)
 
     def is_past(self, phase: LifecyclePhase) -> bool:

@@ -1,0 +1,118 @@
+{
+  "naive_connected_components": {
+    "partition_count": 32,
+    "node_count": 121,
+    "singleton_count": 0,
+    "singleton_rate": 0.0,
+    "avg_partition_size": 3.7812,
+    "largest_partition_size": 25,
+    "contradiction_violations": 68,
+    "structural_edges_retained": {
+      "supports": 19,
+      "refines": 32,
+      "equivalent": 3
+    },
+    "structural_edges_cut": {
+      "supports": 0,
+      "refines": 0,
+      "equivalent": 0
+    },
+    "total_structural_cut": 0,
+    "avg_density_multi_node_partitions": 0.287817
+  },
+  "contradiction_edge_deletion": {
+    "partition_count": 69,
+    "node_count": 121,
+    "singleton_count": 37,
+    "singleton_rate": 0.5362,
+    "avg_partition_size": 1.7536,
+    "largest_partition_size": 10,
+    "contradiction_violations": 3,
+    "structural_edges_retained": {
+      "supports": 19,
+      "refines": 32,
+      "equivalent": 3
+    },
+    "structural_edges_cut": {
+      "supports": 0,
+      "refines": 0,
+      "equivalent": 0
+    },
+    "total_structural_cut": 0,
+    "avg_density_multi_node_partitions": 0.440625
+  },
+  "constraint_based_signed_coloring_CURRENT_PRODUCTION": {
+    "partition_count": 85,
+    "node_count": 121,
+    "singleton_count": 59,
+    "singleton_rate": 0.6941,
+    "avg_partition_size": 1.4235,
+    "largest_partition_size": 10,
+    "contradiction_violations": 0,
+    "structural_edges_retained": {
+      "supports": 10,
+      "refines": 23,
+      "equivalent": 3
+    },
+    "structural_edges_cut": {
+      "supports": 9,
+      "refines": 9,
+      "equivalent": 0
+    },
+    "total_structural_cut": 18,
+    "avg_density_multi_node_partitions": 0.475
+  },
+  "weighted_constraint_variant": {
+    "partition_count": 75,
+    "node_count": 121,
+    "singleton_count": 43,
+    "singleton_rate": 0.5733,
+    "avg_partition_size": 1.6133,
+    "largest_partition_size": 10,
+    "contradiction_violations": 1,
+    "structural_edges_retained": {
+      "supports": 17,
+      "refines": 26,
+      "equivalent": 3
+    },
+    "structural_edges_cut": {
+      "supports": 2,
+      "refines": 6,
+      "equivalent": 0
+    },
+    "total_structural_cut": 8,
+    "avg_density_multi_node_partitions": 0.461458,
+    "soft_dropped_contradiction_edges": 22,
+    "soft_dropped_edge_confidences": [
+      0.8422,
+      0.8618,
+      0.8732,
+      0.9063,
+      0.9287,
+      0.9521,
+      0.9621,
+      0.9656,
+      0.9773,
+      0.978,
+      0.9799,
+      0.9812,
+      0.9819,
+      0.9871,
+      0.9875,
+      0.9879,
+      0.9884,
+      0.9906,
+      0.998,
+      0.9984,
+      0.9986,
+      0.999
+    ]
+  },
+  "_meta": {
+    "run_id": "20260911_125340",
+    "total_nodes": 121,
+    "total_edges": 122,
+    "total_contradiction_edges": 68,
+    "total_structural_edges": 54
+  }
+}

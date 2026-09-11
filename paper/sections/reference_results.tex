@@ -6,9 +6,16 @@ which claims and pairs SMRITI produces at all.
 
 \paragraph{Claim extraction (RQ1).} Inter-pass agreement on claim validity
 is moderate (Cohen's $\kappa = 0.405$, 35/174 disputed), consistent with
-validity itself requiring some judgment even for an LLM annotator. On the
+validity itself requiring some judgment even for an LLM-generated
+annotation pass. Throughout this paper, Cohen's $\kappa$ on this corpus
+measures agreement \emph{between two independent LLM-generated
+annotation passes}, not human inter-annotator agreement (P2, audit
+round) --- the same distinction \S\ref{sec:annotation} draws for why
+this corpus is called ``Reference,'' not ``Gold.'' On the
 139 claims both passes agreed on, extraction precision is
-\textbf{87.8\%} (95\% CI, bootstrap: [82.0\%, 92.8\%]), and zero of the 174
+\textbf{87.8\%} (95\% CI, item-level bootstrap: [82.0\%, 92.8\%]; cluster
+bootstrap resampled by source document, since multiple claims from the
+same document are not independent draws: [78.5\%, 95.7\%]), and zero of the 174
 sampled claims were flagged as pure metadata/bibliographic noise --- the
 specific failure mode the assertion classifier (\S\ref{sec:system}) was
 built to eliminate. This is a genuine, positive result: the classifier's
@@ -16,43 +23,122 @@ built to eliminate. This is a genuine, positive result: the classifier's
 output is not something SMRITI-Controlled (entirely synthetic single
 sentences) could have demonstrated.
 
-\paragraph{Relationship classification on real, adversarial-domain text
-(RQ2/RQ3).} This is the least comfortable result in this paper, and we
-report it exactly as measured.
+\paragraph{Relationship classification on real, adversarial-domain text,
+post-bidirectional-NLI (RQ2/RQ3).} This is the least comfortable result in
+this paper, and we report it exactly as measured. This round of
+annotation is entirely fresh (\S\ref{sec:annotation}): a new 228-pair
+sample drawn against the bidirectional-NLI resolver's output
+(\S\ref{sec:system}), re-annotated from scratch by two independent
+passes ($\kappa = 0.726$, 196 of 228 agreed excluding UNSURE) with no
+reuse of the prior single-direction round's labels. Per this paper's
+standing rule, we do not partially mix the two rounds' results.
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Label} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{N (gold)} \\
-\midrule
-SUPPORTS     & 27.8\% & 8.2\%  & 12.7\% & 61 \\
-CONTRADICTS  & 4.6\%  & 25.0\% & 7.7\%  & 8 \\
-REFINES      & 50.0\% & 41.7\% & 45.5\% & 48 \\
-NEUTRAL      & 28.7\% & 34.7\% & 31.5\% & 72 \\
-\bottomrule
-\end{tabular}
-\caption{SMRITI's per-class precision/recall/F1 against the 189
-inter-pass-agreed (excluding UNSURE) relationship labels in the fresh
-SMRITI-Reference sample ($\kappa=0.756$ between passes, substantial
-agreement). CONTRADICTS precision's 95\% bootstrap CI is [0.0\%, 11.4\%]
-($n=44$ SMRITI-predicted-CONTRADICTS items in this sample).}
-\label{tab:reference-relationships}
-\end{table}
+\input{generated/reference_results_table.tex}
 
 On SMRITI-Reference's real, domain-clustered, opinion-bearing prose,
-CONTRADICTS precision is \textbf{4.6\%} --- not an improvement over the
-3.2\% this paper's predecessor measured pre-fix
-(\S\ref{sec:error-analysis}), despite the same fix achieving 100\%
-precision on SMRITI-Controlled (\S\ref{sec:controlled}). Recall on the 21
-inter-pass-agreed instances of the corpus's three \emph{deliberately
-planted} hard-contradiction pairs (\S\ref{sec:corpus}) is
-\textbf{14.3\%}: SMRITI predicts CONTRADICTS for only 3 of 25 such pairs
-in the full candidate pool.
+CONTRADICTS precision is \textbf{14.3\%} ($n=9$ agreed-gold CONTRADICTS
+items out of $n=14$ SMRITI-predicted-CONTRADICTS items in this sample),
+with a 95\% bootstrap CI of [0.0\%, 35.7\%] (cluster bootstrap by source
+document: [0.0\%, 38.5\%]). This CI is wide enough to contain both the
+single-direction round's 4.5\% and the original pre-fix 3.2\%, so --- as
+before --- we report no evidence of a statistically distinguishable
+change rather than a claimed improvement, even though the point estimate
+moved. Recall on the 25 inter-pass-agreed instances of the corpus's
+deliberately planted hard-contradiction pairs (\S\ref{sec:corpus}) is
+\textbf{8.0\%} (2 of 25) --- numerically \emph{lower} than the
+single-direction round's 14.3\% (3 of 21; the denominator differs because
+this is an independently drawn fresh sample, not the same 21 pairs
+re-measured). We report this plainly: bidirectional NLI does not improve,
+and on this specific point estimate appears to worsen, CONTRADICTS recall
+on the corpus's hardest deliberately-adversarial pairs. Given both
+recall estimates rest on tiny denominators (21 and 25), we do not read
+this as proof bidirectional NLI made recall worse in any general sense
+--- only as further confirmation that this paper's central open problem
+(E6 below) is exactly as unresolved as the single-direction round found
+it to be, not quietly fixed by an unrelated architecture change.
 
-\paragraph{Root cause: this is a model-calibration gap, not a resolver
-regression.} We inspected the NLI model's own raw scores for the missed
+\paragraph{A genuine resolver bug this annotation round discovered and
+this paper fixes.} The relationship-annotation protocol
+(\S\ref{sec:annotation}) was extended this round to ask annotators for
+\emph{direction} on SUPPORTS/REFINES pairs specifically so that
+bidirectional NLI's direction field --- newly meaningful, since it is no
+longer a claim-ID-order artifact (\S\ref{sec:system}) --- could be
+validated against independent human-style judgment. The first scoring
+pass measured \textbf{0/9} direction accuracy on the items where both
+annotators agreed on type and direction and SMRITI's predicted type
+matched: every single one of the 9 cases had SMRITI's predicted direction
+be the \emph{exact opposite} of the annotator-agreed one. A 0/9 result
+under a fair coin has probability $2^{-9} \approx 0.2\%$; we treated this
+as a signal to inspect the resolver directly rather than report it as a
+discovered limitation. All 9 cases shared one property: NLI's entailment
+score cleared neither direction's strict margin test, so the resolver
+fell through to a secondary, ``no-entailment-either-way, high-similarity''
+REFINES heuristic (\texttt{resolver.py}, the \texttt{refines} priority
+rule) --- and that heuristic \emph{hardcoded} direction \texttt{A\_TO\_B}
+unconditionally, an unmodified holdover from the single-direction
+resolver, where only one direction was ever computed and therefore
+direction could not meaningfully vary. This is architecturally the same
+class of defect the bidirectional-NLI rewrite exists to eliminate
+elsewhere in this resolver, missed in one fallback branch because no
+existing unit test exercised e\_ab $\neq$ e\_ba specifically in that
+branch (\S\ref{sec:bugs} records this as a defect with its own fix and
+regression tests). We fixed it to use whichever direction's entailment
+reading is stronger as a genuine, if weaker, signal; re-ran
+SMRITI-Reference (claim population verified byte-identical, 397/397,
+confirming only Phase 6 output changed); confirmed relationship
+\emph{types} were completely unaffected (0 of 1{,}208 relationships
+changed type, so every precision/recall number in this section is
+unaffected by this fix); and re-measured direction specifically on the
+same 228-pair sample (17 of 228 sampled pairs' direction changed).
+Post-fix direction accuracy is \textbf{44.4\%} (4/9) --- roughly
+chance-level on a binary call, and not something we round up to
+``fixed'': the fix replaces a proven-wrong hardcoded constant with a
+genuine but still weak entailment-strength heuristic, on a
+by-construction-hard subset (pairs where NLI would not confidently commit
+to either direction under the primary margin test). We report the
+before/after honestly rather than only the after: this paper's own
+rewrite introduced a real bug, the same fresh-annotation methodology this
+paper champions caught it, and the fix is a genuine improvement (0/9
+$\to$ 4/9) without being a solved problem.
+
+\paragraph{A further audit round retired the branch this bug
+lived in, and found a second, unrelated resolver bug -- both change the
+numbers above again.} That audit round found the
+``no-entailment-either-way, high-similarity'' REFINES heuristic described
+above was not merely mis-wired (the hardcoded direction just fixed) but
+semantically wrong in its own right: firing when NLI shows entailment in
+\emph{neither} direction is not a refinement under this ontology's own
+definition (REFINES requires established one-way entailment,
+\S\ref{sec:system}). The branch is retired outright rather than further
+patched, along with its two direction-selection regression tests; such
+pairs now correctly resolve NEUTRAL. The same review separately found
+that the specificity gate (\texttt{classification/specificity.py}, which
+reclassifies a genuine one-way SUPPORTS decision to REFINES when the
+entailing claim is meaningfully more specific) counted evidentiary-
+attribution words as content tokens: ``Independent benchmarks confirm
+that X'' was measurably more ``specific'' than ``X'' by raw token count
+alone, so every SUPPORTS pair built from an attribution template was
+wrongly reclassified as REFINES -- confirmed by direct computation
+against this exact wording before the fix. Both fixes are in this
+version of the resolver; re-deriving SMRITI's predictions for this exact
+228-pair sample from the same cached NLI scores (no re-inference needed
+--- the model and its inputs are unchanged, only how the scores are
+resolved is) changed 28 of the 228 predictions. On direction specifically,
+the population that reaches a directional verdict at all shrank sharply
+(D1, direction availability, falls to 2.2\% from the 20\% reported
+earlier in this section, since REFINES/SUPPORTS are now rarer verdicts
+overall), and D2/D3/D4 all now round to 0.0\% on the resulting single-
+digit sample sizes ($n=43$ determinate-gold-direction pairs, only 1 of
+which has a now-correct predicted type at all). We do not read this as
+``direction got worse'': the 44.4\% figure above was computed over a
+population partly populated by exactly the heuristic just retired for
+being semantically wrong, so it was measuring a mix of a real signal and
+an artifact; the current, smaller-$n$ numbers measure only the genuine,
+NLI-entailment-derived direction signal, and are reported here precisely
+because they are less flattering, not despite it.
+
+\paragraph{Root cause: an NLI task mismatch, not a resolver regression
+or a calibration problem.} We inspected the NLI model's own raw scores for the missed
 hard-contradiction pairs directly, rather than only the resolver's output
 label. Representative examples (claim-pair scores,
 \{entailment, neutral, contradiction\}):
@@ -64,41 +150,124 @@ above 0.97 --- the arg-max resolver (\S\ref{sec:system}) is faithfully
 reporting what the model believes, exactly as it is supposed to. This is
 not the same bug the resolver fix addressed (which was committing to
 CONTRADICTS \emph{despite} neutral being dominant); here neutral
-genuinely is dominant. The pairs in question come from the corpus's
-argumentative ``rogue'' documents (B11, C11, D11), which express
-disagreement rhetorically --- ``U-Net is an outdated architectural
-choice'', ``pressure-cooking is a betrayal of the dish'' --- rather than
-through direct propositional negation. An NLI model trained on
-SNLI/MultiNLI/ANLI-style sentence pairs is calibrated to detect
-entailment and contradiction between declarative propositions; it is not
-calibrated to detect \emph{stance conflict} expressed as argumentative
-prose about a shared topic, which instead reads to the model as two
-statements being merely topically related (consistent with the high
+genuinely is dominant, and we deliberately do not call this a
+``calibration'' problem. Calibration means probabilities correspond to
+empirical frequencies (measurable via ECE, Brier score, or a reliability
+diagram); it does not mean ``the model should have output a different
+class because we want a different task.'' Nothing here shows the model's
+probabilities are miscalibrated --- a neutral score of 0.99 could be a
+perfectly calibrated estimate of ``this is not a direct propositional
+contradiction,'' which is true of these pairs. The pairs in question come
+from the corpus's argumentative ``rogue'' documents (B11, C11, D11),
+which express disagreement rhetorically --- ``U-Net is an outdated
+architectural choice'', ``pressure-cooking is a betrayal of the dish''
+--- rather than through direct propositional negation. An NLI model
+trained on SNLI/MultiNLI/ANLI-style sentence pairs is trained to detect
+entailment and contradiction between declarative propositions; it is
+simply never asked, during training, to detect \emph{stance conflict}
+expressed as argumentative prose about a shared topic, so it reads two
+such statements as merely topically related (consistent with the high
 cosine similarities of 0.75--0.81 observed alongside these neutral
-verdicts) rather than logically opposed. SMRITI-Controlled could not have
+verdicts) rather than logically opposed. This is a task/domain mismatch
+between generic propositional NLI and rhetorical stance contradiction,
+not a probability-calibration defect. SMRITI-Controlled could not have
 surfaced this: its CONTRADICTS pairs are, by construction, direct
-propositional negations (\S\ref{sec:controlled}), exactly the case the
-NLI model is calibrated for.
+propositional negations (\S\ref{sec:controlled}), exactly the task the
+NLI model was trained for.
 
-\paragraph{SUPPORTS and NEUTRAL are also weak on real text.} Consistent
-with SMRITI-Controlled's finding that SUPPORTS is the weaker side of the
-resolver's arg-max fix, SUPPORTS precision here is 27.8\% with recall
-8.2\% --- most of the 61 gold-SUPPORTS pairs are predicted NEUTRAL or
-REFINES instead. REFINES is comparatively the strongest label (45.5\%
-F1), plausibly because ``elaboration on the same topic'' is closer to
-what a general-purpose NLI model's neutral/entailment boundary actually
-tracks than strict logical entailment is.
+\paragraph{SUPPORTS is now nearly unmeasurable on real text, and
+EQUIVALENT's first real-text measurement is weak but present.} On this
+fresh sample, only 2 of the 196 agreed-gold pairs are SUPPORTS at all
+(down from the single-direction round's 61 --- a consequence of drawing
+an independent fresh sample stratified toward the new resolver's own
+output distribution, \S\ref{sec:annotation}, rather than evidence that
+gold-SUPPORTS pairs became rarer in the corpus itself), and SMRITI gets
+neither correct (0\% precision, 0\% recall). With $n=2$, we do not read
+this as a worse SUPPORTS result than the single-direction round's 27.8\%
+precision / 8.2\% recall --- both numbers are compatible with a resolver
+that is weak on SUPPORTS regardless of direction, on a real corpus where
+gold-SUPPORTS relationships are simply uncommon relative to NEUTRAL and
+REFINES to begin with. \textbf{EQUIVALENT}, measured on real text for the
+first time in this paper, reaches 33.3\% precision and 20.0\% recall
+($n=5$) --- weak in absolute terms but a real, non-zero signal on a label
+that did not exist in the single-direction system at all. REFINES tells
+the opposite story from what an earlier draft of this section reported:
+after retiring the no-entailment REFINES heuristic and fixing the
+specificity gate's attribution-cue bug (both described above), REFINES
+recall on this same sample collapses to \textbf{2.3\%} (1 of 43 gold
+REFINES pairs; 50.0\% precision, 4.4\% F1), down from an earlier,
+heuristic-inflated 26.5\% F1. This is not a regression to be smoothed
+over: it reveals that the great majority of what human/LLM annotators
+call REFINES in real argumentative text is \emph{not} captured by strict,
+NLI-established one-way propositional entailment at all --- the
+now-retired heuristic's apparent REFINES recall was substantially an
+artifact of a rule that never required entailment in the first place, not
+evidence the resolver understood elaboration. Read alongside SUPPORTS's
+own near-zero score, this is the same underlying finding stated twice:
+propositional NLI plus a lexical specificity heuristic does not
+adequately separate SUPPORTS from REFINES on real prose, a limitation
+this paper does not claim to have solved.
+
+\paragraph{Error taxonomy: where REFINES and CONTRADICTS misses actually
+come from (P1-11, audit round).} Rather than leave REFINES's 2.3\%
+recall and CONTRADICTS's 22.2\% recall as two collapsed numbers, we
+categorize every inter-pass-agreed gold pair the resolver did not
+predict as that relation into a specific failure-mode bucket, from
+evidence each pair already carries (cached bidirectional NLI scores,
+real claim text) --- not guessed
+(\texttt{evaluation/annotation/error\_taxonomy.py}).
+
+\input{generated/error_taxonomy_table.tex}
+
+\textbf{Both relations' misses are overwhelmingly ``the NLI model never
+produced the needed signal at all,'' not any of the more specific
+structural categories the taxonomy checks for.} 33 of 42 REFINES misses
+(78.6\%) show near-zero entailment in \emph{both} directions (R8): the
+resolver's specificity gate is architecturally downstream of entailment
+and never gets a chance to fire, because entailment itself never fires.
+8 misses (19.0\%) are truncated or list-heading claim fragments
+(\texttt{"...and ."}, \texttt{"...include:"}) that Phase 4 should not
+have emitted as complete declarative claims in the first place (R9) ---
+a claim-construction defect, not a resolver one. Exactly one miss
+(2.4\%) shows high entailment in \emph{both} directions, which routes to
+EQUIVALENT before the specificity gate that would consider REFINES ever
+runs --- a classification-priority-ordering effect, disclosed
+individually rather than folded into either bucket. \textbf{None of the
+seven REFINES specificity subtypes the review asked us to check for
+(numeric, geographic, temporal, population, condition, causal-mechanism,
+qualification) has a single instance in this miss set}: the resolver
+never reaches the point where a specificity judgment would even be
+consulted. CONTRADICTS's 7 misses split similarly: 5 (71.4\%) are NLI
+misses (both directions' contradiction score near zero on real
+opinion-bearing text whose contradiction is pragmatic/evaluative rather
+than lexical, e.g. ``a shortcut that cuts quality'' vs.\ ``achieve
+fork-tender lamb''), 1 is a truncated claim fragment outside the
+review's own CONTRADICTS taxonomy (no ``segmentation'' bucket is listed
+for CONTRADICTS), and 1 is a comparative claim scoped to a specific
+reference point rather than an absolute contradiction (the closest fit
+to the review's ``scope'' category). \textbf{None of CONTRADICTS's
+five other named subtypes (lexical polarity, numeric, temporal,
+negation, causal) appears either.} Retrieval miss (R10) is 0 for both
+relations by construction: every pair in this taxonomy already has
+cached NLI scores, meaning it already passed retrieval --- so, on this
+sample, neither relation's real-corpus weakness is a retrieval problem
+at all; it is squarely an NLI/entailment-detection one, with a
+secondary, disclosed claim-construction contribution (R9) that is a
+Phase 4 concern, not a Phase 6 one.
 
 \paragraph{Baseline comparison.} Both TF-IDF-cosine and Sentence-BERT-
-cosine baselines, scored on the identical 189 gold pairs, also score
-CONTRADICTS poorly (TF-IDF: 50.0\% precision but only 12.5\% recall, i.e.\
-2 correct calls total; Sentence-BERT: 7.1\% precision, 12.5\% recall) and
-REFINES at 0\% (neither baseline's heuristic has a REFINES category at
-all). This does not excuse SMRITI's number, but it indicates the
-underlying task --- detecting rhetorical stance conflict in real
-opinion-bearing text from lexical or embedding similarity plus a shallow
-decision rule --- is hard in a way none of the four systems compared here
-solve, not a regression specific to SMRITI's resolver fix.
+cosine baselines, scored on the identical 196 gold pairs, also score
+CONTRADICTS poorly (TF-IDF: 100.0\% precision but only 11.1\% recall,
+i.e.\ 1 correct call total; Sentence-BERT: 28.6\% precision, 22.2\%
+recall) and REFINES/EQUIVALENT/SUPPORTS at 0\% across both baselines
+(neither baseline's heuristic has a REFINES or EQUIVALENT category at
+all, and neither correctly recovers a single gold-SUPPORTS pair on this
+$n=2$ subset). This does not excuse SMRITI's number, but it indicates the
+underlying task --- detecting rhetorical stance conflict and entailment-
+family relationships in real opinion-bearing text from lexical or
+embedding similarity plus a shallow decision rule --- is hard in a way
+none of the four systems compared here solve, not a regression specific
+to SMRITI's resolver fix.
 
 \paragraph{Reading this alongside \S\ref{sec:controlled}.} Table
 \ref{tab:controlled} and Table \ref{tab:reference-relationships} are not

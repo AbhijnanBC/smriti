@@ -1,25 +1,26 @@
 """Unit tests for dashboard/controller/interaction_dispatcher.py."""
 
 import pytest
-from smriti.core.models import WorkspaceType, ExplainabilityLevel
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
-from smriti.dashboard.policies.policies import PolicyEngine, InteractionPolicy, ComparisonPolicy
-from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+from smriti.core.models import WorkspaceType
 from smriti.dashboard.commands.commands import (
-    SelectClaimCommand,
     ActivateWorkspaceCommand,
-    CompareCommand,
-    SubmitSearchCommand,
-    SetPageCommand,
     ApplyFilterCommand,
     ClearFiltersCommand,
+    CompareCommand,
+    SelectClaimCommand,
+    SetPageCommand,
+    SubmitSearchCommand,
 )
+from smriti.dashboard.controller.interaction_dispatcher import InteractionDispatcher
+from smriti.dashboard.policies.policies import ComparisonPolicy, InteractionPolicy, PolicyEngine
+from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 from smriti.exceptions import CommandDispatchError
 
 
 # ── Helper: PolicyEngine with validate_command ──────────────────────────────
 class TestPolicyEngine(PolicyEngine):
     """Subclass that implements validate_command for testing."""
+
     def validate_command(self, command):
         """Enforce interaction policies for commands."""
         # Comparison limit
@@ -37,7 +38,7 @@ class TestPolicyEngine(PolicyEngine):
 @pytest.fixture
 def dispatcher():
     mgr = EpistemicStateManager(run_id="test")
-    engine = TestPolicyEngine(InteractionPolicy())   # uses default limits
+    engine = TestPolicyEngine(InteractionPolicy())  # uses default limits
     return InteractionDispatcher(state_manager=mgr, policy_engine=engine), mgr
 
 
@@ -88,9 +89,9 @@ def test_compare_command_within_policy_allowed(dispatcher):
 def test_compare_command_exceeds_policy_raises(dispatcher):
     d, mgr = dispatcher
     # Use a strict policy with limit = 1
-    strict_policy = TestPolicyEngine(InteractionPolicy(
-        comparison=ComparisonPolicy(max_comparison_claims=1)
-    ))
+    strict_policy = TestPolicyEngine(
+        InteractionPolicy(comparison=ComparisonPolicy(max_comparison_claims=1))
+    )
     d2 = InteractionDispatcher(state_manager=mgr, policy_engine=strict_policy)
     with pytest.raises(CommandDispatchError):
         d2.dispatch(CompareCommand(session_id="s", claim_ids=("c001", "c002", "c003")))

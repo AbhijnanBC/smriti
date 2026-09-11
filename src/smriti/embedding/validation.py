@@ -28,16 +28,16 @@ Rules:
 from __future__ import annotations
 
 import math
-from typing import List, Optional, Tuple
+
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
 def validate_vector(
-    vector: List[float],
+    vector: list[float],
     expected_dimension: int,
-) -> Tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """
     Validate a raw or normalized embedding vector.
 
@@ -56,17 +56,14 @@ def validate_vector(
     # Check 2: Correct dimension
     actual_dim = len(vector)
     if actual_dim != expected_dimension:
-        return False, (
-            f"Dimension mismatch: expected {expected_dimension}, got {actual_dim}"
-        )
+        return False, (f"Dimension mismatch: expected {expected_dimension}, got {actual_dim}")
 
     # Check 3: dtype — all elements must be strictly float
     # This rejects ints, numpy scalars, strings, etc. to enforce type purity.
     for i, value in enumerate(vector):
         if not isinstance(value, float):
             return False, (
-                f"Non-float type at index {i}: {type(value).__name__} "
-                f"(expected float)"
+                f"Non-float type at index {i}: {type(value).__name__} " f"(expected float)"
             )
 
     # Check 4: Finite values (no NaN or Inf)
@@ -89,9 +86,9 @@ def validate_vector(
 
 
 def validate_batch(
-    vectors: List[List[float]],
+    vectors: list[list[float]],
     expected_dimension: int,
-) -> List[Tuple[bool, Optional[str]]]:
+) -> list[tuple[bool, str | None]]:
     """
     Validate an entire batch of vectors.
 

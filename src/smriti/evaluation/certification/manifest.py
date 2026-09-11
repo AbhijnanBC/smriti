@@ -22,14 +22,19 @@ from __future__ import annotations
 import hashlib
 import platform
 import sys
-from datetime import datetime, timezone
-from typing import Dict, List
+from datetime import UTC, datetime
+
 from smriti.core.models import EvaluationManifest, ExperimentDesign
 
 # Packages whose installed version is recorded verbatim (never hardcoded —
 # always read from the package's own installed distribution metadata).
 _TRACKED_PACKAGES = (
-    "structlog", "spacy", "sentence_transformers", "torch", "networkx", "numpy",
+    "structlog",
+    "spacy",
+    "sentence_transformers",
+    "torch",
+    "networkx",
+    "numpy",
 )
 
 # spaCy trained pipelines (e.g. en_core_web_sm) install as their own
@@ -37,11 +42,11 @@ _TRACKED_PACKAGES = (
 _DEFAULT_SPACY_MODEL = "en_core_web_sm"
 
 
-def _software_versions() -> Dict[str, str]:
+def _software_versions() -> dict[str, str]:
     """Real installed package versions, via importlib.metadata — never hardcoded."""
     import importlib.metadata
 
-    versions: Dict[str, str] = {"python": sys.version.split()[0]}
+    versions: dict[str, str] = {"python": sys.version.split()[0]}
     for pkg in _TRACKED_PACKAGES:
         try:
             versions[pkg] = importlib.metadata.version(pkg)
@@ -50,6 +55,7 @@ def _software_versions() -> Dict[str, str]:
 
     try:
         from smriti.core.config import get_config
+
         spacy_model = get_config().get("extraction", {}).get("spacy_model", _DEFAULT_SPACY_MODEL)
     except Exception:
         spacy_model = _DEFAULT_SPACY_MODEL
@@ -77,13 +83,15 @@ def _hardware_description() -> str:
 
     try:
         import psutil
-        total_ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+
+        total_ram_gb = psutil.virtual_memory().total / (1024**3)
         parts.append(f"RAM: {total_ram_gb:.1f}GB")
     except Exception:
         parts.append("RAM: unknown")
 
     try:
         import torch
+
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
             parts.append(f"GPU: {gpu_name} (CUDA {torch.version.cuda})")
@@ -97,12 +105,12 @@ def _hardware_description() -> str:
 
 def build_evaluation_manifest(
     run_id: str,
-    experiments: List[ExperimentDesign],
+    experiments: list[ExperimentDesign],
     policy_version: str,
 ) -> EvaluationManifest:
     """Build an EvaluationManifest for one Phase 12 run."""
     manifest_id = hashlib.sha256(
-        f"{run_id}:{datetime.now(tz=timezone.utc).isoformat()}".encode()
+        f"{run_id}:{datetime.now(tz=UTC).isoformat()}".encode()
     ).hexdigest()[:12]
 
     experiment_ids = tuple(e.experiment_id for e in experiments)
@@ -110,7 +118,7 @@ def build_evaluation_manifest(
     random_seeds = {e.experiment_id: e.random_seed for e in experiments}
 
     # Collect all acceptance criteria
-    acceptance_criteria: Dict[str, float] = {}
+    acceptance_criteria: dict[str, float] = {}
     for e in experiments:
         for metric, threshold in e.acceptance_criteria.items():
             acceptance_criteria[f"{e.experiment_id}.{metric}"] = threshold
@@ -126,5 +134,5 @@ def build_evaluation_manifest(
         acceptance_criteria=acceptance_criteria,
         software_versions=_software_versions(),
         hardware_description=_hardware_description(),
-        created_at=datetime.now(tz=timezone.utc).isoformat(),
+        created_at=datetime.now(tz=UTC).isoformat(),
     )

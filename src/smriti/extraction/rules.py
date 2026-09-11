@@ -63,11 +63,36 @@ HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
 
 # These abbreviations should NEVER trigger a sentence boundary.
 # Fully configurable via config extraction.abbreviations in default.yaml.
-DEFAULT_ABBREVIATIONS = frozenset([
-    "dr", "mr", "mrs", "ms", "prof", "sr", "jr", "rev", "gen",
-    "e.g", "i.e", "vs", "etc", "fig", "no", "vol", "pt", "pp",
-    "u.s", "u.k", "a.m", "p.m", "ph.d", "m.d", "b.c", "a.d",
-])
+DEFAULT_ABBREVIATIONS = frozenset(
+    [
+        "dr",
+        "mr",
+        "mrs",
+        "ms",
+        "prof",
+        "sr",
+        "jr",
+        "rev",
+        "gen",
+        "e.g",
+        "i.e",
+        "vs",
+        "etc",
+        "fig",
+        "no",
+        "vol",
+        "pt",
+        "pp",
+        "u.s",
+        "u.k",
+        "a.m",
+        "p.m",
+        "ph.d",
+        "m.d",
+        "b.c",
+        "a.d",
+    ]
+)
 
 # Characters that may end a sentence when followed by space + capital letter
 SENTENCE_ENDING_CHARS = frozenset([".", "?", "!"])

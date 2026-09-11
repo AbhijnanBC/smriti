@@ -11,12 +11,10 @@ Responsibility:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List
 import structlog
 
-from smriti.extraction.scanner import BlockType, ScannerEvent
 from smriti.core.models import Phase3Stats, SegmentationWarning
+from smriti.extraction.scanner import BlockType, ScannerEvent
 
 logger = structlog.get_logger(__name__)
 
@@ -44,7 +42,7 @@ class Phase3StatsCollector:
         self._unknown_blocks = 0
         self._sentences_produced = 0
         self._sentences_discarded = 0
-        self._warnings: List[SegmentationWarning] = []
+        self._warnings: list[SegmentationWarning] = []
 
     def accumulate_event(self, event: ScannerEvent) -> None:
         """Record a scanner event for statistics."""

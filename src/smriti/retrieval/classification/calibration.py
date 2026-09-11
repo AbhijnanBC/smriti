@@ -38,11 +38,10 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from typing import List, Optional
-import structlog
 
+import structlog
 from smriti.core.config import get_config
-from smriti.core.models import RelationshipEvidence, NLIScores, LifecycleStage
+from smriti.core.models import LifecycleStage, RelationshipEvidence
 from smriti.core.paths import CONFIG_DIR
 from smriti.exceptions import CalibrationError
 
@@ -52,10 +51,10 @@ CALIBRATOR_VERSION = "1.0"
 
 
 class CalibrationStrategy(str, Enum):
-    IDENTITY    = "identity"
+    IDENTITY = "identity"
     TEMPERATURE = "temperature"
-    PERCENTILE  = "percentile"
-    ISOTONIC    = "isotonic"
+    PERCENTILE = "percentile"
+    ISOTONIC = "isotonic"
 
 
 class ConfidenceCalibrator:
@@ -68,9 +67,9 @@ class ConfidenceCalibrator:
     def __init__(
         self,
         model_name: str,
-        strategy: Optional[CalibrationStrategy] = None,
+        strategy: CalibrationStrategy | None = None,
         temperature: float = 1.0,
-        reference_distribution: Optional[List[float]] = None,
+        reference_distribution: list[float] | None = None,
     ) -> None:
         """
         Args:
@@ -92,9 +91,8 @@ class ConfidenceCalibrator:
         self._model_name = model_name
         self._strategy = strategy
         self._temperature = calib_cfg.get("temperature", temperature)
-        self._reference_distribution = (
-            reference_distribution
-            or calib_cfg.get("reference_distribution")
+        self._reference_distribution = reference_distribution or calib_cfg.get(
+            "reference_distribution"
         )
 
         logger.info(
@@ -115,14 +113,64 @@ class ConfidenceCalibrator:
             New RelationshipEvidence with calibrated_confidence updated.
             NLIScores (predicted_label, raw scores) are never modified.
         """
-        raw = evidence.nli_scores.raw_confidence
+        calibrated = self._calibrate_one(
+            raw=evidence.nli_scores.raw_confidence,
+            entailment=evidence.nli_scores.entailment_score,
+            neutral=evidence.nli_scores.neutral_score,
+            contradiction=evidence.nli_scores.contradiction_score,
+        )
 
+        # RECTIFIED (external "reality check" review round 3, P0-5
+        # "directional confidence is still wrong"): the reverse (B->A)
+        # direction is now calibrated with the exact same strategy, not
+        # left as an uncalibrated raw score. Before this fix, every
+        # persisted relationship's confidence was the A->B calibrated
+        # value alone regardless of which direction the resolver actually
+        # selected -- see RelationshipEvidence.calibrated_confidence_b_to_a
+        # and resolver.compute_decision_confidence() for how the two
+        # readings are now combined per relation type.
+        calibrated_ba = None
+        if evidence.nli_scores_b_to_a is not None:
+            ba = evidence.nli_scores_b_to_a
+            calibrated_ba = self._calibrate_one(
+                raw=ba.raw_confidence,
+                entailment=ba.entailment_score,
+                neutral=ba.neutral_score,
+                contradiction=ba.contradiction_score,
+            )
+
+        # Return new RelationshipEvidence with calibrated_confidence set
+        # and lifecycle advanced to CALIBRATED_EVIDENCE.
+        # RECTIFIED (bidirectional-NLI rewrite): this constructor call
+        # previously dropped nli_scores_b_to_a entirely (the field didn't
+        # exist yet when this was written), silently discarding the
+        # reverse-direction evidence on every calibrated pair and forcing
+        # every relationship back onto the legacy single-direction resolver
+        # path regardless of what evidence.py actually generated.
+        return RelationshipEvidence(
+            pair=evidence.pair,
+            cosine_similarity=evidence.cosine_similarity,
+            nli_scores=evidence.nli_scores,
+            calibrated_confidence=calibrated,
+            calibrated_confidence_b_to_a=calibrated_ba,
+            inference_metadata=evidence.inference_metadata,
+            lifecycle_stage=LifecycleStage.CALIBRATED_EVIDENCE,
+            nli_scores_b_to_a=evidence.nli_scores_b_to_a,
+        )
+
+    def _calibrate_one(
+        self,
+        raw: float,
+        entailment: float,
+        neutral: float,
+        contradiction: float,
+    ) -> float:
         try:
-            calibrated = self._apply_strategy(
+            return self._apply_strategy(
                 raw_confidence=raw,
-                entailment=evidence.nli_scores.entailment_score,
-                neutral=evidence.nli_scores.neutral_score,
-                contradiction=evidence.nli_scores.contradiction_score,
+                entailment=entailment,
+                neutral=neutral,
+                contradiction=contradiction,
             )
         except CalibrationError as e:
             logger.warning(
@@ -130,23 +178,12 @@ class ConfidenceCalibrator:
                 model=self._model_name,
                 error=str(e),
             )
-            calibrated = raw
-
-        # Return new RelationshipEvidence with calibrated_confidence set
-        # and lifecycle advanced to CALIBRATED_EVIDENCE
-        return RelationshipEvidence(
-            pair=evidence.pair,
-            cosine_similarity=evidence.cosine_similarity,
-            nli_scores=evidence.nli_scores,
-            calibrated_confidence=calibrated,
-            inference_metadata=evidence.inference_metadata,
-            lifecycle_stage=LifecycleStage.CALIBRATED_EVIDENCE,
-        )
+            return raw
 
     def calibrate_batch(
         self,
-        evidence_list: List[RelationshipEvidence],
-    ) -> List[RelationshipEvidence]:
+        evidence_list: list[RelationshipEvidence],
+    ) -> list[RelationshipEvidence]:
         """Calibrate a batch of evidence objects."""
         return [self.calibrate(ev) for ev in evidence_list]
 
@@ -162,9 +199,7 @@ class ConfidenceCalibrator:
             return raw_confidence
 
         elif self._strategy == CalibrationStrategy.TEMPERATURE:
-            return self._temperature_scale(
-                entailment, neutral, contradiction, self._temperature
-            )
+            return self._temperature_scale(entailment, neutral, contradiction, self._temperature)
 
         elif self._strategy == CalibrationStrategy.PERCENTILE:
             if not self._reference_distribution:
@@ -206,9 +241,9 @@ class ConfidenceCalibrator:
             math.log(max(neutral, eps)),
             math.log(max(contradiction, eps)),
         ]
-        scaled = [l / temperature for l in logits]
-        max_l = max(scaled)
-        exps = [math.exp(s - max_l) for s in scaled]
+        scaled = [logit / temperature for logit in logits]
+        max_scaled = max(scaled)
+        exps = [math.exp(s - max_scaled) for s in scaled]
         total = sum(exps)
         probs = [e / total for e in exps]
         return max(probs)
@@ -216,7 +251,7 @@ class ConfidenceCalibrator:
     @staticmethod
     def _percentile_calibrate(
         raw_confidence: float,
-        reference: List[float],
+        reference: list[float],
     ) -> float:
         """
         Map raw_confidence to its percentile rank in the reference distribution.
@@ -258,17 +293,12 @@ class ConfidenceCalibrator:
                 return float(calibrator.transform([raw_confidence])[0])
             else:
                 logger.warning(
-                    "Isotonic calibration artifact missing at %s, falling back to raw",
-                    calib_path
+                    "Isotonic calibration artifact missing at %s, falling back to raw", calib_path
                 )
                 return raw_confidence
         except ImportError as e:
-            logger.warning(
-                "scikit-learn or joblib not installed, falling back to raw: %s", e
-            )
+            logger.warning("scikit-learn or joblib not installed, falling back to raw: %s", e)
             return raw_confidence
         except Exception as e:
-            logger.warning(
-                "Isotonic calibration failed (%s), falling back to raw", e
-            )
+            logger.warning("Isotonic calibration failed (%s), falling back to raw", e)
             return raw_confidence

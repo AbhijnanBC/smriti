@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "smriti"
 version = "0.1.0"
-description = "Reproducible, self-certifying pipeline for claim extraction, contradiction-aware knowledge graph construction, and reliability scoring over personal note vaults."
-authors = ["Abhijnan B C <you@example.com>"]
+description = "Reproducible pipeline for claim extraction, contradiction-aware knowledge graph construction, and evidence-graded reliability scoring over personal note vaults, with a gate-based internal evaluation report (not a substitute for external review)."
+authors = ["Abhijnan B C <p9713889@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/AbhijnanBC/smriti"
@@ -18,7 +18,9 @@ sentence-transformers = "^3.4"
 torch = "^2.5"
 transformers = "^4.48"
 
-# Retrieval (FAISS strictly on non-Windows, scikit-learn available as fallback)
+# Retrieval (faiss-cpu below now ships Windows wheels too; scikit-learn
+# remains as the graceful fallback the code uses if FAISS import fails
+# for any reason -- see FAISSNotAvailableError in retrieval/faiss_index.py)
 scikit-learn = "^1.4"
 
 # Data processing
@@ -56,6 +58,9 @@ mypy = "^1.10"
 ipython = "^8.24"
 hypothesis = "^6.156.7"
 matplotlib = "^3.11.1"
+types-psutil = "^7.2.2.20260906"
+types-pyyaml = "^6.0.12.20260906"
+pandas-stubs = "^3.0.5.260730"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -83,6 +88,35 @@ python_version = "3.11"
 check_untyped_defs = true
 disallow_incomplete_defs = false
 warn_unused_ignores = true
+
+# joblib ships no py.typed marker and has no types-joblib stub package on
+# PyPI (checked during the publication-readiness audit); this is the
+# standard mypy-recommended way to silence the resulting import-untyped
+# noise for a single third-party dependency without disabling the check
+# project-wide.
+[[tool.mypy.overrides]]
+module = "joblib"
+ignore_missing_imports = true
+
+# scikit-learn ships no py.typed marker either; the one third-party stub
+# package for it (scikit-learn-stubs 0.0.3) is unmaintained and covers
+# almost nothing, so it would trade this warning for a worse set of
+# mismatched-stub errors rather than actually helping.
+[[tool.mypy.overrides]]
+module = "sklearn.*"
+ignore_missing_imports = true
+
+# networkx ships no py.typed marker; its one third-party stub package
+# (networkx-stubs 0.0.1) is abandoned and covers almost nothing, so it
+# would trade this warning for a worse set of mismatched-stub errors.
+[[tool.mypy.overrides]]
+module = "networkx.*"
+ignore_missing_imports = true
+
+# plotly ships no py.typed marker and has no types-plotly stub package.
+[[tool.mypy.overrides]]
+module = "plotly.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

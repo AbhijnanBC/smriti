@@ -3,14 +3,22 @@ Unit tests for embedding/builders.py.
 Tests Vector, Embedding, EmbeddingQuality, and EmbeddedClaim construction.
 """
 
+import dataclasses
+
 import pytest
-import math
 from smriti.core.models import (
-    EmbeddingModelDescriptor, EmbeddingProvenance,
-    EmbeddingQuality, Vector, Embedding, EmbeddedClaim,
+    EmbeddedClaim,
+    Embedding,
+    EmbeddingModelDescriptor,
+    EmbeddingProvenance,
+    EmbeddingQuality,
+    Vector,
 )
 from smriti.embedding.builders import (
-    build_vector, build_embedding, build_embedding_quality, build_embedded_claim,
+    build_embedded_claim,
+    build_embedding,
+    build_embedding_quality,
+    build_vector,
 )
 
 
@@ -37,6 +45,7 @@ def provenance():
 
 
 # ── build_vector ──────────────────────────────────────────────────────────────
+
 
 def test_build_vector_returns_vector(descriptor):
     vec = build_vector([0.25, 0.25, 0.25, 0.25], descriptor.dimension, normalized=True)
@@ -72,6 +81,7 @@ def test_build_vector_dimension_mismatch_raises(descriptor):
 
 # ── build_embedding ───────────────────────────────────────────────────────────
 
+
 def test_build_embedding_returns_embedding(descriptor, provenance):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension, normalized=True)
     emb = build_embedding("c001", vec, descriptor, provenance)
@@ -95,11 +105,12 @@ def test_build_embedding_vector_is_vector_type(descriptor, provenance):
 def test_build_embedding_is_frozen(descriptor, provenance):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension)
     emb = build_embedding("c001", vec, descriptor, provenance)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         emb.claim_id = "modified"
 
 
 # ── build_embedding_quality ───────────────────────────────────────────────────
+
 
 def test_build_embedding_quality_fresh(descriptor):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension, normalized=True)
@@ -120,11 +131,12 @@ def test_build_embedding_quality_cached(descriptor):
 def test_build_embedding_quality_is_frozen(descriptor):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension)
     quality = build_embedding_quality(vec, descriptor, cache_used=False)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         quality.dimension_ok = False
 
 
 # ── build_embedded_claim ──────────────────────────────────────────────────────
+
 
 def test_build_embedded_claim_returns_embedded_claim(descriptor, provenance):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension, normalized=True)
@@ -157,7 +169,7 @@ def test_build_embedded_claim_is_frozen(descriptor, provenance):
     emb = build_embedding("c001", vec, descriptor, provenance)
     qual = build_embedding_quality(vec, descriptor, cache_used=False)
     ec = build_embedded_claim("c001", emb, qual)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         ec.claim_id = "modified"
 
 

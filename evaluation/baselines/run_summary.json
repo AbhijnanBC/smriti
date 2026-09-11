@@ -1,9 +1,9 @@
 {
   "phase4_claim_count": 397,
-  "gold_vault_source_doc_count": 54,
+  "reference_vault_source_doc_count": 53,
   "naive_extraction": {
-    "claim_count": 690,
-    "wall_clock_seconds": 0.014380300068296492
+    "claim_count": 636,
+    "wall_clock_seconds": 0.016754699987359345
   },
   "tfidf_relations": {
     "relationship_count": 497,
@@ -12,7 +12,7 @@
       "NEUTRAL": 433,
       "SUPPORTS": 35
     },
-    "wall_clock_seconds": 0.4739717999473214
+    "wall_clock_seconds": 0.6251489999995101
   },
   "sbert_relations": {
     "relationship_count": 1749,
@@ -21,6 +21,6 @@
       "NEUTRAL": 1447,
       "SUPPORTS": 55
     },
-    "wall_clock_seconds": 7.14384459995199
+    "wall_clock_seconds": 8.045405500000925
   }
 }

@@ -26,9 +26,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Dict, Any, Set
+from typing import Any
+
 import structlog
 
 from smriti.core.config import get_config
@@ -38,6 +39,36 @@ from smriti.exceptions import PolicyError
 logger = structlog.get_logger(__name__)
 
 POLICY_VERSION = "1.0"
+
+# RECTIFIED (P1-4, external "reality check" review — reliability vs. graph
+# importance conflation): reliability_index was previously fused from all
+# 8 registered signals, silently blending "how well is this claim evidenced"
+# (evidence_strength, evidence_independence, source_diversity,
+# conflict_pressure, temporal_stability) with "how structurally central is
+# this claim in the graph" (topology_strength, hub_score, bridge_score) into
+# one number. Those are different scientific claims -- a claim can be
+# well-evidenced but structurally peripheral, or highly central but resting
+# on a single unverified source. This categorization is the basis for
+# splitting one fused ContributionSet into two (see
+# scoring.normalization.split_contribution_set_by_category), each fed
+# through the SAME generic fusion engine to produce reliability_index and
+# importance_index as independent, separately-explainable scores.
+EVIDENCE_SIGNAL_NAMES = frozenset(
+    {
+        "evidence_strength",
+        "evidence_independence",
+        "source_diversity",
+        "conflict_pressure",
+        "temporal_stability",
+    }
+)
+IMPORTANCE_SIGNAL_NAMES = frozenset(
+    {
+        "topology_strength",
+        "hub_score",
+        "bridge_score",
+    }
+)
 
 
 class PolicyProfile(str, Enum):
@@ -56,27 +87,42 @@ class PolicyProfile(str, Enum):
         EVIDENCE_FIRST: Maximum weight on direct evidence strength.
                         Use when graph topology is sparse/unreliable.
     """
-    BALANCED       = "balanced"
-    CONSERVATIVE   = "conservative"
-    RESEARCH       = "research"
+
+    BALANCED = "balanced"
+    CONSERVATIVE = "conservative"
+    RESEARCH = "research"
     EVIDENCE_FIRST = "evidence_first"
 
 
 @dataclass(frozen=True)
 class EvidencePolicy:
     """Parameters governing evidence signal extraction."""
+
     min_support_count: int = 1
     max_support_count: int = 20
     echo_chamber_penalty: float = 0.30
     independence_discount_threshold: float = 0.50
     # NEW (P1-1): lineage heuristics for independence detection
-    lineage_depth_limit: int = 2              # How many citation hops to check
-    publisher_domain_weight: float = 0.50     # Weight of publisher domain in independence
+    lineage_depth_limit: int = 2  # How many citation hops to check
+    publisher_domain_weight: float = 0.50  # Weight of publisher domain in independence
+    # NEW (external review, P1-2 "evidence aggregation / double counting"):
+    # weight applied to an evidence group's contribution to
+    # discounted_evidence_strength/discounted_weighted_confidence,
+    # keyed by the SHORTEST hop distance at which it was reached.
+    # "A supports B supports C": A is real but entirely B-mediated
+    # evidence for C, not independent corroboration of C -- these
+    # defaults (an engineering-judgment starting point, not
+    # cross-validated) discount it rather than either dropping it
+    # entirely or counting it as fully independent.
+    direct_evidence_weight: float = 1.0  # hop distance == 1
+    derived_evidence_weight: float = 0.60  # hop distance == 2 ("one-hop derived")
+    multi_hop_evidence_weight: float = 0.30  # hop distance >= 3
 
 
 @dataclass(frozen=True)
 class ConflictPolicy:
     """Parameters governing contradiction pressure computation."""
+
     max_contradiction_partners: int = 5
     conflict_saturation: float = 0.80
     contradiction_weight_multiplier: float = 1.0
@@ -92,12 +138,14 @@ class TopologyPolicy:
     The extractor emits HubScore and BridgeScore as separate signals.
     Policy only controls how centrality is scaled.
     """
-    centrality_scale: float = 1.0     # Multiplier for the centrality signal
+
+    centrality_scale: float = 1.0  # Multiplier for the centrality signal
 
 
 @dataclass(frozen=True)
 class TemporalPolicy:
     """Parameters governing temporal stability signals."""
+
     default_stability: float = 0.50
     evolution_bonus: float = 0.15
     conflict_penalty: float = 0.10
@@ -121,37 +169,49 @@ class FusionPolicy:
     The sum of all positive-direction weights minus negative-direction weights
     must equal 1.0 (validated on construction).
     """
+
     # Weights keyed by SignalID value (string) — must match the registry exactly
-    signal_weights: Dict[str, float] = field(default_factory=lambda: {
-        "evidence_strength":    0.25,
-        "evidence_independence": 0.15,
-        "source_diversity":     0.15,
-        "topology_strength":    0.10,
-        "hub_score":            0.05,    # RECTIFIED (P0-3): topology sub-signals
-        "bridge_score":         0.05,
-        "conflict_pressure":    0.20,
-        "temporal_stability":   0.05,
-    })
+    signal_weights: dict[str, float] = field(
+        default_factory=lambda: {
+            "evidence_strength": 0.25,
+            "evidence_independence": 0.15,
+            "source_diversity": 0.15,
+            "topology_strength": 0.10,
+            "hub_score": 0.05,  # RECTIFIED (P0-3): topology sub-signals
+            "bridge_score": 0.05,
+            "conflict_pressure": 0.20,
+            "temporal_stability": 0.05,
+        }
+    )
 
     # Signal directions: "positive" raises RI, "negative" lowers it
-    signal_directions: Dict[str, str] = field(default_factory=lambda: {
-        "evidence_strength":    "positive",
-        "evidence_independence": "positive",
-        "source_diversity":     "positive",
-        "topology_strength":    "positive",
-        "hub_score":            "positive",
-        "bridge_score":         "positive",
-        "conflict_pressure":    "negative",
-        "temporal_stability":   "positive",
-    })
+    signal_directions: dict[str, str] = field(
+        default_factory=lambda: {
+            "evidence_strength": "positive",
+            "evidence_independence": "positive",
+            "source_diversity": "positive",
+            "topology_strength": "positive",
+            "hub_score": "positive",
+            "bridge_score": "positive",
+            "conflict_pressure": "negative",
+            "temporal_stability": "positive",
+        }
+    )
 
     # Fusion constraints
     max_reliability_without_evidence: float = 60.0
     max_reliability_with_max_conflict: float = 40.0
-    min_reliability_for_high_topology: float = 20.0
     max_uncertainty_discount: float = 20.0
+    # RECTIFIED (P0 external review — dead config/duplicate-source-of-truth
+    # sweep): min_reliability_for_high_topology was removed. No
+    # FusionConstraint ever read it, and per the P1-4 evidence/importance
+    # split (see EVIDENCE_SIGNAL_NAMES / IMPORTANCE_SIGNAL_NAMES above and
+    # constraints.TopologyWithoutEvidenceConstraint), a topology-based floor
+    # on reliability_index would reintroduce the exact reliability/importance
+    # conflation P1-4 removed. IMPORTANCE_CONSTRAINT_PIPELINE is the right
+    # place for a topology-native constraint if one is ever justified.
 
-    def validate(self, active_registry_ids: Set[SignalID]) -> None:
+    def validate(self, active_registry_ids: set[SignalID]) -> None:
         """
         Verify weights sum to 1.0 AND match the active registry perfectly.
 
@@ -192,11 +252,13 @@ class FusionPolicy:
 
         # Sum check (existing logic)
         positive_total = sum(
-            w for name, w in self.signal_weights.items()
+            w
+            for name, w in self.signal_weights.items()
             if self.signal_directions.get(name, "positive") == "positive"
         )
         negative_total = sum(
-            w for name, w in self.signal_weights.items()
+            w
+            for name, w in self.signal_weights.items()
             if self.signal_directions.get(name, "positive") == "negative"
         )
         total = positive_total + negative_total
@@ -218,6 +280,7 @@ class FusionPolicy:
 @dataclass(frozen=True)
 class CalibrationPolicy:
     """Thresholds for mapping Reliability Index → CalibrationLabel."""
+
     very_high_threshold: float = 80.0
     high_threshold: float = 65.0
     moderate_threshold: float = 45.0
@@ -230,8 +293,9 @@ class ReliabilityPolicy:
     Complete policy for one scoring run.
     Loaded from config/default.yaml [scoring_policy] section.
     """
+
     version: str
-    profile: str                  # NEW (P1-3): which PolicyProfile was used
+    profile: str  # NEW (P1-3): which PolicyProfile was used
     evidence: EvidencePolicy
     conflict: ConflictPolicy
     topology: TopologyPolicy
@@ -239,14 +303,14 @@ class ReliabilityPolicy:
     fusion: FusionPolicy
     calibration: CalibrationPolicy
 
-    def validate(self, active_registry_ids: Set[SignalID]) -> None:
+    def validate(self, active_registry_ids: set[SignalID]) -> None:
         """
         Validate the entire policy against the active registry.
         Delegates to fusion.validate() for the weight-registry mapping.
         """
         self.fusion.validate(active_registry_ids)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def config_hash(self) -> str:
@@ -258,36 +322,56 @@ class ReliabilityPolicy:
 
 _PROFILE_WEIGHTS = {
     PolicyProfile.BALANCED: {
-        "evidence_strength": 0.25, "evidence_independence": 0.15,
-        "source_diversity": 0.15, "topology_strength": 0.10,
-        "hub_score": 0.05, "bridge_score": 0.05,
-        "conflict_pressure": 0.20, "temporal_stability": 0.05,
+        "evidence_strength": 0.25,
+        "evidence_independence": 0.15,
+        "source_diversity": 0.15,
+        "topology_strength": 0.10,
+        "hub_score": 0.05,
+        "bridge_score": 0.05,
+        "conflict_pressure": 0.20,
+        "temporal_stability": 0.05,
     },
     PolicyProfile.CONSERVATIVE: {
-        "evidence_strength": 0.35, "evidence_independence": 0.20,
-        "source_diversity": 0.10, "topology_strength": 0.05,
-        "hub_score": 0.02, "bridge_score": 0.03,
-        "conflict_pressure": 0.25, "temporal_stability": 0.00,
+        "evidence_strength": 0.35,
+        "evidence_independence": 0.20,
+        "source_diversity": 0.10,
+        "topology_strength": 0.05,
+        "hub_score": 0.02,
+        "bridge_score": 0.03,
+        "conflict_pressure": 0.25,
+        "temporal_stability": 0.00,
     },
     PolicyProfile.RESEARCH: {
-        "evidence_strength": 0.20, "evidence_independence": 0.25,
-        "source_diversity": 0.25, "topology_strength": 0.05,
-        "hub_score": 0.03, "bridge_score": 0.02,
-        "conflict_pressure": 0.15, "temporal_stability": 0.05,
+        "evidence_strength": 0.20,
+        "evidence_independence": 0.25,
+        "source_diversity": 0.25,
+        "topology_strength": 0.05,
+        "hub_score": 0.03,
+        "bridge_score": 0.02,
+        "conflict_pressure": 0.15,
+        "temporal_stability": 0.05,
     },
     PolicyProfile.EVIDENCE_FIRST: {
-        "evidence_strength": 0.45, "evidence_independence": 0.10,
-        "source_diversity": 0.10, "topology_strength": 0.05,
-        "hub_score": 0.03, "bridge_score": 0.02,
-        "conflict_pressure": 0.20, "temporal_stability": 0.05,
+        "evidence_strength": 0.45,
+        "evidence_independence": 0.10,
+        "source_diversity": 0.10,
+        "topology_strength": 0.05,
+        "hub_score": 0.03,
+        "bridge_score": 0.02,
+        "conflict_pressure": 0.20,
+        "temporal_stability": 0.05,
     },
 }
 
 _PROFILE_DIRECTIONS = {
-    "evidence_strength": "positive", "evidence_independence": "positive",
-    "source_diversity": "positive", "topology_strength": "positive",
-    "hub_score": "positive", "bridge_score": "positive",
-    "conflict_pressure": "negative", "temporal_stability": "positive",
+    "evidence_strength": "positive",
+    "evidence_independence": "positive",
+    "source_diversity": "positive",
+    "topology_strength": "positive",
+    "hub_score": "positive",
+    "bridge_score": "positive",
+    "conflict_pressure": "negative",
+    "temporal_stability": "positive",
 }
 
 
@@ -326,14 +410,13 @@ def load_policy(
     # Signal weights: start from profile preset, allow config override
     preset_weights = dict(_PROFILE_WEIGHTS[active_profile])
     config_weights = fu_cfg.get("signal_weights", {})
-    preset_weights.update(config_weights)   # Config overrides preset
+    preset_weights.update(config_weights)  # Config overrides preset
 
     fusion = FusionPolicy(
         signal_weights=preset_weights,
         signal_directions=dict(_PROFILE_DIRECTIONS),
         max_reliability_without_evidence=fu_cfg.get("max_reliability_without_evidence", 60.0),
         max_reliability_with_max_conflict=fu_cfg.get("max_reliability_with_max_conflict", 40.0),
-        min_reliability_for_high_topology=fu_cfg.get("min_reliability_for_high_topology", 20.0),
         max_uncertainty_discount=fu_cfg.get("max_uncertainty_discount", 20.0),
     )
 
@@ -347,6 +430,9 @@ def load_policy(
             independence_discount_threshold=ev_cfg.get("independence_discount_threshold", 0.50),
             lineage_depth_limit=ev_cfg.get("lineage_depth_limit", 2),
             publisher_domain_weight=ev_cfg.get("publisher_domain_weight", 0.50),
+            direct_evidence_weight=ev_cfg.get("direct_evidence_weight", 1.0),
+            derived_evidence_weight=ev_cfg.get("derived_evidence_weight", 0.60),
+            multi_hop_evidence_weight=ev_cfg.get("multi_hop_evidence_weight", 0.30),
         ),
         conflict=ConflictPolicy(
             max_contradiction_partners=co_cfg.get("max_contradiction_partners", 5),

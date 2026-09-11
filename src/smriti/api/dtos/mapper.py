@@ -12,13 +12,13 @@ all projection rules in predicates.py.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
-import structlog
+from typing import Any
 
-from smriti.api.domain.views import (
-    ClaimView, GraphView, ExplanationView, StatisticsView,
-)
+import structlog
 from smriti.api.domain.predicates import PROJECTION_POLICY_MAP, ProjectionPolicy
+from smriti.api.domain.views import (
+    ClaimView,
+)
 from smriti.api.dtos.claim_dto import ClaimDTO, ComponentScoreDTO
 from smriti.api.dtos.schema_registry import schema_registry
 from smriti.core.models import ProjectionLevel
@@ -43,7 +43,7 @@ class DTOMapper:
         schema_ver = schema_registry.get_version_string("ClaimDTO")
 
         # ── Build the complete dictionary of all possible fields ──────────────
-        all_fields: Dict[str, Any] = {
+        all_fields: dict[str, Any] = {
             # Always included
             "claim_id": view.claim_id,
             "claim_text": view.claim_text,
@@ -52,7 +52,6 @@ class DTOMapper:
             "calibration_label": view.calibration_label,
             "uncertainty_score": round(view.uncertainty_score, 2),
             "schema_version": schema_ver,
-
             # STANDARD+
             "document_id": view.document_id,
             "source_path": view.source_path,
@@ -61,19 +60,16 @@ class DTOMapper:
             "degree": view.degree,
             "centrality": round(view.centrality, 4),
             "support_count": view.support_count,
-
             # DETAILED+
             "temporal_status": view.temporal_status,
             "evidence_strength": round(view.evidence_strength, 3),
             "conflict_pressure": round(view.conflict_pressure, 3),
             "evidence_completeness": round(view.evidence_completeness, 3),
-
             # EXPLAINABILITY+
             "explanation_summary": view.explanation_summary,
             "dominant_signal": view.explanation_dominant_signal,
             "limiting_signal": view.explanation_limiting_signal,
             "recommendations": list(view.explanation_recommendations),
-
             # FULL_AUDIT
             "policy_version": view.audit_policy_version,
             "audit_run_id": view.audit_run_id,
@@ -98,7 +94,9 @@ class DTOMapper:
 
         return ClaimDTO(**filtered_fields)
 
-    def _apply_projection_policy(self, fields: Dict[str, Any], policy: ProjectionPolicy) -> Dict[str, Any]:
+    def _apply_projection_policy(
+        self, fields: dict[str, Any], policy: ProjectionPolicy
+    ) -> dict[str, Any]:
         """
         Apply the ProjectionPolicy to filter fields.
 

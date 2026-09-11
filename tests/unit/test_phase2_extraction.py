@@ -7,14 +7,16 @@ Tests the complete pipeline:
 Uses a realistic vault fixture with all supported formats.
 """
 
+import dataclasses
 import json
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
+import pytest
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import FileFormat, SourceDocument
 from smriti.core.state import StateManager
-from smriti.parsing import run_extraction, ExtractionResult
+from smriti.parsing import run_extraction
 
 
 def make_source(path: Path, fmt: FileFormat) -> SourceDocument:
@@ -27,7 +29,7 @@ def make_source(path: Path, fmt: FileFormat) -> SourceDocument:
         format=fmt,
         content_hash=content_hash,
         size_bytes=path.stat().st_size,
-        modified_at=datetime.now(tz=timezone.utc),
+        modified_at=datetime.now(tz=UTC),
     )
 
 
@@ -98,6 +100,7 @@ def test_managers(tmp_path, run_id):
 
 # ── Functional tests ──────────────────────────────────────────────────────────
 
+
 def test_phase2_produces_documents(vault_documents, run_id, test_managers):
     """Phase 2 must return a Document for every valid SourceDocument."""
     manifest_mgr, state_mgr = test_managers
@@ -116,7 +119,7 @@ def test_phase2_documents_are_frozen(vault_documents, run_id, test_managers):
     manifest_mgr, state_mgr = test_managers
     result = run_extraction(vault_documents, run_id, manifest_mgr, state_mgr)
     doc = result.documents[0]
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         doc.normalized_text = "mutated"
 
 
@@ -182,13 +185,13 @@ def test_phase2_one_failure_does_not_stop_batch(run_id, test_managers, tmp_path)
     # Document pointing to nonexistent file
     ghost_source = SourceDocument(
         doc_id="b" * 64,
-        path=tmp_path / "ghost.md",   # Does not exist
+        path=tmp_path / "ghost.md",  # Does not exist
         relative_path=Path("ghost.md"),
         source_root=tmp_path,
         format=FileFormat.MARKDOWN,
         content_hash="b" * 64,
         size_bytes=0,
-        modified_at=datetime.now(tz=timezone.utc),
+        modified_at=datetime.now(tz=UTC),
     )
 
     good_source = make_source(good, FileFormat.MARKDOWN)
@@ -208,6 +211,7 @@ def test_phase2_one_failure_does_not_stop_batch(run_id, test_managers, tmp_path)
 
 
 # ── Artifact tests ────────────────────────────────────────────────────────────
+
 
 def test_phase2_writes_manifest(vault_documents, run_id, test_managers):
     """A manifest.json must be written after Phase 2."""
@@ -260,22 +264,23 @@ def test_phase2_updates_pipeline_state(vault_documents, run_id, test_managers):
 
 # ── Architectural tests ───────────────────────────────────────────────────────
 
+
 def test_phase2_no_nlp_imports():
     """Phase 2 must never import NLP libraries."""
-    import smriti.parsing.markdown as markdown_mod
-    import smriti.parsing.text as text_mod
-    import smriti.parsing.normalize as normalize_mod
-    import smriti.parsing.statistics as statistics_mod
     import smriti.parsing.builder as builder_mod
     import smriti.parsing.loader as loader_mod
+    import smriti.parsing.markdown as markdown_mod
+    import smriti.parsing.normalize as normalize_mod
+    import smriti.parsing.statistics as statistics_mod
+    import smriti.parsing.text as text_mod
 
     nlp_modules = {"spacy", "transformers", "sentence_transformers", "faiss"}
 
     for module in [markdown_mod, text_mod, normalize_mod, statistics_mod, builder_mod, loader_mod]:
         module_imports = set(vars(module).keys())
-        assert not (module_imports & nlp_modules), (
-            f"{module.__name__} imports NLP libraries — Phase 2 must not do NLP"
-        )
+        assert not (
+            module_imports & nlp_modules
+        ), f"{module.__name__} imports NLP libraries — Phase 2 must not do NLP"
 
 
 def test_phase2_is_deterministic(vault_documents, test_managers, tmp_path):

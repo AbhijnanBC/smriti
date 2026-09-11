@@ -27,7 +27,7 @@ Library: pypdf (replaces deprecated PyPDF2)
 """
 
 from pathlib import Path
-from typing import List, Optional
+
 import structlog
 
 from smriti.core.config import get_config
@@ -68,8 +68,8 @@ class PdfExtractor:
         except ImportError as e:
             raise PdfExtractionError("pypdf is required for PDF extraction") from e
 
-        warnings: List[WarningCode] = []
-        page_texts: List[str] = []
+        warnings: list[WarningCode] = []
+        page_texts: list[str] = []
 
         logger.debug("reading pdf", path=str(path))
 
@@ -84,13 +84,13 @@ class PdfExtractor:
         if total_pages > self._max_pages:
             warnings.append(WarningCode.PAGE_LIMIT_REACHED)
 
-        empty_pages: List[int] = []
+        empty_pages: list[int] = []
 
         for page_num in range(pages_to_process):
             try:
                 page = reader.pages[page_num]
                 text = page.extract_text() or ""
-            except Exception as e:
+            except Exception:
                 warnings.append(WarningCode.PAGE_EXTRACTION_FAILED)
                 text = ""
 

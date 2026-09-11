@@ -26,7 +26,7 @@ RECTIFIED (Issue 4): Added heading title validation to reject malformed contexts
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+
 import structlog
 
 from smriti.extraction.rules import CONTEXT_SEPARATOR
@@ -46,8 +46,9 @@ def _is_valid_heading_title(title: str) -> bool:
 @dataclass
 class _ContextFrame:
     """One entry in the context stack."""
-    heading: str      # Cleaned heading text
-    level: int        # 1–6
+
+    heading: str  # Cleaned heading text
+    level: int  # 1–6
 
 
 class ContextStack:
@@ -61,7 +62,7 @@ class ContextStack:
     """
 
     def __init__(self) -> None:
-        self._stack: List[_ContextFrame] = []
+        self._stack: list[_ContextFrame] = []
 
     def push(self, heading: str, level: int) -> None:
         """
@@ -96,7 +97,7 @@ class ContextStack:
         self._stack.append(_ContextFrame(heading=clean_heading, level=level))
         logger.debug("context pushed", heading=clean_heading, level=level, depth=len(self._stack))
 
-    def peek(self) -> Optional[str]:
+    def peek(self) -> str | None:
         """Return the topmost heading text, or None if stack is empty."""
         return self._stack[-1].heading if self._stack else None
 

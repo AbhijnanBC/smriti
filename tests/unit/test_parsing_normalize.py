@@ -6,21 +6,23 @@ Determinism is verified: same input → same output every time.
 """
 
 import pytest
+from smriti.core.models import WarningCode
 from smriti.parsing.normalize import normalize_text
-from smriti.core.models import WarningCode, NormalizationResult
-
 
 # ── Unicode normalization ─────────────────────────────────────────────────────
 
+
 def test_nfc_normalization_makes_equivalent_sequences_identical():
     """é as NFC and NFD decomposed must both normalize to the same NFC form."""
-    import unicodedata
-    nfc_e = "\u00e9"           # é as single code point (NFC)
-    nfd_e = "e\u0301"          # é as e + combining acute (NFD)
-    assert nfc_e != nfd_e      # They start different
+
+    nfc_e = "\u00e9"  # é as single code point (NFC)
+    nfd_e = "e\u0301"  # é as e + combining acute (NFD)
+    assert nfc_e != nfd_e  # They start different
     result_nfc = normalize_text(nfc_e)
     result_nfd = normalize_text(nfd_e)
-    assert result_nfc.normalized_text == result_nfd.normalized_text  # After normalization: identical
+    assert (
+        result_nfc.normalized_text == result_nfd.normalized_text
+    )  # After normalization: identical
 
 
 def test_bom_is_removed():
@@ -32,6 +34,7 @@ def test_bom_is_removed():
 
 
 # ── Line ending normalization ─────────────────────────────────────────────────
+
 
 def test_crlf_converted_to_lf():
     """Windows CRLF must become LF."""
@@ -59,6 +62,7 @@ def test_pure_lf_unchanged():
 
 # ── Trailing whitespace ───────────────────────────────────────────────────────
 
+
 def test_trailing_whitespace_removed_per_line():
     """Trailing spaces and tabs on each line must be removed."""
     result = normalize_text("hello   \nworld\t\n")
@@ -80,6 +84,7 @@ def test_leading_indentation_preserved():
 
 # ── Blank line collapsing ─────────────────────────────────────────────────────
 
+
 def test_excessive_blank_lines_collapsed():
     """100 consecutive blank lines must collapse to max configured blank lines."""
     text = "paragraph1\n" + "\n" * 100 + "paragraph2"
@@ -98,6 +103,7 @@ def test_single_blank_line_preserved():
 
 # ── Control characters ────────────────────────────────────────────────────────
 
+
 def test_control_characters_removed():
     """Non-printable control characters (except LF, TAB) must be removed."""
     text = "hello\x07world\x1btest"  # BEL, ESC
@@ -115,6 +121,7 @@ def test_tab_preserved():
 
 
 # ── Determinism ───────────────────────────────────────────────────────────────
+
 
 def test_normalization_is_deterministic():
     """Same input must always produce same output."""
@@ -139,8 +146,10 @@ def test_whitespace_only_string_handled():
 
 # ── Error handling ────────────────────────────────────────────────────────────
 
+
 def test_non_string_raises():
     """Passing non-string must raise NormalizationError."""
     from smriti.exceptions import NormalizationError
+
     with pytest.raises(NormalizationError):
         normalize_text(None)  # type: ignore

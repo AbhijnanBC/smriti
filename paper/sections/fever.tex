@@ -1,0 +1,132 @@
+\input{generated/fever_table.tex}
+
+Every result reported so far in this paper is measured on corpora
+SMRITI itself was developed and iterated against (SMRITI-Reference,
+SMRITI-Controlled-v2, SMRITI-ClosedWorld-v1) --- a real but limited kind
+of evidence, since it says nothing about whether the resolver's
+entailment/contradiction judgment generalizes to text nobody involved in
+this project wrote. FEVER \citep{thorne2018fever} is a public fact-
+verification benchmark of Wikipedia-derived claims, each labeled
+SUPPORTS, REFUTES, or NOT ENOUGH INFO against a gold evidence sentence
+(or small set of bridging sentences). We evaluate SMRITI's resolver
+zero-shot against a 900-pair stratified sample of FEVER's validation
+split (\texttt{copenlu/fever\_gold\_evidence}, 300 pairs per label, fixed
+seed; \texttt{evaluation/fever/v1/}), with no fine-tuning, no threshold
+retuning, and no changes to the resolver or NLI model whatsoever: each
+FEVER (evidence, claim) pair is fed directly to the same bidirectional
+NLI cross-encoder and the same \texttt{RelationshipResolver} used
+throughout the rest of this paper, bypassing only SMRITI's own document-
+parsing and embedding-retrieval stages, which have nothing to do with
+entailment classification and which FEVER's clean, pre-extracted claim/
+evidence pairs make unnecessary. SMRITI's five-way relation space (plus
+ABSTAINED) is collapsed onto FEVER's three-way space --- SUPPORTS/
+REFINES/EQUIVALENT $\to$ SUPPORTS, CONTRADICTS $\to$ REFUTES, NEUTRAL/
+ABSTAINED $\to$ NOT ENOUGH INFO --- a real methodological choice we
+disclose rather than bury: a REFINES/EQUIVALENT-vs-SUPPORTS confusion is
+invisible to this benchmark, and SMRITI's own NEUTRAL/ABSTAINED
+distinction, which the rest of this paper treats as meaningfully
+different (\S\ref{sec:system}), collapses to one FEVER class here.
+
+\textbf{(1) Zero-shot transfer accuracy is 61.1\% (macro-F1 61.7\%),
+well above chance (33.3\%) but a clear step down from every
+SMRITI-authored corpus in this paper.} SUPPORTS and REFUTES both have
+qualitatively similar profiles: precision in the 70--85\% range but
+recall only 52--56\%, meaning that when SMRITI does commit to SUPPORTS
+or REFUTES on a FEVER pair it is usually right, but it fails to commit
+at all on close to half of the genuine cases. This is a materially
+different failure mode from anything reported earlier in this paper: on
+SMRITI-Controlled-v2 and SMRITI-ClosedWorld-v1, the dominant failure
+mode is a retrieval miss (the pair is simply never scored); here, every
+pair \emph{is} scored (FEVER supplies the pairing directly, with no
+retrieval stage at all), and the resolver still frequently defaults to
+NEUTRAL rather than committing to SUPPORTS or REFUTES.
+
+\textbf{(2) The dominant single failure mode is the NLI model calling
+natural Wikipedia prose NEUTRAL far more readily than it calls SMRITI's
+own templated corpora NEUTRAL.} Of all 900 pairs, 461 (51.2\%) resolve
+to SMRITI's native NEUTRAL relation type, regardless of gold label: 123
+of 300 genuine SUPPORTS pairs, 120 of 300 genuine REFUTES pairs, and 218
+of 300 genuine NOT ENOUGH INFO pairs. \texttt{neutrality\_threshold}
+(0.60, unchanged from every other result in this paper) is evidently
+cleared far more often on naturalistic, syntactically complex Wikipedia
+sentences than on this paper's own short, templated, or SVO-decomposed
+claim text --- consistent with this paper's broader, repeated finding
+(\S\ref{sec:limitations}) that the resolver's strength is demonstrated
+most cleanly on controlled or decomposed text and degrades on
+naturalistic prose. Formal abstention (\texttt{ResolutionStatus.ABSTAINED})
+fires on only 23 of 900 pairs (2.6\%) --- most of the ``did not commit''
+behavior here is the NEUTRAL relation type, not the resolver's dedicated
+abstention path, the same E10 selective-prediction gap already
+identified on SMRITI-Controlled-v2's own ambiguous/abstention category.
+
+\textbf{(3) NOT ENOUGH INFO has the lowest precision of the three
+classes (46.9\%) --- more than half of everything SMRITI resolves to
+NEUTRAL or ABSTAINED on this benchmark is actually a genuine SUPPORTS or
+REFUTES pair.} Of 484 total NEI predictions, 257 (53.1\%) are wrong: 125
+were genuinely SUPPORTS, 132 were genuinely REFUTES. This is the same
+under-commitment described in finding (2), read from the opposite
+direction (precision on the class everything defaults to, rather than
+recall on the classes it defaults away from) --- not an independent
+finding.
+
+\textbf{(4) On genuinely NOT ENOUGH INFO pairs specifically, SMRITI
+calls CONTRADICTS 52 of 300 times (17.3\%) --- a real false-contradiction
+rate on a benchmark's easy-negative-style class, in contrast to
+SMRITI-Controlled-v2's easy-NEUTRAL control and
+SMRITI-ClosedWorld-v1's guaranteed-neutral distractors, both of which
+show \emph{zero} false CONTRADICTS calls (\S\ref{sec:controlled},
+\S\ref{sec:closed-world}).} FEVER's NOT ENOUGH INFO claims are linked to
+a plausibly-related but not-necessarily-verifying sentence, by FEVER's
+own construction (\texttt{evaluation/fever/v1/build\_sample.py}), so this
+is a harder and structurally different test than either SMRITI-authored
+NEUTRAL control: SMRITI-Controlled-v2's easy-NEUTRAL pairs are
+constructed to share \emph{no} real subject matter at all (retrieval
+correctly filters practically all of them before classification ever
+runs), while FEVER's NEI evidence sentences are frequently
+topically adjacent to the claim (drawn from the same or a related
+Wikipedia page) without actually settling it --- exactly the kind of
+"related but not entailing/contradicting" pair
+\S\ref{sec:hard-neutral}'s hard-NEUTRAL extension probes directly on
+SMRITI's own corpus, and on which SMRITI likewise shows a genuine,
+disclosed weakness (E7). Read together, the two results corroborate each
+other: "topically related, semantically non-conflicting or unsettled"
+text is a real, cross-corpus, cross-domain weakness for SMRITI's
+resolver, not an artifact of either corpus's specific construction.
+
+\input{generated/nli_comparison_table.tex}
+
+\textbf{(5) Swapping in a larger NLI cross-encoder from the same model
+family closes part, but only part, of the gap (P1-9, audit round).} The
+findings above raise an obvious question: is SMRITI's own resolver
+architecture responsible for this under-commitment, or the specific NLI
+model it wraps? We re-score this same 900-pair FEVER sample, same
+resolver, same label collapse, substituting
+\texttt{cross-encoder/nli-deberta-v3-base} (\textasciitilde 184M
+parameters) for production's \texttt{cross-encoder/nli-deberta-v3-small}
+(\textasciitilde 140M). Accuracy rises from 61.1\% to 64.0\% and macro-F1
+from 61.7\% to 64.6\% --- a real, consistent, but modest improvement:
+every one of the six precision/recall figures across all three classes
+improves or holds steady, never regresses, but by a few points each, not
+by closing the gap to SMRITI-Controlled-v2's own near-ceiling numbers.
+This is evidence for a mixed answer, not a clean one: the base NLI model
+is measurably better at this task, so the small variant is leaving real
+accuracy on the table, but the qualitative failure shape --- precision-
+favoring, NEUTRAL-defaulting under-commitment --- persists essentially
+unchanged with the larger model, so swapping the NLI checkpoint alone
+would not close this paper's central gap. We report this as a single,
+scoped comparison (one alternative model, one benchmark, both from the
+same cross-encoder family) rather than the fuller stronger-model/stance-
+model/LLM-judge matrix a complete answer to this question would need.
+
+We read this transfer evaluation as the honest continuation of this
+paper's central finding, now with public, independently-authored
+evidence: the resolver's contradiction/entailment judgment is well above
+chance and precision-favoring (it rarely commits to the wrong committed
+label) on text no one involved in this project wrote, but it
+under-commits substantially more on naturalistic prose than on this
+paper's own controlled or real-corpus text, and it is not immune to
+false contradictions on topically-related-but-unsettled pairs outside
+its own corpora. We do not tune any threshold against FEVER before or
+after reporting this number, and we do not report a second FEVER split
+after any such tuning --- this is a single, frozen, zero-shot number,
+reported once.

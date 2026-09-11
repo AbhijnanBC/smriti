@@ -4,9 +4,7 @@ The scanner has one job: identify structural events.
 These tests never touch context, segmentation, or building.
 """
 
-import pytest
-from smriti.extraction.scanner import scan_document, BlockType
-
+from smriti.extraction.scanner import BlockType, scan_document
 
 
 def test_empty_document_returns_empty():
@@ -93,14 +91,14 @@ def test_events_are_in_document_order():
     """Events must appear in the same order as the document."""
     text = "# H1\n\nParagraph.\n\n- item\n\n## H2"
     events = scan_document(text)
-    types = [e.block_type for e in events]
     # H1 heading must come before paragraph, paragraph before bullet
-    h1_idx = next(i for i, e in enumerate(events)
-                  if e.block_type == BlockType.HEADING and e.heading_level == 1)
-    para_idx = next(i for i, e in enumerate(events)
-                    if e.block_type == BlockType.PARAGRAPH)
-    bullet_idx = next(i for i, e in enumerate(events)
-                      if e.block_type == BlockType.BULLET_ITEM)
+    h1_idx = next(
+        i
+        for i, e in enumerate(events)
+        if e.block_type == BlockType.HEADING and e.heading_level == 1
+    )
+    para_idx = next(i for i, e in enumerate(events) if e.block_type == BlockType.PARAGRAPH)
+    bullet_idx = next(i for i, e in enumerate(events) if e.block_type == BlockType.BULLET_ITEM)
     assert h1_idx < para_idx < bullet_idx
 
 

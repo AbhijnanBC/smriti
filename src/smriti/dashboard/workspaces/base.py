@@ -18,8 +18,8 @@ Rules:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import streamlit as st
 
+import streamlit as st
 from smriti.core.models import WorkspaceProfile, WorkspaceStatus
 from smriti.dashboard.workspaces.context import WorkspaceContext
 from smriti.dashboard.workspaces.view_coordinator import ViewCoordinator
@@ -43,7 +43,7 @@ class BaseWorkspace(ABC):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    def on_create(self) -> None:
+    def on_create(self) -> None:  # noqa: B027 -- deliberate no-op default
         """Called once when workspace instance is created. Override to build views."""
         pass
 
@@ -90,9 +90,7 @@ class BaseWorkspace(ABC):
 
     def header(self) -> None:
         """Render workspace header (shared across all workspaces)."""
-        st.markdown(
-            f"### {self.profile.workspace_type.value.replace('_', ' ').title()} Workspace"
-        )
+        st.markdown(f"### {self.profile.workspace_type.value.replace('_', ' ').title()} Workspace")
         st.caption(f"Objective: {self.profile.investigative_objective}")
 
     @property

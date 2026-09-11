@@ -2,7 +2,6 @@
 scanner/heading.py — Heading detection logic.
 """
 
-from typing import Optional
 from smriti.extraction.rules import HEADING_PATTERN, SETEXT_H1_PATTERN, SETEXT_H2_PATTERN
 
 
@@ -14,7 +13,7 @@ def _is_valid_heading_title(title: str) -> bool:
     return any(c.isalnum() for c in title)
 
 
-def detect_heading(line: str, next_line: Optional[str] = None):
+def detect_heading(line: str, next_line: str | None = None):
     """
     Detect ATX or setext heading.
 

@@ -20,16 +20,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import FrozenSet
 
 
 class TrustLevel(str, Enum):
     """Classification of data trust at each architectural boundary."""
-    TRUSTED       = "trusted"       # Internal, typed, validated
-    VALIDATED     = "validated"     # External input that passed validation
-    IMMUTABLE     = "immutable"     # Cannot be modified — read-only contract
-    CONTROLLED    = "controlled"    # Access mediated through an explicit interface
-    PROHIBITED    = "prohibited"    # Access is architecturally forbidden
+
+    TRUSTED = "trusted"  # Internal, typed, validated
+    VALIDATED = "validated"  # External input that passed validation
+    IMMUTABLE = "immutable"  # Cannot be modified — read-only contract
+    CONTROLLED = "controlled"  # Access mediated through an explicit interface
+    PROHIBITED = "prohibited"  # Access is architecturally forbidden
 
 
 @dataclass(frozen=True)
@@ -40,14 +40,15 @@ class TrustBoundary:
     Specifies what is trusted, what must be validated, and what is
     forbidden at each crossing point.
     """
-    name:                   str
-    from_layer:             str
-    to_layer:               str
-    trusted_data:           FrozenSet[str]
-    validated_data:         FrozenSet[str]
-    immutable_data:         FrozenSet[str]
-    controlled_interfaces:  FrozenSet[str]
-    prohibited_access:      FrozenSet[str]
+
+    name: str
+    from_layer: str
+    to_layer: str
+    trusted_data: frozenset[str]
+    validated_data: frozenset[str]
+    immutable_data: frozenset[str]
+    controlled_interfaces: frozenset[str]
+    prohibited_access: frozenset[str]
 
 
 class TrustModel:
@@ -59,7 +60,6 @@ class TrustModel:
     """
 
     BOUNDARIES: tuple[TrustBoundary, ...] = (
-
         TrustBoundary(
             name="user_to_dashboard",
             from_layer="user",
@@ -70,7 +70,6 @@ class TrustModel:
             controlled_interfaces=frozenset({"InteractionDispatcher"}),
             prohibited_access=frozenset({"KnowledgeAPI", "ReadStore", "KnowledgeGraph"}),
         ),
-
         TrustBoundary(
             name="dashboard_to_knowledge_api",
             from_layer="dashboard",
@@ -81,7 +80,6 @@ class TrustModel:
             controlled_interfaces=frozenset({"ServiceClient", "KnowledgeAccessService"}),
             prohibited_access=frozenset({"ReadStore", "MemoryStore", "ScoredKnowledgeGraph"}),
         ),
-
         TrustBoundary(
             name="knowledge_api_to_read_store",
             from_layer="knowledge_api",
@@ -92,7 +90,6 @@ class TrustModel:
             controlled_interfaces=frozenset({"ReadStore", "KnowledgeSnapshot"}),
             prohibited_access=frozenset({"Dashboard", "Session", "EpistemicState"}),
         ),
-
         TrustBoundary(
             name="read_store_to_knowledge_graph",
             from_layer="read_store",

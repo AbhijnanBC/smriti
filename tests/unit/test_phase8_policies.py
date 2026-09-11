@@ -1,12 +1,13 @@
 """Unit tests for scoring/policies.py."""
 
 import pytest
-from smriti.scoring.policies import (
-    load_policy, ReliabilityPolicy, FusionPolicy, PolicyError,
-    PolicyProfile,
-)
-from smriti.exceptions import PolicyError
 from smriti.core.models import SignalID
+from smriti.scoring.policies import (
+    FusionPolicy,
+    PolicyError,
+    PolicyProfile,
+    load_policy,
+)
 
 
 def test_policy_loads_without_error():
@@ -24,16 +25,24 @@ def test_fusion_weights_sum_to_one():
 def test_invalid_weights_raise_policy_error():
     fp = FusionPolicy(
         signal_weights={
-            "evidence_strength": 0.90, "evidence_independence": 0.15,
-            "source_diversity": 0.15, "topology_strength": 0.10,
-            "hub_score": 0.05, "bridge_score": 0.05,
-            "conflict_pressure": 0.20, "temporal_stability": 0.05,
+            "evidence_strength": 0.90,
+            "evidence_independence": 0.15,
+            "source_diversity": 0.15,
+            "topology_strength": 0.10,
+            "hub_score": 0.05,
+            "bridge_score": 0.05,
+            "conflict_pressure": 0.20,
+            "temporal_stability": 0.05,
         },
         signal_directions={
-            "evidence_strength": "positive", "evidence_independence": "positive",
-            "source_diversity": "positive", "topology_strength": "positive",
-            "hub_score": "positive", "bridge_score": "positive",
-            "conflict_pressure": "negative", "temporal_stability": "positive",
+            "evidence_strength": "positive",
+            "evidence_independence": "positive",
+            "source_diversity": "positive",
+            "topology_strength": "positive",
+            "hub_score": "positive",
+            "bridge_score": "positive",
+            "conflict_pressure": "negative",
+            "temporal_stability": "positive",
         },
     )
     with pytest.raises(PolicyError):
@@ -52,6 +61,7 @@ def test_policy_config_hash_is_deterministic():
 
 def test_policy_to_dict_serializable():
     import json
+
     policy = load_policy()
     d = policy.to_dict()
     json_str = json.dumps(d)
@@ -85,6 +95,19 @@ def test_policy_profile_loads_correct_weights():
         research.fusion.signal_weights.get("source_diversity", 0)
         > balanced.fusion.signal_weights.get("source_diversity", 0)
     )
+
+
+def test_fusion_policy_has_no_dead_topology_floor():
+    """RECTIFIED (P0 external review — dead config sweep): FusionPolicy must
+    not carry min_reliability_for_high_topology. No FusionConstraint ever
+    read it, and reintroducing it as a reliability_index floor would
+    reconflate reliability with importance (see P1-4 evidence/importance
+    split). A topology-native constraint belongs in
+    constraints.IMPORTANCE_CONSTRAINT_PIPELINE, not FusionPolicy, if one is
+    ever justified.
+    """
+    policy = load_policy()
+    assert not hasattr(policy.fusion, "min_reliability_for_high_topology")
 
 
 def test_hub_bridge_have_separate_weights():

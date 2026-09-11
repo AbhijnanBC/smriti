@@ -20,16 +20,16 @@ Rules:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
 from enum import Enum
+from typing import Any
 
 import streamlit as st
 
 
 class NotificationLevel(str, Enum):
-    INFO    = "info"
+    INFO = "info"
     WARNING = "warning"
-    ERROR   = "error"
+    ERROR = "error"
     SUCCESS = "success"
 
 
@@ -37,28 +37,28 @@ class NotificationLevel(str, Enum):
 class Notification:
     level: NotificationLevel
     message: str
-    detail: Dict[str, Any] = None
+    detail: dict[str, Any] | None = None
 
 
 class NotificationCenter:
     """Collects and renders transient notifications. One instance per session."""
 
     def __init__(self) -> None:
-        self._queue: List[Notification] = []
+        self._queue: list[Notification] = []
 
-    def info(self, message: str, detail: Dict[str, Any] = None) -> None:
+    def info(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.INFO, message, detail))
 
-    def warning(self, message: str, detail: Dict[str, Any] = None) -> None:
+    def warning(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.WARNING, message, detail))
 
-    def error(self, message: str, detail: Dict[str, Any] = None) -> None:
+    def error(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.ERROR, message, detail))
 
-    def success(self, message: str, detail: Dict[str, Any] = None) -> None:
+    def success(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.SUCCESS, message, detail))
 
-    def enqueue(self, event_type: str, payload: Dict[str, Any]) -> None:
+    def enqueue(self, event_type: str, payload: dict[str, Any]) -> None:
         """Route an event type to an appropriate notification message."""
         if event_type == "export_requested":
             fmt = payload.get("format", "json").upper()

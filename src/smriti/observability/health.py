@@ -18,11 +18,12 @@ RECTIFIED (Dependency Integration): Health checks can update DependencyGraph nod
 
 from __future__ import annotations
 
-import time
 import threading
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional
+
 import structlog
 
 from smriti.runtime.composition import DependencyGraph, DependencyHealth
@@ -31,19 +32,19 @@ logger = structlog.get_logger(__name__)
 
 
 class HealthStatus(str, Enum):
-    HEALTHY   = "healthy"
-    DEGRADED  = "degraded"
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
-    UNKNOWN   = "unknown"
+    UNKNOWN = "unknown"
 
 
 def health_to_dependency_health(status: HealthStatus) -> DependencyHealth:
     """Map a HealthStatus to a DependencyHealth."""
     mapping = {
-        HealthStatus.HEALTHY:   DependencyHealth.HEALTHY,
-        HealthStatus.DEGRADED:  DependencyHealth.SLOW,
+        HealthStatus.HEALTHY: DependencyHealth.HEALTHY,
+        HealthStatus.DEGRADED: DependencyHealth.SLOW,
         HealthStatus.UNHEALTHY: DependencyHealth.UNAVAILABLE,
-        HealthStatus.UNKNOWN:   DependencyHealth.UNAVAILABLE,  # treat unknown as unavailable
+        HealthStatus.UNKNOWN: DependencyHealth.UNAVAILABLE,  # treat unknown as unavailable
     }
     return mapping.get(status, DependencyHealth.UNAVAILABLE)
 
@@ -56,16 +57,17 @@ class RuntimeContract:
     Defines what the service MUST guarantee.
     Violations are treated as architecture errors, not runtime failures.
     """
-    service:           str
-    must_complete_ms:  Optional[float]   # None = no time contract
-    must_not_modify:   bool = False      # Service must never modify system state
-    must_always_succeed: bool = False    # Service must not raise under any condition
-    violation_action:  str = "alert"    # "alert" | "terminate"
+
+    service: str
+    must_complete_ms: float | None  # None = no time contract
+    must_not_modify: bool = False  # Service must never modify system state
+    must_always_succeed: bool = False  # Service must not raise under any condition
+    violation_action: str = "alert"  # "alert" | "terminate"
 
 
 # ── Canonical runtime contracts ────────────────────────────────────────────────
 
-RUNTIME_CONTRACTS: Dict[str, RuntimeContract] = {
+RUNTIME_CONTRACTS: dict[str, RuntimeContract] = {
     "health_service": RuntimeContract(
         service="health_service",
         must_complete_ms=100.0,
@@ -99,9 +101,9 @@ RUNTIME_CONTRACTS: Dict[str, RuntimeContract] = {
 
 @dataclass
 class HealthCheckResult:
-    name:       str
-    status:     HealthStatus
-    message:    str = ""
+    name: str
+    status: HealthStatus
+    message: str = ""
     checked_at: float = field(default_factory=time.monotonic)
     latency_ms: float = 0.0
     contract_violated: bool = False
@@ -110,11 +112,12 @@ class HealthCheckResult:
 @dataclass
 class HealthCheck:
     """Definition of a named health check."""
-    name:            str
-    check:           Callable[[], HealthStatus]
+
+    name: str
+    check: Callable[[], HealthStatus]
     timeout_seconds: float = 5.0
-    category:        str   = "general"
-    dependency_node: Optional[str] = None   # RECTIFIED: map to dependency graph node
+    category: str = "general"
+    dependency_node: str | None = None  # RECTIFIED: map to dependency graph node
 
     def run(self) -> HealthCheckResult:
         start = time.monotonic()
@@ -130,10 +133,12 @@ class HealthCheck:
         contract = RUNTIME_CONTRACTS.get("health_service")
         contract_violated = False
         if contract and contract.must_complete_ms and elapsed > contract.must_complete_ms:
-            logger.warning("runtime_contract_violated",
-                           contract="health_service",
-                           latency_ms=elapsed,
-                           limit_ms=contract.must_complete_ms)
+            logger.warning(
+                "runtime_contract_violated",
+                contract="health_service",
+                latency_ms=elapsed,
+                limit_ms=contract.must_complete_ms,
+            )
             contract_violated = True
 
         return HealthCheckResult(
@@ -153,10 +158,10 @@ class HealthMonitor:
     """
 
     def __init__(self) -> None:
-        self._checks: Dict[str, HealthCheck] = {}
-        self._last_results: Dict[str, HealthCheckResult] = {}
+        self._checks: dict[str, HealthCheck] = {}
+        self._last_results: dict[str, HealthCheckResult] = {}
         self._lock = threading.Lock()
-        self._graph: Optional[DependencyGraph] = None
+        self._graph: DependencyGraph | None = None
 
     def bind_graph(self, graph: DependencyGraph) -> None:
         """Inject a dependency graph to update node health."""
@@ -166,8 +171,8 @@ class HealthMonitor:
         with self._lock:
             self._checks[check.name] = check
 
-    def run_all(self) -> Dict[str, HealthCheckResult]:
-        results: Dict[str, HealthCheckResult] = {}
+    def run_all(self) -> dict[str, HealthCheckResult]:
+        results: dict[str, HealthCheckResult] = {}
         with self._lock:
             checks = dict(self._checks)
             graph = self._graph
@@ -182,10 +187,13 @@ class HealthMonitor:
                 try:
                     graph.set_health(check.dependency_node, dep_health)
                 except ValueError as exc:
-                    logger.warning("health_update_graph_failed", node=check.dependency_node, error=str(exc))
+                    logger.warning(
+                        "health_update_graph_failed", node=check.dependency_node, error=str(exc)
+                    )
 
             # Publish ArchitectureEvent (RECTIFIED P0-2)
-            from smriti.runtime.events import publish, ArchitectureEventType
+            from smriti.runtime.events import ArchitectureEventType, publish
+
             publish(
                 ArchitectureEventType.HEALTH_CHECK_COMPLETED,
                 source="observability.health",
@@ -211,16 +219,16 @@ class HealthMonitor:
             return HealthStatus.DEGRADED
         return HealthStatus.HEALTHY
 
-    def health_report(self) -> Dict:
+    def health_report(self) -> dict:
         with self._lock:
             results = dict(self._last_results)
         return {
             "overall": self.overall_status().value,
             "checks": {
                 name: {
-                    "status":            r.status.value,
-                    "message":           r.message,
-                    "latency_ms":        r.latency_ms,
+                    "status": r.status.value,
+                    "message": r.message,
+                    "latency_ms": r.latency_ms,
                     "contract_violated": r.contract_violated,
                 }
                 for name, r in results.items()
@@ -230,7 +238,7 @@ class HealthMonitor:
 
 
 def build_default_health_monitor(
-    dependency_graph: Optional[DependencyGraph] = None,
+    dependency_graph: DependencyGraph | None = None,
 ) -> HealthMonitor:
     """
     Build the default SMRITI health monitor with standard checks.
@@ -260,6 +268,7 @@ def build_default_health_monitor(
     def check_memory() -> HealthStatus:
         try:
             import psutil
+
             mem = psutil.virtual_memory()
             if mem.percent > 90:
                 return HealthStatus.UNHEALTHY
@@ -270,23 +279,29 @@ def build_default_health_monitor(
             return HealthStatus.UNKNOWN
 
     # Register checks with node mappings if graph provided
-    monitor.register(HealthCheck(
-        "configuration",
-        check_config,
-        category="subsystem",
-        dependency_node="config" if dependency_graph else None,
-    ))
-    monitor.register(HealthCheck(
-        "artifacts_directory",
-        check_artifacts_dir,
-        category="dependency",
-        dependency_node="artifacts" if dependency_graph else None,
-    ))
-    monitor.register(HealthCheck(
-        "memory_pressure",
-        check_memory,
-        category="resource",
-        dependency_node=None,   # no graph node for this check
-    ))
+    monitor.register(
+        HealthCheck(
+            "configuration",
+            check_config,
+            category="subsystem",
+            dependency_node="config" if dependency_graph else None,
+        )
+    )
+    monitor.register(
+        HealthCheck(
+            "artifacts_directory",
+            check_artifacts_dir,
+            category="dependency",
+            dependency_node="artifacts" if dependency_graph else None,
+        )
+    )
+    monitor.register(
+        HealthCheck(
+            "memory_pressure",
+            check_memory,
+            category="resource",
+            dependency_node=None,  # no graph node for this check
+        )
+    )
 
     return monitor

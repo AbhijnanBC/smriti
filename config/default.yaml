@@ -15,16 +15,41 @@ extraction:
 
 # Model names are configuration, not constants.
 # Change model here — nothing else needs to change.
+#
+# RECTIFIED (external review, P0-7): this project previously had TWO
+# sections for each of embedding and NLI config (embedding/embedding_phase5,
+# nli/nli_phase6), and the code read keys ("model_name", "device",
+# "batch_size") that existed only in the section it did NOT read from --
+# so editing the documented embedding.model / nli.model keys in this file
+# had zero runtime effect, silently. This is now the single, complete
+# section for each: every field the code actually reads lives here, under
+# the exact key name the code reads, and there is no shadow section left
+# to drift out of sync with it. See tests/unit/test_config_single_source.py.
 embedding:
-  model: "sentence-transformers/all-MiniLM-L6-v2"
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  device: "cpu"
   batch_size: 32
   cache_embeddings: true
+  normalize: true
+  # Optional instruction prefix (for instruction-tuned models like BGE, Instructor, E5).
+  # Leave empty for standard models like MiniLM. Included in config_hash.
+  instruction_prefix: ""
+  # Maximum sequence length override (model-specific); null = model's default.
+  max_seq_length: null
+  pipeline_version: "1.0"
 
 nli:
-  model: "cross-encoder/nli-deberta-v3-small"
+  model_name: "cross-encoder/nli-deberta-v3-small"
   sim_threshold: 0.75
   nli_threshold: 0.80
   temporal_base: 30
+  batch_size: 16
+  cache_nli_results: true
+  # Model revision is NOT configured here deliberately: it is resolved
+  # live from the loaded model's own HF commit hash
+  # (evidence.py's resolve_hf_revision()) so the recorded provenance is
+  # always the revision actually running, never a static value that could
+  # drift out of sync with what HuggingFace actually served.
 
 metrics:
   kcs_min_pairs: 5
@@ -180,39 +205,9 @@ claim_extraction:
   preserve_original_text: true
 
   # ── Phase 5: Semantic Embedding Layer ────────────────────────────────────────
-embedding_phase5:
-  # Embedding model (sentence-transformers format)
-  model_name: "sentence-transformers/all-MiniLM-L6-v2"
-
-  # Inference device: "cpu", "cuda", or "mps"
-  # Default is CPU — SMRITI is designed to run without GPU
-  device: "cpu"
-
-  # Number of claims to encode in one inference call
-  # Larger batches = faster throughput; smaller batches = lower memory
-  # NOTE: batch_size does NOT affect embedding values — excluded from config_hash
-  batch_size: 32
-
-  # Apply L2 normalization after inference
-  # Recommended: true — enables cosine similarity via dot product in Phase 6
-  normalize: true
-
-  # Cache embeddings to disk
-  # Huge speed improvement for re-runs on unchanged vaults
-  cache_embeddings: true
-
-  # Optional instruction prefix (for instruction-tuned models like BGE, Instructor, E5)
-  # Leave empty for standard models like MiniLM
-  # INCLUDED in config_hash — changing this invalidates all cached embeddings
-  instruction_prefix: ""
-
-  # Maximum sequence length override (model-specific)
-  # Leave null to use the model's default
-  # INCLUDED in config_hash — changing this may change truncation behavior
-  max_seq_length: null
-
-  # Pipeline version — increment when pipeline logic changes
-  pipeline_version: "1.0"
+  # (RECTIFIED, P0-7: this used to be a second, unread "embedding_phase5"
+  # section here, duplicating and drifting from the real "embedding:"
+  # section above -- deleted. All Phase 5 config lives in "embedding:".)
 
   # ── Phase 6: Semantic Relationship Discovery ──────────────────────────────────
 relationship_discovery:
@@ -221,9 +216,21 @@ relationship_discovery:
   min_confidence: 0.50
   skip_unknown_relationships: true
   skip_neutral_relationships: true     # NEUTRAL adds no Phase 7 signal; omit by default
+  # RECTIFIED (external review, P0-7-class defect): this key existed with
+  # this exact comment for some time before any code path actually read
+  # it -- NEUTRAL was persisted to every Phase 6 output regardless of
+  # this value. Now genuinely enforced in classification/validator.py.
+  # config/eval.yaml overrides this to false for evaluation runs that
+  # need every scored candidate retained (external review P0-9).
   refine_threshold: 0.55
   high_sim_threshold: 0.88
   neutrality_threshold: 0.60
+  # Bidirectional-NLI rewrite: minimum specificity_delta (specificity.py)
+  # for a one-way-entailing claim to be reclassified REFINES instead of
+  # SUPPORTS. Units are the raw specificity_score scale (content tokens +
+  # weighted numeric/date/entity hits) -- not normalized 0-1 -- so this is
+  # an engineering-judgment starting point, not a cross-validated value.
+  refine_specificity_margin: 3.0
   batch_size: 16
   cache_nli_results: true
   conflict_resolution_policy: "highest_confidence"   # RECTIFIED: was implicit
@@ -233,23 +240,25 @@ relationship_discovery:
 resolver_policy:
   contradiction_margin: 0.0
   entailment_margin: 0.0
-  confidence_policy: "calibrated"      # "calibrated" or "raw"
+  # RECTIFIED (P1-C, "FINAL REVIEW" round, section 37): default is "raw",
+  # not "calibrated" -- calibration: {} below means IDENTITY for every
+  # model (no real calibrator deployed), so "calibrated" would claim a
+  # property this configuration does not have. Set this to "calibrated"
+  # only once a real strategy (temperature/percentile/isotonic) is
+  # actually configured under calibration: for the active model.
+  confidence_policy: "raw"      # "calibrated" or "raw"
   priority_order:
     - "contradicts"
+    - "equivalent"
     - "supports"
     - "refines"
     - "neutral"
     - "unknown"
-  version: "1.0"
+  version: "2.0"
 
-# NLI model configuration
-nli_phase6:
-  model: "cross-encoder/nli-deberta-v3-small"
-  sim_threshold: 0.75
-  nli_threshold: 0.80
-  temporal_base: 30
-  batch_size: 16
-  cache_nli_results: true
+# (RECTIFIED, P0-7: "nli_phase6" used to duplicate "nli:" above and was
+# never read by any code path -- deleted. All Phase 6 NLI config lives
+# in "nli:".)
 
 # Confidence calibration (RECTIFIED: new section)
 # calibration:
@@ -339,6 +348,15 @@ scoring_policy:
     # RECTIFIED (P1-1): Lineage heuristics
     lineage_depth_limit: 2
     publisher_domain_weight: 0.50
+    # RECTIFIED (external review, P1-2 "evidence aggregation / double
+    # counting"): weight applied to an evidence group's contribution to
+    # discounted_evidence_strength, by shortest hop distance from the
+    # claim being scored. "A supports B supports C": A is real but
+    # entirely B-mediated evidence for C, not independent corroboration
+    # -- discounted, not dropped, not counted as fully independent.
+    direct_evidence_weight: 1.0       # hop distance == 1
+    derived_evidence_weight: 0.60     # hop distance == 2 ("one-hop derived")
+    multi_hop_evidence_weight: 0.30   # hop distance >= 3
 
   conflict:
     max_contradiction_partners: 5
@@ -379,7 +397,8 @@ scoring_policy:
     #   temporal_stability:    0.05
     max_reliability_without_evidence: 60.0
     max_reliability_with_max_conflict: 40.0
-    min_reliability_for_high_topology: 20.0
+    # min_reliability_for_high_topology removed (dead config -- no
+    # FusionConstraint ever read it; see policies.py FusionPolicy comment).
     max_uncertainty_discount: 20.0
 
   calibration:
@@ -539,18 +558,25 @@ evaluation:
   # RECTIFIED: registry frozen to 5 experiments (EXP-001..EXP-005), one per
   # canonical research claim RC1-RC5 — see evaluation/certification/claims.py
   gate_3_min_experiments: 5
-  gate_4_sci_required: 70.0
+  gate_4_evidence_coverage_required: 70.0
   gate_5_reproducibility_rate: 0.80
-  # Gate 6 requires PublicationReadinessLevel.COMPLETE
+  # Gate 6 requires ArtifactReadinessLevel.COMPLETE
 
   # Statistical analysis
   confidence_level: 0.95
   reproducibility_cv_threshold: 0.10
   min_runs_for_reproducibility: 2
 
-  # Publication readiness (RECTIFIED: ordinal thresholds)
-  pub_readiness_min_claims: 4
-  pub_readiness_eci_for_artifacts: 60.0
+  # RECTIFIED (P1-I, "FINAL REVIEW" round): a failed NLI batch (all
+  # retries exhausted) is always logged and skipped -- production keeps
+  # running on the pairs it could score. During an evaluation run
+  # (env: eval, see config/eval.yaml) that same silent skip would let
+  # "N attempted, some failed, fewer resolved" masquerade as "fewer
+  # successfully evaluated" in every downstream metric, so evaluation
+  # runs fail loudly (NLIEvaluationInferenceFailureError) unless this is
+  # explicitly set true. Default false: an evaluation run with any NLI
+  # inference failure should be re-run, not silently accepted.
+  allow_nli_inference_failures: false
 
   # Research claims (RECTIFIED P0-3): enriched scientific objects
   claims_require_null_hypothesis: true

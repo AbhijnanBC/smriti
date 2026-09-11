@@ -22,11 +22,11 @@ Design:
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+
 import structlog
 
-from smriti.core.config import get_config
 from smriti.constants import MAX_FILE_SIZE_BYTES
+from smriti.core.config import get_config
 from smriti.exceptions import DiscoveryError
 
 logger = structlog.get_logger(__name__)
@@ -38,13 +38,13 @@ class ValidationResult:
 
     path: Path
     is_valid: bool
-    rejection_reason: Optional[str] = None
+    rejection_reason: str | None = None
 
     def __bool__(self) -> bool:
         return self.is_valid
 
 
-def validate_directories(directories: List[Path]) -> List[Path]:
+def validate_directories(directories: list[Path]) -> list[Path]:
     """
     Validate that all input directories exist and are readable.
 
@@ -61,7 +61,7 @@ def validate_directories(directories: List[Path]) -> List[Path]:
     if not directories:
         raise DiscoveryError("No input directories provided.")
 
-    validated: List[Path] = []
+    validated: list[Path] = []
 
     for raw_path in directories:
         path = Path(raw_path).resolve()
@@ -75,8 +75,8 @@ def validate_directories(directories: List[Path]) -> List[Path]:
         try:
             # Attempt to list — checks read permission without reading contents
             list(path.iterdir())
-        except PermissionError:
-            raise DiscoveryError(f"Input directory is not readable: {path}")
+        except PermissionError as e:
+            raise DiscoveryError(f"Input directory is not readable: {path}") from e
 
         validated.append(path)
         logger.info("directory validated", path=str(path))
@@ -106,9 +106,7 @@ def validate_file(path: Path) -> ValidationResult:
     allowed_extensions: set = set(
         config["discovery"].get("supported_extensions", [".md", ".pdf", ".txt"])
     )
-    max_file_size: int = config["discovery"].get(
-        "max_file_size_bytes", MAX_FILE_SIZE_BYTES
-    )
+    max_file_size: int = config["discovery"].get("max_file_size_bytes", MAX_FILE_SIZE_BYTES)
 
     # Check 1: Exists
     if not path.exists():

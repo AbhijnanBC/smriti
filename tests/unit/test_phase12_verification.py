@@ -1,6 +1,5 @@
 """Unit tests for evaluation/engineering/architectural.py."""
 
-import pytest
 from smriti.core.models import VerificationStatus
 from smriti.evaluation.engineering.architectural import (
     ARCHITECTURAL_RULES,
@@ -84,6 +83,7 @@ def test_coverage_computation():
 def test_frozen_dataclass_check():
     """Frozen dataclass rules must verify correctly for known frozen classes."""
     from smriti.evaluation.engineering.architectural import _check_frozen_dataclass
+
     passed, _ = _check_frozen_dataclass("smriti.core.models", "ClaimNode")
     # Either pass or graceful fail (not raise)
     assert isinstance(passed, bool)

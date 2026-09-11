@@ -17,22 +17,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-from typing import List
 
 
 class ReadinessLevel(IntEnum):
-    L1_SPEC_COMPLETE        = 1
-    L2_CONTRACTS_DEFINED    = 2
-    L3_INTERFACES_VERIFIED  = 3
-    L4_OPERATIONS_REALIZED  = 4
-    L5_GOVERNANCE_ENFORCED  = 5
+    L1_SPEC_COMPLETE = 1
+    L2_CONTRACTS_DEFINED = 2
+    L3_INTERFACES_VERIFIED = 3
+    L4_OPERATIONS_REALIZED = 4
+    L5_GOVERNANCE_ENFORCED = 5
 
 
 @dataclass
 class ReadinessCriterion:
-    level:       ReadinessLevel
+    level: ReadinessLevel
     description: str
-    verified:    bool = False
+    verified: bool = False
 
     def check(self, src_root: Path) -> bool:
         """Verify this criterion against the source tree."""
@@ -48,9 +47,9 @@ class ReadinessAssessor:
 
     def __init__(self, src_root: Path = Path("src/smriti")) -> None:
         self._src = src_root
-        self._criteria: List[ReadinessCriterion] = self._build_criteria()
+        self._criteria: list[ReadinessCriterion] = self._build_criteria()
 
-    def _build_criteria(self) -> List[ReadinessCriterion]:
+    def _build_criteria(self) -> list[ReadinessCriterion]:
         src = self._src
         return [
             ReadinessCriterion(
@@ -99,12 +98,12 @@ class ReadinessAssessor:
     def report(self) -> dict:
         return {
             "achieved_level": self.assess().value,
-            "level_name":     self.assess().name,
+            "level_name": self.assess().name,
             "criteria": [
                 {
-                    "level":    c.level.name,
+                    "level": c.level.name,
                     "description": c.description,
-                    "passed":   c.check(self._src),
+                    "passed": c.check(self._src),
                 }
                 for c in self._criteria
             ],

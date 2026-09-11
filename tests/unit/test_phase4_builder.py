@@ -2,32 +2,33 @@
 Unit tests for claims/builder.py.
 """
 
-import pytest
+import dataclasses
 from pathlib import Path
 
+import pytest
+from smriti.claims.builder import build_claim
+from smriti.claims.rules import RULE_VERSION
 from smriti.core.models import (
-    SemanticSentence,
+    BoundaryReason,
+    Claim,
     ExtractionMode,
     Modality,
-    StructuredAssertion,
-    Claim,
-    BoundaryReason,
+    SemanticSentence,
 )
-from smriti.claims.builder import build_claim, _compute_claim_id
-from smriti.claims.rules import RULE_VERSION
 
 
 def make_validated(text: str, sentence_id: str = "sent001", doc_id: str = "doc001"):
     """Create a minimal ValidatedAssertion for testing."""
     from smriti.claims.models import (
-        ValidatedAssertion,
         AnnotatedAssertion,
-        StructuredAssertionCandidate,
         AssertionCandidate,
-        ParsedSentence,
         LinguisticMetadata,
+        ParsedSentence,
         SemanticMetadata,
+        StructuredAssertionCandidate,
+        ValidatedAssertion,
     )
+
     sentence = SemanticSentence(
         sentence_id=sentence_id,
         document_id=doc_id,
@@ -122,7 +123,7 @@ def test_claim_text_is_exact():
 def test_claim_is_frozen():
     v = make_validated("Python is fast.")
     claim = build_claim(v)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         claim.text = "modified"
 
 
@@ -148,6 +149,7 @@ def test_claim_context_from_sentence():
 
 
 # ── New test: content_hash depends only on text ──────────────────────────────
+
 
 def test_content_hash_depends_only_on_text():
     """content_hash must be identical for identical text, regardless of sentence_id."""

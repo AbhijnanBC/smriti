@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import math
-from typing import List
+
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats, SignalID, SignalStatus, RelationshipType,
+    ClaimNode,
+    KnowledgeGraph,
+    RawSignal,
+    RelationshipType,
+    ScoringGlobalStats,
+    SignalID,
+    SignalStatus,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -26,19 +32,23 @@ class ConflictPressureExtractor(BaseSignalExtractor):
         return "log_scale_saturating"
 
     @property
-    def dependency_list(self) -> List[str]:
+    def dependency_list(self) -> list[str]:
         return ["graph.edges[CONTRADICTS]", "edge.calibrated_confidence"]
 
     def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
         return max(0.0, min(1.0, raw))
 
     def extract(
-        self, node: ClaimNode, graph: KnowledgeGraph,
-        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+        self,
+        node: ClaimNode,
+        graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats,
+        policy: ReliabilityPolicy,
     ) -> RawSignal:
         claim_id = node.claim_id
         contradiction_edges = [
-            e for e in graph.edges.values()
+            e
+            for e in graph.edges.values()
             if e.relationship_type == RelationshipType.CONTRADICTS
             and (e.source_node_id == claim_id or e.target_node_id == claim_id)
         ]
@@ -46,7 +56,9 @@ class ConflictPressureExtractor(BaseSignalExtractor):
 
         if n_contradictions == 0:
             return RawSignal(
-                name=self.signal_id, raw_value=0.0, normalized_value=0.0,
+                name=self.signal_id,
+                raw_value=0.0,
+                normalized_value=0.0,
                 status=SignalStatus.MEASURED,
                 metadata={"contradiction_count": 0},
             )

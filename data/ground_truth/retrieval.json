@@ -1,7 +1,0 @@
-[
-  {
-    "query": "When will humans return to the moon?",
-    "expected": ["C008"],
-    "expected_temporal_ordering": ["C006", "C007", "C008"]
-  }
-]

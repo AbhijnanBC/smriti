@@ -1,7 +1,7 @@
 """Unit tests for dashboard/state/epistemic_state.py."""
 
 import pytest
-from smriti.core.models import WorkspaceType, EpistemicLens, InteractionEventType
+from smriti.core.models import EpistemicLens, WorkspaceType
 from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 
 
@@ -92,6 +92,7 @@ def test_event_log_records_transitions(mgr):
 
 def test_set_explainability(mgr):
     from smriti.core.models import ExplainabilityLevel
+
     mgr.set_explainability(ExplainabilityLevel.FULL_AUDIT)
     assert mgr.state.explainability_level == ExplainabilityLevel.FULL_AUDIT
 
@@ -122,13 +123,14 @@ def test_breadcrumb_depth_limit(mgr):
 def test_workspace_lens_mapping():
     mgr = EpistemicStateManager(run_id="test")
     lens_map = {
-        WorkspaceType.RESEARCH:    EpistemicLens.EXPLORATION,
+        WorkspaceType.RESEARCH: EpistemicLens.EXPLORATION,
         WorkspaceType.RELIABILITY: EpistemicLens.RELIABILITY,
-        WorkspaceType.CONFLICT:    EpistemicLens.CONFLICT,
-        WorkspaceType.AUDIT:       EpistemicLens.AUDIT,
-        WorkspaceType.PROVENANCE:  EpistemicLens.PROVENANCE,
+        WorkspaceType.CONFLICT: EpistemicLens.CONFLICT,
+        WorkspaceType.AUDIT: EpistemicLens.AUDIT,
+        WorkspaceType.PROVENANCE: EpistemicLens.PROVENANCE,
     }
     for ws, expected_lens in lens_map.items():
         mgr.activate_workspace(ws)
-        assert mgr.state.active_lens == expected_lens, \
-            f"{ws.value} should default to {expected_lens.value}"
+        assert (
+            mgr.state.active_lens == expected_lens
+        ), f"{ws.value} should default to {expected_lens.value}"

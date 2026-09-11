@@ -8,12 +8,11 @@ Views coordinated: Hub list + GraphView
 from __future__ import annotations
 
 import streamlit as st
-
 from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType
+from smriti.dashboard.components.graph_view import render_graph_view
+from smriti.dashboard.models.presentation import DTOTransformer
 from smriti.dashboard.workspaces.base import BaseWorkspace
 from smriti.dashboard.workspaces.context import WorkspaceContext
-from smriti.dashboard.models.presentation import DTOTransformer
-from smriti.dashboard.components.graph_view import render_graph_view
 
 
 class TopologyWorkspace(BaseWorkspace):

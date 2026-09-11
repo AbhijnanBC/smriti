@@ -19,13 +19,14 @@ AnnotationPolicy fields (all configurable):
 from __future__ import annotations
 
 import dataclasses
-from dataclasses import dataclass
-from typing import Dict, Protocol
 from collections import Counter
+from dataclasses import dataclass
+from typing import Protocol
+
 import structlog
 
 from smriti.core.config import get_config
-from smriti.core.models import SemanticRole, RelationshipType, NodeAnnotations
+from smriti.core.models import NodeAnnotations, RelationshipType, SemanticRole
 from smriti.evolution.context import SemanticReasoningContext
 from smriti.exceptions import AnnotationPolicyError
 
@@ -40,6 +41,7 @@ class AnnotationPolicy:
 
     RECTIFIED (P1-4): replaces hardcoded 0.50, 0.30, 3, 2, etc.
     """
+
     foundational_centrality_threshold: float = 0.50
     foundational_min_in_degree: int = 2
     evidence_hub_min_in_degree: int = 3
@@ -47,7 +49,10 @@ class AnnotationPolicy:
     peripheral_max_degree: int = 1
 
     def __post_init__(self):
-        if self.foundational_centrality_threshold <= 0 or self.foundational_centrality_threshold > 1:
+        if (
+            self.foundational_centrality_threshold <= 0
+            or self.foundational_centrality_threshold > 1
+        ):
             raise AnnotationPolicyError(
                 f"foundational_centrality_threshold must be in (0,1], "
                 f"got {self.foundational_centrality_threshold}"
@@ -59,7 +64,7 @@ class AnnotationPolicy:
             )
 
     @classmethod
-    def from_config(cls) -> "AnnotationPolicy":
+    def from_config(cls) -> AnnotationPolicy:
         config = get_config()
         kg_cfg = config.get("knowledge_graph", {}).get("annotation", {})
         return cls(
@@ -77,6 +82,7 @@ class RoleClassifier(Protocol):
     Default implementation: TopologyRoleClassifier.
     Future: ML-based or domain-ontology-based classifiers.
     """
+
     def classify(
         self,
         topology,
@@ -99,8 +105,8 @@ class TopologyRoleClassifier:
 
 def run_semantic_annotation(
     ctx: SemanticReasoningContext,
-    policy: Optional[AnnotationPolicy] = None,
-    classifier: Optional[RoleClassifier] = None,
+    policy: AnnotationPolicy | None = None,
+    classifier: RoleClassifier | None = None,
 ) -> None:
     """
     Annotate every node with a SemanticRole based on its topology.
@@ -116,7 +122,7 @@ def run_semantic_annotation(
     if classifier is None:
         classifier = TopologyRoleClassifier()
 
-    roles: Dict[str, SemanticRole] = {}
+    roles: dict[str, SemanticRole] = {}
 
     for claim_id, node in ctx.nodes.items():
         topology = node.topology
@@ -125,9 +131,9 @@ def run_semantic_annotation(
             continue
 
         refines_out = sum(
-            1 for e in ctx.edges.values()
-            if e.source_node_id == claim_id
-            and e.relationship_type == RelationshipType.REFINES
+            1
+            for e in ctx.edges.values()
+            if e.source_node_id == claim_id and e.relationship_type == RelationshipType.REFINES
         )
 
         role = classifier.classify(topology, refines_out, policy)
@@ -162,8 +168,10 @@ def _classify_role(
         return SemanticRole.BRIDGE_CLAIM
 
     # 2. Foundational: high centrality AND sufficient incoming support
-    if (topology.centrality >= policy.foundational_centrality_threshold
-            and topology.in_degree >= policy.foundational_min_in_degree):
+    if (
+        topology.centrality >= policy.foundational_centrality_threshold
+        and topology.in_degree >= policy.foundational_min_in_degree
+    ):
         return SemanticRole.FOUNDATIONAL_CLAIM
 
     # 3. Evidence hub: many direct incoming SUPPORTS edges
@@ -186,4 +194,3 @@ def _classify_role(
 
 
 # Allow Optional in type hints
-from typing import Optional

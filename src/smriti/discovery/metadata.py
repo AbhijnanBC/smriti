@@ -17,8 +17,9 @@ Rules:
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -33,8 +34,8 @@ class FileMetadata:
 
     path: Path
     size_bytes: int
-    extension: str                   # Normalised lowercase (.md / .pdf / .txt)
-    modified_at: datetime            # UTC (last modification time)
+    extension: str  # Normalised lowercase (.md / .pdf / .txt)
+    modified_at: datetime  # UTC (last modification time)
 
 
 def extract_metadata(path: Path) -> FileMetadata:
@@ -53,7 +54,7 @@ def extract_metadata(path: Path) -> FileMetadata:
     stat = path.stat()
 
     # Modified time as UTC-aware datetime
-    modified_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+    modified_at = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
 
     extension = path.suffix.lower()
 

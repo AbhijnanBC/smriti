@@ -49,7 +49,7 @@ class ExecutionCoordinator:
         with self._lock:
             return {
                 "request_count": self._request_count,
-                "error_count":   self._error_count,
+                "error_count": self._error_count,
                 "warning_count": self._warning_count,
                 "uptime_seconds": self.uptime_seconds(),
             }

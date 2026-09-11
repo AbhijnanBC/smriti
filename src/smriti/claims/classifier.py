@@ -31,21 +31,19 @@ Rules:
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import structlog
 
-from smriti.core.models import AssertionType, SemanticSentence
 from smriti.claims.models import ParsedSentence
 from smriti.claims.rules import (
-    SUBJECT_DEP_LABELS,
-    VERB_POS_TAGS,
-    NOUN_LIKE_ROOT_POS_TAGS,
-    HEADING_LIKE_MAX_WORDS,
-    METADATA_BOLD_LABEL_PATTERN,
     HEADING_ATX_LEAK_PATTERN,
     HEADING_BARE_BOLD_PATTERN,
+    HEADING_LIKE_MAX_WORDS,
+    METADATA_BOLD_LABEL_PATTERN,
+    NOUN_LIKE_ROOT_POS_TAGS,
+    SUBJECT_DEP_LABELS,
+    VERB_POS_TAGS,
 )
+from smriti.core.models import AssertionType, SemanticSentence
 
 logger = structlog.get_logger(__name__)
 
@@ -71,11 +69,14 @@ class AssertionClassifier:
     Phase 4 run (instantiate once, call classify() per sentence).
     """
 
-    def classify(
+    # Walks the full rule-based AssertionType decision table (question,
+    # negation, hedge, imperative, etc.); each rule is a simple, independent
+    # check, but the table itself is long enough to trip mccabe's threshold.
+    def classify(  # noqa: C901
         self,
         sentence: SemanticSentence,
         parsed: ParsedSentence,
-    ) -> Tuple[AssertionType, str]:
+    ) -> tuple[AssertionType, str]:
         """
         Classify a SemanticSentence.
 
@@ -132,9 +133,7 @@ class AssertionClassifier:
         # direct child of ROOT. Search the whole doc as a second signal so a
         # real assertion isn't misclassified as a FRAGMENT purely because of
         # a tokenizer/parser quirk on an unrelated word.
-        has_subject_anywhere = has_direct_subject or any(
-            t.dep_ in SUBJECT_DEP_LABELS for t in doc
-        )
+        has_subject_anywhere = has_direct_subject or any(t.dep_ in SUBJECT_DEP_LABELS for t in doc)
 
         if root.pos_ in VERB_POS_TAGS:
             is_imperative = root.tag_ == "VB" and not has_subject_anywhere

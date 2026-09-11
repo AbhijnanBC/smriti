@@ -6,7 +6,6 @@ Delegates format-specific work to ExportPipeline.
 
 from __future__ import annotations
 
-from typing import Optional
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -18,9 +17,10 @@ class ExportService:
     def __init__(self, api) -> None:
         self._api = api
 
-    def get_raw_export(self, fmt: str = "json") -> Optional[str]:
+    def get_raw_export(self, fmt: str = "json") -> str | None:
         """Retrieve raw export content from Phase 9 API."""
         from smriti.core.models import ExportFormat
+
         try:
             fmt_enum = ExportFormat(fmt)
             resp = self._api.export(fmt=fmt_enum, include_reliability=True)
@@ -30,7 +30,7 @@ class ExportService:
             return None
 
     # ── NEW: Compatibility execute method ──────────────────────────────────
-    def execute(self, request) -> Optional[str]:
+    def execute(self, request) -> str | None:
         """
         Compatibility method for the Phase 10 architecture.
         Delegates to get_raw_export().

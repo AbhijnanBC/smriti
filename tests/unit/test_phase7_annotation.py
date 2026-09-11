@@ -2,15 +2,19 @@
 
 import pytest
 from smriti.core.models import SemanticRole, TopologyMetrics
-from smriti.evolution.annotation import _classify_role, AnnotationPolicy
+from smriti.evolution.annotation import AnnotationPolicy, _classify_role
 from smriti.exceptions import AnnotationPolicyError
 
 
 def make_topology(degree, in_degree, out_degree, centrality, is_bridge=False, is_hub=False):
     return TopologyMetrics(
-        degree=degree, in_degree=in_degree, out_degree=out_degree,
-        is_bridge=is_bridge, is_hub=is_hub,
-        partition_id="p001", centrality=centrality,
+        degree=degree,
+        in_degree=in_degree,
+        out_degree=out_degree,
+        is_bridge=is_bridge,
+        is_hub=is_hub,
+        partition_id="p001",
+        centrality=centrality,
     )
 
 

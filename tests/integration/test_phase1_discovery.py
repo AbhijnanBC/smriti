@@ -12,12 +12,13 @@ Uses a realistic vault fixture with:
   - Hidden files and directories
 """
 
+import dataclasses
 import json
+
 import pytest
-from pathlib import Path
-from smriti.discovery import run_discovery, DiscoveryResult
 from smriti.core.manifest import ManifestManager
 from smriti.core.state import StateManager
+from smriti.discovery import DiscoveryResult, run_discovery
 
 
 @pytest.fixture
@@ -165,7 +166,7 @@ def test_phase1_documents_are_immutable(realistic_vault, run_id, test_managers):
     )
 
     doc = result.documents[0]
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         doc.size_bytes = 0
 
 
@@ -194,16 +195,14 @@ def test_phase1_writes_dataset_json(realistic_vault, run_id, test_managers, tmp_
     """dataset.json must be written to artifacts/run_id/phase1/."""
     manifest_mgr, state_mgr = test_managers
 
-    result = run_discovery(
+    run_discovery(
         input_dirs=[realistic_vault],
         run_id=run_id,
         manifest_manager=manifest_mgr,
         state_manager=state_mgr,
     )
 
-    dataset_paths = list(
-        (tmp_path / "artifacts" / f"run_{run_id}" / "phase1").glob("dataset.json")
-    )
+    dataset_paths = list((tmp_path / "artifacts" / f"run_{run_id}" / "phase1").glob("dataset.json"))
     assert len(dataset_paths) == 1
 
     dataset = json.loads(dataset_paths[0].read_text(encoding="utf-8"))
@@ -253,17 +252,17 @@ def test_phase1_is_idempotent(realistic_vault, run_id, test_managers):
 
 def test_phase1_no_nlp_imports():
     """Phase 1 must never import NLP libraries."""
+    import smriti.discovery.builder as builder_mod
+    import smriti.discovery.duplicate as duplicate_mod
+    import smriti.discovery.hashing as hashing_mod
+    import smriti.discovery.metadata as metadata_mod
     import smriti.discovery.scanner as scanner
     import smriti.discovery.validator as validator
-    import smriti.discovery.metadata as metadata_mod
-    import smriti.discovery.hashing as hashing_mod
-    import smriti.discovery.duplicate as duplicate_mod
-    import smriti.discovery.builder as builder_mod
 
     nlp_modules = {"spacy", "transformers", "sentence_transformers", "faiss"}
 
     for module in [scanner, validator, metadata_mod, hashing_mod, duplicate_mod, builder_mod]:
         module_imports = set(vars(module).keys())
-        assert not (module_imports & nlp_modules), (
-            f"{module.__name__} imports NLP libraries — Phase 1 must not do NLP"
-        )
+        assert not (
+            module_imports & nlp_modules
+        ), f"{module.__name__} imports NLP libraries — Phase 1 must not do NLP"

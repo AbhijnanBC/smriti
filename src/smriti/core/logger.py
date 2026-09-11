@@ -5,11 +5,11 @@ Reads level from config — not hardcoded.
 
 import logging
 import sys
-import structlog
-from pathlib import Path
 
-from smriti.core.paths import LOG_DIR
+import structlog
+
 from smriti.core.config import get_config
+from smriti.core.paths import LOG_DIR
 
 
 def _utf8_console_stream(stream):

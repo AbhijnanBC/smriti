@@ -8,13 +8,12 @@ Views coordinated: ResultListView + AuditView
 from __future__ import annotations
 
 import streamlit as st
-
-from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType, ExplainabilityLevel
+from smriti.core.models import EpistemicLens, ExplainabilityLevel, WorkspaceProfile, WorkspaceType
+from smriti.dashboard.models.presentation import DTOTransformer
+from smriti.dashboard.views.audit_view import AuditView
+from smriti.dashboard.views.result_list_view import ResultListView
 from smriti.dashboard.workspaces.base import BaseWorkspace
 from smriti.dashboard.workspaces.context import WorkspaceContext
-from smriti.dashboard.models.presentation import DTOTransformer
-from smriti.dashboard.views.result_list_view import ResultListView
-from smriti.dashboard.views.audit_view import AuditView
 
 
 class AuditWorkspace(BaseWorkspace):
@@ -40,14 +39,16 @@ class AuditWorkspace(BaseWorkspace):
         )
 
         result = context.client.search_claims(
-            sort_field="reliability_index", limit=state.page_size,
+            sort_field="reliability_index",
+            limit=state.page_size,
         )
         claim_pms = DTOTransformer.to_claims_list(result.get("claims", [])) or []
 
         audit_pm = None
         if state.selected_claim_id:
             explanation = context.client.get_explanation(
-                state.selected_claim_id, level=ExplainabilityLevel.FULL_AUDIT,
+                state.selected_claim_id,
+                level=ExplainabilityLevel.FULL_AUDIT,
             )
             if explanation:
                 audit_pm = DTOTransformer.to_audit_pm(explanation)

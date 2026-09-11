@@ -24,24 +24,23 @@ No upward dependencies are permitted. No layer may skip levels.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import FrozenSet, Dict
 
 
 @dataclass(frozen=True)
 class LayerBoundary:
     """Formal description of a single architectural layer's dependency contract."""
-    layer:           str
-    can_access:      FrozenSet[str]
-    cannot_access:   FrozenSet[str]
-    public_interface: FrozenSet[str]
-    owner:           str
+
+    layer: str
+    can_access: frozenset[str]
+    cannot_access: frozenset[str]
+    public_interface: frozenset[str]
+    owner: str
 
 
 # ── The canonical boundary matrix ────────────────────────────────────────────
 # This is the single authoritative reference. Architecture tests enforce it.
 
-BOUNDARY_MATRIX: Dict[str, LayerBoundary] = {
-
+BOUNDARY_MATRIX: dict[str, LayerBoundary] = {
     "presentation": LayerBoundary(
         layer="presentation",
         can_access=frozenset({"presentation_models", "view_registry"}),
@@ -49,7 +48,6 @@ BOUNDARY_MATRIX: Dict[str, LayerBoundary] = {
         public_interface=frozenset({"BaseView", "ViewRegistry"}),
         owner="dashboard.views",
     ),
-
     "interaction": LayerBoundary(
         layer="interaction",
         can_access=frozenset({"workspace_context", "service_client", "presentation_models"}),
@@ -57,7 +55,6 @@ BOUNDARY_MATRIX: Dict[str, LayerBoundary] = {
         public_interface=frozenset({"BaseWorkspace", "WorkspaceRegistry"}),
         owner="dashboard.workspaces",
     ),
-
     "knowledge_api": LayerBoundary(
         layer="knowledge_api",
         can_access=frozenset({"read_store", "index_registry", "domain_services"}),
@@ -65,7 +62,6 @@ BOUNDARY_MATRIX: Dict[str, LayerBoundary] = {
         public_interface=frozenset({"KnowledgeAccessService", "ApplicationService"}),
         owner="api",
     ),
-
     "knowledge_services": LayerBoundary(
         layer="knowledge_services",
         can_access=frozenset({"read_store", "scoring", "evolution"}),
@@ -73,7 +69,6 @@ BOUNDARY_MATRIX: Dict[str, LayerBoundary] = {
         public_interface=frozenset({"QueryService", "ExplainService", "ExportService"}),
         owner="api.services",
     ),
-
     "knowledge_graph": LayerBoundary(
         layer="knowledge_graph",
         can_access=frozenset({"core.models", "artifacts"}),
@@ -81,7 +76,6 @@ BOUNDARY_MATRIX: Dict[str, LayerBoundary] = {
         public_interface=frozenset({"KnowledgeGraph", "ScoredKnowledgeGraph"}),
         owner="evolution",
     ),
-
     "artifacts": LayerBoundary(
         layer="artifacts",
         can_access=frozenset({"core.paths", "core.models"}),

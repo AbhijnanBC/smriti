@@ -20,11 +20,12 @@ Rules:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
+
 import structlog
 
+from smriti.core.config import Config
 from smriti.core.paths import ARTIFACTS_DIR
 
 logger = structlog.get_logger(__name__)
@@ -36,6 +37,7 @@ class ReplayManifest:
     Everything needed to replay a Phase 6 run identically.
     Written to artifacts/run_{id}/phase6/replay_manifest.json.
     """
+
     run_id: str
     schema_version: str
     nli_model: str
@@ -58,12 +60,18 @@ class ReplayManifest:
     total_relationships: int
     phase5_dataset_path: str
     phase4_dataset_path: str
+    # RECTIFIED (external review, P0-7-class defect): skip_neutral_relationships
+    # was documented in config but never actually consumed anywhere until
+    # this fix. Appended at the end with a default so replay manifests
+    # written before this fix (which implicitly always retained NEUTRAL,
+    # i.e. behaved as skip_neutral_relationships=False) still deserialize.
+    skip_neutral_relationships: bool = False
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2)
 
     @classmethod
-    def from_json(cls, text: str) -> "ReplayManifest":
+    def from_json(cls, text: str) -> ReplayManifest:
         data = json.loads(text)
         return cls(**data)
 
@@ -96,15 +104,13 @@ class ReplayEngine:
 
         replay_path = ARTIFACTS_DIR / f"run_{run_id}" / "phase6" / "replay_manifest.json"
         if not replay_path.exists():
-            raise ReplayError(
-                f"Replay manifest not found for run_id={run_id}: {replay_path}"
-            )
+            raise ReplayError(f"Replay manifest not found for run_id={run_id}: {replay_path}")
         return ReplayManifest.from_json(replay_path.read_text(encoding="utf-8"))
 
     def build_replay_manifest(
         self,
         run_id: str,
-        config: dict,
+        config: Config,
         config_hash: str,
         total_embedded: int,
         total_relationships: int,
@@ -115,12 +121,12 @@ class ReplayEngine:
         nli_cfg = config.get("nli", {})
         rd_cfg = config.get("relationship_discovery", {})
         policy_cfg = config.get("resolver_policy", {})
-        calib_cfg = config.get("calibration", {}).get(nli_cfg.get("model", ""), {})
+        calib_cfg = config.get("calibration", {}).get(nli_cfg.get("model_name", ""), {})
 
         return ReplayManifest(
             run_id=run_id,
-            schema_version="6.0",
-            nli_model=nli_cfg.get("model", "cross-encoder/nli-deberta-v3-small"),
+            schema_version="7.0",  # kept in sync with builder.CURRENT_SCHEMA_VERSION
+            nli_model=nli_cfg.get("model_name", "cross-encoder/nli-deberta-v3-small"),
             nli_threshold=nli_cfg.get("nli_threshold", 0.80),
             sim_threshold=rd_cfg.get("sim_threshold", 0.75),
             top_k=rd_cfg.get("top_k", 50),
@@ -135,10 +141,9 @@ class ReplayEngine:
             conflict_resolution_policy=rd_cfg.get(
                 "conflict_resolution_policy", "highest_confidence"
             ),
-            deduplication_policy=rd_cfg.get(
-                "deduplication_policy", "keep_highest_confidence"
-            ),
+            deduplication_policy=rd_cfg.get("deduplication_policy", "keep_highest_confidence"),
             skip_unknown_relationships=rd_cfg.get("skip_unknown_relationships", True),
+            skip_neutral_relationships=rd_cfg.get("skip_neutral_relationships", True),
             config_hash=config_hash,
             total_embedded_claims=total_embedded,
             total_relationships=total_relationships,

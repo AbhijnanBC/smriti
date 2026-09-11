@@ -25,11 +25,20 @@ Enforces API version compatibility at registration time.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
 import structlog
 
-from smriti.scoring.signals.base import BaseSignalExtractor, SIGNAL_API_VERSION
 from smriti.exceptions import RegistryError
+from smriti.scoring.signals.base import SIGNAL_API_VERSION, BaseSignalExtractor
+from smriti.scoring.signals.conflict import ConflictPressureExtractor
+from smriti.scoring.signals.evidence import EvidenceStrengthExtractor
+from smriti.scoring.signals.independence import EvidenceIndependenceExtractor
+from smriti.scoring.signals.provenance import SourceDiversityExtractor
+from smriti.scoring.signals.structural import (
+    BridgeScoreExtractor,
+    HubScoreExtractor,
+    TopologyStrengthExtractor,
+)
+from smriti.scoring.signals.temporal import TemporalStabilityExtractor
 
 logger = structlog.get_logger(__name__)
 
@@ -49,8 +58,8 @@ class SignalRegistry:
     """
 
     def __init__(self) -> None:
-        self._extractors: Dict[str, BaseSignalExtractor] = {}
-        self._priorities: Dict[str, int] = {}
+        self._extractors: dict[str, BaseSignalExtractor] = {}
+        self._priorities: dict[str, int] = {}
 
     def register(
         self,
@@ -105,23 +114,23 @@ class SignalRegistry:
         self._extractors.pop(signal_id_value, None)
         self._priorities.pop(signal_id_value, None)
 
-    def discover(self) -> Dict[str, BaseSignalExtractor]:
+    def discover(self) -> dict[str, BaseSignalExtractor]:
         """Return all registered extractors keyed by SignalID value."""
         return dict(self._extractors)
 
-    def ordered_extractors(self) -> List[BaseSignalExtractor]:
+    def ordered_extractors(self) -> list[BaseSignalExtractor]:
         """Return extractors sorted by (priority, signal_id.value) for determinism."""
         return sorted(
             self._extractors.values(),
             key=lambda e: (self._priorities.get(e.signal_id.value, 100), e.signal_id.value),
         )
 
-    def get(self, signal_id_value: str) -> Optional[BaseSignalExtractor]:
+    def get(self, signal_id_value: str) -> BaseSignalExtractor | None:
         """Get a specific extractor by its SignalID value."""
         return self._extractors.get(signal_id_value)
 
     @property
-    def registered_names(self) -> List[str]:
+    def registered_names(self) -> list[str]:
         """Sorted list of all registered SignalID values."""
         return sorted(self._extractors.keys())
 
@@ -133,29 +142,17 @@ class SignalRegistry:
 signal_registry = SignalRegistry()
 
 # ── Register all built-in extractors ─────────────────────────────────────────
-# Import order determines when each extractor calls register().
 # Priority values control execution order.
 
-from smriti.scoring.signals.evidence import EvidenceStrengthExtractor
-from smriti.scoring.signals.independence import EvidenceIndependenceExtractor
-from smriti.scoring.signals.provenance import SourceDiversityExtractor
-from smriti.scoring.signals.structural import (
-    TopologyStrengthExtractor,
-    HubScoreExtractor,
-    BridgeScoreExtractor,
-)
-from smriti.scoring.signals.conflict import ConflictPressureExtractor
-from smriti.scoring.signals.temporal import TemporalStabilityExtractor
-
 # Register with explicit priorities (lower = runs first)
-signal_registry.register(EvidenceStrengthExtractor(),    priority=10)
+signal_registry.register(EvidenceStrengthExtractor(), priority=10)
 signal_registry.register(EvidenceIndependenceExtractor(), priority=20)
-signal_registry.register(SourceDiversityExtractor(),     priority=30)
-signal_registry.register(TopologyStrengthExtractor(),    priority=40)
-signal_registry.register(HubScoreExtractor(),            priority=41)   # RECTIFIED (P0-3)
-signal_registry.register(BridgeScoreExtractor(),         priority=42)   # RECTIFIED (P0-3)
-signal_registry.register(ConflictPressureExtractor(),    priority=50)
-signal_registry.register(TemporalStabilityExtractor(),   priority=60)
+signal_registry.register(SourceDiversityExtractor(), priority=30)
+signal_registry.register(TopologyStrengthExtractor(), priority=40)
+signal_registry.register(HubScoreExtractor(), priority=41)  # RECTIFIED (P0-3)
+signal_registry.register(BridgeScoreExtractor(), priority=42)  # RECTIFIED (P0-3)
+signal_registry.register(ConflictPressureExtractor(), priority=50)
+signal_registry.register(TemporalStabilityExtractor(), priority=60)
 
 # Backward-compatible alias for external callers that used SIGNAL_EXTRACTORS
 # (Maintained for compatibility but should be considered deprecated)

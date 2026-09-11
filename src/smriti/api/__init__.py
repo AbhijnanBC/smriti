@@ -20,52 +20,54 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional
+
 import structlog
-
-from smriti.core.config import get_config
-from smriti.core.manifest import ManifestManager
-from smriti.core.models import (
-    ScoredKnowledgeGraph, ExportFormat, ExplainabilityLevel,
-    ProjectionLevel, NavigationMode, Phase9Stats,
-)
-from smriti.core.paths import ARTIFACTS_DIR
-from smriti.core.state import StateManager
-from smriti.exceptions import RequestValidationError
-from smriti.governance import stable
-
-from smriti.api.domain.predicates import Predicate, SortSpec, Pagination, Projection
-from smriti.api.domain.requests import (
-    ClaimRequest, SearchRequest, TraversalRequest,
-    StatisticsRequest, ExplanationRequest, ExportRequest,
-)
-from smriti.api.domain.responses import KnowledgeResponse
 
 # Application Service + all sub-components
 from smriti.api.application import ApplicationService
-from smriti.api.planner.normalizer import QueryNormalizer
-from smriti.api.planner.logical_planner import LogicalPlanner
-from smriti.api.planner.optimizer import QueryOptimizer
-from smriti.api.index.registry import IndexRegistry
+from smriti.api.cache.knowledge_cache import KnowledgeViewCache
+from smriti.api.domain.predicates import Pagination, Projection, SortSpec
+from smriti.api.domain.requests import (
+    ClaimRequest,
+    ExplanationRequest,
+    ExportRequest,
+    SearchRequest,
+    StatisticsRequest,
+    TraversalRequest,
+)
+from smriti.api.domain.responses import KnowledgeResponse
+from smriti.api.dtos.mapper import DTOMapper
+from smriti.api.dtos.schema_registry import schema_registry
+from smriti.api.engine.execution import QueryExecutionEngine
+from smriti.api.engine.resolver import ServiceResolver
 from smriti.api.index.builder import IndexBuilder
 from smriti.api.index.selector import IndexSelector
 from smriti.api.index.statistics import IndexStatistics
-from smriti.api.store.memory_store import InMemoryReadStore
-from smriti.api.cache.knowledge_cache import KnowledgeViewCache
-from smriti.api.views.claim_view_builder import ClaimViewBuilder
-from smriti.api.views.statistics_view_builder import StatisticsViewBuilder
-from smriti.api.dtos.mapper import DTOMapper
-from smriti.api.dtos.schema_registry import schema_registry
-from smriti.api.validation.request_validator import RequestValidator
-from smriti.api.services.query_service import QueryService
-from smriti.api.services.navigation_service import NavigationService
-from smriti.api.services.statistics_service import StatisticsService
+from smriti.api.planner.logical_planner import LogicalPlanner
+from smriti.api.planner.normalizer import QueryNormalizer
+from smriti.api.planner.optimizer import QueryOptimizer
 from smriti.api.services.explain_service import ExplainabilityService
 from smriti.api.services.export_service import ExportService
+from smriti.api.services.navigation_service import NavigationService
+from smriti.api.services.query_service import QueryService
+from smriti.api.services.statistics_service import StatisticsService
+from smriti.api.store.memory_store import InMemoryReadStore
 from smriti.api.store.snapshot import KnowledgeSnapshot
-from smriti.api.engine.resolver import ServiceResolver
-from smriti.api.engine.execution import QueryExecutionEngine
+from smriti.api.validation.request_validator import RequestValidator
+from smriti.api.views.claim_view_builder import ClaimViewBuilder
+from smriti.api.views.statistics_view_builder import StatisticsViewBuilder
+from smriti.core.config import get_config
+from smriti.core.manifest import ManifestManager
+from smriti.core.models import (
+    ExplainabilityLevel,
+    ExportFormat,
+    NavigationMode,
+    Phase9Stats,
+    ProjectionLevel,
+    ScoredKnowledgeGraph,
+)
+from smriti.core.state import StateManager
+from smriti.governance import stable
 
 logger = structlog.get_logger(__name__)
 
@@ -73,6 +75,7 @@ API_VERSION = "1.0"
 
 
 # ── Capability Descriptor ──────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class CapabilityDescriptor:
@@ -88,9 +91,10 @@ class CapabilityDescriptor:
         experimental:         True if this capability is experimental/under development.
         description:          Human-readable explanation.
     """
+
     name: str
     version: str
-    supported_requests: List[str]
+    supported_requests: list[str]
     required_projection: str
     cacheable: bool
     experimental: bool
@@ -98,6 +102,7 @@ class CapabilityDescriptor:
 
 
 # ── Capability Registry ───────────────────────────────────────────────────────
+
 
 class CapabilityRegistry:
     """
@@ -112,7 +117,7 @@ class CapabilityRegistry:
         self.api_version = API_VERSION
 
         # ── Build structured capability descriptors ──
-        self.capabilities: List[CapabilityDescriptor] = [
+        self.capabilities: list[CapabilityDescriptor] = [
             CapabilityDescriptor(
                 name="point_query",
                 version="1.0",
@@ -286,9 +291,9 @@ class KnowledgeAccessService:
 
     def search(
         self,
-        request: Optional[SearchRequest] = None,
+        request: SearchRequest | None = None,
         predicates: tuple = (),
-        text_contains: Optional[str] = None,
+        text_contains: str | None = None,
         sort_field: str = "reliability_index",
         sort_order: str = "desc",
         limit: int = 50,
@@ -297,6 +302,7 @@ class KnowledgeAccessService:
     ) -> KnowledgeResponse:
         """Filter claims matching predicates. Replaces all convenience methods."""
         from smriti.core.models import SortOrder
+
         if request is None:
             request = SearchRequest(
                 run_id=self._run_id,
@@ -372,6 +378,7 @@ class KnowledgeAccessService:
 
 
 # ── Factory function ──────────────────────────────────────────────────────────
+
 
 def build_knowledge_api(
     scored_graph: ScoredKnowledgeGraph,
@@ -520,18 +527,19 @@ def run_api_initialization(
 ) -> KnowledgeAccessService:
     """Initialize Phase 9 as part of the pipeline run. Writes manifest."""
     import json
+
     start_time = manifest_manager.start_phase(phase=9)
 
     api = build_knowledge_api(scored_graph)
     stats = api.initialization_stats
 
-    phase_dir = manifest_manager.run_dir / "phase9"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+    phase_dir = (
+        manifest_manager.run_dir / "phase9"
+    )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
 
     capabilities_path = phase_dir / "capabilities.json"
-    capabilities_path.write_text(
-        json.dumps(api.capabilities.to_dict(), indent=2), encoding="utf-8"
-    )
+    capabilities_path.write_text(json.dumps(api.capabilities.to_dict(), indent=2), encoding="utf-8")
 
     manifest_manager.end_phase(
         phase=9,

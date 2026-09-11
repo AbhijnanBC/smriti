@@ -21,15 +21,14 @@ from __future__ import annotations
 import ast
 import importlib
 import time
-from datetime import datetime, timezone
-from typing import List
-import structlog
+from datetime import UTC, datetime
 
+import structlog
 from smriti.core.models import (
-    VerificationRule,
-    VerificationResult,
-    VerificationStatus,
     ValidationDomain,
+    VerificationResult,
+    VerificationRule,
+    VerificationStatus,
 )
 
 logger = structlog.get_logger(__name__)
@@ -37,7 +36,7 @@ logger = structlog.get_logger(__name__)
 
 # ── Architectural verification rules ─────────────────────────────────────────
 
-ARCHITECTURAL_RULES: List[VerificationRule] = [
+ARCHITECTURAL_RULES: list[VerificationRule] = [
     VerificationRule(
         rule_id="ARCH-001",
         domain=ValidationDomain.ARCHITECTURAL,
@@ -164,7 +163,7 @@ ARCHITECTURAL_RULES: List[VerificationRule] = [
 
 
 def _now() -> str:
-    return datetime.now(tz=timezone.utc).isoformat()
+    return datetime.now(tz=UTC).isoformat()
 
 
 def _make_result(
@@ -186,7 +185,7 @@ def _make_result(
     )
 
 
-def run_architectural_verification() -> List[VerificationResult]:
+def run_architectural_verification() -> list[VerificationResult]:
     """
     Execute all architectural verification rules.
 
@@ -259,7 +258,6 @@ def _check_no_cross_import(source_pkg: str, forbidden_pkg: str):
     """Verify source_pkg does not import forbidden_pkg."""
     try:
         mod = importlib.import_module(source_pkg)
-        source_file = getattr(mod, "__file__", "") or ""
         # Simple heuristic: check module's __dict__ for imports
         passed = forbidden_pkg.split(".")[-1] not in str(vars(mod))
         evidence = f"Checked {source_pkg} for imports of {forbidden_pkg}"
@@ -296,7 +294,9 @@ def _check_exclusive_import(lib_name: str, allowed_module: str):
         return False, f"Could not verify {allowed_module}"
 
 
-def _check_field_type_annotation(module_path: str, class_name: str, field_name: str, expected_type: str):
+def _check_field_type_annotation(
+    module_path: str, class_name: str, field_name: str, expected_type: str
+):
     """Verify a field's type annotation."""
     try:
         mod = importlib.import_module(module_path)
@@ -306,6 +306,7 @@ def _check_field_type_annotation(module_path: str, class_name: str, field_name: 
         hints = {}
         try:
             import typing
+
             hints = typing.get_type_hints(cls)
         except Exception:
             pass
@@ -316,7 +317,7 @@ def _check_field_type_annotation(module_path: str, class_name: str, field_name: 
         return False, f"Exception: {e}"
 
 
-def _check_no_ml_imports_ast(module_path: str):
+def _check_no_ml_imports_ast(module_path: str):  # noqa: C901
     """
     RECTIFIED: Use AST parsing to check for ML framework imports.
     This avoids false positives from comments and docstrings.
@@ -328,7 +329,7 @@ def _check_no_ml_imports_ast(module_path: str):
         if not source_file or not source_file.endswith(".py"):
             return True, "Could not read source file — assuming compliant"
 
-        with open(source_file, "r", encoding="utf-8") as f:
+        with open(source_file, encoding="utf-8") as f:
             tree = ast.parse(f.read())
 
         found = []

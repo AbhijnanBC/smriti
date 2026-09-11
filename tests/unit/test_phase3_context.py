@@ -2,7 +2,6 @@
 Unit tests for extraction/context.py.
 """
 
-import pytest
 from smriti.extraction.context import ContextStack
 
 

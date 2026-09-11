@@ -4,14 +4,13 @@ Stores: which phases completed, when they started, current position.
 """
 
 import json
-from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
+
 import structlog
 
-from smriti.core.paths import STATE_FILE
 from smriti.core.models import PipelineState
-
+from smriti.core.paths import STATE_FILE
 
 logger = structlog.get_logger(__name__)
 
@@ -47,7 +46,7 @@ class StateManager:
         self.save(state)
         logger.info("phase marked complete", phase=phase)
 
-    def load(self) -> Optional[PipelineState]:
+    def load(self) -> PipelineState | None:
         """Load existing state. Returns None if no state file found."""
         if not self.state_file.exists():
             return None

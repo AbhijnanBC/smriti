@@ -26,19 +26,24 @@ def render_signal_chart_from_pm(pm: ClaimPresentationModel) -> None:
         labels = [s.label for s in pm.signals]
         values = [s.value for s in pm.signals]
         colors = [s.color for s in pm.signals]
-        texts  = [s.formatted for s in pm.signals]
+        texts = [s.formatted for s in pm.signals]
 
-        fig = go.Figure(go.Bar(
-            x=values, y=labels, orientation="h",
-            marker_color=colors,
-            text=texts, textposition="outside",
-        ))
+        fig = go.Figure(
+            go.Bar(
+                x=values,
+                y=labels,
+                orientation="h",
+                marker_color=colors,
+                text=texts,
+                textposition="outside",
+            )
+        )
         fig.update_layout(
             title="Reliability Signal Vector",
-            xaxis=dict(range=[0, 1.1], title="Signal Value (0–1)"),
+            xaxis={"range": [0, 1.1], "title": "Signal Value (0–1)"},
             height=300,
             showlegend=False,
-            margin=dict(l=200, r=60, t=40, b=40),
+            margin={"l": 200, "r": 60, "t": 40, "b": 40},
         )
         st.plotly_chart(fig, use_container_width=True)
 

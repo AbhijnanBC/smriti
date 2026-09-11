@@ -18,8 +18,8 @@ from __future__ import annotations
 
 import random
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Sequence
 
 
 @dataclass(frozen=True)
@@ -55,14 +55,87 @@ def bootstrap_proportion_ci(
 
     point_estimate = sum(outcomes) / n
     if n == 1:
-        return BootstrapResult(point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level)
+        return BootstrapResult(
+            point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level
+        )
 
     rng = random.Random(seed)
     outcomes_list = list(outcomes)
-    resample_means: List[float] = []
+    resample_means: list[float] = []
     for _ in range(n_resamples):
         resample = [outcomes_list[rng.randrange(n)] for _ in range(n)]
         resample_means.append(sum(resample) / n)
+
+    resample_means.sort()
+    alpha = 1.0 - confidence_level
+    lower_idx = int((alpha / 2) * n_resamples)
+    upper_idx = int((1 - alpha / 2) * n_resamples) - 1
+    lower_idx = max(0, min(lower_idx, n_resamples - 1))
+    upper_idx = max(0, min(upper_idx, n_resamples - 1))
+
+    return BootstrapResult(
+        point_estimate=round(point_estimate, 4),
+        ci_lower=round(resample_means[lower_idx], 4),
+        ci_upper=round(resample_means[upper_idx], 4),
+        n_items=n,
+        n_resamples=n_resamples,
+        confidence_level=confidence_level,
+    )
+
+
+def bootstrap_proportion_ci_clustered(
+    outcomes: Sequence[bool],
+    cluster_ids: Sequence,
+    confidence_level: float = 0.95,
+    n_resamples: int = 2000,
+    seed: int = 42,
+) -> BootstrapResult:
+    """
+    Cluster (block) bootstrap CI for a proportion, resampling whole
+    CLUSTERS with replacement rather than individual items.
+
+    RECTIFIED (external review item 40): bootstrap_proportion_ci() treats
+    every item as an independent draw, but several claims from the same
+    source document, or several relationship pairs anchored on the same
+    adversarial document, are not independent observations -- they share
+    whatever made that one document unusual. Resampling items directly
+    understates the true sampling uncertainty whenever items cluster this
+    way. The cluster bootstrap instead resamples at the cluster level (here,
+    typically source document): each resample draws len(unique clusters)
+    clusters with replacement, keeping every item that belongs to a drawn
+    cluster (so a cluster's item count carries into the resample, standard
+    for a block/cluster bootstrap), and computes the proportion over the
+    resulting pooled items.
+
+    Args:
+        outcomes:    One bool per scored item (True = correct/positive).
+        cluster_ids: One cluster identifier per item, same length and
+                     order as `outcomes` (e.g. the source document ID).
+        confidence_level, n_resamples, seed: as in bootstrap_proportion_ci.
+    """
+    n = len(outcomes)
+    if n == 0 or len(cluster_ids) != n:
+        return BootstrapResult(0.0, 0.0, 0.0, 0, n_resamples, confidence_level)
+
+    point_estimate = sum(outcomes) / n
+
+    by_cluster: dict = {}
+    for outcome, cid in zip(outcomes, cluster_ids, strict=False):
+        by_cluster.setdefault(cid, []).append(outcome)
+    clusters = list(by_cluster.values())
+    n_clusters = len(clusters)
+
+    if n_clusters <= 1:
+        return BootstrapResult(
+            point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level
+        )
+
+    rng = random.Random(seed)
+    resample_means: list[float] = []
+    for _ in range(n_resamples):
+        drawn = [clusters[rng.randrange(n_clusters)] for _ in range(n_clusters)]
+        pooled = [item for cluster in drawn for item in cluster]
+        resample_means.append(sum(pooled) / len(pooled))
 
     resample_means.sort()
     alpha = 1.0 - confidence_level
@@ -94,11 +167,13 @@ def bootstrap_mean_ci(
 
     point_estimate = statistics.mean(values)
     if n == 1:
-        return BootstrapResult(point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level)
+        return BootstrapResult(
+            point_estimate, point_estimate, point_estimate, n, n_resamples, confidence_level
+        )
 
     rng = random.Random(seed)
     values_list = list(values)
-    resample_means: List[float] = []
+    resample_means: list[float] = []
     for _ in range(n_resamples):
         resample = [values_list[rng.randrange(n)] for _ in range(n)]
         resample_means.append(sum(resample) / n)

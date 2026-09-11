@@ -17,24 +17,26 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class DependencyHealth(str, Enum):
     """Health status of a dependency node."""
+
     INITIALIZING = "initializing"
-    HEALTHY      = "healthy"
-    SLOW         = "slow"
-    UNAVAILABLE  = "unavailable"
+    HEALTHY = "healthy"
+    SLOW = "slow"
+    UNAVAILABLE = "unavailable"
 
 
 @dataclass(frozen=True)
 class ConfigurationContext:
     """Immutable runtime configuration snapshot (frozen after CONFIGURATION_LOADING)."""
-    env:         str
+
+    env: str
     config_hash: str
-    loaded_at:   float
-    raw:         Dict[str, Any]
+    loaded_at: float
+    raw: dict[str, Any]
 
     def get(self, key: str, default: Any = None) -> Any:
         return self.raw.get(key, default)
@@ -43,11 +45,12 @@ class ConfigurationContext:
 @dataclass
 class RuntimeContext:
     """Mutable operational context for the current execution."""
-    run_id:        str
-    started_at:    float = field(default_factory=time.monotonic)
-    request_count: int   = 0
-    error_count:   int   = 0
-    warning_count: int   = 0
+
+    run_id: str
+    started_at: float = field(default_factory=time.monotonic)
+    request_count: int = 0
+    error_count: int = 0
+    warning_count: int = 0
 
     def increment_requests(self) -> None:
         self.request_count += 1
@@ -66,12 +69,13 @@ class DependencyNode:
 
     RECTIFIED: Added `health` field to track runtime health.
     """
-    name:        str
-    instance:    Any
-    depends_on:  tuple = field(default_factory=tuple)
+
+    name: str
+    instance: Any
+    depends_on: tuple = field(default_factory=tuple)
     initialized: bool = False
-    owner:       str  = ""
-    health:      DependencyHealth = DependencyHealth.INITIALIZING
+    owner: str = ""
+    health: DependencyHealth = DependencyHealth.INITIALIZING
 
 
 class DependencyGraph:
@@ -82,7 +86,7 @@ class DependencyGraph:
     """
 
     def __init__(self) -> None:
-        self._nodes: Dict[str, DependencyNode] = {}
+        self._nodes: dict[str, DependencyNode] = {}
 
     def register(self, node: DependencyNode) -> None:
         if node.name in self._nodes:
@@ -111,7 +115,7 @@ class DependencyGraph:
             visit(name, set())
         return order
 
-    def get(self, name: str) -> Optional[DependencyNode]:
+    def get(self, name: str) -> DependencyNode | None:
         return self._nodes.get(name)
 
     def all_initialized(self) -> bool:
@@ -134,7 +138,7 @@ class DependencyGraph:
         # Optionally, propagate health changes to dependents here.
         # For now, we let the CapabilityModel poll or subscribe to events.
 
-    def get_health(self, name: str) -> Optional[DependencyHealth]:
+    def get_health(self, name: str) -> DependencyHealth | None:
         """Return the health status of a node, or None if node not found."""
         node = self._nodes.get(name)
         return node.health if node else None

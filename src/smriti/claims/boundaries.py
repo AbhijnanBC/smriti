@@ -41,13 +41,11 @@ Design:
 
 from __future__ import annotations
 
-from typing import List, Tuple
 import structlog
 
+from smriti.claims.models import AssertionCandidate, ParsedSentence
 from smriti.core.config import get_config
 from smriti.core.models import BoundaryReason
-from smriti.claims.models import ParsedSentence, AssertionCandidate
-from smriti.claims.rules import SUBJECT_DEP_LABELS
 
 logger = structlog.get_logger(__name__)
 
@@ -66,7 +64,7 @@ class BoundaryDetector:
         self._split_conditionals: bool = ce_cfg.get("split_conditionals", False)
         self._split_relative_clauses: bool = ce_cfg.get("split_relative_clauses", False)
 
-    def detect(self, parsed: ParsedSentence) -> List[AssertionCandidate]:
+    def detect(self, parsed: ParsedSentence) -> list[AssertionCandidate]:
         """
         Detect claim boundaries in a parsed sentence.
 
@@ -81,14 +79,16 @@ class BoundaryDetector:
             return [self._whole_sentence_candidate(parsed, reason=BoundaryReason.PARSE_FAILED)]
 
         doc = parsed.spacy_doc
-        candidates: List[AssertionCandidate] = []
+        candidates: list[AssertionCandidate] = []
 
         if self._split_conjunctions:
             candidates = self._detect_coordination_boundaries(parsed, doc)
 
         # If no splits were detected (or splitting disabled), use whole sentence
         if not candidates:
-            candidates = [self._whole_sentence_candidate(parsed, reason=BoundaryReason.SINGLE_ASSERTION)]
+            candidates = [
+                self._whole_sentence_candidate(parsed, reason=BoundaryReason.SINGLE_ASSERTION)
+            ]
 
         logger.debug(
             "boundaries detected",
@@ -102,7 +102,7 @@ class BoundaryDetector:
         self,
         parsed: ParsedSentence,
         doc,
-    ) -> List[AssertionCandidate]:
+    ) -> list[AssertionCandidate]:
         """
         Detect boundaries created by coordinating conjunctions (and, but, or).
 
@@ -118,10 +118,7 @@ class BoundaryDetector:
             root = roots[0]
 
             # Find coordinating conjunctions attached to root
-            conj_tokens = [
-                t for t in doc
-                if t.dep_ == "conj" and t.head == root
-            ]
+            conj_tokens = [t for t in doc if t.dep_ == "conj" and t.head == root]
 
             if conj_tokens:
                 return self._reconstruct_coordinated_clauses(
@@ -141,7 +138,8 @@ class BoundaryDetector:
             # object conjunct (instead of substituting a whole conjunct verb
             # subtree for the root, as the verb-level branch above does).
             objects = [
-                t for t in root.rights
+                t
+                for t in root.rights
                 if t.dep_ in ("dobj", "obj", "attr", "dative", "oprd", "pobj")
             ]
             for obj in objects:
@@ -172,7 +170,7 @@ class BoundaryDetector:
         conjuncts,
         parsed: ParsedSentence,
         shared_root_token=None,
-    ) -> List[AssertionCandidate]:
+    ) -> list[AssertionCandidate]:
         """
         Reconstruct clauses using exact token spans to preserve tense, aspect, and passive voice.
         NEVER uses lemmas for reconstruction.
@@ -244,8 +242,7 @@ class BoundaryDetector:
         for conj in conjuncts:
             # Combine all required tokens and sort them by their original position in the sentence
             reconstructed_tokens = sorted(
-                set(subj_tokens + aux_tokens + root_tokens + list(conj.subtree)),
-                key=lambda x: x.i
+                set(subj_tokens + aux_tokens + root_tokens + list(conj.subtree)), key=lambda x: x.i
             )
             conj_text = self._tokens_to_string(reconstructed_tokens)
             conj_spans, conj_token_ids = self._tokens_to_spans_and_ids(reconstructed_tokens)
@@ -264,7 +261,7 @@ class BoundaryDetector:
 
         return candidates
 
-    def _tokens_to_spans_and_ids(self, tokens: list) -> Tuple[tuple, tuple]:
+    def _tokens_to_spans_and_ids(self, tokens: list) -> tuple[tuple, tuple]:
         """
         Compute exact source-token provenance for a reconstructed candidate.
 
@@ -292,7 +289,7 @@ class BoundaryDetector:
         ordered = sorted(set(tokens), key=lambda t: t.i)
         token_ids = tuple(t.i for t in ordered)
 
-        spans: List[Tuple[int, int]] = []
+        spans: list[tuple[int, int]] = []
         run_start_token = ordered[0]
         prev_token = ordered[0]
         for tok in ordered[1:]:
@@ -312,7 +309,7 @@ class BoundaryDetector:
             return ""
         text = tokens[0].text
         for i in range(1, len(tokens)):
-            if tokens[i-1].whitespace_:
+            if tokens[i - 1].whitespace_:
                 text += " " + tokens[i].text
             else:
                 # Handle punctuation spacing fallback if whitespace is lost

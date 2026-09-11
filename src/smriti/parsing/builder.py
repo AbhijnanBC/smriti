@@ -22,21 +22,28 @@ Rules:
     ❌ No extraction logic
     ❌ No normalization logic
     ❌ No filesystem access
+
+RECTIFIED (external review, P1-1): this module now also calls
+parsing.provenance.extract_document_provenance() on the already-extracted
+raw_text to populate Document.provenance. This is read-only metadata
+parsing (source_id/author/publisher/date, when the document discloses
+them), not text extraction or normalization -- raw_text and
+normalized_text themselves are untouched, so this does not violate the
+"no extraction/normalization logic" rules above.
 """
 
-from typing import List, Tuple
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.models import (
     Document,
-    ExtractionMethod,
     RawExtractionResult,
     SourceDocument,
     TextStatistics,
     WarningCode,
 )
 from smriti.exceptions import BuilderError, DocumentError
+from smriti.parsing.provenance import extract_document_provenance
 
 logger = structlog.get_logger(__name__)
 
@@ -45,7 +52,7 @@ def build_document(
     source_document: SourceDocument,
     extraction_result: RawExtractionResult,
     normalized_text: str,
-    normalization_warnings: Tuple[WarningCode, ...],
+    normalization_warnings: tuple[WarningCode, ...],
     text_statistics: TextStatistics,
 ) -> Document:
     """
@@ -72,25 +79,31 @@ def build_document(
     if not isinstance(source_document, SourceDocument):
         raise BuilderError(f"source_document must be SourceDocument, got {type(source_document)}")
     if not isinstance(extraction_result, RawExtractionResult):
-        raise BuilderError(f"extraction_result must be RawExtractionResult")
+        raise BuilderError("extraction_result must be RawExtractionResult")
     if not isinstance(normalized_text, str):
         raise BuilderError(f"normalized_text must be str, got {type(normalized_text)}")
     if not isinstance(normalization_warnings, tuple):
-        raise BuilderError(f"normalization_warnings must be tuple")
+        raise BuilderError("normalization_warnings must be tuple")
     if not isinstance(text_statistics, TextStatistics):
-        raise BuilderError(f"text_statistics must be TextStatistics")
+        raise BuilderError("text_statistics must be TextStatistics")
 
     # ── Merge all warnings (both are tuples of WarningCode) ──────────────────
-    all_warnings: List[WarningCode] = list(extraction_result.warnings) + list(normalization_warnings)
+    all_warnings: list[WarningCode] = list(extraction_result.warnings) + list(
+        normalization_warnings
+    )
 
     # ── Check for empty extraction ────────────────────────────────────────────
     if len(normalized_text.strip()) < min_extractable_chars:
         all_warnings.append(WarningCode.NO_EXTRACTABLE_TEXT)
 
+    # ── Extract disclosed source identity (P1-1), if any ─────────────────────
+    # Read-only: parses extraction_result.raw_text, never modifies it.
+    provenance = extract_document_provenance(extraction_result.raw_text)
+
     # ── Build Document ────────────────────────────────────────────────────────
     try:
         doc = Document(
-            doc_id=source_document.doc_id,        # Identity inherited, never changed
+            doc_id=source_document.doc_id,  # Identity inherited, never changed
             source_document=source_document,
             raw_text=extraction_result.raw_text,
             normalized_text=normalized_text,
@@ -99,6 +112,7 @@ def build_document(
             text_statistics=text_statistics,
             encoding_used=extraction_result.encoding_used,  # <-- ADDED
             schema_version="2.0",
+            provenance=provenance,
         )
     except ValueError as e:
         raise DocumentError(f"Document invariant violated: {e}") from e

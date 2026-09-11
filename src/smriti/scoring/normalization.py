@@ -16,12 +16,17 @@ SignalVector is still built for backward compatibility (serialization, tests).
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Tuple
+
 import structlog
 
 from smriti.core.models import (
-    RawSignal, SignalVector, ContributionCandidate, ContributionSet,
-    SignalManifest, SignalStatus, SignalID,
+    ContributionCandidate,
+    ContributionSet,
+    RawSignal,
+    SignalID,
+    SignalManifest,
+    SignalStatus,
+    SignalVector,
 )
 from smriti.scoring.policies import FusionPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -30,11 +35,11 @@ logger = structlog.get_logger(__name__)
 
 
 def assemble_contribution_set(
-    raw_signals: List[RawSignal],
-    extractors: List[BaseSignalExtractor],
+    raw_signals: list[RawSignal],
+    extractors: list[BaseSignalExtractor],
     fusion_policy: FusionPolicy,
     claim_id: str,
-) -> Tuple[ContributionSet, List[SignalManifest], SignalVector]:
+) -> tuple[ContributionSet, list[SignalManifest], SignalVector]:
     """
     RECTIFIED (P0-2, P0-4, P1-2): Primary assembly function.
 
@@ -54,9 +59,9 @@ def assemble_contribution_set(
     """
     # FIXED: Use .value to get string keys for lookup by sig.name (a string)
     extractor_map = {e.signal_id.value: e for e in extractors}
-    validated: Dict[str, RawSignal] = {}
-    status_map: Dict[str, str] = {}
-    manifests: List[SignalManifest] = []
+    validated: dict[str, RawSignal] = {}
+    status_map: dict[str, str] = {}
+    manifests: list[SignalManifest] = []
 
     for sig in raw_signals:
         value = sig.normalized_value  # Extractor already normalized (P1-2)
@@ -107,14 +112,16 @@ def assemble_contribution_set(
         weight = fusion_policy.get_weight(signal_id_value)
         direction = fusion_policy.get_direction(signal_id_value)
         if weight > 0:
-            candidates.append(ContributionCandidate(
-                signal_id=SignalID(signal_id_value),
-                normalized_value=sig.normalized_value,
-                policy_weight=weight,
-                direction=direction,
-                label=signal_id_value.replace("_", " ").title(),
-                raw_value=sig.raw_value,
-            ))
+            candidates.append(
+                ContributionCandidate(
+                    signal_id=SignalID(signal_id_value),
+                    normalized_value=sig.normalized_value,
+                    policy_weight=weight,
+                    direction=direction,
+                    label=signal_id_value.replace("_", " ").title(),
+                    raw_value=sig.raw_value,
+                )
+            )
 
     evidence_completeness = _compute_completeness(status_map)
 
@@ -142,11 +149,56 @@ def assemble_contribution_set(
     return contribution_set, manifests, signal_vector
 
 
-def _compute_completeness(status_map: Dict[str, str]) -> float:
+def split_contribution_set_by_category(
+    contribution_set: ContributionSet,
+    category_signal_names: frozenset[str],
+) -> ContributionSet:
+    """
+    RECTIFIED (P1-4, external "reality check" review — reliability vs.
+    graph importance conflation): filters a fused ContributionSet down to
+    just the candidates whose signal_id is in category_signal_names, then
+    rescales each candidate's policy_weight so the category's weights sum
+    to 1.0 on their own -- otherwise a category whose raw policy weights
+    only summed to e.g. 0.20 of the original budget would top out at 20
+    on the fusion engine's [0,100] scale, not a genuine independent index.
+
+    Rescaling uses the ACTIVE candidates' own weights (not a static policy
+    lookup), so it stays correct under any policy profile without needing
+    to know the full 8-signal weight table here.
+    """
+    selected = [
+        c for c in contribution_set.candidates if c.signal_id.value in category_signal_names
+    ]
+    weight_sum = sum(c.policy_weight for c in selected)
+
+    if weight_sum <= 0:
+        rescaled = tuple(selected)
+    else:
+        rescaled = tuple(
+            ContributionCandidate(
+                signal_id=c.signal_id,
+                normalized_value=c.normalized_value,
+                policy_weight=c.policy_weight / weight_sum,
+                direction=c.direction,
+                label=c.label,
+                raw_value=c.raw_value,
+            )
+            for c in selected
+        )
+
+    return ContributionSet(
+        candidates=rescaled,
+        evidence_completeness=contribution_set.evidence_completeness,
+        claim_id=contribution_set.claim_id,
+    )
+
+
+def _compute_completeness(status_map: dict[str, str]) -> float:
     """Fraction of signals with actual measurements."""
     total = max(1, len(status_map))
     measured = sum(
-        1 for status in status_map.values()
+        1
+        for status in status_map.values()
         if status in (SignalStatus.MEASURED.value, SignalStatus.ESTIMATED.value)
     )
     return measured / total
@@ -154,13 +206,14 @@ def _compute_completeness(status_map: Dict[str, str]) -> float:
 
 # ── Backward-compatible wrapper for tests that use validate_and_normalize ─────
 
-def validate_and_normalize(raw_signals: List[RawSignal]) -> SignalVector:
+
+def validate_and_normalize(raw_signals: list[RawSignal]) -> SignalVector:
     """
     Backward-compatible wrapper. Tests that test normalization directly use this.
     Production code uses assemble_contribution_set().
     """
-    status_map: Dict[str, str] = {}
-    signal_map: Dict[str, float] = {}
+    status_map: dict[str, str] = {}
+    signal_map: dict[str, float] = {}
 
     for sig in raw_signals:
         value = sig.normalized_value

@@ -5,35 +5,53 @@ Verifies that temporal resolution uses Claim.timestamp (semantic),
 never filesystem st_mtime.
 """
 
-import pytest
-from datetime import datetime, timezone
 from pathlib import Path
+
 from smriti.core.models import (
-    Claim, ClaimProvenance, ExtractionMode, AssertionMetadata,
-    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection,
+    AssertionMetadata,
+    Claim,
+    ClaimNode,
+    ClaimProvenance,
+    ExtractionMode,
+    RelationshipDirection,
+    RelationshipEdge,
+    RelationshipType,
     TemporalStatus,
 )
 from smriti.evolution.context import SemanticReasoningContext
 from smriti.evolution.networkx_backend import NetworkXBackend
 from smriti.evolution.partitioning import run_partitioning
-from smriti.evolution.temporal import run_temporal_resolution, _get_semantic_timestamp
+from smriti.evolution.temporal import _get_semantic_timestamp, run_temporal_resolution
 
 
 def make_claim(claim_id, timestamp=None):
     claim = Claim(
-        claim_id=claim_id, sentence_id="s001", document_id="d001",
-        text=f"Claim {claim_id}", content_hash=claim_id[:16], context="",
+        claim_id=claim_id,
+        sentence_id="s001",
+        document_id="d001",
+        text=f"Claim {claim_id}",
+        content_hash=claim_id[:16],
+        context="",
         source_path=Path("test.md"),
         extraction_mode=ExtractionMode.WHOLE_SENTENCE,
-        structured_assertion=None, assertion_metadata=AssertionMetadata(),
+        structured_assertion=None,
+        assertion_metadata=AssertionMetadata(),
         provenance=ClaimProvenance(
-            sentence_id="s001", document_id="d001",
-            source_path=Path("test.md"), sentence_context="", sentence_position=0,
+            sentence_id="s001",
+            document_id="d001",
+            source_path=Path("test.md"),
+            sentence_context="",
+            sentence_position=0,
         ),
-        schema_version="4.0", rule_version="1.0",
+        schema_version="4.0",
+        rule_version="1.0",
     )
     # Inject timestamp as attribute (until Claim model has it as a field)
-    object.__setattr__(claim, "timestamp", timestamp) if hasattr(claim, "__dataclass_fields__") else None
+    (
+        object.__setattr__(claim, "timestamp", timestamp)
+        if hasattr(claim, "__dataclass_fields__")
+        else None
+    )
     try:
         object.__setattr__(claim, "_timestamp_override", timestamp)
     except Exception:
@@ -45,27 +63,43 @@ def make_contradiction_ctx(node_a, node_b):
     backend = NetworkXBackend()
     nodes = {
         node_a: ClaimNode(
-            node_id=node_a, claim_id=node_a, claim_text=f"Claim {node_a}",
-            context="", source_path=Path("test.md"), document_id="d001",
+            node_id=node_a,
+            claim_id=node_a,
+            claim_text=f"Claim {node_a}",
+            context="",
+            source_path=Path("test.md"),
+            document_id="d001",
         ),
         node_b: ClaimNode(
-            node_id=node_b, claim_id=node_b, claim_text=f"Claim {node_b}",
-            context="", source_path=Path("test.md"), document_id="d001",
+            node_id=node_b,
+            claim_id=node_b,
+            claim_text=f"Claim {node_b}",
+            context="",
+            source_path=Path("test.md"),
+            document_id="d001",
         ),
     }
     edge = RelationshipEdge(
-        edge_id="e1", source_node_id=node_a, target_node_id=node_b,
+        edge_id="e1",
+        source_node_id=node_a,
+        target_node_id=node_b,
         relationship_type=RelationshipType.CONTRADICTS,
         direction=RelationshipDirection.SYMMETRIC,
-        calibrated_confidence=0.88, cosine_similarity=0.85,
-        nli_confidence=0.88, candidate_rank=1,
+        calibrated_confidence=0.88,
+        cosine_similarity=0.85,
+        nli_confidence=0.88,
+        candidate_rank=1,
     )
     for nid in nodes:
         backend.add_node(nid)
     backend.add_edge(node_a, node_b, "e1", "contradicts", 0.88)
     backend.add_edge(node_b, node_a, "e1_rev", "contradicts", 0.88)
     return SemanticReasoningContext(
-        nodes=nodes, edges={"e1": edge}, backend=backend, run_id="test", config_hash="test",
+        nodes=nodes,
+        edges={"e1": edge},
+        backend=backend,
+        run_id="test",
+        config_hash="test",
     )
 
 

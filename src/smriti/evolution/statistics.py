@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+
 from smriti.core.models import Phase7Stats
 
 
@@ -41,8 +42,11 @@ class Phase7StatsCollector:
         self._enrichment_start = time.monotonic()
 
     def record_enrichment_end(
-        self, partitions: int, contradiction_boundaries: int,
-        evolution_chains: int, unresolved: int,
+        self,
+        partitions: int,
+        contradiction_boundaries: int,
+        evolution_chains: int,
+        unresolved: int,
     ) -> None:
         self._enrichment_end = time.monotonic()
         self._partitions = partitions
@@ -57,11 +61,13 @@ class Phase7StatsCollector:
         total = time.monotonic() - self._start
         construction_time = (
             (self._construction_end - self._construction_start)
-            if self._construction_start and self._construction_end else 0.0
+            if self._construction_start and self._construction_end
+            else 0.0
         )
         enrichment_time = (
             (self._enrichment_end - self._enrichment_start)
-            if self._enrichment_start and self._enrichment_end else 0.0
+            if self._enrichment_start and self._enrichment_end
+            else 0.0
         )
         return Phase7Stats(
             input_relationships=self._input_relationships,

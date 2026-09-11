@@ -30,14 +30,14 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List, Dict, Set, Optional
 import structlog
 
-from smriti.core.models import (
-    EmbeddedClaim, Claim, Relationship, RelationshipSet,
-)
 from smriti.core.config import get_config
-from smriti.exceptions import ResourceLimitExceeded
+from smriti.core.models import (
+    EmbeddedClaim,
+    Relationship,
+    RelationshipSet,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -59,17 +59,13 @@ class CacheInvalidationPolicy:
         self._invalidate_on_embedding_change: bool = cache_cfg.get(
             "invalidate_on_embedding_change", True
         )
-        self._invalidate_on_model_change: bool = cache_cfg.get(
-            "invalidate_on_model_change", True
-        )
-        self._invalidate_on_policy_change: bool = cache_cfg.get(
-            "invalidate_on_policy_change", True
-        )
+        self._invalidate_on_model_change: bool = cache_cfg.get("invalidate_on_model_change", True)
+        self._invalidate_on_policy_change: bool = cache_cfg.get("invalidate_on_policy_change", True)
 
     def should_invalidate_for_claim(
         self,
         claim_id: str,
-        changed_claim_ids: Set[str],
+        changed_claim_ids: set[str],
     ) -> bool:
         """Return True if any cache entries for this claim_id should be invalidated."""
         if not self._invalidate_on_embedding_change:
@@ -87,13 +83,15 @@ class CacheInvalidationPolicy:
         if self._invalidate_on_model_change and old_model != new_model:
             logger.info(
                 "full cache invalidation: model changed",
-                old=old_model, new=new_model,
+                old=old_model,
+                new=new_model,
             )
             return True
         if self._invalidate_on_policy_change and old_config_hash != new_config_hash:
             logger.info(
                 "full cache invalidation: policy changed",
-                old_hash=old_config_hash[:8], new_hash=new_config_hash[:8],
+                old_hash=old_config_hash[:8],
+                new_hash=new_config_hash[:8],
             )
             return True
         return False
@@ -115,16 +113,16 @@ class IncrementalDiscoveryEngine:
     def __init__(
         self,
         existing_relationship_set: RelationshipSet,
-        invalidation_policy: Optional[CacheInvalidationPolicy] = None,
+        invalidation_policy: CacheInvalidationPolicy | None = None,
     ) -> None:
         self._existing = existing_relationship_set
         self._invalidation_policy = invalidation_policy or CacheInvalidationPolicy()
 
     def compute_delta(
         self,
-        all_embedded_claims: List[EmbeddedClaim],
-        existing_claim_ids: Set[str],
-    ) -> List[EmbeddedClaim]:
+        all_embedded_claims: list[EmbeddedClaim],
+        existing_claim_ids: set[str],
+    ) -> list[EmbeddedClaim]:
         """
         Identify which claims are new (not in existing_claim_ids).
 
@@ -135,10 +133,7 @@ class IncrementalDiscoveryEngine:
         Returns:
             Only the new EmbeddedClaims that need relationship discovery.
         """
-        new_claims = [
-            ec for ec in all_embedded_claims
-            if ec.claim_id not in existing_claim_ids
-        ]
+        new_claims = [ec for ec in all_embedded_claims if ec.claim_id not in existing_claim_ids]
         logger.info(
             "incremental delta computed",
             total_claims=len(all_embedded_claims),
@@ -149,8 +144,8 @@ class IncrementalDiscoveryEngine:
 
     def invalidate_changed_embeddings(
         self,
-        changed_claim_ids: Set[str],
-    ) -> List[Relationship]:
+        changed_claim_ids: set[str],
+    ) -> list[Relationship]:
         """
         Remove relationships that involve claims with changed embeddings.
         Returns the remaining (valid) relationships.
@@ -159,11 +154,9 @@ class IncrementalDiscoveryEngine:
             return list(self._existing.relationships)
 
         remaining = [
-            rel for rel in self._existing.relationships
-            if not (
-                rel.claim_id_a in changed_claim_ids
-                or rel.claim_id_b in changed_claim_ids
-            )
+            rel
+            for rel in self._existing.relationships
+            if not (rel.claim_id_a in changed_claim_ids or rel.claim_id_b in changed_claim_ids)
         ]
 
         invalidated_count = len(self._existing.relationships) - len(remaining)

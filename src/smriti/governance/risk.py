@@ -7,32 +7,32 @@ Every mature architecture names its risks rather than hiding them.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List
 
 
 class RiskSeverity(str, Enum):
-    HIGH   = "high"
+    HIGH = "high"
     MEDIUM = "medium"
-    LOW    = "low"
+    LOW = "low"
 
 
 @dataclass(frozen=True)
 class ArchitecturalRisk:
     """A single identified architectural risk with mitigation."""
-    risk_id:    str
-    name:       str
+
+    risk_id: str
+    name: str
     description: str
-    severity:   RiskSeverity
+    severity: RiskSeverity
     mitigation: str
-    owner:      str
-    status:     str = "open"   # "open" | "mitigated" | "accepted"
+    owner: str
+    status: str = "open"  # "open" | "mitigated" | "accepted"
 
 
 # ── Canonical risk register for Phase 11 ─────────────────────────────────────
 
-PHASE11_RISKS: List[ArchitecturalRisk] = [
+PHASE11_RISKS: list[ArchitecturalRisk] = [
     ArchitecturalRisk(
         risk_id="R-001",
         name="Architectural Drift",
@@ -94,21 +94,21 @@ class RiskRegister:
     """Registry and query interface for architectural risks."""
 
     def __init__(self) -> None:
-        self._risks: Dict[str, ArchitecturalRisk] = {r.risk_id: r for r in PHASE11_RISKS}
+        self._risks: dict[str, ArchitecturalRisk] = {r.risk_id: r for r in PHASE11_RISKS}
 
     def get(self, risk_id: str) -> ArchitecturalRisk | None:
         return self._risks.get(risk_id)
 
-    def open_risks(self) -> List[ArchitecturalRisk]:
+    def open_risks(self) -> list[ArchitecturalRisk]:
         return [r for r in self._risks.values() if r.status == "open"]
 
-    def high_severity(self) -> List[ArchitecturalRisk]:
+    def high_severity(self) -> list[ArchitecturalRisk]:
         return [r for r in self._risks.values() if r.severity == RiskSeverity.HIGH]
 
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         return {
-            "total":     len(self._risks),
-            "open":      sum(1 for r in self._risks.values() if r.status == "open"),
+            "total": len(self._risks),
+            "open": sum(1 for r in self._risks.values() if r.status == "open"),
             "mitigated": sum(1 for r in self._risks.values() if r.status == "mitigated"),
-            "high":      sum(1 for r in self._risks.values() if r.severity == RiskSeverity.HIGH),
+            "high": sum(1 for r in self._risks.values() if r.severity == RiskSeverity.HIGH),
         }

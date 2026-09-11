@@ -19,10 +19,13 @@ Three extractors in this file:
 
 from __future__ import annotations
 
-from typing import List
 from smriti.core.models import (
-    ClaimNode, KnowledgeGraph, RawSignal, ScoringGlobalStats,
-    SignalStatus, SignalID,
+    ClaimNode,
+    KnowledgeGraph,
+    RawSignal,
+    ScoringGlobalStats,
+    SignalID,
+    SignalStatus,
 )
 from smriti.scoring.policies import ReliabilityPolicy
 from smriti.scoring.signals.base import BaseSignalExtractor
@@ -44,15 +47,18 @@ class TopologyStrengthExtractor(BaseSignalExtractor):
         return "linear_centrality_scale"
 
     @property
-    def dependency_list(self) -> List[str]:
+    def dependency_list(self) -> list[str]:
         return ["topology.centrality", "topology.degree"]
 
     def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
         return max(0.0, min(1.0, raw))
 
     def extract(
-        self, node: ClaimNode, graph: KnowledgeGraph,
-        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+        self,
+        node: ClaimNode,
+        graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats,
+        policy: ReliabilityPolicy,
     ) -> RawSignal:
         if node.topology is None:
             return RawSignal(
@@ -104,15 +110,18 @@ class HubScoreExtractor(BaseSignalExtractor):
         return "binary"
 
     @property
-    def dependency_list(self) -> List[str]:
+    def dependency_list(self) -> list[str]:
         return ["topology.is_hub"]
 
     def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
         return max(0.0, min(1.0, raw))
 
     def extract(
-        self, node: ClaimNode, graph: KnowledgeGraph,
-        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+        self,
+        node: ClaimNode,
+        graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats,
+        policy: ReliabilityPolicy,
     ) -> RawSignal:
         if node.topology is None:
             return RawSignal(
@@ -156,15 +165,18 @@ class BridgeScoreExtractor(BaseSignalExtractor):
         return "binary"
 
     @property
-    def dependency_list(self) -> List[str]:
+    def dependency_list(self) -> list[str]:
         return ["topology.is_bridge"]
 
     def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
         return max(0.0, min(1.0, raw))
 
     def extract(
-        self, node: ClaimNode, graph: KnowledgeGraph,
-        global_stats: ScoringGlobalStats, policy: ReliabilityPolicy,
+        self,
+        node: ClaimNode,
+        graph: KnowledgeGraph,
+        global_stats: ScoringGlobalStats,
+        policy: ReliabilityPolicy,
     ) -> RawSignal:
         if node.topology is None:
             return RawSignal(

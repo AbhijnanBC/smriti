@@ -24,12 +24,12 @@ Why preserve Markdown syntax?
 """
 
 from pathlib import Path
-from typing import List, Tuple, Optional
+
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.models import ExtractionMethod, RawExtractionResult, WarningCode
-from smriti.exceptions import MarkdownExtractionError, EncodingError
+from smriti.exceptions import EncodingError, MarkdownExtractionError
 
 logger = structlog.get_logger(__name__)
 
@@ -39,8 +39,8 @@ class MarkdownExtractor:
 
     def __init__(self) -> None:
         config = get_config()
-        self._encoding_fallbacks: List[str] = (
-            config["parsing"].get("encoding_fallbacks", ["utf-8", "utf-8-sig", "utf-16", "latin-1"])
+        self._encoding_fallbacks: list[str] = config["parsing"].get(
+            "encoding_fallbacks", ["utf-8", "utf-8-sig", "utf-16", "latin-1"]
         )
 
     def extract(self, path: Path) -> RawExtractionResult:
@@ -57,7 +57,7 @@ class MarkdownExtractor:
             MarkdownExtractionError: If the file cannot be read at all.
             EncodingError: If no supported encoding successfully decodes the file.
         """
-        warnings: List[WarningCode] = []
+        warnings: list[WarningCode] = []
 
         logger.debug("reading markdown", path=str(path))
 
@@ -98,7 +98,7 @@ class MarkdownExtractor:
         except OSError as e:
             raise MarkdownExtractionError(f"Cannot read {path}: {e}") from e
 
-    def _decode(self, raw_bytes: bytes, path: Path) -> Tuple[str, Optional[WarningCode], str]:
+    def _decode(self, raw_bytes: bytes, path: Path) -> tuple[str, WarningCode | None, str]:
         """
         Decode bytes using the encoding fallback chain.
 
@@ -114,6 +114,5 @@ class MarkdownExtractor:
                 continue
 
         raise EncodingError(
-            f"Cannot decode {path} with any supported encoding: "
-            f"{self._encoding_fallbacks}"
+            f"Cannot decode {path} with any supported encoding: " f"{self._encoding_fallbacks}"
         )

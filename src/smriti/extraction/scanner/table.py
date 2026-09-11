@@ -2,7 +2,6 @@
 scanner/table.py — Table detection and accumulation.
 """
 
-from typing import List, Tuple
 from smriti.extraction.rules import TABLE_ROW_PATTERN, TABLE_SEPARATOR_PATTERN
 
 
@@ -14,7 +13,9 @@ def is_table_separator(line: str) -> bool:
     return bool(TABLE_SEPARATOR_PATTERN.match(line))
 
 
-def accumulate_table(lines: List[str], start_char: int, current_char_pos: int) -> Tuple[str, int, int]:
+def accumulate_table(
+    lines: list[str], start_char: int, current_char_pos: int
+) -> tuple[str, int, int]:
     """
     Accumulate a table block.
 

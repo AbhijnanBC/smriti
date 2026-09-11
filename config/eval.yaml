@@ -1,0 +1,36 @@
+# config/eval.yaml
+# RECTIFIED (external "reality check" review, P0-9): evaluation runs need
+# every NLI-scored candidate pair retained, not just the ones that survive
+# the CONTRADICTS/SUPPORTS/REFINES/EQUIVALENT filter, so that candidate
+# precision/recall (P0-9) and the false-CONTRADICTS rate over ALL scored
+# candidates (not just intended gold pairs) can actually be measured.
+# Production runs deliberately keep skip_unknown_relationships/
+# skip_neutral_relationships = true (config/default.yaml) to avoid graph
+# bloat -- flipping that default for every run would be a real storage/
+# performance cost with no benefit outside evaluation. This profile exists
+# so evaluation and production can each have the behavior they need
+# without either one silently overriding the other, which is exactly the
+# single-source-of-truth defect (P0-7) this project's config already
+# stopped tolerating elsewhere.
+#
+# Use with: poetry run python scripts/run_vault.py <vault> --env eval
+
+env: eval
+debug: false
+
+relationship_discovery:
+  skip_unknown_relationships: false
+  skip_neutral_relationships: false
+
+# RECTIFIED (P1-J, "FINAL REVIEW" round): production's cancel_on_limit:
+# false (config/default.yaml) truncates rather than aborts when max_pairs
+# is exceeded -- reasonable for a production application, but for
+# scientific evaluation a silent truncation (e.g. 5,000 expected
+# candidates, limit 1,000 -> only 1,000 processed) artificially lowers
+# recall without saying so. Evaluation runs abort loudly instead; the
+# resource_governance.evaluation_truncated flag DiscoveryReport now
+# carries (see statistics.py/governance.py) is a second, defense-in-depth
+# signal for the case a report was produced by a run that did not use
+# this profile.
+resource_governance:
+  cancel_on_limit: true

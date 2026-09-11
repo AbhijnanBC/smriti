@@ -2,14 +2,12 @@
 scanner/paragraph.py — Paragraph accumulation logic.
 """
 
-from typing import List, Tuple
-
 
 def accumulate_paragraph(
-    lines: List[str],
+    lines: list[str],
     start_char: int,
     current_char_pos: int,
-) -> Tuple[str, int, int]:
+) -> tuple[str, int, int]:
     """
     Accumulate a paragraph block from a list of lines.
 

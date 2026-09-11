@@ -13,8 +13,8 @@ Output:
   - SourceDocument (immutable, file‑centric)
 """
 
-from datetime import datetime
 from pathlib import Path
+
 import structlog
 
 from smriti.core.models import FileFormat, SourceDocument
@@ -28,6 +28,7 @@ _EXTENSION_TO_FORMAT = {
     ".txt": FileFormat.TEXT,
     ".pdf": FileFormat.PDF,
 }
+
 
 def build_source_document(
     metadata: FileMetadata,

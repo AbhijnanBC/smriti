@@ -17,13 +17,13 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
+
 import structlog
 
 from smriti.constants import MANIFEST_SCHEMA_VERSION
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.models import ManifestEntry
-
+from smriti.core.paths import ARTIFACTS_DIR
 
 logger = structlog.get_logger(__name__)
 
@@ -52,10 +52,10 @@ class ManifestManager:
         self,
         phase: int,
         start_time: float,
-        inputs: Dict[str, Any],
-        outputs: Dict[str, Any],
+        inputs: dict[str, Any],
+        outputs: dict[str, Any],
         status: str = "success",
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> Path:
         """
         Record phase completion and write manifest.json.

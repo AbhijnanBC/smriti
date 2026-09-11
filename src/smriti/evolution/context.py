@@ -7,12 +7,17 @@ Flows through all 5 semantic enrichment stages without polluting the domain mode
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+
 import structlog
 
 from smriti.core.models import (
-    ClaimNode, RelationshipEdge, KnowledgePartition,
-    TopologyMetrics, SupportAggregate, TemporalMetadata, SemanticRole, Phase7Stats,
+    ClaimNode,
+    KnowledgePartition,
+    RelationshipEdge,
+    SemanticRole,
+    SupportAggregate,
+    TemporalMetadata,
+    TopologyMetrics,
 )
 from smriti.evolution.backend import GraphBackend
 
@@ -25,27 +30,28 @@ class SemanticReasoningContext:
     Transient execution context flowing through the 5-stage enrichment pipeline.
     Mutated by each stage. Never exposed to callers of __init__.py.
     """
-    nodes: Dict[str, ClaimNode]
-    edges: Dict[str, RelationshipEdge]
+
+    nodes: dict[str, ClaimNode]
+    edges: dict[str, RelationshipEdge]
     backend: GraphBackend
     run_id: str
     config_hash: str
 
-    partitions: Dict[str, KnowledgePartition] = field(default_factory=dict)
-    node_to_partition: Dict[str, str] = field(default_factory=dict)
+    partitions: dict[str, KnowledgePartition] = field(default_factory=dict)
+    node_to_partition: dict[str, str] = field(default_factory=dict)
 
-    topology_metrics: Dict[str, TopologyMetrics] = field(default_factory=dict)
-    semantic_roles: Dict[str, SemanticRole] = field(default_factory=dict)
-    support_aggregates: Dict[str, SupportAggregate] = field(default_factory=dict)
-    temporal_metadata: Dict[str, TemporalMetadata] = field(default_factory=dict)
+    topology_metrics: dict[str, TopologyMetrics] = field(default_factory=dict)
+    semantic_roles: dict[str, SemanticRole] = field(default_factory=dict)
+    support_aggregates: dict[str, SupportAggregate] = field(default_factory=dict)
+    temporal_metadata: dict[str, TemporalMetadata] = field(default_factory=dict)
 
-    stats_collector: Optional[object] = None
+    stats_collector: object | None = None
 
-    def get_partition_nodes(self, partition_id: str) -> List[str]:
+    def get_partition_nodes(self, partition_id: str) -> list[str]:
         partition = self.partitions.get(partition_id)
         if not partition:
             return []
         return sorted(partition.node_ids)
 
-    def get_partition_for_node(self, claim_id: str) -> Optional[str]:
+    def get_partition_for_node(self, claim_id: str) -> str | None:
         return self.node_to_partition.get(claim_id)

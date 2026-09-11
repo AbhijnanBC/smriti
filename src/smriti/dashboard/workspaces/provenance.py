@@ -8,12 +8,11 @@ Views coordinated: ResultListView + custom provenance panel
 from __future__ import annotations
 
 import streamlit as st
-
 from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType
-from smriti.dashboard.workspaces.base import BaseWorkspace
-from smriti.dashboard.workspaces.context import WorkspaceContext
 from smriti.dashboard.models.presentation import DTOTransformer
 from smriti.dashboard.views.result_list_view import ResultListView
+from smriti.dashboard.workspaces.base import BaseWorkspace
+from smriti.dashboard.workspaces.context import WorkspaceContext
 
 
 class ProvenanceWorkspace(BaseWorkspace):
@@ -34,7 +33,9 @@ class ProvenanceWorkspace(BaseWorkspace):
         state = context.state
 
         result = context.client.search_claims(
-            sort_field="support_count", sort_order="desc", limit=state.page_size,
+            sort_field="support_count",
+            sort_order="desc",
+            limit=state.page_size,
         )
         claim_pms = DTOTransformer.to_claims_list(result.get("claims", [])) or []
 
@@ -53,6 +54,7 @@ class ProvenanceWorkspace(BaseWorkspace):
                 if dto:
                     pm = DTOTransformer.to_claim_pm(dto)
                     from smriti.dashboard.components.claim_card import render_claim_card
+
                     render_claim_card(pm)
                     st.divider()
                     st.subheader("Provenance Trail")

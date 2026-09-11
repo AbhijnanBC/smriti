@@ -1,11 +1,11 @@
 """Unit tests for dashboard/events/event_bus.py."""
 
-import pytest
 import time
+
 from smriti.core.models import InteractionEvent, InteractionEventType
 from smriti.dashboard.events.event_bus import (
-    InteractionEventBus,
     HistorySubscriber,
+    InteractionEventBus,
     WorkspaceSyncSubscriber,
 )
 
@@ -37,10 +37,14 @@ def test_event_bus_logs_all_events():
 
 def test_event_bus_isolates_subscriber_failures():
     """A failing subscriber must not prevent others from receiving the event."""
+
     class BrokenSubscriber:
         @property
-        def subscribed_types(self): return []
-        def on_event(self, event): raise RuntimeError("intentional failure")
+        def subscribed_types(self):
+            return []
+
+        def on_event(self, event):
+            raise RuntimeError("intentional failure")
 
     bus = InteractionEventBus()
     history = HistorySubscriber()
@@ -71,9 +75,11 @@ def test_history_subscriber_receives_all_events():
     history = HistorySubscriber()
     bus.subscribe(history)
 
-    for et in [InteractionEventType.CLAIM_SELECTED,
-               InteractionEventType.WORKSPACE_ACTIVATED,
-               InteractionEventType.FILTER_APPLIED]:
+    for et in [
+        InteractionEventType.CLAIM_SELECTED,
+        InteractionEventType.WORKSPACE_ACTIVATED,
+        InteractionEventType.FILTER_APPLIED,
+    ]:
         bus.publish(make_event(et))
 
     assert len(history.history) == 3

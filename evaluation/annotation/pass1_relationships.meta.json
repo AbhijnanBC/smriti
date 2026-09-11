@@ -1,0 +1,18 @@
+{
+  "_purpose": "Metadata for evaluation/annotation/pass1_relationships.json (one of two independent LLM-derived annotation passes over rc2_rc3_relationships_blind.json). RECTIFIED (external \"reality check\" review round 3, P0-10/P1 annotation metadata) -- this file did not exist before this pass; most fields below are genuinely unrecoverable from the project's existing records and are disclosed as null rather than guessed, per protocol.md v2.0's explicit instruction to do so.",
+  "protocol_version": "1.1",
+  "model_name": null,
+  "model_name_note": "Not recorded at annotation time. paper/sections/annotation_protocol.tex discloses only that this is an 'LLM-derived reference annotation', without naming the specific model -- this metadata gap is itself the reason protocol.md v2.0 now requires model_name to be recorded going forward.",
+  "model_revision": null,
+  "temperature": null,
+  "seed": null,
+  "prompt_hash": null,
+  "prompt_hash_note": "The prompt given to the annotator was protocol.md's Task 2 instructions plus rc2_rc3_relationships_blind.json as the item list; no hash of the exact prompt text sent was captured at the time.",
+  "sample_seed": null,
+  "sample_seed_note": "See rc2_rc3_relationships.meta.json -- this pass judged that same fixed sample, not a separately-drawn one.",
+  "source_run_id": "20260910_124212",
+  "annotation_timestamp": null,
+  "annotation_timestamp_note": "Not recorded precisely; this round is documented as occurring after the bidirectional-NLI rewrite described in paper/sections/system.tex, using SMRITI output from run 20260910_124212.",
+  "blind_status": true,
+  "blind_status_note": "This pass had no access to SMRITI's own predicted labels (rc2_rc3_relationships_blind.json carries no prediction fields) and no access to the other pass's output (independent, no shared context, per protocol.md)."
+}

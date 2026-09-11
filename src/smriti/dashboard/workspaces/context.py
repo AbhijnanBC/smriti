@@ -26,10 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from smriti.dashboard.state.epistemic_state import EpistemicStateManager
-from smriti.dashboard.services.client import ServiceClient
-from smriti.dashboard.policies.policies import PolicyEngine
 from smriti.dashboard.notifications.notification_center import NotificationCenter
+from smriti.dashboard.policies.policies import PolicyEngine
+from smriti.dashboard.services.client import ServiceClient
+from smriti.dashboard.state.epistemic_state import EpistemicStateManager
 
 
 @dataclass(frozen=True)
@@ -38,6 +38,7 @@ class InteractionContext:
     Handles the user's intent and session bounds.
     Contains state manager and policy engine.
     """
+
     state_manager: EpistemicStateManager
     policy_engine: PolicyEngine
 
@@ -48,6 +49,7 @@ class RenderingContext:
     Handles UI feedback and visual state.
     Contains notification center.
     """
+
     notification_center: NotificationCenter
 
 
@@ -57,6 +59,7 @@ class InfrastructureContext:
     Handles data access and system logging.
     Contains service client and logger.
     """
+
     client: ServiceClient
     logger: Any  # structlog logger instance
 
@@ -67,6 +70,7 @@ class WorkspaceContext:
     Composed dependency bundle for workspace rendering.
     Divided into explicit domains to prevent "God Object" bloat.
     """
+
     interaction: InteractionContext
     rendering: RenderingContext
     infrastructure: InfrastructureContext

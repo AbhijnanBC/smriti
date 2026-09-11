@@ -15,10 +15,10 @@ Usage:
 Inputs:
     - artifacts/run_20260909_193441/phase4/dataset.json
         SMRITI's own Phase 4 claims (claim_id, text, source_path, ...) for
-        the gold_vault corpus. Baselines 2 and 3 run over these SAME claim
+        the reference_vault corpus. Baselines 2 and 3 run over these SAME claim
         ids/texts so their relationship predictions can be joined 1:1
         against SMRITI's own Phase 6 predictions and future gold labels.
-    - data/raw/gold_vault/*.md
+    - data/raw/reference_vault/*.md
         Raw markdown documents. Baseline 1 reads these directly (it does not
         depend on SMRITI's Phase 2/3 sentence segmentation) and produces its
         own independent claim list with its own claim ids.
@@ -45,8 +45,8 @@ from smriti.baselines import (  # noqa: E402
     predict_relationships_tfidf,
 )
 
-PHASE4_DATASET = PROJECT_ROOT / "artifacts" / "run_20260909_193441" / "phase4" / "dataset.json"
-GOLD_VAULT_RAW_DIR = PROJECT_ROOT / "data" / "raw" / "gold_vault"
+PHASE4_DATASET = PROJECT_ROOT / "artifacts" / "run_20260911_125340" / "phase4" / "dataset.json"
+REFERENCE_VAULT_RAW_DIR = PROJECT_ROOT / "data" / "raw" / "reference_vault"
 OUTPUT_DIR = PROJECT_ROOT / "evaluation" / "baselines"
 
 
@@ -91,7 +91,7 @@ def main() -> None:
     # --- Baseline 1: naive keyword extraction, run directly on raw markdown ---
     print("\n[1/3] Naive keyword claim extraction (independent of Phase 2/3)...")
     t0 = time.perf_counter()
-    naive_claims = extract_claims_naive(GOLD_VAULT_RAW_DIR)
+    naive_claims = extract_claims_naive(REFERENCE_VAULT_RAW_DIR)
     timings["naive_extraction"] = time.perf_counter() - t0
     counts["naive_extraction"] = len(naive_claims)
     naive_out = OUTPUT_DIR / "naive_extraction_predictions.json"
@@ -135,8 +135,8 @@ def main() -> None:
     print(
         f"\nVolume sanity check: naive keyword baseline extracted "
         f"{len(naive_claims)} claims from raw markdown vs. SMRITI's Phase 4 "
-        f"pipeline's {len(phase4_claims)} claims (same {len(list(GOLD_VAULT_RAW_DIR.glob('*.md')))} "
-        f"source documents in data/raw/gold_vault)."
+        f"pipeline's {len(phase4_claims)} claims (same {len(list(REFERENCE_VAULT_RAW_DIR.glob('*.md')))} "
+        f"source documents in data/raw/reference_vault)."
     )
     print(
         "\nNo scoring against gold labels was performed -- these are "
@@ -150,7 +150,7 @@ def main() -> None:
         json.dumps(
             {
                 "phase4_claim_count": len(phase4_claims),
-                "gold_vault_source_doc_count": len(list(GOLD_VAULT_RAW_DIR.glob("*.md"))),
+                "reference_vault_source_doc_count": len(list(REFERENCE_VAULT_RAW_DIR.glob("*.md"))),
                 "naive_extraction": {
                     "claim_count": len(naive_claims),
                     "wall_clock_seconds": timings["naive_extraction"],

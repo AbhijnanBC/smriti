@@ -16,16 +16,31 @@ Validates:
 from __future__ import annotations
 
 from smriti.api.domain.requests import (
-    KnowledgeRequest, ClaimRequest, SearchRequest,
-    TraversalRequest, ExplanationRequest, ExportRequest,
+    ClaimRequest,
+    ExplanationRequest,
+    ExportRequest,
+    KnowledgeRequest,
+    SearchRequest,
+    TraversalRequest,
 )
 from smriti.exceptions import RequestValidationError
 
 VALID_PREDICATE_FIELDS = {
-    "reliability_index", "uncertainty_score", "calibration_label",
-    "document_id", "partition_id", "semantic_role", "context",
-    "support_count", "degree", "centrality", "temporal_status",
-    "is_hub", "is_bridge", "evidence_strength", "conflict_pressure",
+    "reliability_index",
+    "uncertainty_score",
+    "calibration_label",
+    "document_id",
+    "partition_id",
+    "semantic_role",
+    "context",
+    "support_count",
+    "degree",
+    "centrality",
+    "temporal_status",
+    "is_hub",
+    "is_bridge",
+    "evidence_strength",
+    "conflict_pressure",
 }
 
 MAX_TRAVERSAL_DEPTH = 5
@@ -82,5 +97,6 @@ class RequestValidator:
 
     def _validate_export_request(self, req: ExportRequest) -> None:
         from smriti.core.models import ExportFormat
+
         if req.export_format not in ExportFormat:
             raise RequestValidationError(f"Invalid export format: {req.export_format}")

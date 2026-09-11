@@ -10,7 +10,8 @@ Model names and thresholds belong here, not in constants.py.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
+
 import yaml
 
 from smriti.core.paths import CONFIG_DIR
@@ -20,7 +21,7 @@ from smriti.exceptions import ConfigError
 _config: Optional["Config"] = None
 
 
-def _deep_merge(base: Dict, override: Dict) -> Dict:
+def _deep_merge(base: dict, override: dict) -> dict:
     """
     Recursively merge override into base.
     Nested dicts are merged; scalars are overwritten.
@@ -44,7 +45,7 @@ class Config:
 
     def __init__(self, env: str = "dev", config_dir: Path = CONFIG_DIR):
         self.env = env
-        self._data: Dict[str, Any] = {}
+        self._data: dict[str, Any] = {}
         self._load(config_dir)
 
     def _load(self, config_dir: Path) -> None:

@@ -1,0 +1,154 @@
+\input{generated/closed_world_table.tex}
+
+SMRITI-Controlled-v2's own candidate-level numbers
+(\S\ref{sec:results}, Table~\ref{tab:candidate-precision}) are
+open-world: a candidate pair outside the 713-pair manifest is reported
+as a volume count, not a false positive, because that corpus has no
+gold label for pairs it never intended to test --- an out-of-manifest
+CONTRADICTS call might be a genuine, uncatalogued contradiction, not a
+resolver error. That is an honest limitation, not a bug in that
+measurement, but it means conventional CONTRADICTS
+precision/recall/F1 --- computed against a fully known ground truth ---
+has never actually been reported for SMRITI on the 900 pairs this
+benchmark designates. \textbf{Terminology correction (P0-D, audit
+round): SMRITI-ClosedWorld-v1 is a closed \emph{labeled-pair} (or
+target-pair) benchmark, not a fully closed \emph{candidate-universe}
+benchmark, and we no longer call it the latter.} The 900 designated
+pairs (1{,}800 documents) each carry a known true label, but the
+1{,}800-document pool can generate many more candidate pairs than those
+900: Phase 6 actually scores 7{,}293 candidates with both members inside
+this benchmark's own document set, of which only 514 correspond to one of
+the 900 designated pairs -- the remaining 6{,}779 are real, scored
+candidates with \emph{no} known label, exactly the same open-world
+situation as SMRITI-Controlled-v2's own candidate-volume finding, just
+smaller in scale. Every precision/recall/F1 number below is computed
+over the 900 designated pairs only, ignoring what the resolver did on
+those other 6{,}779 candidates entirely -- this is a genuine, checkable
+measurement of ``when these 900 known pairs are available in the corpus,
+how often does the system retrieve/classify them correctly,'' not a
+measurement of the resolver's true precision over the complete candidate
+universe those 1{,}800 documents can generate. A benchmark that also
+resolves that remaining universe (e.g.\ $\sim$100 claims constructed so
+every one of $\binom{100}{2}=4{,}950$ possible pairs has a
+construction-defined label) would be needed for the stronger claim, and
+is explicitly out of scope for this round. Built from three buckets
+(\url{controlled/generators/build_closed_world.py}): 300
+pairs sampled (stratified by category, proportional to
+SMRITI-Controlled-v2's own category sizes) from SMRITI-Controlled-v2's
+already-validated core-semantic-relations pairs (``intended''); 300
+fresh pairs pairing two \emph{different}, mutually orthogonal attributes
+(e.g.\ ``primary deployment platform'' vs.\ ``default network
+protocol'') of the same fresh entity, guaranteed NEUTRAL by construction
+but built from the same sentence template and attribute vocabulary as a
+genuine CONTRADICTS pair (``guaranteed-neutral distractor''); and 300
+fresh pairs using the exact single-valued-attribute construction already
+validated for SMRITI-Controlled-v2's \emph{direct} CONTRADICTS subtype,
+on fresh entities, deliberately kept outside the ``intended'' bucket's
+membership set (``guaranteed-contradiction distractor''). All three
+buckets ran through the same production pipeline (\texttt{--env eval},
+retaining every NLI-scored candidate) so retrieval and classification
+are measured exactly as they would be in practice, not against a
+hand-picked candidate list.
+
+\textbf{(1) Closed labeled-pair CONTRADICTS precision/recall/F1, computed
+against a fully known ground truth for the first time in this paper (on
+the 900 designated pairs, not the full candidate universe): 98.9\%
+precision, 91.8\% recall, 95.2\% F1 (TP=435, FP=5, FN=39, out of 474
+genuinely-CONTRADICTS pairs across all three buckets).} This is close to,
+and in some respects a harder test than, SMRITI-Controlled-v2's own core
+CONTRADICTS numbers (98.3\%/99.2\%/98.7\%, Table~\ref{tab:controlled}):
+this benchmark's CONTRADICTS support is drawn from two different
+sources (an ``intended'' sample and a same-construction distractor pool
+built to look, to the retrieval stage, exactly as tempting as a real
+positive), and the resulting precision and F1 hold up. All 5 false
+positives come from the same source: EQUIVALENT pairs in the
+``intended'' bucket misclassified CONTRADICTS (EV037, EV039, EV044,
+EV045, EV048) --- the identical confusion already reported in
+\S\ref{sec:controlled} finding (5) on the independent controlled-v2 TEST/DEV
+split, now cross-validated on a disjoint 300-pair sample. Zero false
+positives came from either distractor bucket.
+
+\textbf{(2) The guaranteed-contradiction distractors give closed
+labeled-pair evidence that the open-world ``out-of-manifest CONTRADICTS
+calls''
+finding (\S\ref{sec:results} finding 6) is measuring mostly genuine
+contradictions, not resolver errors.} 278 of 300 guaranteed-contradiction
+distractors are retrieved (92.7\%), and every one of the 278 retrieved
+is correctly classified CONTRADICTS (100\% accuracy given retrieval).
+These pairs are functionally identical to SMRITI-Controlled-v2's
+validated \emph{direct} CONTRADICTS construction but are deliberately
+excluded from this benchmark's own ``intended'' bookkeeping --- exactly
+the situation the open-world candidate-precision measurement is in for
+SMRITI-Controlled-v2's real out-of-manifest candidates. That the
+resolver classifies this deliberately-excluded-but-genuine population
+correctly 100\% of the time given retrieval is evidence (not proof, since
+this is one distractor construction, not SMRITI-Controlled-v2's actual
+out-of-manifest candidates themselves) that a real, uncontrolled
+out-of-manifest CONTRADICTS call is more likely to be a genuine
+contradiction the corpus never catalogued than a resolver error. The 22
+of 300 (7.3\%) not retrieved are retrieval misses, not classification
+errors --- consistent with retrieval, not classification, being the more
+common failure mode throughout this paper (\S\ref{sec:error-analysis},
+E1).
+
+\textbf{(3) The guaranteed-neutral distractors were almost never even
+retrieved as candidates: 1 of 300 (0.3\%).} This falsifies this
+benchmark's own design assumption that same-entity, different-attribute
+pairs sharing a sentence template and attribute vocabulary would tempt
+the embedding-based retrieval gate the way a genuine CONTRADICTS pair
+does. In fact the opposite is true: retrieval treats these pairs as
+essentially unrelated candidates almost every time, and the single pair
+that \emph{was} retrieved was correctly classified NEUTRAL, not
+CONTRADICTS. We report this as a negative result about our own
+benchmark construction, not a resolver finding: two orthogonal attributes
+of the same entity, in this template family, apparently do not produce
+embeddings close enough to compete for a retrieval slot, so this bucket
+does not exercise the classification stage the way \S\ref{sec:hard-neutral}'s
+same-entity multi-attribute NEUTRAL pairs do (those use two
+\emph{compatible features of the same kind}, e.g.\ two caching
+mechanisms, rather than two orthogonal attribute \emph{categories} as
+here, and are retrieved at 100\% on TEST with a real, substantial
+misclassification rate --- E7 remains the correct place to look for the
+relatedness gate's genuine multi-attribute weakness, not this bucket).
+
+\input{generated/closed_world_five_way_table.tex}
+
+\textbf{(4) Full 5-way evaluation across all 900 labeled pairs (P1-D,
+audit round) shows the same CONTRADICTS strength, comparable
+SUPPORTS/REFINES performance, and confirms NEUTRAL's near-zero recall is
+a retrieval, not classification, failure.} 5-way accuracy is 55.2\% and
+macro-F1 is 0.6199 across all 900 pairs, treating both a non-retrieved
+pair and an explicit abstention as an error against that pair's gold
+label (never excluded from the denominator). Per-class, CONTRADICTS
+(P=98.9\%, R=91.8\%, F1=95.2\%), SUPPORTS (P=83.3\%, R=78.1\%, F1=80.7\%)
+and REFINES (P=90.0\%, R=87.1\%, F1=88.5\%) all perform well given
+retrieval. EQUIVALENT recall is low (29.0\%) with the confusion matrix
+showing its 22 misses split across NOT\_RETRIEVED (6), CONTRADICTS (5),
+SUPPORTS (5), REFINES (3), ABSTAINED (2), and NEUTRAL (1) --- a genuine
+classification weakness for this relation, not purely a retrieval one.
+NEUTRAL's 0.3\% recall is not a classification failure at all: the
+confusion matrix shows 331 of 332 NEUTRAL-labeled pairs were never even
+retrieved as a Phase 6 candidate (finding (3) above), so there was
+essentially nothing for the classifier to get right or wrong.
+
+We read (1)--(4) together as a genuine, if narrow, closed labeled-pair
+validation spanning all 5 relation classes: CONTRADICTS precision and F1
+both hold up against a fully known ground truth on the 900 designated
+pairs, the classification-stage confusion this benchmark surfaces
+(EQUIVALENT $\to$ CONTRADICTS) reproduces a confusion already documented
+independently, SUPPORTS and REFINES perform comparably well given
+retrieval, EQUIVALENT shows a real (if smaller-sample, $n=31$)
+classification weakness worth further construction work, and the one
+bucket that failed to exercise the system at all (guaranteed-neutral
+distractors) failed by being too easy for retrieval to reject, not too
+hard. This benchmark's SUPPORTS/REFINES/EQUIVALENT sample sizes ($n=32$,
+$n=31$, $n=31$) are far smaller than CONTRADICTS's ($n=474$), so those
+three classes' precision/recall/F1 here should be read as a
+first closed labeled-pair measurement, not a high-power one --- they
+still also rest primarily on SMRITI-Controlled-v2's own gold-pair-only
+numbers for statistical power. Per the terminology correction above,
+this benchmark does not establish true closed-\emph{candidate-universe}
+precision for any class, since 6{,}779 of the 7{,}293 candidates Phase 6
+actually scored within this benchmark's own document set carry no known
+label at all. Both are explicit scope limitations of
+SMRITI-ClosedWorld-v1, not oversights.

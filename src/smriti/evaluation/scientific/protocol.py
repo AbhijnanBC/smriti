@@ -31,7 +31,11 @@ EXPERIMENT_PROTOCOLS = {
             "evaluation/annotation/score.py from two independent LLM-derived "
             "reference annotation passes)",
             "2. Read claim_annotation.extraction_precision_on_agreed_subset "
-            "(fraction of the 298 annotator-agreed claims judged structurally valid)",
+            "(fraction of the 139 annotator-agreed claims judged structurally "
+            "valid, out of 174 sampled -- these counts are read from the "
+            "reference-results file at evaluation time, not hardcoded here; "
+            "this docstring names the CURRENT run's counts for a reader's "
+            "reference, not a frozen constant this protocol depends on)",
             "3. If the file or field is missing, return NOT_EVALUABLE — do not "
             "compute a substitute metric",
         ),
@@ -41,30 +45,57 @@ EXPERIMENT_PROTOCOLS = {
         acceptance_logic="precision >= 0.70",
         rollback_procedure="Return NOT_EVALUABLE if reference data absent; never default to a passing value",
         reviewer_notes="Recall is explicitly NOT_EVALUABLE under this protocol — it would require an annotator "
-                       "to enumerate every assertable claim in each source document, which this sampling "
-                       "protocol does not do. See paper Limitations.",
+        "to enumerate every assertable claim in each source document, which this sampling "
+        "protocol does not do. See paper Limitations.",
     ),
     "EXP-002": EvaluationProtocol(
         protocol_id="PROT-002",
         experiment_id="EXP-002",
+        # RECTIFIED (P0-C, "FINAL REVIEW" round): this protocol previously
+        # described a 4-class ontology (SUPPORTS/CONTRADICTS/REFINES/
+        # NEUTRAL) and "269 annotator-agreed relationship pairs" -- both
+        # stale. The ontology has carried a 5th class, EQUIVALENT, as a
+        # deliberate first-class addition since the bidirectional-NLI
+        # rewrite (paper \S sec:system), and the current frozen reference
+        # annotation (evaluation/annotation/results_summary.json) agrees
+        # on 196 pairs (228 sampled, 32 disputed/UNSURE-excluded), not
+        # 269. _run_relationship_resolution() itself was never actually
+        # bugged -- it already averages macro_f1 generically over
+        # whatever classes appear in smriti_per_class_prf1, so it already
+        # includes EQUIVALENT once present -- only this protocol's
+        # DESCRIPTION of what it does had drifted from what it actually
+        # does.
         execution_steps=(
             "1. Load evaluation/annotation/results_summary.json",
             "2. Read relationship_annotation.smriti_per_class_prf1 "
-            "(SUPPORTS/CONTRADICTS/REFINES/NEUTRAL precision/recall/F1 against "
-            "the 269 annotator-agreed relationship pairs)",
-            "3. Compute macro_f1 as the unweighted mean of the four per-class F1 scores",
+            "(SUPPORTS/CONTRADICTS/REFINES/EQUIVALENT/NEUTRAL precision/"
+            "recall/F1 against the 196 annotator-agreed relationship "
+            "pairs, excluding pairs either pass marked UNSURE -- "
+            "UNSURE maps to the resolver's ABSTAINED status, a "
+            "resolution outcome, never a 6th relation type to score "
+            "classification accuracy against)",
+            "3. Compute macro_f1 as the unweighted mean of the five per-class F1 scores",
             "4. Also surface contradiction_recall_on_known_pairs (recall on the "
-            "deliberately-planted hard-contradiction target pairs)",
+            "deliberately-planted hard-contradiction target pairs) and, "
+            "separately, the directional subset (direction_metrics: D1-D4 "
+            "over the pairs whose gold direction is determinate) -- "
+            "direction is evaluated separately from relation-type "
+            "classification, never folded into the same macro_f1",
         ),
         stopping_criteria="N/A — reference-file lookup",
         expected_runtime_seconds=0.1,
         failure_conditions=("macro_f1 < 0.60",),
         acceptance_logic="macro_f1 >= 0.60",
         rollback_procedure="Return NOT_EVALUABLE if reference data absent",
-        reviewer_notes="Known result as of the last reference-annotation run: macro-F1 is low, driven almost "
-                       "entirely by CONTRADICTS precision of ~3%. This experiment is expected to FAIL until "
-                       "the Phase 6 relatedness-gate + calibration + abstention redesign lands — a failing "
-                       "result here is the correct, honest outcome, not a bug in the experiment.",
+        reviewer_notes="Current result (N=196, kappa=0.726 inter-pass agreement): macro-F1 is well below "
+        "threshold, driven by CONTRADICTS precision/recall/F1 = 14.3%/22.2%/17.4% (support=9) "
+        "and REFINES recall collapsing to 2.3% after the strict entailment+specificity rewrite "
+        "retired the heuristic that used to inflate it (paper, Limitations section). This "
+        "experiment is EXPECTED to FAIL on real, rhetorically-phrased prose given the paper's "
+        "own extensively-documented findings (FEVER/SciFact transfer sections) that this "
+        "resolver's under-commitment pattern is not specific to SMRITI-Reference -- a failing "
+        "result here is the correct, honest, and already-disclosed outcome, not a bug in the "
+        "experiment or evidence the reference annotation is wrong.",
     ),
     "EXP-003": EvaluationProtocol(
         protocol_id="PROT-003",
@@ -84,9 +115,9 @@ EXPERIMENT_PROTOCOLS = {
         acceptance_logic="contradiction_violation_rate <= 0.0",
         rollback_procedure="Return NOT_EVALUABLE if the graph object is unreachable",
         reviewer_notes="This claim is about the STRUCTURAL invariant only — it says nothing about whether "
-                       "individual CONTRADICTS predictions are semantically correct (that is RC2's concern). "
-                       "A high singleton_rate is a real, separately-reported finding about over-fragmentation, "
-                       "not a failure of this experiment.",
+        "individual CONTRADICTS predictions are semantically correct (that is RC2's concern). "
+        "A high singleton_rate is a real, separately-reported finding about over-fragmentation, "
+        "not a failure of this experiment.",
     ),
     "EXP-004": EvaluationProtocol(
         protocol_id="PROT-004",
@@ -106,8 +137,8 @@ EXPERIMENT_PROTOCOLS = {
         acceptance_logic="monotonicity_pass_rate >= 0.90",
         rollback_procedure="Return NOT_EVALUABLE if evaluation/scientific/metamorphic.py does not exist yet",
         reviewer_notes="Requires zero external ground truth — the expected relation (direction of change) is "
-                       "known from the reliability model's own design, so this is a legitimate no-human-"
-                       "annotation evaluation strategy.",
+        "known from the reliability model's own design, so this is a legitimate no-human-"
+        "annotation evaluation strategy.",
     ),
     "EXP-005": EvaluationProtocol(
         protocol_id="PROT-005",
@@ -128,8 +159,8 @@ EXPERIMENT_PROTOCOLS = {
         acceptance_logic="reconstruction_exact_match_rate >= 1.0",
         rollback_procedure="Return NOT_EVALUABLE if evaluation/scientific/explainability_audit.py does not exist yet",
         reviewer_notes="This is a self-consistency check on SMRITI's own audit trail (does the math the "
-                       "system claims to have done actually match the math it recorded?), not an external "
-                       "validity claim about whether the reliability MODEL itself is correct.",
+        "system claims to have done actually match the math it recorded?), not an external "
+        "validity claim about whether the reliability MODEL itself is correct.",
     ),
 }
 

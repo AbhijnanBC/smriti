@@ -12,14 +12,13 @@ wiring (as happened during this session with a Phase 7 partitioning bug
 and a Phase 6/7 resume-state bug in PipelineRunner) could only be caught by
 manually running the CLI against a real vault.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
-
 from smriti.core.models import CertificationLevel
-
 
 DOCS = {
     "topic_a.md": (

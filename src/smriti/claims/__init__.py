@@ -24,51 +24,50 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+
 import structlog
 
+from smriti.claims.annotation import AssertionAnnotator
+from smriti.claims.boundaries import BoundaryDetector
+from smriti.claims.builder import build_claim
+from smriti.claims.classifier import AssertionClassifier
+from smriti.claims.degradation import DegradationHandler
+from smriti.claims.parser import BaseParser, SpaCyParser  # <-- REPLACED
+from smriti.claims.statistics import Phase4StatsCollector
+from smriti.claims.structure import StructureExtractor
+from smriti.claims.validator import validate_claims
 from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
+    AssertionType,
     Claim,
     ClaimWarning,
-    ExtractionMode,
-    AssertionType,
     DiscardedCandidate,
     Phase4Stats,
     SemanticSentence,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import Phase4Error, ClaimValidationError
-
-from smriti.claims.parser import BaseParser, SpaCyParser  # <-- REPLACED
-from smriti.claims.classifier import AssertionClassifier
-from smriti.claims.boundaries import BoundaryDetector
-from smriti.claims.structure import StructureExtractor
-from smriti.claims.annotation import AssertionAnnotator
-from smriti.claims.degradation import DegradationHandler
-from smriti.claims.builder import build_claim
-from smriti.claims.validator import validate_claims
-from smriti.claims.statistics import Phase4StatsCollector
+from smriti.exceptions import ClaimValidationError
 
 logger = structlog.get_logger(__name__)
 
 
 # ── Public result types ────────────────────────────────────────────────────────
 
+
 @dataclass
 class SentenceExtractionResult:
     """Phase 4 result for a single SemanticSentence."""
+
     sentence_id: str
-    claims: List[Claim]
-    warnings: List[ClaimWarning]
-    error: Optional[str] = None
+    claims: list[Claim]
+    warnings: list[ClaimWarning]
+    error: str | None = None
     # NEW: sentences classified as something other than DECLARATIVE_ASSERTION
     # never reach Claim construction, but are never silently dropped either —
     # they are recorded here in full (text + classified type + reason).
-    discarded_candidates: List[DiscardedCandidate] = field(default_factory=list)
+    discarded_candidates: list[DiscardedCandidate] = field(default_factory=list)
 
     @property
     def claim_count(self) -> int:
@@ -81,13 +80,14 @@ class Phase4Result:
     Complete output of Phase 4 — all claims extracted from all sentences.
     This is what Phase 5 (Embedding) receives.
     """
-    sentence_results: List[SentenceExtractionResult]
+
+    sentence_results: list[SentenceExtractionResult]
     stats: Phase4Stats
     run_id: str
-    manifest_path: Optional[Path] = None
+    manifest_path: Path | None = None
 
     @property
-    def all_claims(self) -> List[Claim]:
+    def all_claims(self) -> list[Claim]:
         """Flat list of all claims across all sentences."""
         result = []
         for sr in self.sentence_results:
@@ -95,7 +95,7 @@ class Phase4Result:
         return result
 
     @property
-    def all_discarded_candidates(self) -> List[DiscardedCandidate]:
+    def all_discarded_candidates(self) -> list[DiscardedCandidate]:
         """
         Flat list of every sentence that was classified as something other
         than DECLARATIVE_ASSERTION, across all sentences. Nothing filtered
@@ -129,16 +129,18 @@ class Phase4Result:
         """
         records = []
         for dc in self.all_discarded_candidates:
-            records.append({
-                "sentence_id":       dc.sentence_id,
-                "document_id":       dc.document_id,
-                "text":              dc.text,
-                "assertion_type":    dc.assertion_type.value,
-                "origin_block_type": dc.origin_block_type,
-                "reason":            dc.reason,
-                "source_path":       str(dc.source_path),
-                "context":           dc.context,
-            })
+            records.append(
+                {
+                    "sentence_id": dc.sentence_id,
+                    "document_id": dc.document_id,
+                    "text": dc.text,
+                    "assertion_type": dc.assertion_type.value,
+                    "origin_block_type": dc.origin_block_type,
+                    "reason": dc.reason,
+                    "source_path": str(dc.source_path),
+                    "context": dc.context,
+                }
+            )
         return json.dumps(records, indent=2, ensure_ascii=False)
 
     def to_dataset_json(self) -> str:
@@ -149,39 +151,39 @@ class Phase4Result:
         records = []
         for claim in self.all_claims:
             record = {
-                "claim_id":         claim.claim_id,
-                "sentence_id":      claim.sentence_id,
-                "document_id":      claim.document_id,
-                "text":             claim.text,
-                "content_hash":     claim.content_hash,          # NEW
-                "context":          claim.context,
-                "source_path":      str(claim.source_path),
-                "extraction_mode":  claim.extraction_mode.value,
-                "schema_version":   claim.schema_version,
-                "rule_version":     claim.rule_version,          # NEW
-                "is_negated":       claim.assertion_metadata.is_negated,
-                "modality":         claim.assertion_metadata.modality.value,
-                "is_conditional":   claim.assertion_metadata.is_conditional,
-                "is_comparative":   claim.assertion_metadata.is_comparative,
-                "is_attributed":    claim.assertion_metadata.is_attributed,
-                "attributed_to":    claim.assertion_metadata.attributed_to,
+                "claim_id": claim.claim_id,
+                "sentence_id": claim.sentence_id,
+                "document_id": claim.document_id,
+                "text": claim.text,
+                "content_hash": claim.content_hash,  # NEW
+                "context": claim.context,
+                "source_path": str(claim.source_path),
+                "extraction_mode": claim.extraction_mode.value,
+                "schema_version": claim.schema_version,
+                "rule_version": claim.rule_version,  # NEW
+                "is_negated": claim.assertion_metadata.is_negated,
+                "modality": claim.assertion_metadata.modality.value,
+                "is_conditional": claim.assertion_metadata.is_conditional,
+                "is_comparative": claim.assertion_metadata.is_comparative,
+                "is_attributed": claim.assertion_metadata.is_attributed,
+                "attributed_to": claim.assertion_metadata.attributed_to,
                 "provenance": {
-                    "sentence_id":       claim.provenance.sentence_id,
-                    "document_id":       claim.provenance.document_id,
-                    "source_path":       str(claim.provenance.source_path),
-                    "sentence_context":  claim.provenance.sentence_context,
+                    "sentence_id": claim.provenance.sentence_id,
+                    "document_id": claim.provenance.document_id,
+                    "source_path": str(claim.provenance.source_path),
+                    "sentence_context": claim.provenance.sentence_context,
                     "sentence_position": claim.provenance.sentence_position,
-                    "source_char_spans": list(claim.provenance.source_char_spans),   # NEW
-                    "source_token_ids":  list(claim.provenance.source_token_ids),    # NEW
-                    "reconstruction_rule": claim.provenance.reconstruction_rule,      # NEW
+                    "source_char_spans": list(claim.provenance.source_char_spans),  # NEW
+                    "source_token_ids": list(claim.provenance.source_token_ids),  # NEW
+                    "reconstruction_rule": claim.provenance.reconstruction_rule,  # NEW
                 },
             }
             # Include SVO if available
             if claim.structured_assertion:
                 record["svo"] = {
-                    "subject":   claim.structured_assertion.subject,
+                    "subject": claim.structured_assertion.subject,
                     "predicate": claim.structured_assertion.predicate,
-                    "object":    claim.structured_assertion.object,
+                    "object": claim.structured_assertion.object,
                 }
             else:
                 record["svo"] = None
@@ -193,6 +195,7 @@ class Phase4Result:
 
 # ── Core public function ───────────────────────────────────────────────────────
 
+
 def extract_claims_from_sentence(
     sentence: SemanticSentence,
     parser: BaseParser,
@@ -203,7 +206,7 @@ def extract_claims_from_sentence(
     stats_collector: Phase4StatsCollector,
     max_claims: int,
     global_seen_ids: dict,
-    classifier: Optional[AssertionClassifier] = None,
+    classifier: AssertionClassifier | None = None,
 ) -> SentenceExtractionResult:
     """
     Extract claims from a single SemanticSentence.
@@ -224,7 +227,7 @@ def extract_claims_from_sentence(
         SentenceExtractionResult (never raises — errors are captured).
     """
     sentence_id = sentence.sentence_id
-    all_warnings: List[ClaimWarning] = []
+    all_warnings: list[ClaimWarning] = []
     classifier = classifier or AssertionClassifier()
 
     try:
@@ -271,7 +274,7 @@ def extract_claims_from_sentence(
             candidates = candidates[:max_claims]
             all_warnings.append(ClaimWarning.CLM_EXCEEDED_MAX_CLAIMS)
 
-        claims: List[Claim] = []
+        claims: list[Claim] = []
 
         for candidate in candidates:
             # Stage 4: Structured Extraction
@@ -298,7 +301,9 @@ def extract_claims_from_sentence(
             claims.append(claim)
 
         # Validate the complete claim collection
-        validated_claims, val_warnings = validate_claims(claims, sentence.document_id, global_seen_ids)
+        validated_claims, val_warnings = validate_claims(
+            claims, sentence.document_id, global_seen_ids
+        )
         all_warnings.extend(val_warnings)
         stats_collector.record_warnings(all_warnings)
 
@@ -337,7 +342,7 @@ def extract_claims_from_sentence(
 
 
 def extract_claims(
-    semantic_sentences: List[SemanticSentence],
+    semantic_sentences: list[SemanticSentence],
     run_id: str,
     manifest_manager: ManifestManager,
     state_manager: StateManager,
@@ -377,7 +382,7 @@ def extract_claims(
     degradation_handler = DegradationHandler()
     stats_collector = Phase4StatsCollector()
 
-    sentence_results: List[SentenceExtractionResult] = []
+    sentence_results: list[SentenceExtractionResult] = []
     global_seen_ids: dict = {}
 
     with Timer("phase4_claim_construction"):
@@ -405,7 +410,9 @@ def extract_claims(
     )
 
     # Write dataset artifact for Phase 5
-    phase_dir = manifest_manager.run_dir / "phase4"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+    phase_dir = (
+        manifest_manager.run_dir / "phase4"
+    )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
     dataset_path = phase_dir / "dataset.json"
     dataset_path.write_text(phase4_result.to_dataset_json(), encoding="utf-8")

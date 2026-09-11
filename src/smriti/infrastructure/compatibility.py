@@ -12,9 +12,7 @@ with support for semantic versioning and wildcard 'x' (e.g., "1.x").
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-from typing import Dict, Tuple, Optional
 
 from smriti.exceptions import GovernanceException
 
@@ -22,8 +20,9 @@ from smriti.exceptions import GovernanceException
 @dataclass(frozen=True)
 class VersionContract:
     """Defines the allowed version range for a target component."""
-    minimum_version: str   # e.g., "1.0", "2.0.1"
-    maximum_version: str   # e.g., "3.0", "1.x" (wildcard allowed)
+
+    minimum_version: str  # e.g., "1.0", "2.0.1"
+    maximum_version: str  # e.g., "3.0", "1.x" (wildcard allowed)
 
 
 class CompatibilityMatrix:
@@ -37,13 +36,12 @@ class CompatibilityMatrix:
         Phase11GovernanceError: if the target version falls outside the allowed range.
     """
 
-    _CONTRACTS: Dict[Tuple[str, str], VersionContract] = {
+    _CONTRACTS: dict[tuple[str, str], VersionContract] = {
         # Phase 11 components
-        ("Phase11", "Manifest"):      VersionContract("1.0", "2.0"),
-        ("Phase11", "KnowledgeAPI"):  VersionContract("1.0", "1.x"),
-
+        ("Phase11", "Manifest"): VersionContract("1.0", "2.0"),
+        ("Phase11", "KnowledgeAPI"): VersionContract("1.0", "1.x"),
         # Phase 12 → Phase 11
-        ("Phase12", "Phase11"):       VersionContract("11.0", "11.x"),
+        ("Phase12", "Phase11"): VersionContract("11.0", "11.x"),
     }
 
     @classmethod
@@ -91,11 +89,11 @@ class CompatibilityMatrix:
         max_clean = cls._clean_version(maximum)
 
         # If maximum is a wildcard, expand it to the greatest allowed version
+        max_expanded: tuple[int, ...] | None
         if max_clean.endswith(".x"):
             max_base = max_clean[:-2]  # remove ".x"
             # e.g. "1.x" -> maximum 1.999.999 (practically infinite)
             max_expanded = cls._expand_wildcard(max_base)
-            max_clean = max_expanded
         else:
             max_expanded = cls._parse_version(max_clean)
 
@@ -114,7 +112,7 @@ class CompatibilityMatrix:
         return version.strip().lstrip("v")
 
     @classmethod
-    def _parse_version(cls, version: str) -> Optional[Tuple[int, ...]]:
+    def _parse_version(cls, version: str) -> tuple[int, ...] | None:
         """
         Parse a version string into a tuple of integers.
         Returns None if the string is malformed.
@@ -132,7 +130,7 @@ class CompatibilityMatrix:
             return None
 
     @classmethod
-    def _expand_wildcard(cls, base: str) -> Tuple[int, ...]:
+    def _expand_wildcard(cls, base: str) -> tuple[int, ...]:
         """
         Expand a base version (e.g., "1.2") to a nearly infinite tuple:
         (major, minor, 999999) for up to three levels.

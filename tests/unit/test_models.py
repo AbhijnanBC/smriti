@@ -1,22 +1,31 @@
 """Test data models."""
 
 import hashlib
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from smriti.core.models import (
-    Claim, Contradiction, ContradictionType,
-    Document, FileFormat, SemanticSentence, Embedding,
-    Topic, ManifestEntry,
-    AssertionMetadata, ClaimProvenance, ExtractionMode,
-    SourceDocument, RawExtractionResult, TextStatistics, ExtractionMethod,
+    AssertionMetadata,
+    Claim,
+    ClaimProvenance,
+    Contradiction,
+    ContradictionType,
+    ExtractionMethod,
+    ExtractionMode,
+    FileFormat,
+    ManifestEntry,
+    RawExtractionResult,
+    SourceDocument,
+    Topic,
 )
 from smriti.parsing.builder import build_document
 from smriti.parsing.statistics import compute_statistics
 
 
-def _make_claim(claim_id: str, text: str, document_id: str = "note", sentence_position: int = 0) -> Claim:
+def _make_claim(
+    claim_id: str, text: str, document_id: str = "note", sentence_position: int = 0
+) -> Claim:
     """
     Build a Claim using the current (Phase 4) schema.
 
@@ -47,7 +56,9 @@ def _make_claim(claim_id: str, text: str, document_id: str = "note", sentence_po
 
 
 def test_claim_creation():
-    claim = _make_claim(claim_id="aaa111", text="Python is great", document_id="note", sentence_position=0)
+    claim = _make_claim(
+        claim_id="aaa111", text="Python is great", document_id="note", sentence_position=0
+    )
     assert claim.text == "Python is great"
     # Identity is now the explicit claim_id (assigned deterministically by
     # claims/builder.py from sentence_id+text+span_start), not a computed
@@ -100,7 +111,7 @@ def test_document_size_inferred():
         format=FileFormat.MARKDOWN,
         content_hash="a" * 64,
         size_bytes=len(raw_text.encode("utf-8")),
-        modified_at=datetime.now(tz=timezone.utc),
+        modified_at=datetime.now(tz=UTC),
     )
     extraction_result = RawExtractionResult(
         raw_text=raw_text,

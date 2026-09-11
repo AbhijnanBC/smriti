@@ -2,12 +2,13 @@
 Unit tests for claims/annotation.py.
 """
 
-import pytest
 from pathlib import Path
-from smriti.core.models import SemanticSentence, Modality, ExtractionMode
+
+import pytest
 from smriti.claims.annotation import AssertionAnnotator
 from smriti.claims.parser import SpaCyParser
 from smriti.claims.structure import StructureExtractor
+from smriti.core.models import Modality, SemanticSentence
 
 
 @pytest.fixture(scope="module")
@@ -30,16 +31,26 @@ def extractor():
 
 def make_structured_candidate(parser, extractor, text):
     from smriti.claims.models import AssertionCandidate
+
     sentence = SemanticSentence(
-        sentence_id="s001", document_id="d001", text=text,
-        context="", position=0, char_start=0, char_end=len(text),
-        source_path=Path("test.md"), origin_block_type="paragraph",
+        sentence_id="s001",
+        document_id="d001",
+        text=text,
+        context="",
+        position=0,
+        char_start=0,
+        char_end=len(text),
+        source_path=Path("test.md"),
+        origin_block_type="paragraph",
         schema_version="3.0",
     )
     parsed = parser.parse(sentence)
     candidate = AssertionCandidate(
-        text=text, span_start=0, span_end=len(text),
-        source=parsed, boundary_reason="test",
+        text=text,
+        span_start=0,
+        span_end=len(text),
+        source=parsed,
+        boundary_reason="test",
     )
     return extractor.extract(candidate, parser)
 
@@ -74,8 +85,7 @@ def test_modality_certain(parser, extractor, annotator):
 
 def test_conditional_detected(parser, extractor, annotator):
     """'If X is installed, Y works' → is_conditional=True."""
-    sc = make_structured_candidate(parser, extractor,
-                                   "If CUDA is installed, PyTorch uses the GPU.")
+    sc = make_structured_candidate(parser, extractor, "If CUDA is installed, PyTorch uses the GPU.")
     annotated = annotator.annotate(sc)
     assert annotated.semantic_metadata.is_conditional is True
 
@@ -92,4 +102,4 @@ def test_annotation_never_raises(parser, extractor, annotator):
     """Annotation must never raise regardless of input."""
     sc = make_structured_candidate(parser, extractor, "!!! weird ?? input !!!")
     annotated = annotator.annotate(sc)
-    assert annotated is not None    
+    assert annotated is not None

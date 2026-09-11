@@ -24,11 +24,14 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from smriti.core.models import (
-    ExperimentDesign, ExperimentResult, ExperimentLifecycleState,
-    VerificationStatus, ScientificDomain, RelationshipType,
+    ExperimentDesign,
+    ExperimentLifecycleState,
+    ExperimentResult,
+    RelationshipType,
+    ScientificDomain,
+    VerificationStatus,
 )
 
 # Where evaluation/annotation/score.py writes the LLM-derived reference
@@ -37,7 +40,7 @@ from smriti.core.models import (
 _REFERENCE_RESULTS_PATH = Path("evaluation/annotation/results_summary.json")
 
 
-EXPERIMENT_REGISTRY: List[ExperimentDesign] = [
+EXPERIMENT_REGISTRY: list[ExperimentDesign] = [
     ExperimentDesign(
         experiment_id="EXP-001",
         scientific_domain=ScientificDomain.KNOWLEDGE_EXTRACTION,
@@ -56,7 +59,11 @@ EXPERIMENT_REGISTRY: List[ExperimentDesign] = [
         scientific_domain=ScientificDomain.RELATIONSHIP_RESOLUTION,
         hypothesis="Relationship classification achieves >= 0.60 macro-F1 against an independent reference annotation",
         independent_variables=("nli_model", "candidate_threshold", "decision_margin"),
-        dependent_variables=("macro_f1", "contradiction_precision", "contradiction_recall_on_known_pairs"),
+        dependent_variables=(
+            "macro_f1",
+            "contradiction_precision",
+            "contradiction_recall_on_known_pairs",
+        ),
         controlled_variables=("dataset", "random_seed", "nli_model"),
         confounding_variables=("claim_length", "semantic_ambiguity", "cross_domain_pair_rate"),
         ground_truth_version="llm_reference_annotation_v1",
@@ -74,6 +81,10 @@ EXPERIMENT_REGISTRY: List[ExperimentDesign] = [
         confounding_variables=("claim_length", "semantic_ambiguity"),
         ground_truth_version="structural_invariant_direct_verification",
         acceptance_criteria={"contradiction_violation_rate": 0.0},
+        # RECTIFIED (P0-A): contradiction_violation_rate is lower-is-better
+        # (0.0 is a maximum, not a minimum) -- see ExperimentDesign's own
+        # docstring for why this field exists and what bug it fixes.
+        acceptance_directions={"contradiction_violation_rate": "lower_is_better"},
         random_seed=42,
         lifecycle_state=ExperimentLifecycleState.REGISTERED,
     ),
@@ -106,11 +117,11 @@ EXPERIMENT_REGISTRY: List[ExperimentDesign] = [
 ]
 
 
-def get_experiment(experiment_id: str) -> Optional[ExperimentDesign]:
+def get_experiment(experiment_id: str) -> ExperimentDesign | None:
     return next((e for e in EXPERIMENT_REGISTRY if e.experiment_id == experiment_id), None)
 
 
-def _load_reference_results() -> Optional[Dict]:
+def _load_reference_results() -> dict | None:
     """Load the LLM-derived reference annotation scoring results, if present."""
     if not _REFERENCE_RESULTS_PATH.exists():
         return None
@@ -144,7 +155,11 @@ def run_experiment(
     try:
         metrics, raw_outputs, status = _execute_domain(experiment, knowledge_api)
         if status is None:
-            status = _evaluate_acceptance(metrics, experiment.acceptance_criteria)
+            status = _evaluate_acceptance(
+                metrics,
+                experiment.acceptance_criteria,
+                experiment.acceptance_directions,
+            )
     except Exception as e:
         metrics, raw_outputs = {}, {"error": str(e)}
         status = VerificationStatus.FAILED
@@ -179,16 +194,43 @@ def _not_evaluable(reason: str):
     return {}, {"reason": reason}, VerificationStatus.NOT_EVALUABLE
 
 
-def _evaluate_acceptance(metrics: Dict, criteria: Dict) -> VerificationStatus:
+def _evaluate_acceptance(
+    metrics: dict,
+    criteria: dict,
+    directions: dict[str, str] | None = None,
+) -> VerificationStatus:
+    """
+    RECTIFIED (P0-A, "FINAL REVIEW" round): previously assumed every
+    metric is higher-is-better (`metrics[metric] < threshold` -> FAILED).
+    A lower-is-better metric (e.g. EXP-003's contradiction_violation_rate,
+    threshold 0.0 as a MAXIMUM) evaluated backwards under that rule: 0.10
+    < 0.0 is False, so it fell through to PASSED for a genuine violation.
+    `directions` (metric -> "higher_is_better" | "lower_is_better",
+    default "higher_is_better" when a metric is absent) makes the
+    direction explicit per metric instead of hardcoding it here.
+    """
+    directions = directions or {}
     for metric, threshold in criteria.items():
         if metric not in metrics:
             return VerificationStatus.WARNING
-        if metrics[metric] < threshold:
-            return VerificationStatus.FAILED
+        direction = directions.get(metric, "higher_is_better")
+        value = metrics[metric]
+        if direction == "lower_is_better":
+            if value > threshold:
+                return VerificationStatus.FAILED
+        elif direction == "higher_is_better":
+            if value < threshold:
+                return VerificationStatus.FAILED
+        else:
+            raise ValueError(
+                f"Unknown acceptance direction {direction!r} for metric {metric!r} "
+                f"-- must be 'higher_is_better' or 'lower_is_better'."
+            )
     return VerificationStatus.PASSED
 
 
 # ── EXP-001 (RC1): Claim extraction precision against reference annotation ──
+
 
 def _run_extraction():
     ref = _load_reference_results()
@@ -202,7 +244,9 @@ def _run_extraction():
     ca = ref["claim_annotation"]
     precision = ca.get("extraction_precision_on_agreed_subset")
     if precision is None:
-        return _not_evaluable("Reference results file exists but has no extraction_precision_on_agreed_subset field.")
+        return _not_evaluable(
+            "Reference results file exists but has no extraction_precision_on_agreed_subset field."
+        )
     metrics = {"precision": float(precision)}
     raw_outputs = {
         "n_sampled": ca.get("n_sampled"),
@@ -210,14 +254,15 @@ def _run_extraction():
         "n_disputed_validity": ca.get("n_disputed_validity"),
         "inter_pass_kappa_validity": ca.get("inter_pass_kappa_validity"),
         "recall": "NOT_EVALUABLE -- measuring recall requires an annotator to "
-                  "enumerate every assertable claim in each source document "
-                  "independent of what SMRITI extracted; this sample-based "
-                  "annotation protocol does not do that (see paper Limitations).",
+        "enumerate every assertable claim in each source document "
+        "independent of what SMRITI extracted; this sample-based "
+        "annotation protocol does not do that (see paper Limitations).",
     }
     return metrics, raw_outputs, None
 
 
 # ── EXP-002 (RC2): Relationship classification macro-F1 ─────────────────────
+
 
 def _run_relationship_resolution():
     ref = _load_reference_results()
@@ -229,24 +274,32 @@ def _run_relationship_resolution():
     ra = ref["relationship_annotation"]
     per_class = ra.get("smriti_per_class_prf1", {})
     if not per_class:
-        return _not_evaluable("Reference results file exists but has no smriti_per_class_prf1 field.")
+        return _not_evaluable(
+            "Reference results file exists but has no smriti_per_class_prf1 field."
+        )
     f1s = [v["f1"] for v in per_class.values() if "f1" in v]
     macro_f1 = sum(f1s) / len(f1s) if f1s else 0.0
     metrics = {
         "macro_f1": round(macro_f1, 4),
         "contradiction_precision": per_class.get("CONTRADICTS", {}).get("precision", 0.0),
-        "contradiction_recall_on_known_pairs": ra.get("smriti_recall_on_known_hard_contradiction_pairs") or 0.0,
+        "contradiction_recall_on_known_pairs": ra.get(
+            "smriti_recall_on_known_hard_contradiction_pairs"
+        )
+        or 0.0,
     }
     raw_outputs = {
         "per_class_prf1": per_class,
         "inter_pass_kappa": ra.get("inter_pass_kappa"),
         "n_agreed_excl_unsure": ra.get("n_agreed_excl_unsure"),
-        "n_known_hard_contradiction_pairs_in_agreed_gold": ra.get("n_known_hard_contradiction_pairs_in_agreed_gold"),
+        "n_known_hard_contradiction_pairs_in_agreed_gold": ra.get(
+            "n_known_hard_contradiction_pairs_in_agreed_gold"
+        ),
     }
     return metrics, raw_outputs, None
 
 
 # ── EXP-003 (RC3): Direct, independent re-verification of the partition invariant ──
+
 
 def _run_graph_partitioning(api):
     """
@@ -283,10 +336,12 @@ def _run_graph_partitioning(api):
         if src_pid is not None and src_pid == tgt_pid:
             violations.append(edge_id)
 
-    n_contradiction_edges = sum(1 for e in edges.values() if e.relationship_type == RelationshipType.CONTRADICTS)
+    n_contradiction_edges = sum(
+        1 for e in edges.values() if e.relationship_type == RelationshipType.CONTRADICTS
+    )
     violation_rate = len(violations) / max(1, n_contradiction_edges)
 
-    partition_sizes: Dict[str, int] = {}
+    partition_sizes: dict[str, int] = {}
     for n in nodes.values():
         pid = n.annotations.partition_id if n.annotations else None
         if pid:
@@ -307,14 +362,15 @@ def _run_graph_partitioning(api):
         "n_partitions": len(partition_sizes),
         "n_singleton_partitions": n_singleton,
         "note": "singleton_rate and partition_count are DESCRIPTIVE statistics "
-                "about graph fragmentation, not pass/fail criteria on their own "
-                "-- high fragmentation is a real finding reported in the paper's "
-                "error analysis, not a violation of this claim.",
+        "about graph fragmentation, not pass/fail criteria on their own "
+        "-- high fragmentation is a real finding reported in the paper's "
+        "error analysis, not a violation of this claim.",
     }
     return metrics, raw_outputs, None
 
 
 # ── EXP-004 (RC4): Reliability metamorphic tests ─────────────────────────────
+
 
 def _run_reliability_metamorphic(api):
     try:
@@ -330,6 +386,7 @@ def _run_reliability_metamorphic(api):
 
 
 # ── EXP-005 (RC5): Explainability reconstruction test ────────────────────────
+
 
 def _run_explainability_reconstruction(api):
     try:

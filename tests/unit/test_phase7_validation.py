@@ -1,9 +1,13 @@
 """Unit tests for evolution/validation.py."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 from smriti.core.models import (
-    ClaimNode, RelationshipEdge, RelationshipType, RelationshipDirection, SemanticRole,
+    ClaimNode,
+    RelationshipDirection,
+    RelationshipEdge,
+    RelationshipType,
 )
 from smriti.evolution.networkx_backend import NetworkXBackend
 from smriti.evolution.validation import validate_graph_structure
@@ -12,17 +16,26 @@ from smriti.exceptions import GraphValidationError
 
 def make_node(nid):
     return ClaimNode(
-        node_id=nid, claim_id=nid, claim_text=f"Claim {nid}",
-        context="", source_path=Path("test.md"), document_id="d001",
+        node_id=nid,
+        claim_id=nid,
+        claim_text=f"Claim {nid}",
+        context="",
+        source_path=Path("test.md"),
+        document_id="d001",
     )
 
 
 def make_edge(eid, src, tgt, rtype=RelationshipType.CONTRADICTS):
     return RelationshipEdge(
-        edge_id=eid, source_node_id=src, target_node_id=tgt,
-        relationship_type=rtype, direction=RelationshipDirection.SYMMETRIC,
-        calibrated_confidence=0.88, cosine_similarity=0.85,
-        nli_confidence=0.88, candidate_rank=1,
+        edge_id=eid,
+        source_node_id=src,
+        target_node_id=tgt,
+        relationship_type=rtype,
+        direction=RelationshipDirection.SYMMETRIC,
+        calibrated_confidence=0.88,
+        cosine_similarity=0.85,
+        nli_confidence=0.88,
+        candidate_rank=1,
     )
 
 
@@ -61,8 +74,12 @@ def test_unknown_type_in_edge_raises():
 def test_empty_claim_text_raises():
     backend = NetworkXBackend()
     bad_node = ClaimNode(
-        node_id="c001", claim_id="c001", claim_text="",
-        context="", source_path=Path("test.md"), document_id="d001",
+        node_id="c001",
+        claim_id="c001",
+        claim_text="",
+        context="",
+        source_path=Path("test.md"),
+        document_id="d001",
     )
     nodes = {"c001": bad_node}
     backend.add_node("c001")

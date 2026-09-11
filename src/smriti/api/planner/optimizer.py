@@ -20,12 +20,13 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List
-from urllib import request
 import structlog
-
 from smriti.api.planner.plan import (
-    LogicalPlan, PhysicalPlan, ExecutionStep, QueryCost, ExecutionStrategy,
+    ExecutionStep,
+    ExecutionStrategy,
+    LogicalPlan,
+    PhysicalPlan,
+    QueryCost,
 )
 
 logger = structlog.get_logger(__name__)
@@ -56,7 +57,7 @@ class QueryOptimizer:
             projection_level=logical.projection_level,
         )
 
-    def _build_steps(self, logical: LogicalPlan, request) -> List[ExecutionStep]:
+    def _build_steps(self, logical: LogicalPlan, request) -> list[ExecutionStep]:
         """Build execution steps from logical plan and request."""
         strategy = logical.strategy
 
@@ -79,50 +80,58 @@ class QueryOptimizer:
             if strategy == ExecutionStrategy.INDEXED_FILTER and self._index_selector and request:
                 predicates = getattr(request, "predicates", [])
                 best_field = self._index_selector.select_best(predicates)
-    
+
                 if best_field:
                     idx_name = self._index_selector.get_index_name(best_field)
                     # Find the predicate operator for the step parameters
                     best_pred = next(p for p in predicates if p.field == best_field)
-        
-                    steps.append(ExecutionStep(
-                        step_id=step_id,
-                        description=f"Index scan: {best_field} via {idx_name}",
-                        strategy=ExecutionStrategy.INDEXED_FILTER,
-                        index_name=idx_name,
-                        parameters={"field": best_field, "operator": best_pred.operator.value},
-                ))
+
+                    steps.append(
+                        ExecutionStep(
+                            step_id=step_id,
+                            description=f"Index scan: {best_field} via {idx_name}",
+                            strategy=ExecutionStrategy.INDEXED_FILTER,
+                            index_name=idx_name,
+                            parameters={"field": best_field, "operator": best_pred.operator.value},
+                        )
+                    )
                 step_id += 1  # One index is enough for the initial narrowing
 
             # Predicate evaluation (remaining predicates)
-            steps.append(ExecutionStep(
-                step_id=step_id,
-                description=f"Apply {len(getattr(request, 'predicates', ()))} predicate(s)",
-                strategy=strategy,
-                parameters={},
-            ))
+            steps.append(
+                ExecutionStep(
+                    step_id=step_id,
+                    description=f"Apply {len(getattr(request, 'predicates', ()))} predicate(s)",
+                    strategy=strategy,
+                    parameters={},
+                )
+            )
             step_id += 1
 
             # Sort
             if request and hasattr(request, "sort"):
                 sort = request.sort
-                steps.append(ExecutionStep(
-                    step_id=step_id,
-                    description=f"Sort by {sort.field} {sort.order.value}",
-                    strategy=strategy,
-                    parameters={"sort_field": sort.field},
-                ))
+                steps.append(
+                    ExecutionStep(
+                        step_id=step_id,
+                        description=f"Sort by {sort.field} {sort.order.value}",
+                        strategy=strategy,
+                        parameters={"sort_field": sort.field},
+                    )
+                )
                 step_id += 1
 
             # Paginate
             if request and hasattr(request, "pagination"):
                 pag = request.pagination
-                steps.append(ExecutionStep(
-                    step_id=step_id,
-                    description=f"Paginate: limit={pag.limit}, offset={pag.offset}",
-                    strategy=strategy,
-                    parameters={"limit": pag.limit, "offset": pag.offset},
-                ))
+                steps.append(
+                    ExecutionStep(
+                        step_id=step_id,
+                        description=f"Paginate: limit={pag.limit}, offset={pag.offset}",
+                        strategy=strategy,
+                        parameters={"limit": pag.limit, "offset": pag.offset},
+                    )
+                )
 
             return steps
 
@@ -148,19 +157,18 @@ class QueryOptimizer:
             ]
 
         else:
-            return [
-                ExecutionStep(step_id=1, description="Execute", strategy=strategy)
-            ]
+            return [ExecutionStep(step_id=1, description="Execute", strategy=strategy)]
 
-    def _estimate_cost(self, logical: LogicalPlan, steps: List[ExecutionStep]) -> QueryCost:
+    def _estimate_cost(self, logical: LogicalPlan, steps: list[ExecutionStep]) -> QueryCost:
         """Estimate execution cost based on strategy and steps."""
         strategy = logical.strategy
         depth = None
         selectivity = 1.0
 
         if strategy == ExecutionStrategy.POINT_LOOKUP:
-            return QueryCost(strategy=strategy, estimated_rows=1,
-                             estimated_ms=0.1, cacheable=logical.cacheable)
+            return QueryCost(
+                strategy=strategy, estimated_rows=1, estimated_ms=0.1, cacheable=logical.cacheable
+            )
 
         elif strategy == ExecutionStrategy.INDEXED_FILTER:
             # Check if any step uses an index — reduce selectivity estimate
@@ -168,24 +176,43 @@ class QueryOptimizer:
                 if step.index_name:
                     selectivity = 0.2  # Index reduces scan to ~20% of rows
                     break
-            return QueryCost(strategy=strategy, estimated_rows=logical.estimated_rows,
-                             estimated_ms=2.0, cacheable=logical.cacheable,
-                             index_selectivity=selectivity)
+            return QueryCost(
+                strategy=strategy,
+                estimated_rows=logical.estimated_rows,
+                estimated_ms=2.0,
+                cacheable=logical.cacheable,
+                index_selectivity=selectivity,
+            )
 
         elif strategy == ExecutionStrategy.FULL_SCAN:
-            return QueryCost(strategy=strategy, estimated_rows=logical.estimated_rows,
-                             estimated_ms=10.0, cacheable=logical.cacheable)
+            return QueryCost(
+                strategy=strategy,
+                estimated_rows=logical.estimated_rows,
+                estimated_ms=10.0,
+                cacheable=logical.cacheable,
+            )
 
         elif strategy == ExecutionStrategy.GRAPH_TRAVERSAL:
             depth = next(
-                (s.parameters.get("max_depth", 2) for s in steps
-                 if s.strategy == ExecutionStrategy.GRAPH_TRAVERSAL), 2
+                (
+                    s.parameters.get("max_depth", 2)
+                    for s in steps
+                    if s.strategy == ExecutionStrategy.GRAPH_TRAVERSAL
+                ),
+                2,
             )
-            return QueryCost(strategy=strategy,
-                             estimated_rows=min(50, 2 ** depth),
-                             estimated_ms=10.0, cacheable=logical.cacheable,
-                             traversal_depth=depth)
+            return QueryCost(
+                strategy=strategy,
+                estimated_rows=min(50, 2**depth),
+                estimated_ms=10.0,
+                cacheable=logical.cacheable,
+                traversal_depth=depth,
+            )
 
         else:
-            return QueryCost(strategy=strategy, estimated_rows=logical.estimated_rows,
-                             estimated_ms=20.0, cacheable=logical.cacheable)
+            return QueryCost(
+                strategy=strategy,
+                estimated_rows=logical.estimated_rows,
+                estimated_ms=20.0,
+                cacheable=logical.cacheable,
+            )

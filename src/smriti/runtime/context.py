@@ -25,12 +25,13 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass(frozen=True)
 class TelemetryContext:
     """Telemetry configuration for this execution."""
+
     run_id: str
     max_buffer: int = 10_000
     enabled: bool = True
@@ -39,6 +40,7 @@ class TelemetryContext:
 @dataclass(frozen=True)
 class QualityContext:
     """Quality objective thresholds for this execution."""
+
     startup_target_seconds: float = 5.0
     query_p95_target_ms: float = 200.0
     memory_ceiling_mb: float = 512.0
@@ -66,13 +68,14 @@ class OperationalContext:
         scheduler.bind(ctx)
         health_coordinator.bind(ctx)
     """
+
     run_id: str
     start_timestamp: float
     telemetry_ctx: TelemetryContext
     quality_ctx: QualityContext
     # Mutable sub-components: referenced, not copied
     _resource_governor: Any = field(compare=False, hash=False, repr=False)
-    _config_raw: Dict[str, Any] = field(default_factory=dict, compare=False, hash=False)
+    _config_raw: dict[str, Any] = field(default_factory=dict, compare=False, hash=False)
     config_hash: str = ""
     env: str = "development"
     architecture_version: str = "11.0"
@@ -82,16 +85,17 @@ class OperationalContext:
         cls,
         run_id: str,
         resource_governor=None,
-        config_raw: Dict[str, Any] = None,
+        config_raw: dict[str, Any] | None = None,
         config_hash: str = "",
         env: str = "development",
         telemetry_max_buffer: int = 10_000,
         quality_startup_target: float = 5.0,
         quality_query_p95_ms: float = 200.0,
         quality_memory_mb: float = 512.0,
-    ) -> "OperationalContext":
+    ) -> OperationalContext:
         """Factory method: the canonical way to build an OperationalContext."""
         from smriti.infrastructure.resources import ResourceGovernor
+
         gov = resource_governor or ResourceGovernor()
         return cls(
             run_id=run_id,

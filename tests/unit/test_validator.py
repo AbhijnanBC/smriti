@@ -7,7 +7,6 @@ Validator has two jobs:
 """
 
 import pytest
-from pathlib import Path
 from smriti.discovery.validator import validate_directories, validate_file
 from smriti.exceptions import DiscoveryError
 
@@ -34,6 +33,7 @@ def unsupported_file(tmp_path):
 
 
 # ── validate_directories ──────────────────────────────────────────────────────
+
 
 def test_valid_directory_passes(tmp_path):
     """A valid existing directory must be returned."""
@@ -63,6 +63,7 @@ def test_empty_list_raises():
 
 
 # ── validate_file ─────────────────────────────────────────────────────────────
+
 
 def test_valid_markdown_passes(valid_md):
     """A valid non-empty .md file must pass validation."""

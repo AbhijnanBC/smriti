@@ -8,13 +8,12 @@ Views coordinated: ResultListView + ReliabilityView (detail + calibration)
 from __future__ import annotations
 
 import streamlit as st
-
 from smriti.core.models import EpistemicLens, WorkspaceProfile, WorkspaceType
+from smriti.dashboard.models.presentation import DTOTransformer
+from smriti.dashboard.views.reliability_view import ReliabilityView
+from smriti.dashboard.views.result_list_view import ResultListView
 from smriti.dashboard.workspaces.base import BaseWorkspace
 from smriti.dashboard.workspaces.context import WorkspaceContext
-from smriti.dashboard.models.presentation import DTOTransformer
-from smriti.dashboard.views.result_list_view import ResultListView
-from smriti.dashboard.views.reliability_view import ReliabilityView
 
 
 class ReliabilityWorkspace(BaseWorkspace):

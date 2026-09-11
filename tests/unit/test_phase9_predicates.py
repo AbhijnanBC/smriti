@@ -1,8 +1,7 @@
 """Unit tests for api/domain/predicates.py."""
 
-import pytest
-from smriti.api.domain.predicates import Predicate, Pagination, SortSpec
-from smriti.core.models import PredicateOperator, SortOrder
+from smriti.api.domain.predicates import Pagination, Predicate
+from smriti.core.models import PredicateOperator
 
 
 def test_predicate_eq():

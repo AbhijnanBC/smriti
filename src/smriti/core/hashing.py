@@ -6,7 +6,6 @@ Detects which notes changed since last run — skip the rest.
 import hashlib
 import json
 from pathlib import Path
-from typing import Dict, Optional
 
 from smriti.constants import HASH_ALGORITHM, HASH_CHUNK_SIZE
 from smriti.core.paths import HASH_CACHE_FILE
@@ -18,7 +17,7 @@ class ContentHasher:
     def __init__(self, cache_file: Path = HASH_CACHE_FILE):
         self.cache_file = Path(cache_file)
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
-        self.hashes: Dict[str, str] = self._load()
+        self.hashes: dict[str, str] = self._load()
 
     def compute_hash(self, content: str) -> str:
         """SHA-256 hash of a string."""
@@ -47,7 +46,7 @@ class ContentHasher:
         self.hashes = {}
         self._save()
 
-    def _load(self) -> Dict[str, str]:
+    def _load(self) -> dict[str, str]:
         if self.cache_file.exists():
             with open(self.cache_file, encoding="utf-8") as f:
                 return json.load(f)

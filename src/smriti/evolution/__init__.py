@@ -13,40 +13,47 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from pathlib import Path
-from typing import Dict
+from typing import Any
+
 import structlog
 
-from smriti.core.config import get_config
+from smriti.core.config import Config, get_config
 from smriti.core.manifest import ManifestManager
-from smriti.core.models import Claim, KnowledgeGraph, RelationshipSet, TemporalStatus
-from smriti.core.paths import ARTIFACTS_DIR
+from smriti.core.models import (
+    Claim,
+    DocumentProvenance,
+    KnowledgeGraph,
+    RelationshipSet,
+    TemporalStatus,
+)
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import Phase7Error, GraphConstructionError
-
-from smriti.evolution.networkx_backend import NetworkXBackend
-from smriti.evolution.construction import run_construction
-from smriti.evolution.validation import validate_graph_structure
-from smriti.evolution.context import SemanticReasoningContext
-from smriti.evolution.partitioning import run_partitioning
-from smriti.evolution.topology import run_topology_analysis
-from smriti.evolution.annotation import run_semantic_annotation, AnnotationPolicy
 from smriti.evolution.aggregation import run_evidence_aggregation
-from smriti.evolution.temporal import run_temporal_resolution
+from smriti.evolution.annotation import AnnotationPolicy, run_semantic_annotation
 from smriti.evolution.builder import build_knowledge_graph as _assemble_graph
+from smriti.evolution.construction import run_construction
+from smriti.evolution.context import SemanticReasoningContext
+from smriti.evolution.networkx_backend import NetworkXBackend
+from smriti.evolution.partitioning import run_partitioning
 from smriti.evolution.statistics import Phase7StatsCollector
+from smriti.evolution.temporal import run_temporal_resolution
+from smriti.evolution.topology import run_topology_analysis
+from smriti.evolution.validation import validate_graph_structure
 
 logger = structlog.get_logger(__name__)
 
 PHASE7_VERSION = "1.0"
 
 
-def _compute_config_hash(config: dict) -> str:
+def _compute_config_hash(config: Config) -> str:
     relevant = {
         "include_neutral": config.get("knowledge_graph", {}).get("include_neutral", False),
-        "min_reliable_delta_days": config.get("knowledge_graph", {}).get("min_reliable_delta_days", 1.0),
-        "hub_degree_multiplier": config.get("knowledge_graph", {}).get("hub_degree_multiplier", 2.0),
+        "min_reliable_delta_days": config.get("knowledge_graph", {}).get(
+            "min_reliable_delta_days", 1.0
+        ),
+        "hub_degree_multiplier": config.get("knowledge_graph", {}).get(
+            "hub_degree_multiplier", 2.0
+        ),
         "annotation": config.get("knowledge_graph", {}).get("annotation", {}),
     }
     material = json.dumps(relevant, sort_keys=True)
@@ -55,7 +62,7 @@ def _compute_config_hash(config: dict) -> str:
 
 def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
     """Serialize KnowledgeGraph to JSON for Phase 8."""
-    data = {
+    data: dict[str, Any] = {
         "graph_id": graph.graph_id,
         "run_id": graph.run_id,
         "schema_version": graph.schema_version,
@@ -80,10 +87,29 @@ def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
         "nodes": {},
         "edges": {},
         "partitions": {},
+        # RECTIFIED (external review, P1-1): document-level source
+        # identity, keyed by document_id, so Phase 8 (or any later re-read
+        # of this artifact) can resolve it without reaching back to Phase 2.
+        "document_provenance": {
+            doc_id: {
+                "source_id": prov.source_id,
+                "author": prov.author,
+                "publisher": prov.publisher,
+                "domain": prov.domain,
+                "url": prov.url,
+                "publication_date": (
+                    prov.publication_date.isoformat() if prov.publication_date else None
+                ),
+                "parent_source_id": prov.parent_source_id,
+                "extraction_method": prov.extraction_method,
+            }
+            for doc_id, prov in sorted(graph.document_provenance.items())
+            if prov.is_available
+        },
     }
 
     for claim_id, node in sorted(graph.nodes.items()):
-        node_data = {
+        node_data: dict[str, Any] = {
             "claim_id": node.claim_id,
             "claim_text": node.claim_text,
             "context": node.context,
@@ -107,6 +133,20 @@ def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
                 "count": node.support_aggregate.support_count,
                 "weighted_confidence": node.support_aggregate.weighted_confidence,
                 "supporting_claims": list(node.support_aggregate.supporting_claim_ids),
+                # RECTIFIED (external review, P1-2 "evidence aggregation /
+                # double counting"): persisted for auditability -- without
+                # this, nothing on disk lets a later reader verify whether
+                # the hop-distance discount actually fired on real data.
+                "independent_evidence_groups": list(
+                    node.support_aggregate.independent_evidence_group_ids
+                ),
+                "direct_evidence_groups": list(node.support_aggregate.direct_evidence_group_ids),
+                "derived_evidence_groups": list(node.support_aggregate.derived_evidence_group_ids),
+                "multi_hop_evidence_groups": list(
+                    node.support_aggregate.multi_hop_evidence_group_ids
+                ),
+                "discounted_evidence_strength": node.support_aggregate.discounted_evidence_strength,
+                "discounted_weighted_confidence": node.support_aggregate.discounted_weighted_confidence,
             }
         if node.temporal_metadata:
             node_data["temporal"] = {
@@ -132,7 +172,7 @@ def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
     for partition_id, partition in sorted(graph.partitions.items()):
         data["partitions"][partition_id] = {
             "node_ids": sorted(partition.node_ids),
-            "stable_partition_label": partition.stable_partition_label,   # <-- fixed
+            "stable_partition_label": ",".join(partition.stable_partition_label),
             "node_count": partition.node_count,
             "edge_count": partition.edge_count,
             "supports_count": partition.supports_count,
@@ -146,10 +186,11 @@ def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
 
 def build_knowledge_graph(
     relationship_set: RelationshipSet,
-    claims_map: Dict[str, Claim],
+    claims_map: dict[str, Claim],
     run_id: str,
     manifest_manager: ManifestManager,
     state_manager: StateManager,
+    document_provenance: dict[str, DocumentProvenance] | None = None,
 ) -> KnowledgeGraph:
     """
     Execute the complete Phase 7 Knowledge Graph Construction pipeline.
@@ -239,7 +280,9 @@ def build_knowledge_graph(
         run_partitioning(ctx)  # Constraint-based (P0-1 fix)
 
     with Timer("phase7_topology"):
-        run_topology_analysis(ctx, hub_degree_multiplier=hub_degree_multiplier)  # Articulation points (P0-3 fix)
+        run_topology_analysis(
+            ctx, hub_degree_multiplier=hub_degree_multiplier
+        )  # Articulation points (P0-3 fix)
 
     with Timer("phase7_annotation"):
         run_semantic_annotation(ctx, policy=annotation_policy)  # Config-driven (P1-4 fix)
@@ -252,17 +295,28 @@ def build_knowledge_graph(
 
     enrichment_time = time.monotonic() - enrichment_timer_start
 
-    evolution_chains = sum(
-        1 for t in ctx.temporal_metadata.values()
-        if t and t.status == TemporalStatus.EVOLUTION_CHAIN
-    ) // 2
-    unresolved = sum(
-        1 for t in ctx.temporal_metadata.values()
-        if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
-    ) // 2
+    # mypy resolves sum()'s Iterable[bool] overload against this generator's
+    # literal-int items before falling through to the correct int overload,
+    # a known typeshed/mypy limitation with `sum(1 for ... if ...)`
+    # (harmless: the generator always yields the literal int 1, never bool).
+    evolution_chains = (
+        sum(
+            1  # type: ignore[misc]
+            for t in ctx.temporal_metadata.values()
+            if t and t.status == TemporalStatus.EVOLUTION_CHAIN
+        )
+        // 2
+    )
+    unresolved = (
+        sum(
+            1  # type: ignore[misc]
+            for t in ctx.temporal_metadata.values()
+            if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
+        )
+        // 2
+    )
     contradiction_boundaries = sum(
-        1 for e in ctx.edges.values()
-        if e.relationship_type.value == "contradicts"
+        1 for e in ctx.edges.values() if e.relationship_type.value == "contradicts"
     )
 
     stats.record_enrichment_end(
@@ -278,17 +332,18 @@ def build_knowledge_graph(
         validation_report=validation_report,
         construction_time=construction_time,
         enrichment_time=enrichment_time,
+        document_provenance=document_provenance or {},
     )
 
     final_stats = stats.finalize()
 
     # ── Write artifacts ────────────────────────────────────────────────────────
-    phase_dir = manifest_manager.run_dir / "phase7"  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
+    phase_dir = (
+        manifest_manager.run_dir / "phase7"
+    )  # RECTIFIED: respect manifest_manager.artifacts_dir, not the global default
     phase_dir.mkdir(parents=True, exist_ok=True)
     dataset_path = phase_dir / "dataset.json"
-    dataset_path.write_text(
-        _serialize_knowledge_graph(knowledge_graph), encoding="utf-8"
-    )
+    dataset_path.write_text(_serialize_knowledge_graph(knowledge_graph), encoding="utf-8")
 
     logger.info(
         "dataset written",

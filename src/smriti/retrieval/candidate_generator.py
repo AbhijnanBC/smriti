@@ -34,16 +34,18 @@ Rules:
 
 from __future__ import annotations
 
-from typing import List, Dict, Set
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.models import (
-    CandidatePair, EmbeddedClaim, LifecycleStage,
-    RetrievalSearchParameters, RetrievalQuality,
+    CandidatePair,
+    EmbeddedClaim,
+    LifecycleStage,
+    RetrievalQuality,
+    RetrievalSearchParameters,
 )
+from smriti.retrieval.faiss_index import INDEX_VERSION, RETRIEVAL_BACKEND
 from smriti.retrieval.index import EmbeddingIndex
-from smriti.retrieval.faiss_index import RETRIEVAL_BACKEND, INDEX_VERSION
 
 logger = structlog.get_logger(__name__)
 
@@ -68,9 +70,9 @@ class CandidateGenerator:
 
     def generate(
         self,
-        embedded_claims: List[EmbeddedClaim],
+        embedded_claims: list[EmbeddedClaim],
         index: EmbeddingIndex,
-    ) -> List[CandidatePair]:
+    ) -> list[CandidatePair]:
         """
         Generate candidate pairs via exact cosine-similarity retrieval
         (FAISS IndexFlatIP).
@@ -93,9 +95,9 @@ class CandidateGenerator:
         )
 
         # Track neighbor counts for retrieval quality assessment
-        neighbor_counts: Dict[str, int] = {}
-        seen_pair_keys: Set[str] = set()
-        candidates: List[CandidatePair] = []
+        neighbor_counts: dict[str, int] = {}
+        seen_pair_keys: set[str] = set()
+        candidates: list[CandidatePair] = []
 
         for embedded_claim in embedded_claims:
             claim_id = embedded_claim.claim_id
@@ -125,17 +127,19 @@ class CandidateGenerator:
                     continue
                 seen_pair_keys.add(pair_key)
 
-                candidates.append(CandidatePair(
-                    claim_id_a=id_a,
-                    claim_id_b=id_b,
-                    cosine_similarity=result.score,
-                    candidate_rank=result.rank,
-                    retrieval_backend=RETRIEVAL_BACKEND,
-                    index_version=INDEX_VERSION,
-                    search_parameters=search_parameters,
-                    retrieval_quality=None,   # Populated below after neighbor counts known
-                    lifecycle_stage=LifecycleStage.CANDIDATE,
-                ))
+                candidates.append(
+                    CandidatePair(
+                        claim_id_a=id_a,
+                        claim_id_b=id_b,
+                        cosine_similarity=result.score,
+                        candidate_rank=result.rank,
+                        retrieval_backend=RETRIEVAL_BACKEND,
+                        index_version=INDEX_VERSION,
+                        search_parameters=search_parameters,
+                        retrieval_quality=None,  # Populated below after neighbor counts known
+                        lifecycle_stage=LifecycleStage.CANDIDATE,
+                    )
+                )
 
         # Now attach RetrievalQuality (requires neighbor counts for both claims)
         candidates_with_quality = []
@@ -143,28 +147,28 @@ class CandidateGenerator:
             count_a = neighbor_counts.get(pair.claim_id_a, 0)
             count_b = neighbor_counts.get(pair.claim_id_b, 0)
             quality = RetrievalQuality(
-                exact_match=False,   # Text-level duplicate check done in validator
+                exact_match=False,  # Text-level duplicate check done in validator
                 duplicate_removed=False,
                 below_threshold=False,
                 high_density_region=(
                     count_a > _HIGH_DENSITY_THRESHOLD or count_b > _HIGH_DENSITY_THRESHOLD
                 ),
-                isolated_claim=(
-                    count_a <= _ISOLATED_THRESHOLD or count_b <= _ISOLATED_THRESHOLD
-                ),
+                isolated_claim=(count_a <= _ISOLATED_THRESHOLD or count_b <= _ISOLATED_THRESHOLD),
             )
             # Rebuild with quality (frozen dataclass — must reconstruct)
-            candidates_with_quality.append(CandidatePair(
-                claim_id_a=pair.claim_id_a,
-                claim_id_b=pair.claim_id_b,
-                cosine_similarity=pair.cosine_similarity,
-                candidate_rank=pair.candidate_rank,
-                retrieval_backend=pair.retrieval_backend,
-                index_version=pair.index_version,
-                search_parameters=pair.search_parameters,
-                retrieval_quality=quality,
-                lifecycle_stage=LifecycleStage.CANDIDATE,
-            ))
+            candidates_with_quality.append(
+                CandidatePair(
+                    claim_id_a=pair.claim_id_a,
+                    claim_id_b=pair.claim_id_b,
+                    cosine_similarity=pair.cosine_similarity,
+                    candidate_rank=pair.candidate_rank,
+                    retrieval_backend=pair.retrieval_backend,
+                    index_version=pair.index_version,
+                    search_parameters=pair.search_parameters,
+                    retrieval_quality=quality,
+                    lifecycle_stage=LifecycleStage.CANDIDATE,
+                )
+            )
 
         candidates_with_quality.sort(key=lambda c: c.pair_key())
 

@@ -12,12 +12,12 @@ in KnowledgeStats as required by the Phase8Telemetry model.
 from __future__ import annotations
 
 import time
-from typing import Dict
+
 from smriti.core.models import (
-    Phase8Telemetry,
+    CalibrationLabel,
     ExecutionStats,
     KnowledgeStats,
-    CalibrationLabel,
+    Phase8Telemetry,
 )
 
 
@@ -38,9 +38,7 @@ class Phase8StatsCollector:
         self._high_ri: int = 0
         self._low_ri: int = 0
         self._high_unc: int = 0
-        self._calibration_histogram: Dict[str, int] = {
-            label.value: 0 for label in CalibrationLabel
-        }
+        self._calibration_histogram: dict[str, int] = {label.value: 0 for label in CalibrationLabel}
 
         # Execution metadata
         self._policy_version: str = ""
@@ -119,8 +117,8 @@ class Phase8StatsCollector:
             avg_reliability_index=round(self._ri_sum / n, 2),
             avg_uncertainty_score=round(self._unc_sum / n, 2),
             calibration_histogram=dict(self._calibration_histogram),
-            high_reliability_count=self._high_ri,   # RECTIFICATION: added
-            low_reliability_count=self._low_ri,     # RECTIFICATION: added
+            high_reliability_count=self._high_ri,  # RECTIFICATION: added
+            low_reliability_count=self._low_ri,  # RECTIFICATION: added
         )
 
         return Phase8Telemetry(

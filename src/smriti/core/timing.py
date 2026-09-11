@@ -10,13 +10,14 @@ Captures:
 Invaluable for identifying bottlenecks before optimizing.
 """
 
-import time
 import os
+import time
+from collections.abc import Generator
+from contextlib import contextmanager
+from dataclasses import dataclass
+
 import psutil
 import structlog
-from contextlib import contextmanager
-from dataclasses import dataclass, field
-from typing import Optional, Generator
 
 logger = structlog.get_logger(__name__)
 
@@ -58,7 +59,7 @@ class Timer:
 
     def __init__(self, name: str):
         self.name = name
-        self.stats: Optional[TimingStats] = None
+        self.stats: TimingStats | None = None
 
     def __enter__(self) -> "Timer":
         self._wall_start = time.perf_counter()
@@ -85,6 +86,6 @@ class Timer:
 @contextmanager
 def timed_operation(name: str) -> Generator[None, None, None]:
     """Lightweight context manager for one-liner timing."""
-    with Timer(name) as t:
+    with Timer(name):
         yield
     # stats already logged by Timer.__exit__

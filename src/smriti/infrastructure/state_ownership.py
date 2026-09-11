@@ -16,21 +16,21 @@ This prevents ambiguous ownership and clarifies lifetime responsibility.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass(frozen=True)
 class OwnershipRelation:
     """One ownership relationship: owner → owned."""
-    owner:    str      # e.g. "RuntimeContext"
-    owned:    str      # e.g. "Session"
-    lifetime: str      # "inherits" | "independent" | "scoped"
-    notes:    str = ""
+
+    owner: str  # e.g. "RuntimeContext"
+    owned: str  # e.g. "Session"
+    lifetime: str  # "inherits" | "independent" | "scoped"
+    notes: str = ""
 
 
 # ── Canonical ownership graph ─────────────────────────────────────────────────
 
-OWNERSHIP_RELATIONS: List[OwnershipRelation] = [
+OWNERSHIP_RELATIONS: list[OwnershipRelation] = [
     OwnershipRelation(
         owner="RuntimeContext",
         owned="Session",
@@ -87,18 +87,18 @@ class StateOwnershipGraph:
     """
 
     def __init__(self) -> None:
-        self._relations: List[OwnershipRelation] = list(OWNERSHIP_RELATIONS)
+        self._relations: list[OwnershipRelation] = list(OWNERSHIP_RELATIONS)
 
-    def owned_by(self, owner: str) -> List[str]:
+    def owned_by(self, owner: str) -> list[str]:
         return [r.owned for r in self._relations if r.owner == owner]
 
-    def owner_of(self, owned: str) -> Optional[str]:
+    def owner_of(self, owned: str) -> str | None:
         for r in self._relations:
             if r.owned == owned:
                 return r.owner
         return None
 
-    def ownership_chain(self, start: str) -> List[str]:
+    def ownership_chain(self, start: str) -> list[str]:
         """Return full ownership chain from start to root."""
         chain = [start]
         current = start
@@ -112,7 +112,7 @@ class StateOwnershipGraph:
             current = parent
         return chain
 
-    def all_relations(self) -> List[OwnershipRelation]:
+    def all_relations(self) -> list[OwnershipRelation]:
         return list(self._relations)
 
     def register(self, relation: OwnershipRelation) -> None:
