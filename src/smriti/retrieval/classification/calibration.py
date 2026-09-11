@@ -241,9 +241,9 @@ class ConfidenceCalibrator:
             math.log(max(neutral, eps)),
             math.log(max(contradiction, eps)),
         ]
-        scaled = [l / temperature for l in logits]
-        max_l = max(scaled)
-        exps = [math.exp(s - max_l) for s in scaled]
+        scaled = [logit / temperature for logit in logits]
+        max_scaled = max(scaled)
+        exps = [math.exp(s - max_scaled) for s in scaled]
         total = sum(exps)
         probs = [e / total for e in exps]
         return max(probs)

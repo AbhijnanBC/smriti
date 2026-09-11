@@ -35,7 +35,7 @@ class ScheduledTask:
 
     name: str
     interval_seconds: float
-    task: Callable[[], None]
+    task: Callable[[], object]
     last_run: float | None = None
     run_count: int = 0
 

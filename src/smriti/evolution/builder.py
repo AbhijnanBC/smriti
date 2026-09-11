@@ -73,7 +73,7 @@ class StatisticsBuilder:
         # Reuse precomputed temporal metadata (no re-traversal)
         evolution_chains = (
             sum(
-                1
+                1  # type: ignore[misc]  # mypy sum()/Iterable[bool] overload quirk; see evolution/__init__.py
                 for t in ctx.temporal_metadata.values()
                 if t and t.status == TemporalStatus.EVOLUTION_CHAIN
             )
@@ -81,7 +81,7 @@ class StatisticsBuilder:
         )
         unresolved = (
             sum(
-                1
+                1  # type: ignore[misc]
                 for t in ctx.temporal_metadata.values()
                 if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
             )

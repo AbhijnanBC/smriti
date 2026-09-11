@@ -46,5 +46,9 @@ def build_default_registry() -> WorkspaceRegistry:
         StatisticsWorkspace,
         TopologyWorkspace,
     ]:
-        registry.register(cls)
+        # mypy widens this list's element type to `type[BaseWorkspace]` (the
+        # abstract base), which trips its type-abstract check even though
+        # every element here is a named concrete subclass -- a well-known
+        # mypy false positive for heterogeneous lists of ABC subtypes.
+        registry.register(cls)  # type: ignore[type-abstract]
     return registry

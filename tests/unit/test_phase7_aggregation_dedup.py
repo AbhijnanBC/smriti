@@ -88,16 +88,16 @@ def test_dag_diamond_does_not_double_count():
     run_partitioning(ctx)
     run_evidence_aggregation(ctx)
 
-    agg_D = ctx.nodes["D"].support_aggregate
-    assert agg_D is not None
-    supporting = set(agg_D.supporting_claim_ids)
+    agg_d = ctx.nodes["D"].support_aggregate
+    assert agg_d is not None
+    supporting = set(agg_d.supporting_claim_ids)
     # A, B, and C all transitively support D
     assert "A" in supporting
     assert "B" in supporting
     assert "C" in supporting
     # A must appear exactly once
-    assert agg_D.support_count == len(supporting), (
-        f"support_count ({agg_D.support_count}) must equal len(unique claim IDs) "
+    assert agg_d.support_count == len(supporting), (
+        f"support_count ({agg_d.support_count}) must equal len(unique claim IDs) "
         f"({len(supporting)}). Each claim must be counted at most once."
     )
 
@@ -111,9 +111,9 @@ def test_direct_support_count():
     run_partitioning(ctx)
     run_evidence_aggregation(ctx)
 
-    agg_B = ctx.nodes["B"].support_aggregate
-    assert agg_B.support_count == 1
-    assert "A" in agg_B.supporting_claim_ids
+    agg_b = ctx.nodes["B"].support_aggregate
+    assert agg_b.support_count == 1
+    assert "A" in agg_b.supporting_claim_ids
 
 
 def test_no_support_count_zero():
@@ -122,8 +122,8 @@ def test_no_support_count_zero():
     run_partitioning(ctx)
     run_evidence_aggregation(ctx)
 
-    agg_A = ctx.nodes["A"].support_aggregate
-    assert agg_A.support_count == 0
+    agg_a = ctx.nodes["A"].support_aggregate
+    assert agg_a.support_count == 0
 
 
 # ── EQUIVALENT is symmetric evidence (bidirectional-NLI rewrite) ───────────

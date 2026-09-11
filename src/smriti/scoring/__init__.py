@@ -12,13 +12,10 @@ immediately after discovery to enforce a strict 1:1 mapping.
 from __future__ import annotations
 
 import json
-import time
-from pathlib import Path
-from typing import Dict
+from typing import Any
 
 import structlog
 
-from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     KnowledgeGraph,
@@ -27,10 +24,8 @@ from smriti.core.models import (
     ScoredKnowledgeGraph,
     SignalStatus,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import Phase8Error
 from smriti.scoring.builder import (
     apply_calibration_label,  # <-- RECTIFICATION: added import
     build_reliability_metadata,
@@ -58,7 +53,7 @@ logger = structlog.get_logger(__name__)
 
 def _serialize_scored_graph(scored: ScoredKnowledgeGraph) -> str:
     """Serialize ScoredKnowledgeGraph to JSON for Phase 9."""
-    data = {
+    data: dict[str, Any] = {
         "graph_id": scored.graph.graph_id,
         "run_id": scored.run_id,
         "schema_version": scored.schema_version,

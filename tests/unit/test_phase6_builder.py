@@ -1,5 +1,7 @@
 """Unit tests for retrieval/builder.py."""
 
+import dataclasses
+
 import pytest
 from smriti.core.models import (
     CandidatePair,
@@ -96,7 +98,7 @@ def test_relationship_is_frozen():
         "hash",
         "run1",
     )
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         rel.claim_id_a = "modified"
 
 

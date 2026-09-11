@@ -2,6 +2,7 @@
 Unit tests for discovery/metadata.py.
 """
 
+import dataclasses
 from datetime import UTC
 
 import pytest
@@ -40,5 +41,5 @@ def test_metadata_is_immutable(tmp_path):
     f = tmp_path / "note.md"
     f.write_text("content")
     meta = extract_metadata(f)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         meta.size_bytes = 999

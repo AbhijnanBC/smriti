@@ -15,21 +15,16 @@ Public API:
 
 from __future__ import annotations
 
-import json
 import time
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Optional
 
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.models import (
-    CertificationLevel,
     CertificationReport,
     ResearchAssurancePackage,
+    ScienceEvidence,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.evaluation.certification.artifact_readiness import assess_artifact_readiness
 from smriti.evaluation.certification.claims import assess_research_claims
 from smriti.evaluation.certification.gates import evaluate_certification_gates
@@ -53,7 +48,6 @@ from smriti.evaluation.statistical.analysis import (
 )
 from smriti.evaluation.statistical.assumptions import ASSUMPTION_REGISTRY
 from smriti.evaluation.statistical.limitations import LIMITATION_REGISTRY
-from smriti.exceptions import Phase12Error
 
 logger = structlog.get_logger(__name__)
 PHASE12_VERSION = "1.0"
@@ -128,7 +122,7 @@ class CertificationEngine:
 
         for result in experiment_results:
             for metric, value in result.metrics.items():
-                if isinstance(value, (int, float)):
+                if isinstance(value, int | float):
                     sa = compute_statistical_analysis(
                         metric_name=f"{result.experiment_id}:{metric}",
                         values=[value],
@@ -138,7 +132,7 @@ class CertificationEngine:
         research_claims = assess_research_claims(experiment_results)
 
         # RECTIFIED (P1-5): Detect and resolve evidence conflicts
-        science_evidence = []  # Populated when full evidence model is built
+        science_evidence: list[ScienceEvidence] = []  # Populated when full evidence model is built
         conflicts = detect_evidence_conflicts(science_evidence)
         if conflicts:
             research_claims = apply_conflict_adjustments(research_claims, conflicts)

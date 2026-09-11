@@ -36,6 +36,7 @@ from smriti.core.models import (
     ContributionCandidate,
     ContributionSet,
     ReliabilityDecisionRecord,
+    SignalID,
     SignalVector,
 )
 from smriti.scoring.policies import FusionPolicy, ReliabilityPolicy
@@ -173,8 +174,8 @@ def _apply_policy_interactions(
 
     # Interaction 1: Echo chamber discount
     # If evidence_independence is low, discount evidence_strength
-    independence = candidates_map.get("evidence_independence")
-    evidence = candidates_map.get("evidence_strength")
+    independence = candidates_map.get(SignalID.EVIDENCE_INDEPENDENCE)
+    evidence = candidates_map.get(SignalID.EVIDENCE_STRENGTH)
     if (
         independence
         and evidence
@@ -190,7 +191,7 @@ def _apply_policy_interactions(
             label=evidence.label,
             raw_value=evidence.raw_value,
         )
-        candidates_map["evidence_strength"] = new_candidate
+        candidates_map[SignalID.EVIDENCE_STRENGTH] = new_candidate
         interactions_log.append(
             f"echo_chamber_discount_applied: evidence_strength {evidence.normalized_value:.3f}"
             f" → {new_value:.3f} (independence={independence.normalized_value:.3f})"
@@ -303,7 +304,7 @@ def compute_reliability_from_signal_vector(
         if weight > 0:
             candidates.append(
                 ContributionCandidate(
-                    signal_id=signal_id,
+                    signal_id=SignalID(signal_id),
                     normalized_value=value,
                     policy_weight=weight,
                     direction=direction,

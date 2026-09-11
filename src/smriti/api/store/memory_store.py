@@ -231,7 +231,7 @@ class InMemoryReadStore(ReadStore):
     ) -> tuple[list[dict[str, Any]], int]:
         """Linear scan with predicate filter, sort, and pagination."""
         results = []
-        for claim_id, record in self._claim_records.items():
+        for _claim_id, record in self._claim_records.items():
             if not all(p.matches(record.get(p.field)) for p in predicates):
                 continue
             if text_contains and text_contains.lower() not in record.get("claim_text", "").lower():

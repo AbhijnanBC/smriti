@@ -154,7 +154,7 @@ def compute_research_evidence_coverage(
     # supporting evidence, and coverage still matters implicitly (a claim
     # with no evidence is not "supported" and cannot pull the overall
     # grade up by being ignored).
-    _GRADE_ORDER = [
+    grade_order = [
         EvidenceGrade.A,
         EvidenceGrade.B,
         EvidenceGrade.C,
@@ -163,7 +163,7 @@ def compute_research_evidence_coverage(
     ]
     supported_grades = [c.evidence_grade for c in research_claims if c.is_supported]
     if supported_grades:
-        grade = max(supported_grades, key=_GRADE_ORDER.index)
+        grade = max(supported_grades, key=grade_order.index)
     else:
         grade = EvidenceGrade.E
 

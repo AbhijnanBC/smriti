@@ -215,7 +215,11 @@ class CapabilityModel:
 
     # ── Synchronisation with dependency graph (NEW) ──────────────────────────
 
-    def sync_with_graph(self, graph: DependencyGraph) -> None:
+    # Encodes several independent capability<->dependency mapping rules
+    # (per the docstring's example list); each rule is a simple flat check,
+    # but there are enough of them that mccabe's linear branch count trips
+    # the default threshold even though no single rule is hard to follow.
+    def sync_with_graph(self, graph: DependencyGraph) -> None:  # noqa: C901
         """
         Refresh capability states based on dependency health.
 
@@ -341,4 +345,4 @@ class CapabilityModel:
         with self._lock:
             for state in self._capabilities.values():
                 counts[state.status] += 1
-        return {k.value: v for k, v in counts.items()}
+        return counts

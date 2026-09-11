@@ -46,7 +46,10 @@ from smriti.evolution.context import SemanticReasoningContext
 logger = structlog.get_logger(__name__)
 
 
-def run_temporal_resolution(
+# Orchestrates the full Phase 7 temporal-resolution pipeline as one linear,
+# order-sensitive sequence; splitting it up would scatter that sequence
+# across helpers with no natural seams.
+def run_temporal_resolution(  # noqa: C901
     ctx: SemanticReasoningContext,
     claims_map: dict[str, Claim],
 ) -> None:
@@ -76,7 +79,7 @@ def run_temporal_resolution(
             contradicts_pairs.append((edge.edge_id, edge.source_node_id, edge.target_node_id))
 
     # Process each contradiction boundary
-    for edge_id, node_a_id, node_b_id in contradicts_pairs:
+    for _edge_id, node_a_id, node_b_id in contradicts_pairs:
         if node_a_id in temporal and node_b_id in temporal:
             continue  # Already processed this pair
 

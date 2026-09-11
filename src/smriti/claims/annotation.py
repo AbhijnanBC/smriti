@@ -109,7 +109,10 @@ class AssertionAnnotator:
         words = set(text_lower.split())
         return bool(words & NEGATION_MARKERS)
 
-    def _detect_modality(self, parsed, text_lower: str) -> Modality:
+    # Enumerates the linguistic modality categories (epistemic, deontic,
+    # dynamic, etc.) as a flat set of pattern checks; each check is simple,
+    # but there are enough modality classes to trip mccabe's threshold.
+    def _detect_modality(self, parsed, text_lower: str) -> Modality:  # noqa: C901
         """Detect modality from auxiliary verbs."""
         if parsed.parse_ok and parsed.spacy_doc:
             for token in parsed.spacy_doc:

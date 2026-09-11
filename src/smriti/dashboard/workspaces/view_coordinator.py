@@ -37,7 +37,7 @@ class ViewCoordinator:
         self._views: dict[str, BaseView] = {}
         self._render_order: list[str] = []
 
-    def register(self, name: str, view: BaseView, position: int = None) -> None:
+    def register(self, name: str, view: BaseView, position: int | None = None) -> None:
         """Register a view. Position controls render order."""
         self._views[name] = view
         if name not in self._render_order:

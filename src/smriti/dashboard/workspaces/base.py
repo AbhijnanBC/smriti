@@ -43,7 +43,7 @@ class BaseWorkspace(ABC):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    def on_create(self) -> None:
+    def on_create(self) -> None:  # noqa: B027 -- deliberate no-op default
         """Called once when workspace instance is created. Override to build views."""
         pass
 

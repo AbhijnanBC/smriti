@@ -26,7 +26,7 @@ class StatisticsViewBuilder:
         total_edges: int,
         total_partitions: int,
         total_contradictions: int,
-        partition_data: dict[str, Any] = None,
+        partition_data: dict[str, Any] | None = None,
         include_histogram: bool = True,
         include_partition_stats: bool = True,
     ) -> StatisticsView:

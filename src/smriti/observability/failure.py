@@ -320,9 +320,9 @@ class FailureTaxonomy:
 
         if isinstance(exc, smex.ConfigError):
             return FailureCategory.CONFIGURATION
-        if isinstance(exc, (smex.RuntimeException, smex.RuntimeException)):
+        if isinstance(exc, smex.RuntimeException | smex.InfrastructureException):
             return FailureCategory.INFRASTRUCTURE
-        if isinstance(exc, (smex.CacheError,)):
+        if isinstance(exc, smex.CacheError):
             return FailureCategory.RESOURCE
         if "api" in source or "knowledge" in source:
             return FailureCategory.KNOWLEDGE_API

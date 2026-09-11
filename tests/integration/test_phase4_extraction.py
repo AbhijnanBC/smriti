@@ -5,6 +5,7 @@ Tests the complete pipeline:
     SemanticSentence → extract_claims_from_sentence() → List[Claim]
 """
 
+import dataclasses
 import hashlib
 from pathlib import Path
 
@@ -194,7 +195,7 @@ def test_claims_are_immutable(pipeline):
     """Claim objects must be frozen."""
     result = run_pipeline(pipeline, make_sentence("Python is fast."))
     if result.claims:
-        with pytest.raises(Exception):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             result.claims[0].text = "modified"
 
 
@@ -260,12 +261,8 @@ def test_realistic_knowledge_note(pipeline):
     deep_claims = [c for c in all_claims if "may" in c.text.lower()]
     assert any(c.assertion_metadata.modality == Modality.POSSIBLE for c in deep_claims)
 
-    # Attribution detected in sentence 5
-    attribution_claims = [
-        c for c in all_claims if "authors" in c.text.lower() or c.assertion_metadata.is_attributed
-    ]
-    # Attribution may or may not be detected depending on spaCy's parse
-    # but the claim must still exist
+    # Attribution detected in sentence 5 -- attribution may or may not be
+    # detected depending on spaCy's parse, but the claim must still exist.
     assert len(all_claims) >= 5
 
     # All claim IDs are unique

@@ -96,7 +96,9 @@ class EpistemicStateManager:
 
     # ── Workspace activation ──────────────────────────────────────────────────
 
-    def activate_workspace(self, workspace_type: WorkspaceType, lens: EpistemicLens = None) -> None:
+    def activate_workspace(
+        self, workspace_type: WorkspaceType, lens: EpistemicLens | None = None
+    ) -> None:
         """Transition: user activates a workspace."""
         default_lens_map = {
             WorkspaceType.RESEARCH: EpistemicLens.EXPLORATION,
@@ -231,7 +233,7 @@ class EpistemicStateManager:
 
     def end_comparison(self) -> None:
         """Transition: comparison panel closed."""
-        self._state = replace(self._state, comparison_claim_ids=tuple())
+        self._state = replace(self._state, comparison_claim_ids=())
         self._emit(InteractionEventType.COMPARISON_ENDED, {})
 
     # ── Serialization ─────────────────────────────────────────────────────────

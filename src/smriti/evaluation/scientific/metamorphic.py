@@ -97,7 +97,7 @@ def _make_node(
 
 
 def _make_graph(
-    nodes: dict[str, ClaimNode], edges: dict[str, RelationshipEdge] = None
+    nodes: dict[str, ClaimNode], edges: dict[str, RelationshipEdge] | None = None
 ) -> KnowledgeGraph:
     edges = edges or {}
     stats = GraphStatistics(

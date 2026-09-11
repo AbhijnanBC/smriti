@@ -69,7 +69,10 @@ class AssertionClassifier:
     Phase 4 run (instantiate once, call classify() per sentence).
     """
 
-    def classify(
+    # Walks the full rule-based AssertionType decision table (question,
+    # negation, hedge, imperative, etc.); each rule is a simple, independent
+    # check, but the table itself is long enough to trip mccabe's threshold.
+    def classify(  # noqa: C901
         self,
         sentence: SemanticSentence,
         parsed: ParsedSentence,

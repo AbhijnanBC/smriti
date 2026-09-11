@@ -1,5 +1,7 @@
 """Unit tests for evaluation/statistical/analysis.py."""
 
+import dataclasses
+
 import pytest
 from smriti.evaluation.statistical.analysis import (
     STANDARD_THREATS,
@@ -70,5 +72,5 @@ def test_standard_threats_defined():
 def test_threats_are_frozen():
     """ThreatToValidity must be immutable."""
     threat = STANDARD_THREATS[0]
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         threat.description = "modified"

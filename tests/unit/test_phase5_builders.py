@@ -3,6 +3,8 @@ Unit tests for embedding/builders.py.
 Tests Vector, Embedding, EmbeddingQuality, and EmbeddedClaim construction.
 """
 
+import dataclasses
+
 import pytest
 from smriti.core.models import (
     EmbeddedClaim,
@@ -103,7 +105,7 @@ def test_build_embedding_vector_is_vector_type(descriptor, provenance):
 def test_build_embedding_is_frozen(descriptor, provenance):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension)
     emb = build_embedding("c001", vec, descriptor, provenance)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         emb.claim_id = "modified"
 
 
@@ -129,7 +131,7 @@ def test_build_embedding_quality_cached(descriptor):
 def test_build_embedding_quality_is_frozen(descriptor):
     vec = build_vector([0.1, 0.2, 0.3, 0.4], descriptor.dimension)
     quality = build_embedding_quality(vec, descriptor, cache_used=False)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         quality.dimension_ok = False
 
 
@@ -167,7 +169,7 @@ def test_build_embedded_claim_is_frozen(descriptor, provenance):
     emb = build_embedding("c001", vec, descriptor, provenance)
     qual = build_embedding_quality(vec, descriptor, cache_used=False)
     ec = build_embedded_claim("c001", emb, qual)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         ec.claim_id = "modified"
 
 

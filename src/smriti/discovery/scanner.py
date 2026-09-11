@@ -75,7 +75,11 @@ def discover_files(root_dirs: list[Path]) -> list[Path]:
     return candidates
 
 
-def _scan_iterative(
+# Iterative (stack-based, not recursive) directory walk with several
+# independent skip conditions (ignored dirs, symlinks, hidden files, size
+# limits); each check is simple, but there are enough of them to trip
+# mccabe's threshold.
+def _scan_iterative(  # noqa: C901
     root_dir: Path,
     root_dir_original: Path,
     ignored_dirs: set[str],

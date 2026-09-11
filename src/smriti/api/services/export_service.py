@@ -101,7 +101,7 @@ class ExportService:
 
     def _export_json(self, request: ExportRequest) -> str:
         records = self._collect_records(request)
-        result = {"run_id": request.run_id, "claims": []}
+        result: dict[str, Any] = {"run_id": request.run_id, "claims": []}
         for rec in records:
             claim_data = {
                 "claim_id": rec["claim_id"],

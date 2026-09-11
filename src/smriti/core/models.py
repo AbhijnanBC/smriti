@@ -1361,18 +1361,16 @@ class RelationshipSet:
     total_rejected: int
     rejected_reasons: dict[str, int]
     run_id: str
-    version_info: "SchemaVersionInfo" = None
+    version_info: "SchemaVersionInfo" = field(
+        default_factory=lambda: SchemaVersionInfo(
+            schema_version="6.0",
+            migration_version="6.0",
+            compatibility_version="6.0",
+        )
+    )
     manifest_path: Path | None = None
     dataset_path: Path | None = None
     replay_manifest_path: Path | None = None
-
-    def __post_init__(self):
-        if self.version_info is None:
-            self.version_info = SchemaVersionInfo(
-                schema_version="6.0",
-                migration_version="6.0",
-                compatibility_version="6.0",
-            )
 
     @property
     def total_relationships(self) -> int:
@@ -1683,7 +1681,7 @@ class KnowledgePartition:
     """
 
     partition_id: str  # SHA256(sorted_node_ids)[:12] — deterministic
-    stable_partition_label: tuple  # sorted ",".join(node_ids) — incremental-friendly
+    stable_partition_label: tuple  # sorted tuple of node_ids — incremental-friendly
     node_ids: frozenset
     internal_edge_ids: frozenset
     node_count: int

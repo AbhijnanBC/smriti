@@ -12,6 +12,7 @@ All assertions reflect the rectified API:
     - Embedding has no status field
 """
 
+import dataclasses
 import json
 import math
 from pathlib import Path
@@ -176,7 +177,7 @@ def test_embedded_claims_are_immutable(mock_embedder, run_id, test_managers):
     result = run_embedding(
         mock_embedder, [make_claim("c001", "Python is fast.")], run_id, test_managers
     )
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         result.embedded_claims[0].claim_id = "modified"
 
 

@@ -1,5 +1,7 @@
 """Unit tests for dashboard/commands/commands.py."""
 
+import dataclasses
+
 import pytest
 from smriti.core.models import WorkspaceType
 from smriti.dashboard.commands.commands import (
@@ -16,7 +18,7 @@ from smriti.dashboard.commands.commands import (
 
 def test_select_claim_command_is_immutable():
     cmd = SelectClaimCommand(session_id="s1", claim_id="c001")
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         cmd.claim_id = "c002"
 
 

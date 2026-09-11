@@ -57,7 +57,9 @@ def run_reconstruction_audit(api) -> dict:
     stored reliability_index.
     """
     store = getattr(api, "_store", None)
-    records: dict[str, dict] = getattr(store, "_reliability_records", None) if store else None
+    records: dict[str, dict] | None = (
+        getattr(store, "_reliability_records", None) if store else None
+    )
 
     if not isinstance(records, dict) or not records:
         return {

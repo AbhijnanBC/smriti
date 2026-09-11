@@ -258,7 +258,6 @@ def _check_no_cross_import(source_pkg: str, forbidden_pkg: str):
     """Verify source_pkg does not import forbidden_pkg."""
     try:
         mod = importlib.import_module(source_pkg)
-        source_file = getattr(mod, "__file__", "") or ""
         # Simple heuristic: check module's __dict__ for imports
         passed = forbidden_pkg.split(".")[-1] not in str(vars(mod))
         evidence = f"Checked {source_pkg} for imports of {forbidden_pkg}"
@@ -318,7 +317,7 @@ def _check_field_type_annotation(
         return False, f"Exception: {e}"
 
 
-def _check_no_ml_imports_ast(module_path: str):
+def _check_no_ml_imports_ast(module_path: str):  # noqa: C901
     """
     RECTIFIED: Use AST parsing to check for ML framework imports.
     This avoids false positives from comments and docstrings.

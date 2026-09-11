@@ -46,7 +46,7 @@ class ShutdownCoordinator:
     """Manages ordered, graceful shutdown of all registered services."""
 
     def __init__(self) -> None:
-        self._handlers = []
+        self._handlers: list[tuple[int, str, Callable[[], None]]] = []
 
     def register(self, name: str, handler: Callable[[], None], priority: int = 50) -> None:
         self._handlers.append((priority, name, handler))

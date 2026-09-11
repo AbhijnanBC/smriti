@@ -8,10 +8,26 @@ No changes to the resolver itself.
 
 from __future__ import annotations
 
+from typing import Any, Protocol
+
 import structlog
+from smriti.core.models import ExecutionContext
 from smriti.exceptions import QueryPlanError
 
 logger = structlog.get_logger(__name__)
+
+
+class ExecutableService(Protocol):
+    """
+    Structural contract every domain service registered with ServiceResolver
+    must satisfy. `request` is intentionally `Any`: each concrete service
+    narrows it to its own KnowledgeRequest subclass (e.g. ExplanationRequest),
+    which is safe only because ServiceResolver dispatches by exact request
+    type — a service is never invoked with a request type it wasn't
+    registered for.
+    """
+
+    def execute(self, request: Any, plan: Any, ctx: ExecutionContext) -> Any: ...
 
 
 class ServiceResolver:
@@ -34,9 +50,9 @@ class ServiceResolver:
     """
 
     def __init__(self) -> None:
-        self._registry: dict[type, object] = {}
+        self._registry: dict[type, ExecutableService] = {}
 
-    def register(self, request_type: type, service_instance: object) -> None:
+    def register(self, request_type: type, service_instance: ExecutableService) -> None:
         """
         Register a service for a specific request type.
 
@@ -47,7 +63,7 @@ class ServiceResolver:
         self._registry[request_type] = service_instance
         logger.debug("service registered", request_type=request_type.__name__)
 
-    def resolve(self, request: object) -> object:
+    def resolve(self, request: object) -> ExecutableService:
         """
         Return the service instance for the given request.
 

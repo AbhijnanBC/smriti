@@ -88,13 +88,26 @@ class SearchView(BaseView):
             apply_col, clear_col = st.columns(2)
             with apply_col:
                 if st.button("Apply Filters", use_container_width=True):
+                    session_id = self._dispatcher._sm._session_id
                     if label_filter:
                         self._dispatcher.dispatch(
-                            ApplyFilterCommand("calibration_label", label_filter)
+                            ApplyFilterCommand(
+                                session_id=session_id,
+                                field="calibration_label",
+                                value=label_filter,
+                            )
                         )
                     if role_filter:
-                        self._dispatcher.dispatch(ApplyFilterCommand("semantic_role", role_filter))
+                        self._dispatcher.dispatch(
+                            ApplyFilterCommand(
+                                session_id=session_id,
+                                field="semantic_role",
+                                value=role_filter,
+                            )
+                        )
 
             with clear_col:
                 if st.button("Clear Filters", use_container_width=True):
-                    self._dispatcher.dispatch(ClearFiltersCommand())
+                    self._dispatcher.dispatch(
+                        ClearFiltersCommand(session_id=self._dispatcher._sm._session_id)
+                    )

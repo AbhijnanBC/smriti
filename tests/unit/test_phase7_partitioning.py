@@ -149,9 +149,9 @@ def test_shared_support_target_does_not_merge_contradicting_nodes():
     )
     run_partitioning(ctx)
 
-    partition_of_A = ctx.node_to_partition["A"]
-    partition_of_C = ctx.node_to_partition["C"]
-    assert partition_of_A != partition_of_C, (
+    partition_of_a = ctx.node_to_partition["A"]
+    partition_of_c = ctx.node_to_partition["C"]
+    assert partition_of_a != partition_of_c, (
         "A and C contradict each other and must be in different partitions, "
         "even though they both support X."
     )

@@ -41,7 +41,7 @@ class QueryService:
     def search_claims(
         self,
         text_query: str = "",
-        filters: dict[str, Any] = None,
+        filters: dict[str, Any] | None = None,
         sort_field: str = "reliability_index",
         sort_order: str = "desc",
         limit: int = 20,
@@ -54,7 +54,7 @@ class QueryService:
         for field_name, value in (filters or {}).items():
             if value is not None and value != "":
                 op = PredicateOperator.EQ
-                if isinstance(value, (int, float)) and field_name == "reliability_index":
+                if isinstance(value, int | float) and field_name == "reliability_index":
                     op = PredicateOperator.GTE
                 predicates.append(Predicate(field_name, op, value))
 

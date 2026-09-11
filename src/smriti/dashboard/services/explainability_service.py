@@ -23,9 +23,7 @@ class ExplainabilityService:
     ) -> dict | None:
         """Retrieve full explainability record for one claim."""
         try:
-            from smriti.core.models import ExplainabilityLevel as EL
-
-            resp = self._api.explain(claim_id, level=EL(level))
+            resp = self._api.explain(claim_id, level=ExplainabilityLevel(level))
             return resp.data
         except Exception as e:
             logger.warning("get_explanation failed", claim_id=claim_id[:8], error=str(e))

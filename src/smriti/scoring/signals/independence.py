@@ -79,7 +79,11 @@ class EvidenceIndependenceExtractor(BaseSignalExtractor):
     def normalize(self, raw: float, global_stats: ScoringGlobalStats) -> float:
         return max(0.0, min(1.0, raw))
 
-    def extract(
+    # Walks several distinct evidence-independence edge cases (no evidence,
+    # single source, multiple sources, missing provenance) that each need
+    # their own guard; the branching is inherent to the signal's defined
+    # scoring rules, not accidental complexity.
+    def extract(  # noqa: C901
         self,
         node: ClaimNode,
         graph: KnowledgeGraph,

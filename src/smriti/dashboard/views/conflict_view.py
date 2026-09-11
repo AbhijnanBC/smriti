@@ -18,7 +18,10 @@ class ConflictView(BaseView):
         self._claim_a = claim_a
         self._claim_b = claim_b
 
-    def refresh(
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(  # type: ignore[override]
         self,
         claim_a: ClaimPresentationModel | None = None,
         claim_b: ClaimPresentationModel | None = None,

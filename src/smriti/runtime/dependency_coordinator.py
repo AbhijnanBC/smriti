@@ -32,7 +32,7 @@ class DependencyCoordinator:
         except ValueError as exc:
             raise RuntimeException(f"Dependency graph invalid: {exc}") from exc
 
-    def get(self, name: str) -> DependencyNode:
+    def get(self, name: str) -> DependencyNode | None:
         return self._graph.get(name)
 
     def all_initialized(self) -> bool:

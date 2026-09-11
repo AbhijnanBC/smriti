@@ -24,7 +24,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
 
 import structlog
 
@@ -44,14 +43,12 @@ from smriti.core.models import (
     Claim,
     ClaimWarning,
     DiscardedCandidate,
-    ExtractionMode,
     Phase4Stats,
     SemanticSentence,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import ClaimValidationError, Phase4Error
+from smriti.exceptions import ClaimValidationError
 
 logger = structlog.get_logger(__name__)
 

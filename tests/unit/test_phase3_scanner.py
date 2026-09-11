@@ -91,7 +91,6 @@ def test_events_are_in_document_order():
     """Events must appear in the same order as the document."""
     text = "# H1\n\nParagraph.\n\n- item\n\n## H2"
     events = scan_document(text)
-    types = [e.block_type for e in events]
     # H1 heading must come before paragraph, paragraph before bullet
     h1_idx = next(
         i

@@ -97,9 +97,9 @@ def run_topology_analysis(
     # Update node annotations
     updated_nodes = {}
     for claim_id, node in ctx.nodes.items():
-        metrics = topology.get(claim_id)
+        node_metrics = topology.get(claim_id)
         current_ann = node.annotations or NodeAnnotations()
-        updated_ann = dataclasses.replace(current_ann, topology=metrics)
+        updated_ann = dataclasses.replace(current_ann, topology=node_metrics)
         updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
     ctx.nodes = updated_nodes
 

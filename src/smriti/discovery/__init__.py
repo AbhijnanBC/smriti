@@ -23,16 +23,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import structlog
 
-from smriti.core.config import get_config
 from smriti.core.hashing import ContentHasher
 from smriti.core.manifest import ManifestManager
-from smriti.core.paths import ARTIFACTS_DIR, CACHE_DIR
+from smriti.core.paths import CACHE_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
 from smriti.discovery.builder import SourceDocument, build_source_document
@@ -41,24 +38,8 @@ from smriti.discovery.hashing import compute_hash
 from smriti.discovery.metadata import FileMetadata, extract_metadata
 from smriti.discovery.scanner import discover_files
 from smriti.discovery.validator import validate_directories, validate_file
-from smriti.exceptions import DiscoveryError
 
 logger = structlog.get_logger(__name__)
-
-
-@dataclass
-class DiscoveryContext:
-    """
-    Immutable shared execution context for Phase 1.
-    Carries configuration, run metadata, and managers.
-    """
-
-    run_id: str
-    manifest_manager: ManifestManager
-    state_manager: StateManager
-    force_full: bool
-    config: dict
-    discovered_at: datetime
 
 
 @dataclass
@@ -143,7 +124,10 @@ class DiscoveryResult:
         return json.dumps(records, indent=2, ensure_ascii=False)
 
 
-def run_discovery(
+# Orchestrates the full Phase 1 pipeline (validate, scan, hash, dedupe,
+# build, write manifest) as one linear, order-sensitive sequence; splitting
+# it up would scatter that sequence across helpers with no natural seams.
+def run_discovery(  # noqa: C901
     input_dirs: list[Path],
     run_id: str,
     manifest_manager: ManifestManager,
@@ -166,19 +150,9 @@ def run_discovery(
     Raises:
         DiscoveryError: If input directories are invalid (fatal).
     """
-    config = get_config()
-    discovered_at = datetime.now(tz=UTC)
-    context = DiscoveryContext(
-        run_id=run_id,
-        manifest_manager=manifest_manager,
-        state_manager=state_manager,
-        force_full=force_full,
-        config=config,
-        discovered_at=discovered_at,
-    )
     stats = DiscoveryStats()
 
-    with Timer("phase1_discovery") as timer:
+    with Timer("phase1_discovery"):
 
         # ── Step 1: Record phase start ─────────────────────────────────────────
         start_time = manifest_manager.start_phase(phase=1)
@@ -200,15 +174,18 @@ def run_discovery(
         skipped: list[tuple[Path, str]] = []
 
         for path in candidate_paths:
-            result = validate_file(path)
-            if result.is_valid:
+            validation_result = validate_file(path)
+            if validation_result.is_valid:
                 valid_paths.append(path)
             else:
-                skipped.append((path, result.rejection_reason))
+                assert (
+                    validation_result.rejection_reason is not None
+                ), "ValidationResult with is_valid=False must always set rejection_reason"
+                skipped.append((path, validation_result.rejection_reason))
                 logger.debug(
                     "file skipped",
                     path=str(path),
-                    reason=result.rejection_reason,
+                    reason=validation_result.rejection_reason,
                 )
 
         stats.valid_count = len(valid_paths)
@@ -332,7 +309,7 @@ def run_discovery(
         # ── Step 11: Update pipeline state ────────────────────────────────────
         state_manager.complete_phase(phase=1)
 
-    logger.info("phase 1 complete", **{k: v for k, v in vars(stats).items()})
+    logger.info("phase 1 complete", **dict(vars(stats)))
 
     return result
 

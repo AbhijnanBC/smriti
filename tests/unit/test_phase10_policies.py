@@ -1,5 +1,7 @@
 """Unit tests for dashboard/policies/policies.py."""
 
+import dataclasses
+
 import pytest
 from smriti.dashboard.policies.policies import (
     ExportPolicy,
@@ -54,5 +56,5 @@ def test_graphml_export_disallowed_by_default():
 
 def test_policy_is_immutable():
     policy = InteractionPolicy()
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         policy.visualization = VisualizationPolicy(max_nodes_in_graph=999)

@@ -1,5 +1,7 @@
 """Unit tests for evaluation/certification/ (rectified)."""
 
+import dataclasses
+
 import pytest
 from smriti.core.models import (
     ArtifactReadinessLevel,
@@ -97,7 +99,7 @@ def test_claims_have_evidence_grades():
 
 def test_claims_are_frozen():
     claims = assess_research_claims(make_experiment_results())
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         claims[0].statement = "modified"
 
 
@@ -189,7 +191,7 @@ def test_certification_report_is_frozen():
         certification_rationale=rationale,
         gate_results=gates,
     )
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         report.run_id = "modified"
 
 

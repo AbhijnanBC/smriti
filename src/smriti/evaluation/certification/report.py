@@ -29,7 +29,7 @@ def build_certification_report(
     artifact_readiness,
     certification_level,
     certification_rationale: str,
-    gate_results: list = None,  # RECTIFIED (P0-1): gate decisions
+    gate_results: list | None = None,  # RECTIFIED (P0-1): gate decisions
 ) -> CertificationReport:
     total_passed = sum(1 for r in verification_results if r.status == VerificationStatus.PASSED)
     total_failed = sum(1 for r in verification_results if r.status == VerificationStatus.FAILED)

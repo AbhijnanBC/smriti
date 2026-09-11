@@ -45,14 +45,18 @@ from smriti.evolution.context import SemanticReasoningContext
 logger = structlog.get_logger(__name__)
 
 
-def run_evidence_aggregation(ctx: SemanticReasoningContext) -> None:
+# Implements union-find-based transitive evidence aggregation (BFS +
+# EQUIVALENT-cycle handling + equivalence-class deduplication, per the
+# RECTIFIED comments throughout); each step is independently documented
+# and load-bearing for correctness, not accidental complexity.
+def run_evidence_aggregation(ctx: SemanticReasoningContext) -> None:  # noqa: C901
     """
     Aggregate SUPPORTS evidence for every node within its partition.
     Counts unique provenance root claim IDs, not traversal paths.
     """
     aggregates: dict[str, SupportAggregate] = {}
 
-    for partition_id, partition in ctx.partitions.items():
+    for _partition_id, partition in ctx.partitions.items():
         partition_node_ids = partition.node_ids
 
         # Precompute: for each node, which SUPPORTS edges point TO it (same partition)
@@ -102,18 +106,26 @@ def run_evidence_aggregation(ctx: SemanticReasoningContext) -> None:
             # THIS claim's evidence" -- not a global equivalence partition.
             equiv_parent: dict[str, str] = {}
 
-            def _find(x: str) -> str:
+            # `parent` is bound as a default argument (evaluated once, at
+            # definition time, to *this* iteration's equiv_parent dict)
+            # rather than captured by reference from the enclosing loop --
+            # each node_id iteration gets its own fresh equiv_parent, and
+            # binding it late would tie every iteration's _find/_union to
+            # whichever dict happens to be current when they're eventually
+            # called, which is only safe here because they're always called
+            # within the same iteration that defines them.
+            def _find(x: str, parent: dict[str, str] = equiv_parent) -> str:
                 root = x
-                while equiv_parent.get(root, root) != root:
-                    root = equiv_parent[root]
-                while equiv_parent.get(x, x) != root:
-                    equiv_parent[x], x = root, equiv_parent.get(x, root)
+                while parent.get(root, root) != root:
+                    root = parent[root]
+                while parent.get(x, x) != root:
+                    parent[x], x = root, parent.get(x, root)
                 return root
 
-            def _union(a: str, b: str) -> None:
-                ra, rb = _find(a), _find(b)
+            def _union(a: str, b: str, parent: dict[str, str] = equiv_parent) -> None:
+                ra, rb = _find(a, parent), _find(b, parent)
                 if ra != rb:
-                    equiv_parent[ra] = rb
+                    parent[ra] = rb
 
             # RECTIFIED (external review, P1-2 "evidence aggregation /
             # double counting"): track the hop distance (BFS depth) at
@@ -217,23 +229,23 @@ def run_evidence_aggregation(ctx: SemanticReasoningContext) -> None:
             # policy weights rather than trusting this default blindly,
             # but a sensible default here keeps this dataclass field
             # self-consistent for any other reader.
-            _DEFAULT_WEIGHTS = {"direct": 1.0, "derived": 0.6, "multi_hop": 0.3}
+            default_weights = {"direct": 1.0, "derived": 0.6, "multi_hop": 0.3}
             weighted_group_sum = (
-                _DEFAULT_WEIGHTS["direct"] * len(direct_evidence_group_ids)
-                + _DEFAULT_WEIGHTS["derived"] * len(derived_evidence_group_ids)
-                + _DEFAULT_WEIGHTS["multi_hop"] * len(multi_hop_evidence_group_ids)
+                default_weights["direct"] * len(direct_evidence_group_ids)
+                + default_weights["derived"] * len(derived_evidence_group_ids)
+                + default_weights["multi_hop"] * len(multi_hop_evidence_group_ids)
             )
             weighted_conf_numerator = (
                 sum(
-                    _DEFAULT_WEIGHTS["direct"] * group_confidence[g]
+                    default_weights["direct"] * group_confidence[g]
                     for g in direct_evidence_group_ids
                 )
                 + sum(
-                    _DEFAULT_WEIGHTS["derived"] * group_confidence[g]
+                    default_weights["derived"] * group_confidence[g]
                     for g in derived_evidence_group_ids
                 )
                 + sum(
-                    _DEFAULT_WEIGHTS["multi_hop"] * group_confidence[g]
+                    default_weights["multi_hop"] * group_confidence[g]
                     for g in multi_hop_evidence_group_ids
                 )
             )

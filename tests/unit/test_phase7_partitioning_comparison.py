@@ -21,14 +21,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "evaluation" / "partitioning"))
 
-from run_partitioning_comparison import (
+# Must follow the sys.path mutation above -- run_partitioning_comparison
+# lives outside the smriti package (in evaluation/partitioning/), so it's
+# only importable once that directory is on sys.path.
+from run_partitioning_comparison import (  # noqa: E402
     compute_metrics,
     constraint_based_signed_coloring,
     contradiction_edge_deletion,
     naive_connected_components,
     weighted_constraint_variant,
 )
-from smriti.core.models import RelationshipDirection, RelationshipEdge, RelationshipType
+from smriti.core.models import (  # noqa: E402
+    RelationshipDirection,
+    RelationshipEdge,
+    RelationshipType,
+)
 
 
 def _edge(eid, src, tgt, rel_type, confidence=0.90):

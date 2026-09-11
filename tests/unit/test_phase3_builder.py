@@ -2,6 +2,7 @@
 Unit tests for extraction/builder.py.
 """
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -62,7 +63,7 @@ def test_different_position_different_id():
 def test_semantic_sentence_is_frozen():
     """SemanticSentence must be immutable."""
     s = build_sentence("Python.", "doc1", Path("a.md"), "", 0, 0, 7, BlockType.PARAGRAPH)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         s.text = "Julia."
 
 

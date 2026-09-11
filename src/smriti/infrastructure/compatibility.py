@@ -89,11 +89,11 @@ class CompatibilityMatrix:
         max_clean = cls._clean_version(maximum)
 
         # If maximum is a wildcard, expand it to the greatest allowed version
+        max_expanded: tuple[int, ...] | None
         if max_clean.endswith(".x"):
             max_base = max_clean[:-2]  # remove ".x"
             # e.g. "1.x" -> maximum 1.999.999 (practically infinite)
             max_expanded = cls._expand_wildcard(max_base)
-            max_clean = max_expanded
         else:
             max_expanded = cls._parse_version(max_clean)
 

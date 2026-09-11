@@ -20,15 +20,13 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional
 
 import structlog
 
 # Application Service + all sub-components
 from smriti.api.application import ApplicationService
 from smriti.api.cache.knowledge_cache import KnowledgeViewCache
-from smriti.api.domain.predicates import Pagination, Predicate, Projection, SortSpec
+from smriti.api.domain.predicates import Pagination, Projection, SortSpec
 from smriti.api.domain.requests import (
     ClaimRequest,
     ExplanationRequest,
@@ -43,7 +41,6 @@ from smriti.api.dtos.schema_registry import schema_registry
 from smriti.api.engine.execution import QueryExecutionEngine
 from smriti.api.engine.resolver import ServiceResolver
 from smriti.api.index.builder import IndexBuilder
-from smriti.api.index.registry import IndexRegistry
 from smriti.api.index.selector import IndexSelector
 from smriti.api.index.statistics import IndexStatistics
 from smriti.api.planner.logical_planner import LogicalPlanner
@@ -69,9 +66,7 @@ from smriti.core.models import (
     ProjectionLevel,
     ScoredKnowledgeGraph,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
-from smriti.exceptions import RequestValidationError
 from smriti.governance import stable
 
 logger = structlog.get_logger(__name__)

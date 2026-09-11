@@ -23,8 +23,8 @@ raw text. Phase 3 segments text into context-aware semantic sentences.
 Phase 4 constructs claims via dependency-parse SVO extraction. \textbf{New
 in this work}: immediately after Phase 3 and before claim construction, an
 \emph{assertion-type classifier} categorizes every candidate sentence into
-one of ten types (\texttt{DECLARATIVE\_ASSERTION}, \texttt{PROCEDURAL\_
-INSTRUCTION}, \texttt{QUESTION}, \texttt{HEADING}, \texttt{METADATA},
+one of ten types (\texttt{DECLARATIVE\_ASSERTION},
+\texttt{PROCEDURAL\_INSTRUCTION}, \texttt{QUESTION}, \texttt{HEADING}, \texttt{METADATA},
 \texttt{LIST\_ITEM}, \texttt{TABLE\_CELL}, \texttt{FRAGMENT}, \texttt{CODE},
 \texttt{QUOTE}), using Phase 3's own block-type metadata plus lightweight
 regex and dependency-structure rules --- no trained model. Only
@@ -230,8 +230,8 @@ claims --- RC1 (claim extraction), RC2 (relationship resolution), RC3
 (faithful explainability) --- each backed by exactly one experiment
 (EXP-001..EXP-005) that either measures the claim against real,
 independently-produced reference data, or reports a new
-\texttt{NOT\_EVALUABLE} status with an explicit reason. \texttt{NOT\_
-EVALUABLE} is distinct from both PASSED and FAILED: it means no real
+\texttt{NOT\_EVALUABLE} status with an explicit reason.
+\texttt{NOT\_EVALUABLE} is distinct from both PASSED and FAILED: it means no real
 measurement was possible, and it is never silently defaulted to a passing
 numeric value. The Scientific Confidence Index field name is retained for
 schema compatibility, but every sub-score it now reports is a real count or

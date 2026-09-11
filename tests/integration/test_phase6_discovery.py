@@ -3,6 +3,7 @@ Integration test for Phase 6 end-to-end.
 Uses mock NLI generator and mock FAISS index to avoid model downloads.
 """
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -250,7 +251,7 @@ def test_all_relationships_are_immutable(run_id, test_managers):
         nli_generator=MockNLIGenerator(contradiction_score=0.90),
     )
     for rel in result.relationships:
-        with pytest.raises(Exception):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             rel.claim_id_a = "modified"
 
 

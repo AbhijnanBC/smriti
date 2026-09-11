@@ -144,7 +144,7 @@ def _normalize_table(event: ScannerEvent) -> NormalizedBlock:
     warnings = []
     lines = list(event.lines)
 
-    content_lines = [l for l in lines if not TABLE_SEPARATOR_PATTERN.match(l)]
+    content_lines = [line for line in lines if not TABLE_SEPARATOR_PATTERN.match(line)]
 
     if not content_lines:
         warnings.append(SegmentationWarning.SEG_MALFORMED_TABLE)

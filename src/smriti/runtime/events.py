@@ -28,7 +28,7 @@ Events defined:
     CapabilityChanged         → a capability was enabled/disabled
     SchedulerTick             → periodic scheduler fired
 
-Event Schema Versioning (NEW): 
+Event Schema Versioning (NEW):
     Each ArchitectureEvent carries `event_schema_version` to allow
     downstream systems to parse event payloads across versions.
 """
