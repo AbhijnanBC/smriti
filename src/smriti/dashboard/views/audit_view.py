@@ -14,13 +14,19 @@ class AuditView(BaseView):
     def __init__(self, audit: AuditPresentationModel | None = None) -> None:
         self._audit = audit
 
-    def refresh(self, audit: AuditPresentationModel | None = None) -> None:
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(self, audit: AuditPresentationModel | None = None) -> None:  # type: ignore[override]
         self._audit = audit
 
     def supports(self, context) -> bool:
         return self._audit is not None
 
-    def render(self) -> None:
+    # Straight-line Streamlit layout code (many independent st.* calls and
+    # small conditional sections); splitting it up would scatter one visual
+    # layout across helper functions with no natural seams.
+    def render(self) -> None:  # noqa: C901
         if not self._audit:
             st.info("Select a claim to view its complete audit trail.")
             return

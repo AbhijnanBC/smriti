@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import structlog
 
-from smriti.core.models import ComponentScore, ReliabilityExplanation
+from smriti.core.models import ComponentScore, ReliabilityExplanation, SignalID
 
 logger = structlog.get_logger(__name__)
 
@@ -76,13 +76,13 @@ def _build_recommendations(component_scores: list[ComponentScore]) -> tuple:
     recs = []
     score_map = {c.signal_id: c.contribution for c in component_scores}
 
-    if score_map.get("conflict_pressure", 0) < -10:
+    if score_map.get(SignalID.CONFLICT_PRESSURE, 0) < -10:
         recs.append("Review contradicting claims in other partitions.")
-    if score_map.get("evidence_independence", 1.0) < 0:
+    if score_map.get(SignalID.EVIDENCE_INDEPENDENCE, 1.0) < 0:
         recs.append("Seek supporting evidence from additional independent sources.")
-    if score_map.get("source_diversity", 1.0) < 0.05:
+    if score_map.get(SignalID.SOURCE_DIVERSITY, 1.0) < 0.05:
         recs.append("Diversify evidence across more document sources.")
-    if score_map.get("temporal_stability", 1.0) < 0.05:
+    if score_map.get(SignalID.TEMPORAL_STABILITY, 1.0) < 0.05:
         recs.append("Monitor for temporal evolution of this claim.")
     if not recs:
         recs.append("Maintain current evidence quality.")

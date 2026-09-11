@@ -86,6 +86,6 @@ class Timer:
 @contextmanager
 def timed_operation(name: str) -> Generator[None, None, None]:
     """Lightweight context manager for one-liner timing."""
-    with Timer(name) as t:
+    with Timer(name):
         yield
     # stats already logged by Timer.__exit__

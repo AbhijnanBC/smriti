@@ -3,6 +3,8 @@ Custom exception hierarchy for SMRITI.
 All exceptions inherit from SMRITIError for easy catch-all handling.
 """
 
+from enum import Enum
+
 
 class SMRITIError(Exception):
     """Base exception for all SMRITI errors."""
@@ -276,9 +278,6 @@ class CacheSchemaMismatchError(Phase5Error):
 
 
 # ── Phase 6: Semantic Relationship Discovery ───────────────────────────────────
-from enum import Enum
-
-
 class Phase6ErrorCategory(str, Enum):
     """
     Failure taxonomy for Phase 6.
@@ -304,7 +303,7 @@ class Phase6Error(SMRITIError):
 
     category: Phase6ErrorCategory = Phase6ErrorCategory.NON_RECOVERABLE
 
-    def __init__(self, message: str, category: Phase6ErrorCategory = None):
+    def __init__(self, message: str, category: Phase6ErrorCategory | None = None):
         super().__init__(message)
         if category is not None:
             self.category = category
@@ -381,7 +380,7 @@ class ConflictResolutionError(Phase6Error):
     category = Phase6ErrorCategory.RECOVERABLE
 
 
-class ResourceLimitExceeded(Phase6Error):
+class ResourceLimitExceeded(Phase6Error):  # noqa: N818 -- public name, widely used
     """A resource limit (max_pairs, memory, timeout) was exceeded."""
 
     category = Phase6ErrorCategory.NON_RECOVERABLE
@@ -601,7 +600,11 @@ class ExportPipelineError(Phase10Error):
 # ── Phase 11: Architectural Error Hierarchy ──────────────────────────────────
 
 
-class ArchitectureException(SMRITIError):
+# This hierarchy intentionally uses an "Exception" suffix (not "Error") for
+# its primary classes, with "*Error"-named aliases below for backward
+# compatibility and PEP 8-style callers -- an established, widely-used
+# pattern here, not an oversight.
+class ArchitectureException(SMRITIError):  # noqa: N818
     """Root of all architectural and operational errors."""
 
     pass

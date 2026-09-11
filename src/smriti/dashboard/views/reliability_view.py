@@ -14,7 +14,7 @@ class ReliabilityView(BaseView):
 
     def __init__(
         self,
-        claims: list[ClaimPresentationModel] = None,
+        claims: list[ClaimPresentationModel] | None = None,
         stats: StatisticsPresentationModel | None = None,
         selected_claim: ClaimPresentationModel | None = None,
     ) -> None:
@@ -22,9 +22,12 @@ class ReliabilityView(BaseView):
         self._stats = stats
         self._selected_claim = selected_claim
 
-    def refresh(
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(  # type: ignore[override]
         self,
-        claims: list[ClaimPresentationModel] = None,
+        claims: list[ClaimPresentationModel] | None = None,
         stats: StatisticsPresentationModel | None = None,
         selected_claim: ClaimPresentationModel | None = None,
     ) -> None:

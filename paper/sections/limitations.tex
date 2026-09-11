@@ -104,7 +104,7 @@ themselves are unaffected by calibration by construction
 confidence magnitude), so this does not put any other number in this
 paper at risk. Table~\ref{tab:calibration} reports a real
 temperature-scaling calibrator
-(\texttt{evaluation/calibration/v1/fit\_calibration.py}), fit on
+(\url{calibration/v1/fit_calibration.py}), fit on
 SMRITI-Controlled-v2's DEV split only and frozen before scoring TEST,
 using the exact production 3-class log-softmax formula
 (\texttt{ConfidenceCalibrator.\_temperature\_scale}, imported directly
@@ -135,7 +135,7 @@ NLL) and selective-prediction quality (does confidence correctly
 \S\ref{sec:limitations} finding above that raw confidence is severely
 overconfident in absolute terms does not by itself say whether it would
 be useful for deciding which decisions to commit to and which to
-abstain from. \texttt{evaluation/calibration/v1/risk\_coverage.py}
+abstain from. \url{calibration/v1/risk_coverage.py}
 answers this directly on the same frozen TEST split: sorting all 164
 resolved, non-abstention TEST pairs by raw confidence and measuring the
 error rate (risk) among the retained fraction (coverage) as the
@@ -487,7 +487,7 @@ pre-fix win on edges-retained and lose on violations, production wins
 on violations and loses on edges-retained, and the weighted variant is
 a genuine intermediate point, not a compromise that happens to be worse
 on both axes. This remains a research comparison
-(\texttt{evaluation/partitioning/run\_partitioning\_comparison.py}), not a
+(\url{partitioning/run_partitioning_comparison.py}), not a
 production algorithm; the hard zero-violation guarantee in
 \S\ref{sec:phase7} is unchanged. Purity, fragmentation, and ARI/NMI
 against a ground-truth partition (also requested by that review round)

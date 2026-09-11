@@ -85,7 +85,7 @@ class InteractionPolicy:
 class PolicyEngine:
     """Validates interactions against InteractionPolicy. Returns (allowed, reason)."""
 
-    def __init__(self, policy: InteractionPolicy = None) -> None:
+    def __init__(self, policy: InteractionPolicy | None = None) -> None:
         self._policy = policy or InteractionPolicy()
 
     def validate_graph_size(self, node_count: int) -> tuple:

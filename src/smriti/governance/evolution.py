@@ -46,8 +46,13 @@ def stable(version: str) -> Callable[[F], F]:
     """
 
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.STABLE
-        cls_or_func.__stability_version__ = version
+        # These decorators deliberately attach stability metadata to an
+        # arbitrary callable/class at runtime (read back elsewhere via
+        # getattr, e.g. architectural rule checks) -- F is intentionally
+        # Callable[..., Any], so mypy cannot and should not be taught a
+        # static shape for these dynamic attributes.
+        cls_or_func.__stability__ = StabilityLevel.STABLE  # type: ignore[attr-defined]
+        cls_or_func.__stability_version__ = version  # type: ignore[attr-defined]
         return cls_or_func
 
     return decorator
@@ -60,8 +65,8 @@ def experimental(version: str) -> Callable[[F], F]:
     """
 
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.EXPERIMENTAL
-        cls_or_func.__stability_version__ = version
+        cls_or_func.__stability__ = StabilityLevel.EXPERIMENTAL  # type: ignore[attr-defined]
+        cls_or_func.__stability_version__ = version  # type: ignore[attr-defined]
         return cls_or_func
 
     return decorator
@@ -74,7 +79,7 @@ def internal() -> Callable[[F], F]:
     """
 
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.INTERNAL
+        cls_or_func.__stability__ = StabilityLevel.INTERNAL  # type: ignore[attr-defined]
         return cls_or_func
 
     return decorator
@@ -87,9 +92,9 @@ def deprecated(removal_in: str, replacement: str) -> Callable[[F], F]:
     """
 
     def decorator(cls_or_func: F) -> F:
-        cls_or_func.__stability__ = StabilityLevel.DEPRECATED
-        cls_or_func.__removal_in__ = removal_in
-        cls_or_func.__replacement__ = replacement
+        cls_or_func.__stability__ = StabilityLevel.DEPRECATED  # type: ignore[attr-defined]
+        cls_or_func.__removal_in__ = removal_in  # type: ignore[attr-defined]
+        cls_or_func.__replacement__ = replacement  # type: ignore[attr-defined]
         return cls_or_func
 
     return decorator

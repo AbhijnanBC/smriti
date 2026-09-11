@@ -89,20 +89,20 @@ def make_graph_with_supporters(
 
 
 def make_global_stats(**kwargs):
-    defaults = dict(
-        max_support_count=10,
-        avg_support_count=3.0,
-        max_in_degree=5,
-        avg_degree=2.5,
-        max_contradiction_partners=3,
-        avg_contradiction_partners=0.5,
-        max_source_diversity=5,
-        max_temporal_confidence=1.0,
-        node_count=10,
-        partition_count=2,
-        contradiction_count=2,
-        supports_count=8,
-    )
+    defaults = {
+        "max_support_count": 10,
+        "avg_support_count": 3.0,
+        "max_in_degree": 5,
+        "avg_degree": 2.5,
+        "max_contradiction_partners": 3,
+        "avg_contradiction_partners": 0.5,
+        "max_source_diversity": 5,
+        "max_temporal_confidence": 1.0,
+        "node_count": 10,
+        "partition_count": 2,
+        "contradiction_count": 2,
+        "supports_count": 8,
+    }
     defaults.update(kwargs)
     return ScoringGlobalStats(**defaults)
 

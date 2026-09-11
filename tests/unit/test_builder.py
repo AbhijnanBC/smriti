@@ -2,6 +2,7 @@
 Unit tests for discovery/builder.py.
 """
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -53,7 +54,7 @@ def test_builder_doc_is_immutable(sample_file, tmp_path):
         source_root=tmp_path,
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         doc.size_bytes = 0
 
 

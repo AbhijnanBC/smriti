@@ -37,7 +37,7 @@ class NotificationLevel(str, Enum):
 class Notification:
     level: NotificationLevel
     message: str
-    detail: dict[str, Any] = None
+    detail: dict[str, Any] | None = None
 
 
 class NotificationCenter:
@@ -46,16 +46,16 @@ class NotificationCenter:
     def __init__(self) -> None:
         self._queue: list[Notification] = []
 
-    def info(self, message: str, detail: dict[str, Any] = None) -> None:
+    def info(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.INFO, message, detail))
 
-    def warning(self, message: str, detail: dict[str, Any] = None) -> None:
+    def warning(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.WARNING, message, detail))
 
-    def error(self, message: str, detail: dict[str, Any] = None) -> None:
+    def error(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.ERROR, message, detail))
 
-    def success(self, message: str, detail: dict[str, Any] = None) -> None:
+    def success(self, message: str, detail: dict[str, Any] | None = None) -> None:
         self._queue.append(Notification(NotificationLevel.SUCCESS, message, detail))
 
     def enqueue(self, event_type: str, payload: dict[str, Any]) -> None:

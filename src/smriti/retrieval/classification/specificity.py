@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import re
 
+STOP_WORDS: frozenset[str] | set[str]
 try:
     from spacy.lang.en.stop_words import STOP_WORDS
 except ImportError:  # pragma: no cover - spaCy is a hard dependency elsewhere

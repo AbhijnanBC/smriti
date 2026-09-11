@@ -25,12 +25,20 @@ Enforces API version compatibility at registration time.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 import structlog
 
 from smriti.exceptions import RegistryError
 from smriti.scoring.signals.base import SIGNAL_API_VERSION, BaseSignalExtractor
+from smriti.scoring.signals.conflict import ConflictPressureExtractor
+from smriti.scoring.signals.evidence import EvidenceStrengthExtractor
+from smriti.scoring.signals.independence import EvidenceIndependenceExtractor
+from smriti.scoring.signals.provenance import SourceDiversityExtractor
+from smriti.scoring.signals.structural import (
+    BridgeScoreExtractor,
+    HubScoreExtractor,
+    TopologyStrengthExtractor,
+)
+from smriti.scoring.signals.temporal import TemporalStabilityExtractor
 
 logger = structlog.get_logger(__name__)
 
@@ -134,19 +142,7 @@ class SignalRegistry:
 signal_registry = SignalRegistry()
 
 # ── Register all built-in extractors ─────────────────────────────────────────
-# Import order determines when each extractor calls register().
 # Priority values control execution order.
-
-from smriti.scoring.signals.conflict import ConflictPressureExtractor
-from smriti.scoring.signals.evidence import EvidenceStrengthExtractor
-from smriti.scoring.signals.independence import EvidenceIndependenceExtractor
-from smriti.scoring.signals.provenance import SourceDiversityExtractor
-from smriti.scoring.signals.structural import (
-    BridgeScoreExtractor,
-    HubScoreExtractor,
-    TopologyStrengthExtractor,
-)
-from smriti.scoring.signals.temporal import TemporalStabilityExtractor
 
 # Register with explicit priorities (lower = runs first)
 signal_registry.register(EvidenceStrengthExtractor(), priority=10)

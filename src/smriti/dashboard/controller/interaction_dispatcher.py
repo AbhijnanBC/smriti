@@ -69,7 +69,10 @@ class InteractionDispatcher:
         self._sm = state_manager
         self._policy = policy_engine
 
-    def dispatch(self, command: BaseCommand) -> None:
+    # Dispatches on the full BaseCommand subclass table (one isinstance
+    # branch per command type); flat by design so adding a command type is
+    # a one-line addition, but the branch count trips mccabe's threshold.
+    def dispatch(self, command: BaseCommand) -> None:  # noqa: C901
         """
         Dispatch a command. Validates policy, then applies state transition.
         Raises CommandDispatchError if policy denies the action.

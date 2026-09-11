@@ -53,7 +53,11 @@ class PipelineRunner:
         self.state_manager = StateManager()
         logger.info("pipeline runner initialized", run_id=self.run_id)
 
-    def run(
+    # Sequences all 12 pipeline phases with resume/skip guards
+    # (start_from/stop_at + "already loaded?" checks per phase); flat by
+    # design so each phase's gating is visible and independently
+    # verifiable, at the cost of a high linear branch count.
+    def run(  # noqa: C901
         self,
         start_from: int = 1,
         stop_at: int | None = None,
@@ -486,7 +490,7 @@ class PipelineRunner:
             StructuredAssertion,
         )
 
-        SUPPORTED_PHASE4_SCHEMA = "4.0"
+        supported_phase4_schema = "4.0"
 
         dataset_path = ARTIFACTS_DIR / f"run_{self.run_id}" / "phase4" / "dataset.json"
         if not dataset_path.exists():
@@ -507,12 +511,12 @@ class PipelineRunner:
 
         # Validate schema_version before deserializing.
         schema_versions = {r.get("schema_version", "unknown") for r in records if records}
-        unsupported = schema_versions - {SUPPORTED_PHASE4_SCHEMA}
+        unsupported = schema_versions - {supported_phase4_schema}
         if unsupported:
             logger.warning(
                 "unexpected schema_version in phase4 dataset",
                 found=sorted(unsupported),
-                expected=SUPPORTED_PHASE4_SCHEMA,
+                expected=supported_phase4_schema,
             )
 
         claims = []
@@ -1129,7 +1133,9 @@ class PipelineRunner:
         for pid, pd in data.get("partitions", {}).items():
             partitions[pid] = KnowledgePartition(
                 partition_id=pid,
-                stable_partition_label=pd.get("stable_partition_label", ""),
+                stable_partition_label=tuple(
+                    filter(None, pd.get("stable_partition_label", "").split(","))
+                ),
                 node_ids=frozenset(pd.get("node_ids", [])),
                 internal_edge_ids=frozenset(),
                 node_count=pd.get("node_count", 0),
@@ -1205,18 +1211,10 @@ class PipelineRunner:
 
         data = json.loads(dataset_path.read_text(encoding="utf-8"))
 
-        # Reconstruct KnowledgeGraph from the dataset
-        # Phase 8 dataset contains the graph + reliability overlay
-        # We need to build the KnowledgeGraph first, then the ScoredKnowledgeGraph
-        graph_data = data.get("graph", data)  # Phase 8 dataset may have graph nested
-
-        # For simplicity, call the existing Phase 7 loader (since Phase 8 dataset includes the full graph)
-        # But we need to make sure we load the Phase 7 graph from the Phase 7 artifact
-        # because Phase 8 dataset may not contain the full graph structure in the same format.
-        # Actually, Phase 8 dataset includes reliability but references the graph ID.
-        # The best approach: load the Phase 7 dataset and then overlay reliability from Phase 8.
-
-        # To avoid complexity, we'll load the Phase 7 graph and the Phase 8 reliability separately.
+        # Reconstruct KnowledgeGraph from the dataset. Phase 8 dataset
+        # contains the reliability overlay but references the graph by ID
+        # rather than embedding the full graph structure, so we load the
+        # Phase 7 graph and the Phase 8 reliability data separately.
         phase7_graph = self._load_phase7_result()
 
         # Now load reliability data from Phase 8 dataset
@@ -1449,23 +1447,25 @@ class PipelineRunner:
         print(f"  {dashboard_info['command']}")
         print("=" * 60 + "\n")
 
-    def _run_phase_11(self) -> None:
+    # Sequences the 9 documented steps below as one linear, order-sensitive
+    # bring-up procedure; splitting it up would scatter that sequence
+    # across helpers with no natural seams.
+    def _run_phase_11(self) -> None:  # noqa: C901
         """
         Execute Phase 11: Operational Runtime & Engineering Infrastructure.
 
-        RECTIFIED: Now uses OperationalContext + EventBus + CapabilityModel + RuntimeScheduler.
+        RECTIFIED: Now uses EventBus + CapabilityModel + RuntimeScheduler.
         Fully integrates DependencyGraph with HealthCoordinator and CapabilityModel.
 
         Steps:
-            1. Build OperationalContext (P0-1)
-            2. Subscribe TelemetryCollector to EventBus (P0-2)
-            3. Activate RuntimeCoordinator (split via sub-coordinators, P0-3)
-            4. Enable CapabilityModel (P0-4)
-            5. Wire DependencyGraph to HealthCoordinator and CapabilityModel
-            6. Start RuntimeScheduler for periodic tasks (P1-2)
-            7. Assert system invariants
-            8. Write RuntimeManifest with architecture version (P1-5)
-            9. Register shutdown handler
+            1. Subscribe TelemetryCollector to EventBus (P0-2)
+            2. Activate RuntimeCoordinator (split via sub-coordinators, P0-3)
+            3. Enable CapabilityModel (P0-4)
+            4. Wire DependencyGraph to HealthCoordinator and CapabilityModel
+            5. Start RuntimeScheduler for periodic tasks (P1-2)
+            6. Assert system invariants
+            7. Write RuntimeManifest with architecture version (P1-5)
+            8. Register shutdown handler
         """
         import hashlib
 
@@ -1474,33 +1474,26 @@ class PipelineRunner:
         from smriti.governance.invariants import assert_all_invariants
         from smriti.infrastructure.provenance import ProvenanceBuilder
         from smriti.observability.telemetry import TelemetryCollector
-        from smriti.runtime import OperationalContext, get_runtime
+        from smriti.runtime import get_runtime
         from smriti.runtime.scheduler import RuntimeScheduler
 
         logger.info("running phase 11")
         config = get_config()
         cfg11 = config.get("feature_flags", {})
 
-        # ── Step 1: Build OperationalContext (P0-1) ───────────────────────────────
-        ctx = OperationalContext.create(
-            run_id=self.run_id,
-            config_hash="",  # populated after coordinator starts
-            env=config.env,
-        )
-
-        # ── Step 2: Subscribe TelemetryCollector to EventBus (P0-2) ──────────────
+        # ── Step 1: Subscribe TelemetryCollector to EventBus (P0-2) ──────────────
         if cfg11.get("enable_event_bus", True):
             telemetry = TelemetryCollector(run_id=self.run_id)
             telemetry.subscribe_to_event_bus()
 
-        # ── Step 3: Activate RuntimeCoordinator ───────────────────────────────────
+        # ── Step 2: Activate RuntimeCoordinator ───────────────────────────────────
         coordinator = get_runtime()
         coordinator.start(run_id=self.run_id)
 
-        # ── Step 4: Get the dependency graph and wire it ─────────────────────────
+        # ── Step 3: Get the dependency graph and wire it ─────────────────────────
         dep_graph = coordinator.dependency_graph
 
-        # ── Step 5: Wire HealthCoordinator with the graph ────────────────────────
+        # ── Step 4: Wire HealthCoordinator with the graph ────────────────────────
         # Get the HealthCoordinator from the runtime coordinator.
         # (We access the private attribute; consider adding a public property later.)
         health_coordinator = coordinator._health_coordinator
@@ -1538,14 +1531,14 @@ class PipelineRunner:
         )
         health_coordinator.register("memory_pressure", check_memory, dependency_node=None)
 
-        # ── Step 6: Capability Model (P0-4) with graph sync ──────────────────────
+        # ── Step 5: Capability Model (P0-4) with graph sync ──────────────────────
         if cfg11.get("enable_capability_model", True):
             capabilities = coordinator.capabilities
             # Initial sync with the graph
             capabilities.sync_with_graph(dep_graph)
             logger.info("capability_model_active", capabilities=capabilities.snapshot())
 
-        # ── Step 7: Start RuntimeScheduler (P1-2) with health coordinator task ──
+        # ── Step 6: Start RuntimeScheduler (P1-2) with health coordinator task ──
         if cfg11.get("enable_scheduler", True):
             scheduler = RuntimeScheduler(tick_interval=1.0)
             sched_cfg = config.get("runtime", {}).get("scheduler", {})
@@ -1570,14 +1563,14 @@ class PipelineRunner:
             )
             scheduler.start()
 
-        # ── Step 8: Assert invariants ─────────────────────────────────────────────
+        # ── Step 7: Assert invariants ─────────────────────────────────────────────
         if config.get("runtime", {}).get("assert_invariants_on_startup", True):
             try:
                 assert_all_invariants()
             except Exception as exc:
                 logger.error("invariant_assertion_failed", error=str(exc))
 
-        # ── Step 9: Write RuntimeManifest with architecture version (P1-5) ────────
+        # ── Step 8: Write RuntimeManifest with architecture version (P1-5) ────────
         if config.get("runtime", {}).get("write_runtime_manifest", True):
             cfg_ctx = coordinator.config_context
             # Compute ADR set version from accepted ADRs
@@ -1600,7 +1593,7 @@ class PipelineRunner:
             manifest = builder.build()
             manifest.write_artifact(ARTIFACTS_DIR)
 
-        # ── Step 10: Register shutdown handler ──────────────────────────────────
+        # ── Step 9: Register shutdown handler ──────────────────────────────────
         coordinator._shutdown.register(
             name="pipeline_runner_shutdown",
             handler=lambda: logger.info("pipeline_runner_shutdown_handler_called"),

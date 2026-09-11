@@ -322,7 +322,7 @@ def test_validation_centralized_in_request_validator(api):
 
 def test_predicate_normalization_produces_stable_plan(api):
     """RECTIFIED (P0-2): Same predicates in different order → cache hit on second call."""
-    resp1 = api.search(
+    api.search(
         predicates=(
             Predicate("calibration_label", PredicateOperator.EQ, "high"),
             Predicate("partition_id", PredicateOperator.EQ, "p001"),

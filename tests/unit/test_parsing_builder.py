@@ -2,6 +2,7 @@
 Unit tests for parsing/builder.py.
 """
 
+import dataclasses
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -65,7 +66,7 @@ def test_doc_id_equals_source_doc_id(source_doc, extraction_result, stats):
 
 def test_document_is_frozen(source_doc, extraction_result, stats):
     doc = build_document(source_doc, extraction_result, "Hello\n\nWorld.", (), stats)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         doc.doc_id = "new_id"
 
 

@@ -139,7 +139,11 @@ class SentenceSegmenter:
 
         return result
 
-    def _split_into_candidates(self, prose: str) -> list[str]:
+    # Handles several independent sentence-boundary edge cases (abbreviations,
+    # decimal numbers, quotations, parentheticals) inline in one pass; each
+    # is a simple check, but there are enough of them to trip mccabe's
+    # threshold.
+    def _split_into_candidates(self, prose: str) -> list[str]:  # noqa: C901
         """
         Split prose string into sentence candidate strings.
 

@@ -513,7 +513,7 @@ def test_importance_index_written_to_dataset_json(graph, run_id, test_managers):
     )
     dataset_path = manifest_mgr.run_dir / "phase8" / "dataset.json"
     data = json.loads(dataset_path.read_text())
-    for claim_id, meta in data["reliability"].items():
+    for _claim_id, meta in data["reliability"].items():
         assert "importance_index" in meta
         assert "importance_decision_record" in meta
         assert "importance_components" in meta

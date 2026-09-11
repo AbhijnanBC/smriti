@@ -24,20 +24,16 @@ Phase 2 Golden Rule: Extract text. Never interpret text.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import structlog
 
 from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
-from smriti.core.models import Document, ExtractionMethod, SourceDocument
-from smriti.core.paths import ARTIFACTS_DIR
+from smriti.core.models import Document, SourceDocument
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import ParsingError
 from smriti.parsing.loader import load_document
 
 logger = structlog.get_logger(__name__)
@@ -193,15 +189,10 @@ def run_extraction(
 
         logger.info(
             "phase 2 extraction complete",
-            **{
-                k: v
-                for k, v in [
-                    ("successful", stats.successful),
-                    ("failed", stats.failed),
-                    ("total_chars", stats.total_characters),
-                    ("total_words", stats.total_words),
-                ]
-            },
+            successful=stats.successful,
+            failed=stats.failed,
+            total_chars=stats.total_characters,
+            total_words=stats.total_words,
         )
 
         # ── Step 3: Write dataset artifact ────────────────────────────────────
@@ -255,6 +246,6 @@ def run_extraction(
         # ── Step 5: Update pipeline state ─────────────────────────────────────
         state_manager.complete_phase(phase=2)
 
-    logger.info("phase 2 complete", **{k: v for k, v in vars(stats).items()})
+    logger.info("phase 2 complete", **dict(vars(stats)))
 
     return result

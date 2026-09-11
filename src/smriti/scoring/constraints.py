@@ -64,7 +64,7 @@ EVIDENCE_CONSTRAINT_PIPELINE = [
     MaxConflictConstraint(),
 ]
 
-IMPORTANCE_CONSTRAINT_PIPELINE = []
+IMPORTANCE_CONSTRAINT_PIPELINE: list[FusionConstraint] = []
 
 # Backward-compatible default used by compute_reliability() when no
 # constraint_pipeline is explicitly supplied (legacy, unsplit callers).

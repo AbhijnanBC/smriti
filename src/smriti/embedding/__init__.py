@@ -26,26 +26,21 @@ from __future__ import annotations
 
 import hashlib
 import json
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import structlog
 
-from smriti.core.config import get_config
+from smriti.core.config import Config, get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     Claim,
     EmbeddedClaim,
     EmbeddingModelDescriptor,
     EmbeddingProvenance,
-    EmbeddingQuality,
     Phase5Stats,
-    Vector,
     VectorDType,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
 from smriti.embedding.builders import (
@@ -57,16 +52,15 @@ from smriti.embedding.builders import (
 from smriti.embedding.cache import EmbeddingCachePolicy
 from smriti.embedding.embedder import (
     PHASE5_PIPELINE_VERSION,
-    PHASE5_SCHEMA_VERSION,
     BaseEmbedder,
     SentenceTransformerEmbedder,
 )
 from smriti.embedding.input_factory import CacheKeyFactory, EmbeddingInputFactory
-from smriti.embedding.models import EmbeddingResult, EmbeddingStatus
+from smriti.embedding.models import EmbeddingStatus
 from smriti.embedding.normalization import l2_normalize
 from smriti.embedding.statistics import Phase5StatsCollector
 from smriti.embedding.validation import validate_vector
-from smriti.exceptions import EmbeddingInferenceError, EmbeddingModelError, Phase5Error
+from smriti.exceptions import EmbeddingInferenceError, EmbeddingModelError
 
 logger = structlog.get_logger(__name__)
 
@@ -161,7 +155,7 @@ class Phase5Result:
 # ── Config hash ───────────────────────────────────────────────────────────────
 
 
-def _compute_config_hash(config: dict) -> str:
+def _compute_config_hash(config: Config) -> str:
     """
     Deterministic hash of embedding configuration fields that affect output.
 
@@ -198,7 +192,11 @@ def _compute_config_hash(config: dict) -> str:
 # ── Core public function ───────────────────────────────────────────────────────
 
 
-def embed_claims(
+# Orchestrates the full Phase 5 pipeline (cache lookup, batching, model
+# inference, index build, manifest write) as one linear, order-sensitive
+# sequence; splitting it up would scatter that sequence across helpers with
+# no natural seams.
+def embed_claims(  # noqa: C901
     claims: list[Claim],
     run_id: str,
     manifest_manager: ManifestManager,
@@ -309,6 +307,7 @@ def embed_claims(
             status, vector = cache_policy.lookup(cache_key, model_sig, config_hash)
 
             if status == EmbeddingStatus.CACHED:
+                assert vector is not None, "CACHED status must always carry a real vector"
                 cached_results[claim.claim_id] = vector
                 stats_collector.record_cached()
             elif status == EmbeddingStatus.STALE:

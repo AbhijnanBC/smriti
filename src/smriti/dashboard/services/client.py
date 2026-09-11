@@ -54,7 +54,7 @@ class ServiceClient:
     def search_claims(
         self,
         text_query: str = "",
-        filters: dict[str, Any] = None,
+        filters: dict[str, Any] | None = None,
         sort_field: str = "reliability_index",
         sort_order: str = "desc",
         limit: int = 20,

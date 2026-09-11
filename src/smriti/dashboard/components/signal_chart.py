@@ -40,10 +40,10 @@ def render_signal_chart_from_pm(pm: ClaimPresentationModel) -> None:
         )
         fig.update_layout(
             title="Reliability Signal Vector",
-            xaxis=dict(range=[0, 1.1], title="Signal Value (0–1)"),
+            xaxis={"range": [0, 1.1], "title": "Signal Value (0–1)"},
             height=300,
             showlegend=False,
-            margin=dict(l=200, r=60, t=40, b=40),
+            margin={"l": 200, "r": 60, "t": 40, "b": 40},
         )
         st.plotly_chart(fig, use_container_width=True)
 

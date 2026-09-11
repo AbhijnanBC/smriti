@@ -85,7 +85,7 @@ class SidebarController:
         selected_level = st.sidebar.selectbox(
             "Explainability depth",
             options=list(EXPLAINABILITY_LABELS.keys()),
-            format_func=lambda l: EXPLAINABILITY_LABELS[l],
+            format_func=lambda level: EXPLAINABILITY_LABELS[level],
             index=current_level,
             label_visibility="collapsed",
         )

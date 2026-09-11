@@ -32,7 +32,11 @@ from smriti.exceptions import GraphValidationError
 logger = structlog.get_logger(__name__)
 
 
-def validate_graph_structure(
+# Checks several independent structural invariants (dangling edges,
+# self-loops, partition consistency, contradiction-within-partition, etc.)
+# as a flat set of checks; each is simple, but there are enough of them to
+# trip mccabe's threshold.
+def validate_graph_structure(  # noqa: C901
     nodes: dict[str, ClaimNode],
     edges: dict[str, RelationshipEdge],
     backend: GraphBackend,

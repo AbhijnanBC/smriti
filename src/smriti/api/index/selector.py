@@ -10,7 +10,7 @@ from __future__ import annotations
 import structlog
 from smriti.api.domain.predicates import Predicate
 from smriti.api.index.registry import IndexRegistry
-from smriti.api.index.statistics import IndexStatistics
+from smriti.api.index.statistics import IndexStats
 
 logger = structlog.get_logger(__name__)
 
@@ -23,7 +23,7 @@ class IndexSelector:
     RECTIFIED (Cost-Based): select_best() uses IndexStatistics to pick the most selective index.
     """
 
-    def __init__(self, registry: IndexRegistry, statistics: IndexStatistics) -> None:
+    def __init__(self, registry: IndexRegistry, statistics: dict[str, IndexStats]) -> None:
         self._registry = registry
         self._statistics = statistics
 

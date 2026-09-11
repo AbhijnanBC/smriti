@@ -24,6 +24,8 @@ NOT_EVALUABLE — it never fabricates a number to avoid an empty cell.
 
 from __future__ import annotations
 
+from typing import NotRequired, TypedDict
+
 from smriti.core.models import (
     EvidenceGrade,
     ExperimentResult,
@@ -31,6 +33,40 @@ from smriti.core.models import (
     ScientificDomain,
     VerificationStatus,
 )
+
+
+class _ResearchClaimSpec(TypedDict):
+    """
+    RECTIFIED (publication-readiness audit): RESEARCH_CLAIMS_SPEC was a
+    plain `list[dict]` with heterogeneous per-key value types (str,
+    ScientificDomain, tuple, float, ...), so mypy could only infer each
+    dict's value type as the union of all of them collapsed to `object`
+    -- every `spec["claim_id"]`-style read then failed a real type
+    check downstream (e.g. passing that `object` into ResearchClaim's
+    `claim_id: str` parameter), 24 errors from this one root cause. This
+    TypedDict describes the spec's actual shape (unchanged at runtime --
+    a TypedDict is a plain dict at runtime, so RESEARCH_CLAIMS_SPEC below
+    is unmodified data) so every read gets its real type back.
+    acceptance_direction is the only field not present on every entry
+    (only RC3 declares it); NotRequired matches that instead of forcing
+    a default value into the other four claims' literal spec dicts.
+    """
+
+    claim_id: str
+    statement: str
+    scientific_domain: ScientificDomain
+    supporting_experiment_ids: list[str]
+    acceptance_metric: str
+    acceptance_threshold: float
+    research_question: str
+    null_hypothesis: str
+    assumptions: tuple[str, ...]
+    threats: tuple[str, ...]
+    supporting_limitations: tuple[str, ...]
+    applicability: str
+    evidence_provenance: str
+    acceptance_direction: NotRequired[str]
+
 
 # RECTIFIED (P0-B, "FINAL REVIEW" round): the single source of truth for
 # which claim/experiment IDs are actually canonical, so other modules
@@ -61,7 +97,7 @@ EVIDENCE_PROVENANCE_GRADE: dict[str, EvidenceGrade] = {
     "structural_invariant_check": EvidenceGrade.D,
 }
 
-RESEARCH_CLAIMS_SPEC = [
+RESEARCH_CLAIMS_SPEC: list[_ResearchClaimSpec] = [
     {
         "claim_id": "RC1",
         # RECTIFIED (external review item 19): "semantically faithful" overclaimed

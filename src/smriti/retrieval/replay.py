@@ -25,6 +25,7 @@ from pathlib import Path
 
 import structlog
 
+from smriti.core.config import Config
 from smriti.core.paths import ARTIFACTS_DIR
 
 logger = structlog.get_logger(__name__)
@@ -109,7 +110,7 @@ class ReplayEngine:
     def build_replay_manifest(
         self,
         run_id: str,
-        config: dict,
+        config: Config,
         config_hash: str,
         total_embedded: int,
         total_relationships: int,

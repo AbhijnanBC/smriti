@@ -2,7 +2,6 @@
 
 import pytest
 from smriti.core.models import SignalID
-from smriti.exceptions import PolicyError
 from smriti.scoring.policies import (
     FusionPolicy,
     PolicyError,

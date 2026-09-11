@@ -106,7 +106,7 @@ class BaseSignalExtractor(ABC):
         Called by the normalization engine after extract().
         """
         return SignalManifest(
-            signal_id=self.signal_id.value,  # RECTIFIED: use signal_id (not signal_name)
+            signal_id=self.signal_id,  # RECTIFIED: use signal_id (not signal_name)
             extractor_version=self.version,
             raw_value=signal.raw_value,
             normalized_value=signal.normalized_value,

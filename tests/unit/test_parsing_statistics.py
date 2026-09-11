@@ -4,6 +4,8 @@ Unit tests for parsing/statistics.py.
 Every statistic is verified for correctness and internal consistency.
 """
 
+import dataclasses
+
 import pytest
 from smriti.parsing.statistics import compute_statistics
 
@@ -73,7 +75,7 @@ def test_multiline_blank_lines():
 
 def test_returns_frozen_dataclass():
     stats = compute_statistics("hello")
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         stats.word_count = 999  # frozen dataclass — mutation must raise
 
 

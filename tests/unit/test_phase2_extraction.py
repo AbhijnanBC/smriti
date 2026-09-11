@@ -7,6 +7,7 @@ Tests the complete pipeline:
 Uses a realistic vault fixture with all supported formats.
 """
 
+import dataclasses
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -118,7 +119,7 @@ def test_phase2_documents_are_frozen(vault_documents, run_id, test_managers):
     manifest_mgr, state_mgr = test_managers
     result = run_extraction(vault_documents, run_id, manifest_mgr, state_mgr)
     doc = result.documents[0]
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         doc.normalized_text = "mutated"
 
 

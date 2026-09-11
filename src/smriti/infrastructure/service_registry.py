@@ -55,7 +55,7 @@ class ServiceRegistry:
         self,
         name: str,
         instance: Any,
-        capabilities: set[str] = None,
+        capabilities: set[str] | None = None,
         version: str = "1.0",
         owner: str = "",
     ) -> None:

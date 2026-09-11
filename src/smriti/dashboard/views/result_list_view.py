@@ -17,7 +17,7 @@ class ResultListView(BaseView):
         self,
         dispatcher: InteractionDispatcher | None = None,
         state_manager=None,
-        claims: list[ClaimPresentationModel] = None,
+        claims: list[ClaimPresentationModel] | None = None,
         total: int = 0,
     ) -> None:
         """Accept either a dispatcher or a state_manager (builds a default dispatcher)."""
@@ -35,7 +35,12 @@ class ResultListView(BaseView):
         self._claims = claims or []
         self._total = total
 
-    def refresh(self, claims: list[ClaimPresentationModel] = None, total: int = 0) -> None:
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(  # type: ignore[override]
+        self, claims: list[ClaimPresentationModel] | None = None, total: int = 0
+    ) -> None:
         self._claims = claims or []
         self._total = total
 

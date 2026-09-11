@@ -34,7 +34,11 @@ from smriti.core.models import (
 )
 
 
-def assess_artifact_readiness(
+# Evaluates several independent publication-readiness criteria (claim
+# support, reproducibility, engineering confidence, etc.) as a flat set of
+# checks; each check is simple, but there are enough of them to trip
+# mccabe's threshold.
+def assess_artifact_readiness(  # noqa: C901
     research_claims: list[ResearchClaim],
     reproducibility_assessments: list[ReproducibilityAssessment],
     eci: EngineeringVerificationIndex,

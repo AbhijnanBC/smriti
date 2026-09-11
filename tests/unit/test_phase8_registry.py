@@ -78,9 +78,6 @@ def test_different_extractor_same_name_raises():
     """Registering two DIFFERENT extractor types with the same signal_id must raise."""
     fresh_registry = SignalRegistry()
     ext1 = MockExtractor(SignalID.CONFLICT_PRESSURE)
-    ext2 = MockExtractor(
-        SignalID.CONFLICT_PRESSURE, ver="2.0"
-    )  # Different version — treated as different
 
     class AnotherExtractor(MockExtractor):
         pass

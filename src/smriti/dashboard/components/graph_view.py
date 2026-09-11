@@ -30,12 +30,12 @@ def render_graph_view(traversal: dict[str, Any], center_id: str) -> None:
             st.info("No graph data to display.")
             return
 
-        positions = {}
+        positions: dict[str, tuple[float, float]] = {}
         n = len(nodes)
         for i, node in enumerate(nodes):
             nid = node.get("claim_id", "")
             if nid == center_id:
-                positions[nid] = (0, 0)
+                positions[nid] = (0.0, 0.0)
             else:
                 angle = 2 * math.pi * i / max(1, n - 1)
                 positions[nid] = (math.cos(angle) * 2, math.sin(angle) * 2)
@@ -53,7 +53,7 @@ def render_graph_view(traversal: dict[str, Any], center_id: str) -> None:
         edge_trace = go.Scatter(
             x=edge_x,
             y=edge_y,
-            line=dict(width=1, color="#888"),
+            line={"width": 1, "color": "#888"},
             hoverinfo="none",
             mode="lines",
         )
@@ -82,7 +82,7 @@ def render_graph_view(traversal: dict[str, Any], center_id: str) -> None:
             hoverinfo="text",
             text=node_text,
             textposition="top center",
-            marker=dict(size=12, color=node_colors),
+            marker={"size": 12, "color": node_colors},
         )
 
         fig = go.Figure(
@@ -92,9 +92,9 @@ def render_graph_view(traversal: dict[str, Any], center_id: str) -> None:
                 showlegend=False,
                 hovermode="closest",
                 height=450,
-                margin=dict(b=20, l=5, r=5, t=40),
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                margin={"b": 20, "l": 5, "r": 5, "t": 40},
+                xaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+                yaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
             ),
         )
         st.plotly_chart(fig, use_container_width=True)

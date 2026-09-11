@@ -124,7 +124,7 @@ class BudgetGovernor:
     Blocks or warns on budget violations.
     """
 
-    def __init__(self, budgets: dict[str, ResourceBudget] = None) -> None:
+    def __init__(self, budgets: dict[str, ResourceBudget] | None = None) -> None:
         self._budgets: dict[str, ResourceBudget] = dict(budgets or DEFAULT_BUDGETS)
         self._current: dict[str, float] = {k: 0.0 for k in self._budgets}
         self._lock = threading.Lock()

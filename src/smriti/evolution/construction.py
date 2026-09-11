@@ -62,7 +62,10 @@ ACCEPTED_TYPES = frozenset(
 )
 
 
-def run_construction(
+# Orchestrates the full Phase 7 construction pipeline as one linear,
+# order-sensitive sequence; splitting it up would scatter that sequence
+# across helpers with no natural seams.
+def run_construction(  # noqa: C901
     relationship_set: RelationshipSet,
     claims_map: dict[str, Claim],
     backend: GraphBackend,

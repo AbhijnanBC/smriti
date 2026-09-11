@@ -31,11 +31,11 @@ class EvidenceChain:
 
     @property
     def has_statistical_analysis(self) -> bool:
-        return any(l.level == "statistical_analysis" for l in self.links)
+        return any(link.level == "statistical_analysis" for link in self.links)
 
     @property
     def has_adr(self) -> bool:
-        return any(l.level == "adr" for l in self.links)
+        return any(link.level == "adr" for link in self.links)
 
 
 def build_evidence_chain(

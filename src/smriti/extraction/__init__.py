@@ -18,13 +18,11 @@ That is the only function that crosses the phase boundary.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import structlog
 
-from smriti.core.config import get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     Document,
@@ -32,10 +30,8 @@ from smriti.core.models import (
     SegmentationWarning,
     SemanticSentence,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
-from smriti.core.timing import Timer
-from smriti.exceptions import Phase3Error, SentenceValidationError
+from smriti.exceptions import SentenceValidationError
 from smriti.extraction.builder import build_sentence
 from smriti.extraction.context import ContextStack
 from smriti.extraction.normalizer import normalize_event
@@ -142,7 +138,6 @@ def build_semantic_sentences(document: Document) -> DocumentExtractionResult:
         On error, returns a result with error set and empty sentences.
     """
     document_id = document.doc_id
-    source_path = document.source_document.path
 
     try:
         sentences, stats, warnings = _process_document(document)

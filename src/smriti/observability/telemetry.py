@@ -166,7 +166,7 @@ class TelemetryCollector:
 
     def flush(self) -> dict[str, list]:
         with self._lock:
-            data = {
+            data: dict[str, list[Any]] = {
                 "events": list(self._events),
                 "metrics": list(self._metrics),
                 "spans": list(self._spans),

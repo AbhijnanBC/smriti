@@ -2,6 +2,7 @@
 Unit tests for claims/builder.py.
 """
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -122,7 +123,7 @@ def test_claim_text_is_exact():
 def test_claim_is_frozen():
     v = make_validated("Python is fast.")
     claim = build_claim(v)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         claim.text = "modified"
 
 

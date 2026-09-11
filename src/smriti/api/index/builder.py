@@ -28,7 +28,7 @@ class IndexBuilder:
     def build(
         self,
         claim_records: dict[str, dict[str, Any]],
-        fields: list[str] = None,
+        fields: list[str] | None = None,
     ) -> IndexRegistry:
         """
         Build indexes for the specified fields.

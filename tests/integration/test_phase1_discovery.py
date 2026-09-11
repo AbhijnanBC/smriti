@@ -12,6 +12,7 @@ Uses a realistic vault fixture with:
   - Hidden files and directories
 """
 
+import dataclasses
 import json
 
 import pytest
@@ -165,7 +166,7 @@ def test_phase1_documents_are_immutable(realistic_vault, run_id, test_managers):
     )
 
     doc = result.documents[0]
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         doc.size_bytes = 0
 
 
@@ -194,7 +195,7 @@ def test_phase1_writes_dataset_json(realistic_vault, run_id, test_managers, tmp_
     """dataset.json must be written to artifacts/run_id/phase1/."""
     manifest_mgr, state_mgr = test_managers
 
-    result = run_discovery(
+    run_discovery(
         input_dirs=[realistic_vault],
         run_id=run_id,
         manifest_manager=manifest_mgr,

@@ -14,7 +14,10 @@ class StatisticsView(BaseView):
     def __init__(self, stats: StatisticsPresentationModel | None = None) -> None:
         self._stats = stats
 
-    def refresh(self, stats: StatisticsPresentationModel | None = None) -> None:
+    # Narrows BaseView's generic **kwargs contract to this view's specific
+    # fields; ViewCoordinator always dispatches via **kwargs (Any-typed),
+    # so this is safe at every real call site.
+    def refresh(self, stats: StatisticsPresentationModel | None = None) -> None:  # type: ignore[override]
         self._stats = stats
 
     def supports(self, context) -> bool:

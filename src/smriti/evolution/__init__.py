@@ -13,12 +13,11 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from pathlib import Path
-from typing import Dict, Optional
+from typing import Any
 
 import structlog
 
-from smriti.core.config import get_config
+from smriti.core.config import Config, get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     Claim,
@@ -27,7 +26,6 @@ from smriti.core.models import (
     RelationshipSet,
     TemporalStatus,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
 from smriti.evolution.aggregation import run_evidence_aggregation
@@ -41,14 +39,13 @@ from smriti.evolution.statistics import Phase7StatsCollector
 from smriti.evolution.temporal import run_temporal_resolution
 from smriti.evolution.topology import run_topology_analysis
 from smriti.evolution.validation import validate_graph_structure
-from smriti.exceptions import GraphConstructionError, Phase7Error
 
 logger = structlog.get_logger(__name__)
 
 PHASE7_VERSION = "1.0"
 
 
-def _compute_config_hash(config: dict) -> str:
+def _compute_config_hash(config: Config) -> str:
     relevant = {
         "include_neutral": config.get("knowledge_graph", {}).get("include_neutral", False),
         "min_reliable_delta_days": config.get("knowledge_graph", {}).get(
@@ -65,7 +62,7 @@ def _compute_config_hash(config: dict) -> str:
 
 def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
     """Serialize KnowledgeGraph to JSON for Phase 8."""
-    data = {
+    data: dict[str, Any] = {
         "graph_id": graph.graph_id,
         "run_id": graph.run_id,
         "schema_version": graph.schema_version,
@@ -112,7 +109,7 @@ def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
     }
 
     for claim_id, node in sorted(graph.nodes.items()):
-        node_data = {
+        node_data: dict[str, Any] = {
             "claim_id": node.claim_id,
             "claim_text": node.claim_text,
             "context": node.context,
@@ -175,7 +172,7 @@ def _serialize_knowledge_graph(graph: KnowledgeGraph) -> str:
     for partition_id, partition in sorted(graph.partitions.items()):
         data["partitions"][partition_id] = {
             "node_ids": sorted(partition.node_ids),
-            "stable_partition_label": partition.stable_partition_label,  # <-- fixed
+            "stable_partition_label": ",".join(partition.stable_partition_label),
             "node_count": partition.node_count,
             "edge_count": partition.edge_count,
             "supports_count": partition.supports_count,
@@ -298,9 +295,13 @@ def build_knowledge_graph(
 
     enrichment_time = time.monotonic() - enrichment_timer_start
 
+    # mypy resolves sum()'s Iterable[bool] overload against this generator's
+    # literal-int items before falling through to the correct int overload,
+    # a known typeshed/mypy limitation with `sum(1 for ... if ...)`
+    # (harmless: the generator always yields the literal int 1, never bool).
     evolution_chains = (
         sum(
-            1
+            1  # type: ignore[misc]
             for t in ctx.temporal_metadata.values()
             if t and t.status == TemporalStatus.EVOLUTION_CHAIN
         )
@@ -308,7 +309,7 @@ def build_knowledge_graph(
     )
     unresolved = (
         sum(
-            1
+            1  # type: ignore[misc]
             for t in ctx.temporal_metadata.values()
             if t and t.status == TemporalStatus.UNRESOLVED_CONFLICT
         )

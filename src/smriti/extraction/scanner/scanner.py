@@ -75,7 +75,11 @@ class ScannerEvent:
     lines: tuple = field(default_factory=tuple)
 
 
-def scan_document(normalized_text: str) -> list[ScannerEvent]:
+# Single-pass structural scanner recognizing several Markdown block types
+# (front matter, fenced code, tables, headings, paragraphs) inline, per its
+# own docstring's O(n) contract; splitting per-block-type detection into
+# helpers would break the single linear pass this function is built around.
+def scan_document(normalized_text: str) -> list[ScannerEvent]:  # noqa: C901
     """
     Perform one linear pass through normalized_text and emit structural events.
 
@@ -98,7 +102,6 @@ def scan_document(normalized_text: str) -> list[ScannerEvent]:
     in_fenced_code = False
     fenced_code_char = ""  # ` or ~
     in_front_matter = False
-    front_matter_seen = False
     in_table = False
 
     # Accumulation buffers
@@ -179,7 +182,7 @@ def scan_document(normalized_text: str) -> list[ScannerEvent]:
         if (
             i == 0
             and YAML_FRONT_MATTER_DELIMITER.match(line)
-            and any(YAML_FRONT_MATTER_DELIMITER.match(l) for l in lines[1:])
+            and any(YAML_FRONT_MATTER_DELIMITER.match(ln) for ln in lines[1:])
         ):
             in_front_matter = True
             char_pos = line_end + 1
@@ -189,7 +192,6 @@ def scan_document(normalized_text: str) -> list[ScannerEvent]:
         if in_front_matter:
             if YAML_FRONT_MATTER_DELIMITER.match(line) and i > 0:
                 in_front_matter = False
-                front_matter_seen = True
             char_pos = line_end + 1
             i += 1
             continue

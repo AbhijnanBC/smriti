@@ -147,7 +147,7 @@ def test_app_py_is_thin():
     if not app_file.exists():
         pytest.skip("app.py not yet created")
     lines = app_file.read_text(encoding="utf-8").splitlines()
-    code_lines = [l for l in lines if l.strip() and not l.strip().startswith("#")]
+    code_lines = [ln for ln in lines if ln.strip() and not ln.strip().startswith("#")]
     assert len(code_lines) <= 70, (
         f"app.py has {len(code_lines)} code lines — should stay ≤ 70. " "Move logic to controller/."
     )
@@ -192,7 +192,7 @@ def test_dependency_matrix_enforcement():
         workspaces:   Cannot import scoring, phase8, or graph_construction.
         models:       Must be pure Python — cannot import services, api, or streamlit.
     """
-    DEPENDENCY_MATRIX = {
+    dependency_matrix = {
         "views": ["services", "api", "KnowledgeAPI", "epistemic_state"],
         "components": ["state", "services", "api", "KnowledgeAPI", "workspaces"],
         "workspaces": ["scoring", "phase8", "graph_construction"],
@@ -201,7 +201,7 @@ def test_dependency_matrix_enforcement():
 
     violations = []
 
-    for layer, forbidden_imports in DEPENDENCY_MATRIX.items():
+    for layer, forbidden_imports in dependency_matrix.items():
         layer_dir = SRC / layer
         if not layer_dir.exists():
             continue
@@ -213,7 +213,7 @@ def test_dependency_matrix_enforcement():
                 continue
 
             for node in ast.walk(tree):
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                if isinstance(node, ast.Import | ast.ImportFrom):
                     # Get the module name (for ImportFrom, module can be None)
                     module_name = getattr(node, "module", "") or ""
                     for alias in getattr(node, "names", []):

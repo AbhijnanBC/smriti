@@ -1,5 +1,6 @@
 """Integration tests for Phase 12 end-to-end (rectified)."""
 
+import dataclasses
 import json
 from unittest.mock import MagicMock
 
@@ -93,7 +94,7 @@ def test_certification_engine_produces_report(mock_api):
 def test_report_has_valid_certification_level(mock_api):
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    valid_levels = {l.value for l in CertificationLevel}
+    valid_levels = {level.value for level in CertificationLevel}
     assert report.certification_level.value in valid_levels
 
 
@@ -154,7 +155,7 @@ def test_verification_results_present(mock_api):
 def test_report_is_immutable(mock_api):
     engine = CertificationEngine(run_id="test_phase12")
     report = engine.run(mock_api)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         report.run_id = "modified"
 
 

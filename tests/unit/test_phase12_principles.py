@@ -1,5 +1,7 @@
 """Unit tests for evaluation/philosophy/principles.py."""
 
+import dataclasses
+
 import pytest
 from smriti.evaluation.philosophy.principles import VALIDATION_PRINCIPLES, get_principle
 
@@ -31,5 +33,5 @@ def test_get_invalid_principle_raises():
 
 def test_all_principles_are_frozen():
     p = get_principle(1)
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         p.name = "Modified"

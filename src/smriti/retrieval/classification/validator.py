@@ -179,6 +179,9 @@ def validate_all_relationships(
         if result.is_valid:
             valid.append((evidence, rel_type, direction))
         else:
+            assert (
+                result.rejection_reason is not None
+            ), "is_valid=False must always set rejection_reason"
             reason = result.rejection_reason.value
             rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
 

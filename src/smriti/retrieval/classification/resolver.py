@@ -319,13 +319,19 @@ class RelationshipResolver:
         confidence = compute_decision_confidence(evidence, relationship_type, direction)
         return to_decision(relationship_type, direction, confidence=confidence)
 
-    def _resolve_bidirectional(
+    # The full A<->B contradiction/support/refinement decision table is
+    # inherently a flat branch-per-case structure; splitting it into helper
+    # methods would obscure rather than clarify the case-by-case reasoning.
+    def _resolve_bidirectional(  # noqa: C901
         self,
         evidence: RelationshipEvidence,
     ) -> tuple[RelationshipType, RelationshipDirection]:
         p = self._policy
         ab = evidence.nli_scores
         ba = evidence.nli_scores_b_to_a
+        assert (
+            ba is not None
+        ), "_resolve_bidirectional requires nli_scores_b_to_a (caller must check)"
         c_ab, e_ab, n_ab = ab.contradiction_score, ab.entailment_score, ab.neutral_score
         c_ba, e_ba, n_ba = ba.contradiction_score, ba.entailment_score, ba.neutral_score
         # NOTE: cosine_similarity is no longer read here -- it was only

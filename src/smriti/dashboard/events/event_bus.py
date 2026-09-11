@@ -89,7 +89,7 @@ class InteractionEventBus:
         """Read-only copy of all published events."""
         return list(self._event_log)
 
-    def event_count(self, event_type: InteractionEventType = None) -> int:
+    def event_count(self, event_type: InteractionEventType | None = None) -> int:
         """Count events, optionally filtered by type."""
         if event_type is None:
             return len(self._event_log)

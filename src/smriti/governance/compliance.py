@@ -197,7 +197,7 @@ class ComplianceEngine:
             except SyntaxError:
                 continue
             for node in ast.walk(tree):
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                if isinstance(node, ast.Import | ast.ImportFrom):
                     if isinstance(node, ast.Import):
                         names = [a.name for a in node.names]
                     else:

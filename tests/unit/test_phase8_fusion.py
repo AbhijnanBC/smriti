@@ -12,16 +12,16 @@ def policy():
 
 
 def make_sv(**kwargs):
-    defaults = dict(
-        evidence_strength=0.5,
-        evidence_independence=0.7,
-        source_diversity=0.5,
-        topology_strength=0.4,
-        conflict_pressure=0.2,
-        temporal_stability=0.6,
-        evidence_completeness=1.0,
-        statuses={},
-    )
+    defaults = {
+        "evidence_strength": 0.5,
+        "evidence_independence": 0.7,
+        "source_diversity": 0.5,
+        "topology_strength": 0.4,
+        "conflict_pressure": 0.2,
+        "temporal_stability": 0.6,
+        "evidence_completeness": 1.0,
+        "statuses": {},
+    }
     defaults.update(kwargs)
     return SignalVector(**defaults)
 

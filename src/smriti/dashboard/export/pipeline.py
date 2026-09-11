@@ -47,10 +47,11 @@ class ExportPipeline:
         self._json_exporter = JSONExporter(service_client)
         self._csv_exporter = CSVExporter(service_client)
 
-    def export(self, fmt: str) -> ExportResult | None:
+    def export(self, fmt: str) -> ExportResult:
         """
         Run the export pipeline for a given format.
-        Returns ExportResult on success, None on failure.
+        Returns ExportResult on success; raises ExportPipelineError on failure
+        (policy rejection, unknown format, or an underlying exporter error).
         """
         # Policy check first
         allowed, reason = self._policy.validate_export(fmt)

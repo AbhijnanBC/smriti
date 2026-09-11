@@ -14,6 +14,8 @@ WHAT DOES NOT BELONG HERE:
       - Log levels            → config/default.yaml (logging.level)
 """
 
+from typing import Any
+
 # === SCHEMA ===
 CACHE_SCHEMA_VERSION = "1.0"
 MANIFEST_SCHEMA_VERSION = "1.0"
@@ -29,7 +31,7 @@ MAX_BATCH_SIZE = 256  # absolute ceiling, never exceeded
 TIMEOUT_SECONDS = 3600  # 1 hour per phase
 
 # === PIPELINE MANIFEST TEMPLATE ===
-MANIFEST_TEMPLATE = {
+MANIFEST_TEMPLATE: dict[str, Any] = {
     "schema_version": MANIFEST_SCHEMA_VERSION,
     "run_id": None,
     "phase": None,

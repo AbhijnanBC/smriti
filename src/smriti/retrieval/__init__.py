@@ -20,13 +20,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import time
-from pathlib import Path
-from typing import Dict, List, Optional
 
 import structlog
 
-from smriti.core.config import get_config
+from smriti.core.config import Config, get_config
 from smriti.core.manifest import ManifestManager
 from smriti.core.models import (
     Claim,
@@ -37,13 +34,12 @@ from smriti.core.models import (
     RelationshipType,
     ResolutionStatus,
 )
-from smriti.core.paths import ARTIFACTS_DIR
 from smriti.core.state import StateManager
 from smriti.core.timing import Timer
-from smriti.exceptions import FAISSNotAvailableError, IndexBuildError, Phase6Error
+from smriti.exceptions import FAISSNotAvailableError, IndexBuildError
 from smriti.retrieval.builder import build_relationship, build_relationship_set
 from smriti.retrieval.candidate_generator import CandidateGenerator
-from smriti.retrieval.classification.calibration import CalibrationStrategy, ConfidenceCalibrator
+from smriti.retrieval.classification.calibration import ConfidenceCalibrator
 from smriti.retrieval.classification.conflict import ConflictResolver
 from smriti.retrieval.classification.evidence import NLIEvidenceGenerator
 from smriti.retrieval.classification.relatedness import passes_contradiction_relatedness_gate
@@ -62,7 +58,7 @@ logger = structlog.get_logger(__name__)
 PHASE6_VERSION = "1.0"
 
 
-def _compute_config_hash(config: dict) -> str:
+def _compute_config_hash(config: Config) -> str:
     """Deterministic hash of Phase 6 configuration."""
     relevant = {
         "nli_model": config.get("nli", {}).get("model_name", ""),
@@ -156,7 +152,12 @@ def _serialize_relationship_set(relationship_set: RelationshipSet) -> str:
     return json.dumps(records, indent=2, ensure_ascii=False)
 
 
-def discover_relationships(
+# Orchestrates the full Phase 6 pipeline (candidate generation, NLI,
+# calibration, resolution, validation) as one linear, order-sensitive
+# sequence; splitting it up would scatter that sequence across helper
+# functions with no natural seams, trading readability for a lower
+# mccabe complexity score.
+def discover_relationships(  # noqa: C901
     embedded_claims: list[EmbeddedClaim],
     claims_map: dict[str, Claim],
     run_id: str,
@@ -507,7 +508,7 @@ def _finalize_phase(
     manifest_manager: ManifestManager,
     state_manager: StateManager,
     config_hash: str,
-    config: dict,
+    config: Config,
     phase5_path: str,
     phase4_path: str,
 ) -> None:

@@ -1,5 +1,6 @@
 """Integration tests for Phase 7 end-to-end."""
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -175,7 +176,7 @@ def test_knowledge_graph_is_immutable(run_id, test_managers):
     graph = build_knowledge_graph(
         make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr
     )
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         graph.run_id = "modified"
 
 
@@ -343,9 +344,9 @@ def test_shared_support_target_partitioned_correctly(run_id, test_managers):
         make_rel_set(rels, run_id), claims, run_id, manifest_mgr, state_mgr
     )
 
-    partition_of_A = graph.nodes["A"].partition_id
-    partition_of_C = graph.nodes["C"].partition_id
-    assert partition_of_A != partition_of_C, (
+    partition_of_a = graph.nodes["A"].partition_id
+    partition_of_c = graph.nodes["C"].partition_id
+    assert partition_of_a != partition_of_c, (
         "A and C contradict each other. Even though they both support X, "
         "they must be in different partitions."
     )

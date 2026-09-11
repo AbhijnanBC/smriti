@@ -71,7 +71,13 @@ from smriti.exceptions import PartitioningError
 logger = structlog.get_logger(__name__)
 
 
-def run_partitioning(ctx: SemanticReasoningContext) -> None:
+# Implements the constraint-based signed-graph-coloring + Union-Find
+# algorithm documented in this module's own docstring above (BFS coloring,
+# odd-cycle degradation, color-gated Union-Find, KnowledgePartition
+# construction, invariant verification); each step is independently
+# necessary for the zero-contradiction-violation guarantee this module
+# exists to provide, not accidental complexity.
+def run_partitioning(ctx: SemanticReasoningContext) -> None:  # noqa: C901
     """
     Partition the graph using constraint-based signed-graph coloring + Union-Find.
 
@@ -200,7 +206,7 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
     partitions: dict[str, KnowledgePartition] = {}
     node_to_partition: dict[str, str] = {}
 
-    for root, group_nodes in groups.items():
+    for _root, group_nodes in groups.items():
         node_ids = frozenset(group_nodes)
         partition_id = _compute_partition_id(node_ids)
         stable_label = tuple(sorted(node_ids))  # Store as a sorted tuple
@@ -226,8 +232,8 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
                     equivalent_count += 1
 
         # Directed density (P1-5): edges / (n * (n-1))
-        n = len(node_ids)
-        max_directed_edges = n * (n - 1) if n > 1 else 1
+        partition_size = len(node_ids)
+        max_directed_edges = partition_size * (partition_size - 1) if partition_size > 1 else 1
         density = len(internal_edges) / max_directed_edges if max_directed_edges > 0 else 0.0
 
         longest_chain = _compute_longest_support_chain(node_ids, internal_edges)
@@ -281,7 +287,9 @@ def run_partitioning(ctx: SemanticReasoningContext) -> None:
         updated_ann = dataclasses.replace(
             current_ann,
             partition_id=pid,
-            stable_partition_label=partitions[pid].stable_partition_label if pid else None,
+            stable_partition_label=(
+                ",".join(partitions[pid].stable_partition_label) if pid else None
+            ),
         )
         updated_nodes[claim_id] = dataclasses.replace(node, annotations=updated_ann)
     ctx.nodes = updated_nodes

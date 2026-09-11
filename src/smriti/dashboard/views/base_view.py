@@ -28,7 +28,7 @@ class BaseView(ABC):
         """Produce Streamlit output from current model data."""
         ...
 
-    def refresh(self, **kwargs: Any) -> None:
+    def refresh(self, **kwargs: Any) -> None:  # noqa: B027 -- deliberate no-op default
         """
         Called by ViewCoordinator when upstream state changes.
         Update internal model data. Default is no-op.
@@ -42,7 +42,7 @@ class BaseView(ABC):
         """
         return True
 
-    def dispose(self) -> None:
+    def dispose(self) -> None:  # noqa: B027 -- deliberate no-op default
         """
         Release any resources held by this view.
         Called when view is removed from composition. Default: no-op.

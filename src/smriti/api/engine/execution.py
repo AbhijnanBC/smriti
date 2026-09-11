@@ -1,9 +1,9 @@
 """
-engine/execution.py — QueryExecutionEngine and ServiceResolver for Phase 9.
+engine/execution.py — QueryExecutionEngine for Phase 9.
 
 RECTIFIED: Extracts execution logic from ApplicationService.
-ServiceResolver resolves a KnowledgeRequest to the appropriate domain service.
-QueryExecutionEngine handles caching, service dispatch, and timing.
+QueryExecutionEngine handles caching, service dispatch (via ServiceResolver,
+defined in engine/resolver.py), and timing.
 """
 
 from __future__ import annotations
@@ -13,71 +13,12 @@ import time
 
 import structlog
 from smriti.api.cache.knowledge_cache import KnowledgeViewCache
-from smriti.api.domain.requests import (
-    ClaimRequest,
-    ExplanationRequest,
-    ExportRequest,
-    KnowledgeRequest,
-    SearchRequest,
-    StatisticsRequest,
-    TraversalRequest,
-)
+from smriti.api.domain.requests import KnowledgeRequest
 from smriti.api.domain.responses import KnowledgeResponse
-from smriti.api.services.explain_service import ExplainabilityService
-from smriti.api.services.export_service import ExportService
-from smriti.api.services.navigation_service import NavigationService
-from smriti.api.services.query_service import QueryService
-from smriti.api.services.statistics_service import StatisticsService
+from smriti.api.engine.resolver import ServiceResolver
 from smriti.core.models import ExecutionContext
-from smriti.exceptions import QueryPlanError
 
 logger = structlog.get_logger(__name__)
-
-
-class ServiceResolver:
-    """
-    Resolves a KnowledgeRequest to the appropriate domain service.
-
-    This decouples the execution engine from the specific request types.
-    Adding a new service requires:
-        1. Adding the service to the constructor.
-        2. Adding a case to resolve().
-    No other code changes.
-    """
-
-    def __init__(
-        self,
-        query_service: QueryService,
-        navigation_service: NavigationService,
-        statistics_service: StatisticsService,
-        explain_service: ExplainabilityService,
-        export_service: ExportService,
-    ):
-        self._query_service = query_service
-        self._navigation_service = navigation_service
-        self._statistics_service = statistics_service
-        self._explain_service = explain_service
-        self._export_service = export_service
-
-    def resolve(self, request: KnowledgeRequest):
-        """
-        Return the service that can handle the request.
-
-        Raises:
-            QueryPlanError: If no service is registered for the request type.
-        """
-        if isinstance(request, (ClaimRequest, SearchRequest)):
-            return self._query_service
-        elif isinstance(request, TraversalRequest):
-            return self._navigation_service
-        elif isinstance(request, StatisticsRequest):
-            return self._statistics_service
-        elif isinstance(request, ExplanationRequest):
-            return self._explain_service
-        elif isinstance(request, ExportRequest):
-            return self._export_service
-        else:
-            raise QueryPlanError(f"No service available for: {type(request).__name__}")
 
 
 class QueryExecutionEngine:

@@ -85,7 +85,7 @@ class OperationalContext:
         cls,
         run_id: str,
         resource_governor=None,
-        config_raw: dict[str, Any] = None,
+        config_raw: dict[str, Any] | None = None,
         config_hash: str = "",
         env: str = "development",
         telemetry_max_buffer: int = 10_000,
